@@ -28,7 +28,7 @@ module virus_mod
         integer,intent(in) :: num_rst
         integer vn, i, n_unit
         double precision, allocatable :: threshold(:,:)
-        real(8) random_radius
+        real(8) random_rad
         character fname*99
         !====================================================================================
         !========= Initial Position of drplets ===========================
@@ -55,10 +55,10 @@ module virus_mod
 
                 do vn = 1, vnmax                       !飛沫半径の分布を乱数によって与える
 
-                    call random_number(random_radius)
+                    call random_number(random_rad)
 
                     do i = 1, size(threshold, dim=2)
-                        if(random_radius < threshold(2, i)) then
+                        if(random_rad < threshold(2, i)) then
                             rad_ini(vn) = threshold(1, i) * 1.0d-6
                             rad_cnt(i) = rad_cnt(i) + 1
                             exit
