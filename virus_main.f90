@@ -146,9 +146,9 @@ PROGRAM MAIN
             write(a,'(i1.1)') PN
       
             path_out = trim(path_out_base)//'_'//trim(temperature)//'_'//trim(humidity)
-            print*, path_out
+            print*, 'Output_Path=', path_out
             ! if(num_programs > 1) path_out = trim(path_out)//'_'//trim(a)
-            call system('mkdir '//path_out)  !サブルーチンsystem：引数文字列をコマンドとして実行する
+            call system('mkdir -p -v '//path_out)  !サブルーチンsystem：引数文字列をコマンドとして実行する
             call system('cp condition_virus.txt '//path_out) !Windows:`copy`, Linux:`cp`
 
       end subroutine set_path
