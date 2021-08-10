@@ -8,4 +8,4 @@ virus_main.f90:
   飛沫計算メインプログラム。以下をInclude。
   flow_field.f90
   virus_mod.f90
-  motion_virus.f90
+  motion_.f90
