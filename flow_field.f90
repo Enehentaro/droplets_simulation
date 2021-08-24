@@ -290,7 +290,7 @@ module flow_field
                 stop
             END IF
             
-            WIDC(II) = norm2(CDN(:,ICN2)-CDN(:,ICN1))
+            WIDC(II) = sqrt(sum((CDN(:,ICN2)-CDN(:,ICN1))**2))
         
         END DO
         !$omp end parallel do 
@@ -372,7 +372,7 @@ module flow_field
                 NVECF(2,JB) = a(3)*b(1) - a(1)*b(3)
                 NVECF(3,JB) = a(1)*b(2) - a(2)*b(1)
             
-                norm = norm2(NVECF(:,JB))
+                norm = sqrt(sum(NVECF(:,JB)**2))
             
                 r(:) = CENC(:,II) - CENF(:,JB,2)  !面重心からセル重心へのベクトル
             

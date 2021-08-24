@@ -194,7 +194,7 @@ module motion_virus
             double precision speed_r, Re_d, Cd, Coefficient, vel_d_next(3)
             !=====================================================================================
 
-            speed_r = norm2(vel_a(:) - vel_d(:))
+            speed_r = sqrt(sum((vel_a - vel_d)**2))
             Re_d = (speed_r * 2.0d0*radius_d) * Re
 
             Cd = (24.0d0/Re_d)*(1.0d0 + 0.15d0*(Re_d**0.687d0))
@@ -306,7 +306,7 @@ module motion_virus
             integer, intent(in) :: NCN
             double precision :: distance
 
-            distance = norm2(X(:)-CENC(:,NCN))
+            distance = sqrt(sum((X(:)-CENC(:,NCN))**2))
 
             if (distance < 1.0d1*WIDC(NCN)) then
                   nearcell_check = .True.
