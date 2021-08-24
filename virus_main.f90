@@ -13,9 +13,10 @@
 PROGRAM MAIN
       use motion_virus
       implicit none
-      integer n, vn, vnf, vfloat, PN, ios, case_num, step_air, num_programs
+      integer n, vn, vnf, vfloat, PN, ios, case_num, num_programs
       integer, allocatable :: program_values(:,:)
       real nowtime
+      double precision Step_air
       character(20) :: d_start, d_stop, t_start, t_stop
 !===========================================================================================
       call date_and_time(date = d_start, time = t_start)
@@ -73,8 +74,9 @@ PROGRAM MAIN
                         call writeout(n)
                   end if
 
-                  Step_air = int(dble(n)*Rdt)          !気流計算における経過ステップ数に相当
-                  if((mod(Step_air, interval_flow) == 0).and.(interval_flow > 0)) call read_flow_field(n)
+                  Step_air = dble(n) * Rdt          !気流計算における経過ステップ数に相当
+                  if((mod(Step_air, dble(interval_flow)) == 0.0d0).and.(interval_flow > 0)) &
+                        call read_flow_field(n)
 
             END DO
 
