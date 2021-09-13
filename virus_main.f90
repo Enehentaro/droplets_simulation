@@ -6,12 +6,13 @@
 !ToDo:      to modify module
 !
 !---------------------------------------------------------------------------------
+      include 'csv_reader.f90'
       include 'virus_mod.f90'
       include 'flow_field.f90'
       include 'motion_mod.f90'
 !*******************************************************************************************
 PROGRAM MAIN
-      use motion_virus
+      use motion_mod
       implicit none
       integer n, vn, vnf, vfloat, PN, ios, case_num, step_air, num_programs
       integer, allocatable :: program_values(:,:)
@@ -95,6 +96,7 @@ PROGRAM MAIN
       contains
 
       subroutine read_program
+            use csv_reader
             character(11) FNAME
             integer n_unit
 

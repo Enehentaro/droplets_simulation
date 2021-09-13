@@ -1,4 +1,4 @@
-module motion_virus
+module motion_mod
       use virus_mod
       use flow_field
       implicit none
@@ -431,4 +431,4 @@ module motion_virus
       end subroutine area_check
 
 
-end module motion_virus
+end module motion_mod

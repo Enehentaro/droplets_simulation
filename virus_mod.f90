@@ -25,6 +25,7 @@ module virus_mod
 
 !*************************************************************************************
     subroutine initial_virus(num_rst)
+        use csv_reader
         integer,intent(in) :: num_rst
         integer vn, i, n_unit
         double precision, allocatable :: threshold(:,:)
@@ -338,68 +339,6 @@ module virus_mod
 
     end subroutine Set_Coefficients
     !*******************************************************************************************
-
-    subroutine csv_reader_dble(filename, matrix, num_column)
-        integer i, Num_unit, num_records
-        integer, intent(in) :: num_column
-        character(*), intent(in) :: filename
-        double precision, intent(inout), allocatable :: matrix(:,:)
-  
-        print*, 'CSV_READER:', filename
-
-        open (newunit=Num_unit, file=filename, status='old')
-
-            num_records = 0
-            read (Num_unit, '()') !ヘッダーの読み飛ばし
-            do        !レコード数を調べるループ
-                read(Num_unit, '()', iostat=i)
-                if(i/=0) exit
-                num_records = num_records + 1
-            end do
-
-            allocate(matrix(num_column, num_records))
-
-            rewind (Num_unit)  ! ファイルの最初に戻る
-            print *, 'NumRec =', num_records
-            read (Num_unit, '()') !ヘッダーの読み飛ばし
-            do i = 1, num_records        !本読み込み
-                read (Num_unit, *) matrix(:,i)
-                print *, matrix(:,i)
-            end do
-        close (Num_unit)
-  
-    end subroutine csv_reader_dble
-
-    subroutine csv_reader_int(filename, matrix, num_column)
-        integer i, Num_unit, num_records
-        integer, intent(in) :: num_column
-        character(*), intent(in) :: filename
-        integer, intent(inout), allocatable :: matrix(:,:)
-
-        print*, 'CSV_READER:', filename
-
-        open (newunit=Num_unit, file=filename, status='old')
-
-            num_records = 0
-            read (Num_unit, '()') !ヘッダーの読み飛ばし
-            do        !レコード数を調べるループ
-                read(Num_unit, '()', iostat=i)
-                if(i/=0) exit
-                num_records = num_records + 1
-            end do
-
-            allocate(matrix(num_column, num_records))
-
-            rewind (Num_unit)  ! ファイルの最初に戻る
-            print *, 'NumRec =', num_records
-            read (Num_unit, '()') !ヘッダーの読み飛ばし
-            do i = 1, num_records        !本読み込み
-                read (Num_unit, *) matrix(:,i)
-                print *, matrix(:,i)
-            end do
-        close (Num_unit)
-  
-    end subroutine csv_reader_int
 
     !*******************************************************************************************
     subroutine evaporation(vn) !CALCULATE drplet evaporation
