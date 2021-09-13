@@ -396,8 +396,8 @@ MODULE grid_information
     subroutine boundaryset(dir)
         INTEGER II,JJ,JB, n_unit
         integer, parameter :: LF=1
-        character(20), intent(in) :: dir
-        character(50) FNAME
+        character(*), intent(in) :: dir
+        character(99) FNAME
         !=======================================================================
         !-----BC SET-------------------------------------------------------
         allocate(NoB(IIMX), source=0)
@@ -436,8 +436,8 @@ MODULE grid_information
     subroutine nextcell(dir)
         integer II, JJ, JJJ, numnext, JB, n_unit
         integer, parameter :: LF = 1
-        character(20), intent(in) :: dir
-        character(50) FNAME
+        character(*), intent(in) :: dir
+        character(99) FNAME
     
         FNAME = trim(dir)//'/nextcell.txt'
           
@@ -576,11 +576,17 @@ PROGRAM MAIN
     character(8) :: d_start, d_stop
     character(10) :: t_start, t_stop
     character(99) :: FNAME, dir
+    logical is_exists
 !==============================================================================================================
     call date_and_time(date = d_start, time = t_start)
 
     print*,'DIRECTORY NAME?'
     READ(5,'(A)') dir
+    inquire(file=dir, exist=is_exists)
+    if(.not.is_exists) then
+        print*, 'There is no directory:', dir
+        stop
+    end if
     print*,'FILE NAME?'
     READ(5,'(A)') FNAME
 
