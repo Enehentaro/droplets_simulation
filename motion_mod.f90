@@ -194,7 +194,7 @@ module motion_mod
             double precision speed_r, Re_d, Cd, Coefficient, vel_d_next(3)
             !=====================================================================================
 
-            speed_r = sqrt(sum((vel_a - vel_d)**2))
+            speed_r = norm2(vel_a - vel_d)
             Re_d = (speed_r * 2.0d0*radius_d) * Re
 
             Cd = (24.0d0/Re_d)*(1.0d0 + 0.15d0*(Re_d**0.687d0))
@@ -222,7 +222,7 @@ module motion_mod
             !↓↓↓↓　一番近いセル中心の探索
             !$omp parallel do
             DO II = 1,IIMX
-                  distance(II) = sum((CENC(:,II) - X(:))**2)
+                  distance(II) = norm2(CENC(:,II) - X(:))
             END DO
             !$omp end parallel do 
             !↑↑↑↑
@@ -242,7 +242,7 @@ module motion_mod
             !=====================================================================================
             nearer_cell = NCN
             allocate(distance(NCMAX))
-            distancecheck(1) = sum((CENC(:,nearer_cell)-X(:))**2)   !注目セル重心と粒子との距離
+            distancecheck(1) = norm2(CENC(:,nearer_cell)-X(:))   !注目セル重心と粒子との距離
             
             check:DO
                   distance(:) = 1.0d10     !初期値はなるべく大きくとる
@@ -250,7 +250,7 @@ module motion_mod
                   DO NC = 1, NUM_NC(nearer_cell)  !全隣接セルに対してループ。
                         IIaround = NEXT_CELL(NC, nearer_cell)       !現時点で近いとされるセルの隣接セルのひとつに注目
                         IF (IIaround > 0) then
-                              distance(NC) = sum((CENC(:,IIaround)-X(:))**2)   !注目セル重心と粒子との距離を距離配列に代入
+                              distance(NC) = norm2(CENC(:,IIaround)-X(:))   !注目セル重心と粒子との距離を距離配列に代入
                         END IF
             
                   END DO
@@ -306,7 +306,7 @@ module motion_mod
             integer, intent(in) :: NCN
             double precision :: distance
 
-            distance = sqrt(sum((X(:)-CENC(:,NCN))**2))
+            distance = norm2(X(:)-CENC(:,NCN))
 
             if (distance < 1.0d1*WIDC(NCN)) then
                   nearcell_check = .True.

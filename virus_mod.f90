@@ -327,7 +327,7 @@ module virus_mod
         TK = dble(T) + T0                                    ! 室温を絶対温度[K]に変換
         Es = Es0*exp((Lv/Rv)*(1.0d0/T0 - 1.0d0/TK))       ! 室温に置ける飽和蒸気圧
 
-        norm = sqrt(sum(direction_g(:)**2))
+        norm = norm2(direction_g(:))
         G(:) = G_dim * L_chara/(U_chara*U_chara) / norm * direction_g(:)
         print*, 'G_no_dim=', G(:)
 
