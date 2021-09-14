@@ -4,12 +4,12 @@ MODULE grid_information
     INTEGER JJMX,KKMX,JJJMX,LBX, JBMX
     INTEGER IITPRMX,JJTPRMX
     integer :: IIMX,IITETMX,IIPRSMX,IIPYRMX, INP=0, numfiles=1, SQUARES=0, digits=0
-    INTEGER JJTOTAL
-    INTEGER, allocatable :: NFN(:,:),NFC(:,:),NCF(:), NFNSUM(:)
-    INTEGER, allocatable :: ICF(:,:),JUDTP(:)
+    INTEGER JJTOTAL,counter1,countermax
+    INTEGER, allocatable :: NFN(:,:),NFC(:,:),NCF(:), NFNSUM(:), change(:)
+    INTEGER, allocatable :: ICF(:,:),ICF2(:,:),JUDTP(:)
     INTEGER, allocatable :: ICN(:,:)
     INTEGER, allocatable :: cell_to_cell(:,:), NoB(:), nearmax(:), ICB(:,:)
-    DOUBLE PRECISION, allocatable :: R(:,:), UVW(:,:)
+    DOUBLE PRECISION, allocatable :: R(:,:),RC(:,:), UVW(:,:)
 
     contains
 
@@ -576,19 +576,23 @@ PROGRAM MAIN
     character(8) :: d_start, d_stop
     character(10) :: t_start, t_stop
     character(99) :: FNAME, dir
-    integer i
+    logical is_exists
 !==============================================================================================================
     call date_and_time(date = d_start, time = t_start)
 
+    print*,'DIRECTORY NAME?'
+    READ(5,'(A)') dir
+    inquire(file=dir, exist=is_exists)
+    if(.not.is_exists) then
+        print*, 'There is no directory:', dir
+        stop
+    end if
     print*,'FILE NAME?'
     READ(5,'(A)') FNAME
 
-    i = index(FNAME, "/", back=.true.)
-    if(i <= 0) i = index(FNAME, "\", back=.true.)
-
-    if(i > 0) dir = FNAME(1:i)
-
     INP = index(FNAME, '.inp') !INPファイルであれば自然数が返る。INPでないならゼロ。
+
+    FNAME = trim(dir)//'/'//FNAME
 
     if(INP > 0) then
         call readINP(FNAME)
