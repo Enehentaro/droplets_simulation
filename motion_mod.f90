@@ -1,4 +1,4 @@
-module motion_virus
+module motion_mod
       use virus_mod
       use flow_field
       implicit none
@@ -195,7 +195,7 @@ module motion_virus
             !=====================================================================================
 
             speed_r = norm2(vel_a(:) - vel_d(:))
-            Re_d = (speed_r * 2.0d0*radius_d) * Re
+            Re_d = (speed_r * 2.0d0*radius_d) * Re + 1.d-9  !ゼロ割回避のため、小さな値を加算
 
             Cd = (24.0d0/Re_d)*(1.0d0 + 0.15d0*(Re_d**0.687d0))
 
@@ -222,7 +222,7 @@ module motion_virus
             !↓↓↓↓　一番近いセル中心の探索
             !$omp parallel do
             DO II = 1,IIMX
-                  distance(II) = sum((CENC(:,II) - X(:))**2)
+                  distance(II) = norm2(CENC(:,II) - X(:))
             END DO
             !$omp end parallel do 
             !↑↑↑↑
@@ -242,7 +242,7 @@ module motion_virus
             !=====================================================================================
             nearer_cell = NCN
             allocate(distance(NCMAX))
-            distancecheck(1) = sum((CENC(:,nearer_cell)-X(:))**2)   !注目セル重心と粒子との距離
+            distancecheck(1) = norm2(CENC(:,nearer_cell)-X(:))   !注目セル重心と粒子との距離
             
             check:DO
                   distance(:) = 1.0d10     !初期値はなるべく大きくとる
@@ -250,7 +250,7 @@ module motion_virus
                   DO NC = 1, NUM_NC(nearer_cell)  !全隣接セルに対してループ。
                         IIaround = NEXT_CELL(NC, nearer_cell)       !現時点で近いとされるセルの隣接セルのひとつに注目
                         IF (IIaround > 0) then
-                              distance(NC) = sum((CENC(:,IIaround)-X(:))**2)   !注目セル重心と粒子との距離を距離配列に代入
+                              distance(NC) = norm2(CENC(:,IIaround)-X(:))   !注目セル重心と粒子との距離を距離配列に代入
                         END IF
             
                   END DO
@@ -341,24 +341,24 @@ module motion_virus
                 
             if(PRIS==0)then
                   if (interval_flow == -1) then !定常解析
-                        FNAME = trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'.vtk'
+                        FNAME = trim(PATH_AIR)//trim(HEAD_AIR)//'.vtk'
                   else
-                        write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i6.6,".vtk")') FNUM
+                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i6.6,".vtk")') FNUM
                   end if
                   call readnomal(FNAME)
 
             else if(PRIS==1)then
-                  write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i7.7,".vtk")') FNUM
+                  write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i7.7,".vtk")') FNUM
                   call readprism(FNAME)
 
             else if(PRIS==-1) then
                   if(interval_flow==-1) then
-                        FNAME = trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'.inp'
+                        FNAME = trim(PATH_AIR)//trim(HEAD_AIR)//'.inp'
                   else
                         if(FNUM==0) then
-                            write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i6.6,".inp")') 1
+                            write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i6.6,".inp")') 1
                         else
-                            write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i6.6,".inp")') FNUM
+                            write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i6.6,".inp")') FNUM
                         end if
                   end if
                   call readINP(FNAME)   !INPを読み込む(SHARP用)
@@ -431,4 +431,4 @@ module motion_virus
       end subroutine area_check
 
 
-end module motion_virus
+end module motion_mod

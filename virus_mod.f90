@@ -25,6 +25,7 @@ module virus_mod
 
 !*************************************************************************************
     subroutine initial_virus(num_rst)
+        use csv_reader
         integer,intent(in) :: num_rst
         integer vn, i, n_unit
         double precision, allocatable :: threshold(:,:)
@@ -68,7 +69,7 @@ module virus_mod
                 end do
                 
                 !========= Output initial distribution ===========================
-                open(newunit=n_unit,file = trim(path_out)//'/'//fname, STATUS='REPLACE')
+                open(newunit=n_unit,file = trim(path_out)//fname, STATUS='REPLACE')
                     do i = 1, size(rad_cnt)
                         write(n_unit,*) rad_cnt(i)      !ウイルス半径ごとの個数
                     end do
@@ -80,7 +81,7 @@ module virus_mod
 
             else    !テキストファイルから分布指定
 
-                if(num_rst >= 1) fname = trim(path_out)//'/'//fname
+                if(num_rst >= 1) fname = trim(path_out)//fname
                 !========= input initial distribution ===========================
                 print*, 'READ:', fname
                 open(newunit=n_unit, file=fname, STATUS='OLD')
@@ -183,9 +184,9 @@ module virus_mod
         character(len=99) :: FN
         !=======================================================================
 
-        write(FN,'("'//trim(path_out)//'/'//trim(head_out)//'",i8.8,".vtk")') step
+        write(FN,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') step
     
-        print*, 'restartREAD:', FN,', step=',step
+        print*, 'restartREAD:', trim(FN),', step=',step
         open(newunit=n_unit, FILE=FN,STATUS='OLD')
             read(n_unit,'()')
             read(n_unit,'()')
@@ -239,7 +240,7 @@ module virus_mod
         character(len=50) :: FN
         !======================================================================= 
 
-        write(FN,'("'//trim(path_out)//'/'//trim(head_out)//'",i8.8,".vtk")') step
+        write(FN,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') step
 
         !=======ここから飛沫データ（VTKファイル）の出力===========================
 
@@ -281,18 +282,18 @@ module virus_mod
             END DO
         close(n_unit)
 
-        print*, 'WRITEOUT:', FN
+        print*, 'WRITEOUT:', trim(FN)
 
     !=======飛沫データ（VTKファイル）の出力ここまで===========================
 
         !以下はCSVファイルの出力
 
         if(step==0) then !初期ステップならファイル新規作成
-            open(newunit=n_unit, file=trim(path_out)//'/particle_'//trim(head_out)//'.csv', status='replace')
+            open(newunit=n_unit, file=trim(path_out)//'particle_'//trim(head_out)//'.csv', status='replace')
             print*,'REPLACE:particle_data.csv'
 
         else
-            open(newunit=n_unit, file=trim(path_out)//'/particle_'//trim(head_out)//'.csv'&
+            open(newunit=n_unit, file=trim(path_out)//'particle_'//trim(head_out)//'.csv'&
                 , action='write', status='old', position='append')
 
         end if
@@ -338,68 +339,6 @@ module virus_mod
 
     end subroutine Set_Coefficients
     !*******************************************************************************************
-
-    subroutine csv_reader_dble(filename, matrix, num_column)
-        integer i, Num_unit, num_records
-        integer, intent(in) :: num_column
-        character(*), intent(in) :: filename
-        double precision, intent(inout), allocatable :: matrix(:,:)
-  
-        print*, 'CSV_READER:', filename
-
-        open (newunit=Num_unit, file=filename, status='old')
-
-            num_records = 0
-            read (Num_unit, '()') !ヘッダーの読み飛ばし
-            do        !レコード数を調べるループ
-                read(Num_unit, '()', iostat=i)
-                if(i/=0) exit
-                num_records = num_records + 1
-            end do
-
-            allocate(matrix(num_column, num_records))
-
-            rewind (Num_unit)  ! ファイルの最初に戻る
-            print *, 'NumRec =', num_records
-            read (Num_unit, '()') !ヘッダーの読み飛ばし
-            do i = 1, num_records        !本読み込み
-                read (Num_unit, *) matrix(:,i)
-                print *, matrix(:,i)
-            end do
-        close (Num_unit)
-  
-    end subroutine csv_reader_dble
-
-    subroutine csv_reader_int(filename, matrix, num_column)
-        integer i, Num_unit, num_records
-        integer, intent(in) :: num_column
-        character(*), intent(in) :: filename
-        integer, intent(inout), allocatable :: matrix(:,:)
-
-        print*, 'CSV_READER:', filename
-
-        open (newunit=Num_unit, file=filename, status='old')
-
-            num_records = 0
-            read (Num_unit, '()') !ヘッダーの読み飛ばし
-            do        !レコード数を調べるループ
-                read(Num_unit, '()', iostat=i)
-                if(i/=0) exit
-                num_records = num_records + 1
-            end do
-
-            allocate(matrix(num_column, num_records))
-
-            rewind (Num_unit)  ! ファイルの最初に戻る
-            print *, 'NumRec =', num_records
-            read (Num_unit, '()') !ヘッダーの読み飛ばし
-            do i = 1, num_records        !本読み込み
-                read (Num_unit, *) matrix(:,i)
-                print *, matrix(:,i)
-            end do
-        close (Num_unit)
-  
-    end subroutine csv_reader_int
 
     !*******************************************************************************************
     subroutine evaporation(vn) !CALCULATE drplet evaporation

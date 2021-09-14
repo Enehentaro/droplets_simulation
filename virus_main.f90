@@ -6,17 +6,21 @@
 !ToDo:      to modify module
 !
 !---------------------------------------------------------------------------------
+      include 'csv_reader.f90'
+      include 'cases_reader.f90'
       include 'virus_mod.f90'
       include 'flow_field.f90'
       include 'motion_mod.f90'
 !*******************************************************************************************
 PROGRAM MAIN
-      use motion_virus
+      use motion_mod
+      use cases_reader
       implicit none
-      integer n, vn, vnf, vfloat, PN, ios, case_num, num_programs
-      integer, allocatable :: program_values(:,:)
+
+      character(7), parameter :: OS = 'Windows'
+
+      integer n, vn, vnf, vfloat, nc, step_air, nc_max
       real nowtime
-      double precision Step_air
       character(20) :: d_start, d_stop, t_start, t_stop
 !===========================================================================================
       call date_and_time(date = d_start, time = t_start)
@@ -24,9 +28,10 @@ PROGRAM MAIN
 
       call input_condition
 
-      call read_program
+      call check_cases
 
-      do PN = 1, num_programs
+
+      do nc = 1, nc_max
 
             call set_path
             call Set_Coefficients
@@ -74,9 +79,8 @@ PROGRAM MAIN
                         call writeout(n)
                   end if
 
-                  Step_air = dble(n) * Rdt          !気流計算における経過ステップ数に相当
-                  if((mod(Step_air, dble(interval_flow)) == 0.0d0).and.(interval_flow > 0)) &
-                        call read_flow_field(n)
+                  Step_air = int(dble(n)*Rdt)          !気流計算における経過ステップ数に相当
+                  if((mod(Step_air, interval_flow) == 0).and.(interval_flow > 0)) call read_flow_field(n)
 
             END DO
 
@@ -96,48 +100,45 @@ PROGRAM MAIN
 
       contains
 
-      subroutine read_program
-            character(11) FNAME
-            integer n_unit
+      subroutine check_cases
+            character(11) fname
+            integer n_unit, ios
 
-            FNAME = 'program.csv'
+            fname = 'cases.csv'
 
-            open(newunit=n_unit, iostat=ios, file=FNAME, status='old')
+            open(newunit=n_unit, iostat=ios, file=fname, status='old')
             close(n_unit)
             if(ios /= 0) then
                   print*, 'Normal_program'
-                  num_programs = 1
+                  nc_max = 1
+    
             else
-                  call csv_reader_int(FNAME, program_values, 3)
-                  num_programs = size(program_values, dim=2)
+                  call read_cases(fname)
+                  nc_max = get_num_cases()
+                
             end if
 
-            if((num_programs > 1).and.(restart>=1)) then
+            if((nc_max > 1).and.(restart >= 1)) then
                   print*, 'ERROR_program:'
-                  print*, 'Remove program.csv or Set restart_No.= 0'
+                  print*, 'Remove '//trim(fname)//' or Set restart_No.= 0'
                   stop
             end if
-
-      end subroutine read_program
+      end subroutine check_cases
 
       subroutine set_path
-            character(20) :: temperature, humidity, a
+            character(20) :: temperature, humidity
+            integer i
 
-            if(allocated(program_values)) then
-                  case_num = program_values(1,PN)
-                  T = program_values(2,PN)
-                  RH = program_values(3,PN)
+            if(nc_max > 1) then
+
+                  T = get_temperature(nc)
+                  RH = get_humidity(nc)
+
+                  call set_path_out_base(path_out_base, nc)
       
-                  write(path_out_base,'("ACAP",i3.3,"_virus")') case_num
-                  write(head_out,'("ac",i3.3,"_")') case_num
-      
-                  if (mod(case_num,10)==0) then
-                        write(PATH_AIR,'("ACAP0",i2.2)') case_num/10
-                        write(HEAD_AIR,'("ACAP0",i2.2)') case_num/10
-                  else
-                        write(PATH_AIR,'("ACAP0",i2.2,"-", i1.1)') case_num/10, case_num - case_num/10*10
-                        write(HEAD_AIR,'("ACAP0",i2.2,"-", i1.1)') case_num/10, case_num - case_num/10*10
-                  end if
+                  call set_PATH_AIR(PATH_AIR, nc)
+                  call set_HEAD_AIR(HEAD_AIR, nc)
+
             end if
       
             print*, 'T =', T, 'degC'
@@ -145,13 +146,31 @@ PROGRAM MAIN
       
             write(temperature,'(i3.3)') T
             write(humidity,'(i3.3)') RH
-            write(a,'(i1.1)') PN
-      
-            path_out = trim(path_out_base)//'_'//trim(temperature)//'_'//trim(humidity)
+
+            i = len_trim(path_out_base)
+            if(path_out_base(i:i) == '\') path_out_base(i:i) = ' '
+            path_out = trim(path_out_base)//'_'//trim(temperature)//'_'//trim(humidity)//'\'
+
+            select case(trim(OS))
+                  case ('Linux')  !for_Linux
+                        call replace_str(path_out, '\', '/' )
+                        call replace_str(PATH_AIR, '\', '/' )
+                        call system('mkdir -p -v '//path_out)
+                        call system('cp condition_virus.txt '//path_out)
+
+                  case ('Windows')  !for_Windows
+                        call system('md '//path_out)
+                        call system('copy condition_virus.txt '//path_out)
+
+                  case default
+                        print*, 'OS ERROR', OS
+                        stop
+                        
+            end select
+
             print*, 'Output_Path=', path_out
-            ! if(num_programs > 1) path_out = trim(path_out)//'_'//trim(a)
-            call system('mkdir -p -v '//path_out)  !サブルーチンsystem：引数文字列をコマンドとして実行する
-            call system('cp condition_virus.txt '//path_out) !Windows:`copy`, Linux:`cp`
+
+            
 
       end subroutine set_path
 
