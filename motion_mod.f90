@@ -194,8 +194,8 @@ module motion_mod
             double precision speed_r, Re_d, Cd, Coefficient, vel_d_next(3)
             !=====================================================================================
 
-            speed_r = norm2(vel_a - vel_d)
-            Re_d = (speed_r * 2.0d0*radius_d) * Re
+            speed_r = norm2(vel_a(:) - vel_d(:))
+            Re_d = (speed_r * 2.0d0*radius_d) * Re + 1.d-9  !ゼロ割回避のため、小さな値を加算
 
             Cd = (24.0d0/Re_d)*(1.0d0 + 0.15d0*(Re_d**0.687d0))
 
@@ -341,24 +341,24 @@ module motion_mod
                 
             if(PRIS==0)then
                   if (interval_flow == -1) then !定常解析
-                        FNAME = trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'.vtk'
+                        FNAME = trim(PATH_AIR)//trim(HEAD_AIR)//'.vtk'
                   else
-                        write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i6.6,".vtk")') FNUM
+                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i6.6,".vtk")') FNUM
                   end if
                   call readnomal(FNAME)
 
             else if(PRIS==1)then
-                  write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i7.7,".vtk")') FNUM
+                  write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i7.7,".vtk")') FNUM
                   call readprism(FNAME)
 
             else if(PRIS==-1) then
                   if(interval_flow==-1) then
-                        FNAME = trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'.inp'
+                        FNAME = trim(PATH_AIR)//trim(HEAD_AIR)//'.inp'
                   else
                         if(FNUM==0) then
-                            write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i6.6,".inp")') 1
+                            write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i6.6,".inp")') 1
                         else
-                            write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i6.6,".inp")') FNUM
+                            write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i6.6,".inp")') FNUM
                         end if
                   end if
                   call readINP(FNAME)   !INPを読み込む(SHARP用)
