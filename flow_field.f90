@@ -26,13 +26,13 @@ module flow_field
 
     contains
     !***********************************************************************
-    !***********************************************************************
+            !***********************************************************************
     subroutine readnomal(FNAME)
         character(*), intent(in) :: FNAME
         integer II,KK, n_unit
         character(len=7) :: AAA
 
-        print*, 'READ:', trim(FNAME)
+        print*, 'READ:', FNAME
     
         open(newunit=n_unit,FILE=FNAME, STATUS='OLD')
             read(n_unit,'()')
@@ -167,7 +167,7 @@ module flow_field
         character(6) cellshape
         double precision, allocatable :: UVWK(:,:)
 
-        print*, 'READINP:', trim(FNAME)
+        print*, 'READINP:', FNAME
             
         open(newunit=n_unit,FILE=FNAME,STATUS='OLD')
             read(n_unit,*)KKMX,IIMX2
@@ -303,7 +303,7 @@ module flow_field
         character(50) FNAME
         !=======================================================================
                 
-        FNAME = trim(PATH_AIR)//'nextcell.txt'
+        FNAME = trim(PATH_AIR)//'/nextcell.txt'
         print*, 'READ:', FNAME
 
         open(newunit=n_unit,FILE=FNAME , STATUS='OLD')
@@ -338,7 +338,7 @@ module flow_field
         close(n_unit)
 
 
-        FNAME = trim(PATH_AIR)//'boundaries.txt'
+        FNAME = trim(PATH_AIR)//'/boundaries.txt'
         print*, 'READ:', FNAME
         open(newunit=n_unit, FILE=FNAME , STATUS='old')
             read(n_unit,*) JBMX
