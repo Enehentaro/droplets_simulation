@@ -2,10 +2,11 @@ module flow_field
     implicit none
     integer, private :: IIMX, KKMX, JBMX            !全要素数、全節点数、全境界面数
     integer NCMAX                                   !隣接要素数の最大値
-    integer interval_flow                           !気流データ出力間隔
-    integer PRIS                                    !気流ファイル形式
+    integer INTERVAL_FLOW                           !気流データ出力間隔
 
-    character PATH_AIR*99, HEAD_AIR*50              !気流データへの相対パスおよびファイル名接頭文字
+    character PATH_AIR*99, HEAD_AIR*10, FNAME_FMT*20 !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
+    character(3) FILE_TYPE  !ファイル形式（VTK,INP）
+    integer FNAME_DIGITS !ファイル名の整数部桁数
 
     integer, allocatable :: ICN(:,:)                !要素所有節点ID
     integer, allocatable :: NoB(:)                  !要素所有境界面の数
@@ -26,65 +27,29 @@ module flow_field
 
     contains
     !***********************************************************************
-    !***********************************************************************
-    subroutine readnomal(FNAME)
-        character(*), intent(in) :: FNAME
-        integer II,KK, n_unit
-        character(len=7) :: AAA
+    subroutine set_FILE_TYPE
+        integer i
 
-        print*, 'READ:', trim(FNAME)
-    
-        open(newunit=n_unit,FILE=FNAME, STATUS='OLD')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,*) AAA,KKMX
-        
-            if(.not.allocated(CDN)) allocate(CDN(3,KKMX), source=0.0d0)      
-            DO KK = 1, KKMX
-                read(n_unit,*) CDN(1,KK),CDN(2,KK),CDN(3,KK)
-            END DO
-        
-            read(n_unit,'()')
-            read(n_unit,'(A,I12)') AAA,IIMX
-        
-            if(.not.allocated(ICN)) allocate(ICN(4,IIMX), source=0)
-            if(.not.allocated(CELL_TYPE)) allocate(CELL_TYPE(IIMX), source=0)      
-            DO II = 1, IIMX
-            read(n_unit,*)AAA,ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II)
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO II = 1, IIMX
-                read(n_unit,'()')
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO II = 1, IIMX
-                read(n_unit,'()')
-            END DO
-            read(n_unit,'()')
-        
-            DO II = 1, IIMX
-                read(n_unit,*) VELC(1,II),VELC(2,II),VELC(3,II)
-            END DO
-        close(n_unit)
-    
-        ICN(:,:) = ICN(:,:) + 1
-        CELL_TYPE(:) = 0
-            
-    end subroutine readnomal
+        i = index(FNAME_FMT, '0')
+        HEAD_AIR = FNAME_FMT(1 : i-1)             !ファイル名の接頭文字
+        FNAME_DIGITS = index(FNAME_FMT, '.') - i   !ファイル名の整数部桁数
 
-            !***********************************************************************
-    subroutine readprism(FNAME, pointdata)
+        if(index(FNAME_FMT, '.vtk') > 0) then
+            FILE_TYPE = 'VTK'
+        else if(index(FNAME_FMT, '.inp') > 0) then
+            FILE_TYPE = 'INP'
+        end if
+
+    end subroutine set_FILE_TYPE
+
+
+    subroutine read_VTK(FNAME, pointdata)
         character(*), intent(in) :: FNAME
         logical, optional :: pointdata
         integer II,KK,IIH, n_unit
         character AAA*7
         double precision, allocatable :: UVWK(:,:)
+        logical :: prism_flag = .false.
 
         print*, 'READ:', FNAME
             
@@ -97,7 +62,7 @@ module flow_field
                 
             if(.not.allocated(CDN)) allocate(CDN(3,KKMX), source=0.0d0)      
             DO KK = 1, KKMX
-            read(n_unit,*) CDN(1,KK),CDN(2,KK),CDN(3,KK)
+                read(n_unit,*) CDN(1,KK),CDN(2,KK),CDN(3,KK)
             END DO
             read(n_unit,'()')
             read(n_unit,'(A,I12)') AAA,IIMX
@@ -105,17 +70,18 @@ module flow_field
             if(.not.allocated(ICN)) allocate(ICN(6,IIMX), source=0)
             if(.not.allocated(CELL_TYPE)) allocate(CELL_TYPE(IIMX), source=-1)      
             DO II = 1, IIMX
-            read(n_unit,fmt='(I12)',advance='no') IIH
-            IF(IIH==6) THEN
-            read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II),ICN(5,II),ICN(6,II)
-                CELL_TYPE(II)=  1
-            ELSE IF(IIH==5) THEN
-            read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II),ICN(5,II)
-                CELL_TYPE(II) = 2
-            ELSE IF(IIH==4) THEN
-            read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II)
-                CELL_TYPE(II) = 0
-            END IF
+                read(n_unit,fmt='(I12)',advance='no') IIH
+                IF(IIH==6) THEN
+                    read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II),ICN(5,II),ICN(6,II)
+                    CELL_TYPE(II)=  1
+                    prism_flag = .true.
+                ELSE IF(IIH==5) THEN
+                    read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II),ICN(5,II)
+                    CELL_TYPE(II) = 2
+                ELSE IF(IIH==4) THEN
+                    read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II)
+                    CELL_TYPE(II) = 0
+                END IF
             END DO
             read(n_unit,'()')
             
@@ -128,42 +94,63 @@ module flow_field
             END DO
             read(n_unit,'()')
 
-            if (pointdata) then
-                allocate(UVWK(3,KKMX))
+            if(.not.prism_flag) then
                 read(n_unit,'()')
                 read(n_unit,'()')
-                DO KK = 1, KKMX
-                read(n_unit,*) UVWK(1,KK),UVWK(2,KK),UVWK(3,KK)
+                read(n_unit,'()')
+                DO II = 1, IIMX
+                    read(n_unit,'()')
                 END DO
-                call point2cell(UVWK, VELC, ICN, CELL_TYPE)
-                return
-            end if
-            
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO II = 1, IIMX
                 read(n_unit,'()')
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO II = 1, IIMX
-                read(n_unit,*) AAA
-            END DO
-            read(n_unit,'()')
-        
-            DO II = 1, IIMX
-                read(n_unit,*) VELC(1,II),VELC(2,II),VELC(3,II)
-            END DO
+            
+                DO II = 1, IIMX
+                    read(n_unit,*) VELC(1,II),VELC(2,II),VELC(3,II)
+                END DO
+
+            else
+
+                if(present(pointdata)) then
+                    if(pointdata) then
+                        allocate(UVWK(3,KKMX))
+                        read(n_unit,'()')
+                        read(n_unit,'()')
+                        DO KK = 1, KKMX
+                        read(n_unit,*) UVWK(1,KK),UVWK(2,KK),UVWK(3,KK)
+                        END DO
+                        call point2cell(UVWK, VELC, ICN, CELL_TYPE)
+                        close(n_unit)
+                        return
+                    end if
+                end if
+                
+                read(n_unit,'()')
+                read(n_unit,'()')
+                read(n_unit,'()')
+                DO II = 1, IIMX
+                    read(n_unit,'()')
+                END DO
+                read(n_unit,'()')
+                read(n_unit,'()')
+                DO II = 1, IIMX
+                    read(n_unit,*) AAA
+                END DO
+                read(n_unit,'()')
+            
+                DO II = 1, IIMX
+                    read(n_unit,*) VELC(1,II),VELC(2,II),VELC(3,II)
+                END DO
+            end if
+
+            
         close(n_unit)
             
-    end subroutine readprism
+    end subroutine read_VTK
 
     subroutine readINP(FNAME)
         !  INPファイルを読み込み、節点データを要素データに変換する
         character(*), intent(in) :: FNAME
         INTEGER II,II2,KK,AAmax, IIMX2, AA, n_unit
-        integer :: IITETMX=0, IIPRSMX=0, IIPYRMX=0
+        integer :: IITETMX, IIPRSMX, IIPYRMX
         character(6) cellshape
         double precision, allocatable :: UVWK(:,:)
 
@@ -182,6 +169,9 @@ module flow_field
             END DO
                 
             II = 0
+            IITETMX = 0
+            IIPRSMX = 0
+            IIPYRMX = 0
             DO II2 = 1, IIMX2
     
                 read(n_unit,fmt='(I10)',advance='no')AA  !ここはセル番号なので無視
@@ -194,26 +184,26 @@ module flow_field
     
                 if (cellshape=='tet') then
                     CELL_TYPE(II) = 0
-                IITETMX = IITETMX +1
-                read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II)    
+                    IITETMX = IITETMX +1
+                    read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II)    
                 if (ICN(1,II)==0.or.ICN(4,II)==0) print*, 'ICN_WARNING_tet:', ICN(:,II)
                 
                 ELSE IF(cellshape=='prism') THEN
                     CELL_TYPE(II) = 1
-                IIPRSMX = IIPRSMX +1
-                read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II),ICN(5,II),ICN(6,II)
+                    IIPRSMX = IIPRSMX +1
+                    read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II),ICN(5,II),ICN(6,II)
                 if (ICN(1,II)==0.or.ICN(6,II)==0) print*, 'ICN_WARNING_prism:', ICN(:,II)
     
                 ELSE IF(cellshape=='pyr') THEN
                     CELL_TYPE(II) = 2
-                IIPYRMX = IIPYRMX +1
-                read(n_unit,*)ICN(5,II),ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II) !INPは最初が山頂点であり、VTKでは最後が山頂点のため、読み込む順がこうなる。
+                    IIPYRMX = IIPYRMX +1
+                    read(n_unit,*)ICN(5,II),ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II) !INPは最初が山頂点であり、VTKでは最後が山頂点のため、読み込む順がこうなる。
                 if (ICN(1,II)==0.or.ICN(5,II)==0) print*, 'ICN_WARNING_pyr:', ICN(:,II)
     
                 end if
     
                 ELSE
-                read(n_unit,'()')  !テトラでもプリズムでもピラミッドでもないならスルー
+                    read(n_unit,'()')  !テトラでもプリズムでもピラミッドでもないならスルー
     
                 ENDIF
     
@@ -232,10 +222,10 @@ module flow_field
             read(n_unit,*)AAmax
             read(n_unit,'()')
             DO II = 1,AAmax
-            read(n_unit,'()')
+                read(n_unit,'()')
             END DO
             DO KK = 1, KKMX
-            read(n_unit,*)AA,UVWK(1,KK),UVWK(2,KK),UVWK(3,KK)
+                read(n_unit,*)AA,UVWK(1,KK),UVWK(2,KK),UVWK(3,KK)
             END DO
                 
         close(n_unit)

@@ -17,7 +17,7 @@ PROGRAM MAIN
       use cases_reader
       implicit none
 
-      character(7), parameter :: OS = 'Windows'
+      character(7), parameter :: OS = 'Linux'!'Windows'
 
       integer n, vn, vnf, vfloat, nc, step_air, nc_max
       real nowtime
@@ -28,12 +28,16 @@ PROGRAM MAIN
 
       call input_condition
 
-      call check_cases
+      call set_initial_position
 
+      call check_cases
 
       do nc = 1, nc_max
 
+            call reset_status
+
             call set_path
+            
             call Set_Coefficients
       
             call initial_virus(restart)
@@ -80,7 +84,7 @@ PROGRAM MAIN
                   end if
 
                   Step_air = int(dble(n)*Rdt)          !気流計算における経過ステップ数に相当
-                  if((mod(Step_air, interval_flow) == 0).and.(interval_flow > 0)) call read_flow_field(n)
+                  if((mod(Step_air, INTERVAL_FLOW) == 0).and.(INTERVAL_FLOW > 0)) call read_flow_field(n)
 
             END DO
 
@@ -133,13 +137,15 @@ PROGRAM MAIN
 
                   T = get_temperature(nc)
                   RH = get_humidity(nc)
-
-                  call set_path_out_base(path_out_base, nc)
       
                   call set_PATH_AIR(PATH_AIR, nc)
-                  call set_HEAD_AIR(HEAD_AIR, nc)
+                  call set_FNAME_FMT(FNAME_FMT, nc)
 
             end if
+
+            call set_FILE_TYPE      !set_FNAME_FMTの後にcall
+
+            if(nc_max > 1) path_out_base = '..\' // trim(HEAD_AIR) // '_virus\'
       
             print*, 'T =', T, 'degC'
             print*, 'RH =', RH, '%'
@@ -148,7 +154,7 @@ PROGRAM MAIN
             write(humidity,'(i3.3)') RH
 
             i = len_trim(path_out_base)
-            if(path_out_base(i:i) == '\') path_out_base(i:i) = ' '
+            if(path_out_base(i:i) == '\') path_out_base(i:i) = ' '      !末尾が区切り文字であればこれを除去
             path_out = trim(path_out_base)//'_'//trim(temperature)//'_'//trim(humidity)//'\'
 
             select case(trim(OS))

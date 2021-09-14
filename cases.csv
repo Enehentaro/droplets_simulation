@@ -1,0 +1,4 @@
+path,filename,Temperature,Humidity
+..\SAX\,AF010001.vtk,10,20
+..\SAX\,AF010001.vtk,20,40
+..\SAX\,AF010001.vtk,30,60

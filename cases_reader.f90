@@ -79,17 +79,17 @@ module cases_reader
 
     end function get_humidity
 
-    subroutine set_path_out_base(path_out_base, index)
-        character(*), intent(inout) :: path_out_base
-        integer, intent(in) :: index
-        integer i
+    ! subroutine set_path_out_base(path_out_base, index)
+    !     character(*), intent(inout) :: path_out_base
+    !     integer, intent(in) :: index
+    !     integer i
 
-        path_out_base = trim(case_matrix(index)%fname)
-        i = len_trim(path_out_base)
-        if(path_out_base(i:i) == '\') path_out_base(i:i) = ' '
-        path_out_base = '..\' // trim(path_out_base) // '_virus\'
+    !     path_out_base = trim(case_matrix(index)%fname)
+    !     i = len_trim(path_out_base)
+    !     if(path_out_base(i:i) == '\') path_out_base(i:i) = ' '
+    !     path_out_base = '..\' // trim(path_out_base) // '_virus\'
 
-    end subroutine set_path_out_base
+    ! end subroutine set_path_out_base
 
     subroutine set_head_out(head_out, index)
         character(*), intent(inout) :: head_out
@@ -107,12 +107,12 @@ module cases_reader
 
     end subroutine set_PATH_AIR
 
-    subroutine set_HEAD_AIR(HEAD_AIR, index)
-        character(*), intent(inout) :: HEAD_AIR
+    subroutine set_FNAME_FMT(FNAME_FMT, index)
+        character(*), intent(inout) :: FNAME_FMT
         integer, intent(in) :: index
 
-        HEAD_AIR = trim(case_matrix(index)%fname)
+        FNAME_FMT = trim(case_matrix(index)%fname)
 
-    end subroutine set_HEAD_AIR
+    end subroutine set_FNAME_FMT
 
 end module cases_reader
