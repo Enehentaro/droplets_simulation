@@ -1,4 +1,4 @@
-module motion_virus
+module motion_mod
       use virus_mod
       use flow_field
       implicit none
@@ -219,7 +219,7 @@ module motion_virus
             !↓↓↓↓　一番近いセル中心の探索
             !$omp parallel do
             DO II = 1,IIMX
-                  distance(II) = sum((CENC(:,II) - X(:))**2)
+                  distance(II) = norm2(CENC(:,II) - X(:))
             END DO
             !$omp end parallel do 
             !↑↑↑↑
@@ -239,7 +239,7 @@ module motion_virus
             !=====================================================================================
             nearer_cell = NCN
             allocate(distance(NCMAX))
-            distancecheck(1) = sum((CENC(:,nearer_cell)-X(:))**2)   !注目セル重心と粒子との距離
+            distancecheck(1) = norm2(CENC(:,nearer_cell)-X(:))   !注目セル重心と粒子との距離
             
             check:DO
                   distance(:) = 1.0d10     !初期値はなるべく大きくとる
@@ -247,7 +247,7 @@ module motion_virus
                   DO NC = 1, NUM_NC(nearer_cell)  !全隣接セルに対してループ。
                         IIaround = NEXT_CELL(NC, nearer_cell)       !現時点で近いとされるセルの隣接セルのひとつに注目
                         IF (IIaround > 0) then
-                              distance(NC) = sum((CENC(:,IIaround)-X(:))**2)   !注目セル重心と粒子との距離を距離配列に代入
+                              distance(NC) = norm2(CENC(:,IIaround)-X(:))   !注目セル重心と粒子との距離を距離配列に代入
                         END IF
             
                   END DO
@@ -434,4 +434,4 @@ module motion_virus
       end subroutine reset_status
 
 
-end module motion_virus
+end module motion_mod

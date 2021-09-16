@@ -13,14 +13,13 @@
       include 'motion_mod.f90'
 !*******************************************************************************************
 PROGRAM MAIN
-      use motion_virus
-      use ceses_reader
+      use motion_mod
+      use cases_reader
       implicit none
 
       character(7), parameter :: OS = 'Linux'!'Windows'
 
-      integer n, vn, vnf, vfloat, nc, step_air, nc_max
-
+      integer n, vn, vnf, vfloat, nc, nc_max
       real nowtime
       double precision Step_air
       character(20) :: d_start, d_stop, t_start, t_stop
@@ -41,7 +40,7 @@ PROGRAM MAIN
       end if
 
 
-      do PN = 1, num_programs
+      do nc = 1, nc_max
 
             call reset_status !飛沫の状態をリセット
 
@@ -92,9 +91,10 @@ PROGRAM MAIN
                         call writeout(n)  !結果出力
                   end if
 
-                  Step_air = int(dble(n)*Rdt)          !気流計算における経過ステップ数に相当
-                  if((mod(Step_air, INTERVAL_FLOW) == 0).and.(INTERVAL_FLOW > 0)) call read_flow_field(n)   !流れ場の更新
-
+                  if(INTERVAL_FLOW > 0) then
+                        Step_air = dble(n)*Rdt          !気流計算における経過ステップ数に相当
+                        if(mod(Step_air, dble(INTERVAL_FLOW)) == 0.d0) call read_flow_field(n)   !流れ場の更新
+                  end if
 
             END DO
 
@@ -162,9 +162,8 @@ PROGRAM MAIN
             end select
 
             print*, 'Output_Path=', path_out
-            ! if(num_programs > 1) path_out = trim(path_out)//'_'//trim(a)
-            call system('mkdir -p -v '//path_out)  !サブルーチンsystem：引数文字列をコマンドとして実行する
-            call system('cp condition_virus.txt '//path_out) !Windows:`copy`, Linux:`cp`
+
+
 
       end subroutine set_path
 

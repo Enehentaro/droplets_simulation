@@ -302,7 +302,7 @@ module flow_field
         character(50) FNAME
         !=======================================================================
                 
-        FNAME = trim(PATH_AIR)//'/nextcell.txt'
+        FNAME = trim(PATH_AIR)//'nextcell.txt'
         print*, 'READ:', FNAME
 
         open(newunit=n_unit,FILE=FNAME , STATUS='OLD')
@@ -337,7 +337,7 @@ module flow_field
         close(n_unit)
 
 
-        FNAME = trim(PATH_AIR)//'/boundaries.txt'
+        FNAME = trim(PATH_AIR)//'boundaries.txt'
         print*, 'READ:', FNAME
         open(newunit=n_unit, FILE=FNAME , STATUS='old')
             read(n_unit,*) JBMX
