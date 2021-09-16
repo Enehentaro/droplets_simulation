@@ -1,4 +1,4 @@
-module motion_mod
+module motion_virus
       use virus_mod
       use flow_field
       implicit none
@@ -193,7 +193,7 @@ module motion_mod
             !=====================================================================================
 
             speed_r = norm2(vel_a(:) - vel_d(:))
-            Re_d = (speed_r * 2.0d0*radius_d) * Re + 1.d-9  !ゼロ割回避のため、小さな値を加算
+            Re_d = (speed_r * 2.0d0*radius_d) * Re
 
             Cd = (24.0d0/Re_d)*(1.0d0 + 0.15d0*(Re_d**0.687d0))
 
@@ -220,7 +220,7 @@ module motion_mod
             !↓↓↓↓　一番近いセル中心の探索
             !$omp parallel do
             DO II = 1,IIMX
-                  distance(II) = norm2(CENC(:,II) - X(:))
+                  distance(II) = sum((CENC(:,II) - X(:))**2)
             END DO
             !$omp end parallel do 
             !↑↑↑↑
@@ -240,7 +240,7 @@ module motion_mod
             !=====================================================================================
             nearer_cell = NCN
             allocate(distance(NCMAX))
-            distancecheck(1) = norm2(CENC(:,nearer_cell)-X(:))   !注目セル重心と粒子との距離
+            distancecheck(1) = sum((CENC(:,nearer_cell)-X(:))**2)   !注目セル重心と粒子との距離
             
             check:DO
                   distance(:) = 1.0d10     !初期値はなるべく大きくとる
@@ -248,7 +248,7 @@ module motion_mod
                   DO NC = 1, NUM_NC(nearer_cell)  !全隣接セルに対してループ。
                         IIaround = NEXT_CELL(NC, nearer_cell)       !現時点で近いとされるセルの隣接セルのひとつに注目
                         IF (IIaround > 0) then
-                              distance(NC) = norm2(CENC(:,IIaround)-X(:))   !注目セル重心と粒子との距離を距離配列に代入
+                              distance(NC) = sum((CENC(:,IIaround)-X(:))**2)   !注目セル重心と粒子との距離を距離配列に代入
                         END IF
             
                   END DO
@@ -346,6 +346,7 @@ module motion_mod
                               FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
                         else
                               write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".vtk")') FNUM
+
                         end if
                         call read_VTK(FNAME)
 
@@ -434,4 +435,4 @@ module motion_mod
       end subroutine reset_status
 
 
-end module motion_mod
+end module motion_virus

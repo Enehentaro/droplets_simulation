@@ -6,21 +6,20 @@
 !ToDo:      to modify module
 !
 !---------------------------------------------------------------------------------
-      include 'csv_reader.f90'
-      include 'cases_reader.f90'
       include 'virus_mod.f90'
       include 'flow_field.f90'
       include 'motion_mod.f90'
 !*******************************************************************************************
 PROGRAM MAIN
-      use motion_mod
-      use cases_reader
+      use motion_virus
       implicit none
 
       character(7), parameter :: OS = 'Linux'!'Windows'
 
       integer n, vn, vnf, vfloat, nc, step_air, nc_max
+
       real nowtime
+      double precision Step_air
       character(20) :: d_start, d_stop, t_start, t_stop
 !===========================================================================================
       call date_and_time(date = d_start, time = t_start)
@@ -38,7 +37,8 @@ PROGRAM MAIN
             stop
       end if
 
-      do nc = 1, nc_max
+
+      do PN = 1, num_programs
 
             call reset_status !飛沫の状態をリセット
 
@@ -91,6 +91,7 @@ PROGRAM MAIN
 
                   Step_air = int(dble(n)*Rdt)          !気流計算における経過ステップ数に相当
                   if((mod(Step_air, INTERVAL_FLOW) == 0).and.(INTERVAL_FLOW > 0)) call read_flow_field(n)   !流れ場の更新
+
 
             END DO
 
@@ -158,8 +159,9 @@ PROGRAM MAIN
             end select
 
             print*, 'Output_Path=', path_out
-
-            
+            ! if(num_programs > 1) path_out = trim(path_out)//'_'//trim(a)
+            call system('mkdir -p -v '//path_out)  !サブルーチンsystem：引数文字列をコマンドとして実行する
+            call system('cp condition_virus.txt '//path_out) !Windows:`copy`, Linux:`cp`
 
       end subroutine set_path
 
