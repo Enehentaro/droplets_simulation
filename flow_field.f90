@@ -31,13 +31,18 @@ module flow_field
         integer i
 
         i = index(FNAME_FMT, '0')
-        HEAD_AIR = FNAME_FMT(1 : i-1)             !ファイル名の接頭文字
+        HEAD_AIR = FNAME_FMT(: i-1)             !ファイル名の接頭文字
         FNAME_DIGITS = index(FNAME_FMT, '.') - i   !ファイル名の整数部桁数
 
         if(index(FNAME_FMT, '.vtk') > 0) then
             FILE_TYPE = 'VTK'
+
         else if(index(FNAME_FMT, '.inp') > 0) then
             FILE_TYPE = 'INP'
+
+        else
+            print*, 'FNAME_FMT NG:', FNAME_FMT
+            stop
         end if
 
     end subroutine set_FILE_TYPE
@@ -234,9 +239,9 @@ module flow_field
             
     end subroutine readINP
             
-            !**************************************************************************************
-            
-            !***********************************************************************
+    !**************************************************************************************
+    
+    !***********************************************************************
     subroutine set_gravity_center !セル重心の算出
         integer II
         integer ICN1,ICN2,ICN3,ICN4,ICN5,ICN6

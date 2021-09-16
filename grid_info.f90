@@ -1,15 +1,15 @@
+include 'cases_reader.f90'
 !==============================================================================================================
 MODULE grid_information
     IMPLICIT NONE
     INTEGER JJMX,KKMX,JJJMX,LBX, JBMX
-    INTEGER IITPRMX,JJTPRMX
-    integer :: IIMX,IITETMX,IIPRSMX,IIPYRMX, INP=0, numfiles=1, SQUARES=0, digits=0
+    integer :: IIMX,IITETMX,IIPRSMX,IIPYRMX, INP=0, SQUARES
     INTEGER JJTOTAL
     INTEGER, allocatable :: NFN(:,:),NFC(:,:),NCF(:), NFNSUM(:)
     INTEGER, allocatable :: ICF(:,:),JUDTP(:)
     INTEGER, allocatable :: ICN(:,:)
-    INTEGER, allocatable :: cell_to_cell(:,:), NoB(:), nearmax(:), ICB(:,:)
-    DOUBLE PRECISION, allocatable :: R(:,:), UVW(:,:)
+    INTEGER, allocatable :: NoB(:), ICB(:,:)
+    DOUBLE PRECISION, allocatable :: R(:,:)
 
     contains
 
@@ -20,6 +20,9 @@ MODULE grid_information
         CHARACTER*15 AAA
         INTEGER num
         !=======================================================================
+        IITETMX = 0
+        IIPRSMX = 0
+        IIPYRMX = 0
         
         !-------データ読込み---------------------------------------------------------------------------
         open(newunit=n_unit,FILE=FNAME,STATUS='OLD')
@@ -81,8 +84,6 @@ MODULE grid_information
         print*, 'KKMX=',KKMX
         print*, 'IIMX=',IIMX
         print*, 'II consists of',IITETMX,IIPRSMX,IIPYRMX
-        
-        IITPRMX=IITETMX+IIPRSMX
              
     end subroutine readfile
         !**************************************************************************************
@@ -90,10 +91,9 @@ MODULE grid_information
         !**************************************************************************************
     subroutine readINP(FNAME)
         CHARACTER(*), intent(in) :: FNAME
-        INTEGER II,II2,KK,AAmax, IIMX2, AA, n_unit
+        INTEGER II,II2,KK, IIMX2, AA, n_unit
         character(6) cellshape
-        double precision, allocatable :: UVWK(:,:)
-            !=======================================================================
+        !=======================================================================
         IITETMX = 0
         IIPRSMX = 0
         IIPYRMX = 0
@@ -106,8 +106,6 @@ MODULE grid_information
             if(.not.allocated(R)) allocate(R(3,KKMX))
             if(.not.allocated(ICN)) allocate(ICN(6,IIMX2))
             if(.not.allocated(JUDTP)) allocate(JUDTP(IIMX2))
-        
-            allocate(UVWK(KKMX,3))
                
             DO KK = 1, KKMX
                 read(n_unit,*)AA,R(1,KK),R(2,KK),R(3,KK)
@@ -151,55 +149,15 @@ MODULE grid_information
             END DO
         
             if (II==(IITETMX + IIPRSMX + IIPYRMX)) then
-            IIMX = II
-            print*, 'IIMX=', IIMX
-            print*, 'Tetra,Prism,Pyramid=', IITETMX, IIPRSMX, IIPYRMX
+                IIMX = II
+                print*, 'IIMX=', IIMX
+                print*, 'Tetra,Prism,Pyramid=', IITETMX, IIPRSMX, IIPYRMX
             else
-            print*, 'IIMX_ERROR', II, (IITETMX + IIPRSMX + IIPYRMX)
-            stop
+                print*, 'IIMX_ERROR', II, (IITETMX + IIPRSMX + IIPYRMX)
+                stop
             end if
             
-            if(.not.allocated(UVW)) allocate(UVW(IIMX,3))
-        
-            read(n_unit,*)AAmax
-            read(n_unit,'()')
-            DO II = 1,AAmax
-            read(n_unit,'()')
-            END DO
-            DO KK = 1, KKMX
-            read(n_unit,*)AA,UVWK(KK,1),UVWK(KK,2),UVWK(KK,3)
-            END DO
-            
         close(n_unit)
-        
-        
-        do II = 1, IIMX   !点データをセルデータに変換
-        
-            IF (JUDTP(II)==0) THEN
-
-                UVW(II,1) = 0.25d0*(UVWK(ICN(1,II),1)+UVWK(ICN(2,II),1)+UVWK(ICN(3,II),1)+UVWK(ICN(4,II),1))
-                UVW(II,2) = 0.25d0*(UVWK(ICN(1,II),2)+UVWK(ICN(2,II),2)+UVWK(ICN(3,II),2)+UVWK(ICN(4,II),2))
-                UVW(II,3) = 0.25d0*(UVWK(ICN(1,II),3)+UVWK(ICN(2,II),3)+UVWK(ICN(3,II),3)+UVWK(ICN(4,II),3))
-            ELSE IF (JUDTP(II)==1) THEN
-
-                UVW(II,1) = (UVWK(ICN(1,II),1)+UVWK(ICN(2,II),1)+UVWK(ICN(3,II),1)+UVWK(ICN(4,II),1)&
-                            +UVWK(ICN(5,II),1)+UVWK(ICN(6,II),1))/6.0d0
-                UVW(II,2) = (UVWK(ICN(1,II),2)+UVWK(ICN(2,II),2)+UVWK(ICN(3,II),2)+UVWK(ICN(4,II),2)&
-                            +UVWK(ICN(5,II),2)+UVWK(ICN(6,II),2))/6.0d0
-                UVW(II,3) = (UVWK(ICN(1,II),3)+UVWK(ICN(2,II),3)+UVWK(ICN(3,II),3)+UVWK(ICN(4,II),3)&
-                            +UVWK(ICN(5,II),3)+UVWK(ICN(6,II),3))/6.0d0
-            ELSE IF (JUDTP(II)==2) THEN
-
-                UVW(II,1) = 0.20d0*(UVWK(ICN(1,II),1)+UVWK(ICN(2,II),1)+UVWK(ICN(3,II),1)+UVWK(ICN(4,II),1)+UVWK(ICN(5,II),1))
-                UVW(II,2) = 0.20d0*(UVWK(ICN(1,II),2)+UVWK(ICN(2,II),2)+UVWK(ICN(3,II),2)+UVWK(ICN(4,II),2)+UVWK(ICN(5,II),2))
-                UVW(II,3) = 0.20d0*(UVWK(ICN(1,II),3)+UVWK(ICN(2,II),3)+UVWK(ICN(3,II),3)+UVWK(ICN(4,II),3)+UVWK(ICN(5,II),3))
-            END IF
-        
-            !print*, 'UVW=', II, UVW(II,1),UVW(II,2),UVW(II,3)
-        
-        end do
-        
-        !deallocate(UVWK)
         
     end subroutine readINP
         !**************************************************************************************
@@ -211,9 +169,11 @@ MODULE grid_information
                                                         1,2,3,0, 4,5,6,0, 1,2,4,5, 2,3,5,6, 3,1,6,4,&
                                                         5,1,2,0, 5,2,3,0, 5,3,4,0, 5,4,1,0, 1,2,3,4], [3,5,4], order=[3,2,1])
             
-        print*, ICNtrans(1,1,:)
-        print*, ICNtrans(2,1,:)
-        print*, ICNtrans(3,1,:)
+        ! print*, ICNtrans(1,1,:)
+        ! print*, ICNtrans(2,1,:)
+        ! print*, ICNtrans(3,1,:)
+                                                        
+        SQUARES = 0
         
         if(IIPRSMX==0)then
             JJTOTAL = 4*IIMX    !JJTOTAL:想定最大面数
@@ -375,8 +335,7 @@ MODULE grid_information
                 NFC(2,JJ) = NFC(2,JJJ)
             
                 NCF(JJJ) = JJ
-                JJJ2 = sameface(JJJ)    !JJJと同一の面番号
-                NCF(JJJ2) = JJ
+                if(sameface(JJJ) > 0) NCF(sameface(JJJ)) = JJ   !同一面が存在すればその面に対しても処理
             
             end if
         END DO
@@ -393,17 +352,17 @@ MODULE grid_information
           !**************************************************************************************
            
         !**************************************************************************************
-    subroutine boundaryset(dir)
+    subroutine boundaryset(DIR)
         INTEGER II,JJ,JB, n_unit
         integer, parameter :: LF=1
-        character(*), intent(in) :: dir
+        character(*), intent(in) :: DIR
         character(99) FNAME
         !=======================================================================
         !-----BC SET-------------------------------------------------------
         allocate(NoB(IIMX), source=0)
         allocate(ICB(4,IIMX), source=0) !II consists Boundaries
         
-        FNAME = trim(dir)//'/boundaries.txt'
+        FNAME = trim(DIR)//'boundaries.txt'
         open(newunit=n_unit,FILE= FNAME, STATUS='REPLACE')
             write(n_unit,*) JBMX
     
@@ -433,13 +392,13 @@ MODULE grid_information
         !**************************************************************************************
         
         !=======================================================================
-    subroutine nextcell(dir)
+    subroutine nextcell(DIR)
         integer II, JJ, JJJ, numnext, JB, n_unit
         integer, parameter :: LF = 1
-        character(*), intent(in) :: dir
+        character(*), intent(in) :: DIR
         character(99) FNAME
     
-        FNAME = trim(dir)//'/nextcell.txt'
+        FNAME = trim(DIR)//'nextcell.txt'
           
         open(newunit=n_unit,FILE= FNAME, STATUS='REPLACE')
         
@@ -461,21 +420,21 @@ MODULE grid_information
                 end if
                 write(n_unit, fmt='(I5)', advance='no') numnext
         
-            do JJJ = ICF(1,II), ICF(1,II) + numnext -1
-                JJ = NCF(JJJ)
-                if((JJ <= 0).or.(JJ > JJMX)) then
-                    print*, 'NCF_ERROR', JJ, JJJ, II
-                    close(n_unit)
-                    stop
-                end if
-        
-                if (NFC(1,JJ) == II) then
-                    write(n_unit, fmt='(I12)', advance='no') NFC(2,JJ)
-                else
-                    write(n_unit, fmt='(I12)', advance='no') NFC(1,JJ)
-                end if
-                
-            end do
+                do JJJ = ICF(1,II), ICF(1,II) + numnext -1
+                    JJ = NCF(JJJ)
+                    if((JJ <= 0).or.(JJ > JJMX)) then
+                        print*, 'NCF_ERROR', JJ, JJJ, II
+                        close(n_unit)
+                        stop
+                    end if
+            
+                    if (NFC(1,JJ) == II) then
+                        write(n_unit, fmt='(I12)', advance='no') NFC(2,JJ)
+                    else
+                        write(n_unit, fmt='(I12)', advance='no') NFC(1,JJ)
+                    end if
+                    
+                end do
         
             write(n_unit,'()')  !改行
         
@@ -494,74 +453,23 @@ MODULE grid_information
           
         print*, 'WRITEOUT:', FNAME
     end subroutine nextcell
-          !=======================================================================
-        
-        !**************************************************************************************
-    subroutine writeout
-        INTEGER IITOTAL,LF, n_unit
-        INTEGER II,KK
-        character(20) FNAME
-        !=======================================================================
-        !-----WRITE OUT------
-        IITOTAL=IITETMX*5+IIPRSMX*7+IIPYRMX*6
-        
-        FNAME = 'IGRID.vtk'
-        
-        LF = 1
-        open(newunit=n_unit,FILE=FNAME,STATUS='REPLACE')
-            write(n_unit,'(A)') '# vtk DataFile Version 2.0'
-            write(n_unit,'(A)') 'FOR TEST'
-            write(n_unit,'(A)') 'ASCII'
-            write(n_unit,'(A)') 'DATASET UNSTRUCTURED_GRID'
-            write(n_unit,'(A,I12,A)') 'POINTS ',KKMX,' float'
-            DO KK = 1, KKMX
-                write(n_unit,*)R(1,KK),R(2,KK),R(3,KK)
-            END DO
-            write(n_unit,'(A)')''
-            write(n_unit,'(A,I12,2X,I12)') 'CELLS ',IIMX, IITOTAL
-        
-            DO II = 1, IIMX
-                IF(JUDTP(II)==0)THEN
-                    write(n_unit,'(5(I12,2X))')4,ICN(1,II)-1,ICN(2,II)-1,ICN(3,II)-1,ICN(4,II)-1
-                ELSE IF(JUDTP(II)==1)THEN
-                    write(n_unit,'(7(I12,2X))')6,ICN(1,II)-1,ICN(2,II)-1,ICN(3,II)-1,ICN(4,II)-1,ICN(5,II)-1,ICN(6,II)-1
-                ELSE IF(JUDTP(II)==2)THEN
-                    write(n_unit,'(6(I12,2X))')5,ICN(1,II)-1,ICN(2,II)-1,ICN(3,II)-1,ICN(4,II)-1,ICN(5,II)-1
-                END IF
-            END DO
-        
-            write(n_unit,'(A)')''
-            write(n_unit,'(A,I12)') 'CELL_TYPES',IIMX
-            DO II = 1, IIMX
-                IF(JUDTP(II)==0)THEN
-                    write(n_unit,'(I12)')10
-                ELSE IF(JUDTP(II)==1)THEN
-                    write(n_unit,'(I12)')13
-                ELSE IF(JUDTP(II)==2)THEN
-                    write(n_unit,'(I12)')14  
-                END IF
-            END DO
-            write(n_unit,'(A)')''
-        
-            write(n_unit,'(A,I12)') 'CELL_DATA ',IIMX
-            write(n_unit,'(A)') 'SCALARS scalars int '
-            write(n_unit,'(A)') 'LOOKUP_TABLE default '
-            DO II = 1, IIMX
-                write(n_unit,'(I12)')NoB(II)
-            END DO
-        
-            if (INP >= 1) then  !SHARP用。要素データを出力
-                write(n_unit,'(A)') 'VECTORS vectors float'
-                DO II = 1, IIMX
-                    write(n_unit,*) UVW(II,1),UVW(II,2),UVW(II,3)
-                END DO    
-            end if
-        close(n_unit)
-        print*,'WRITEOUT:', FNAME
-        
-        !=======================================================================
-    end subroutine writeout
-        !**************************************************************************************
+
+    subroutine deallocation_grid
+
+        print*, 'Deallocation'
+
+        if(allocated(NFN)) deallocate(NFN)
+        if(allocated(NFC)) deallocate(NFC)
+        if(allocated(NCF)) deallocate(NCF)
+        if(allocated(NFNSUM)) deallocate(NFNSUM)
+        if(allocated(ICF)) deallocate(ICF)
+        if(allocated(JUDTP)) deallocate(JUDTP)
+        if(allocated(ICN)) deallocate(ICN)
+        if(allocated(NoB)) deallocate(NoB)
+        if(allocated(ICB)) deallocate(ICB)
+        if(allocated(R)) deallocate(R)
+
+    end subroutine deallocation_grid
 
 
 END MODULE grid_information
@@ -572,42 +480,59 @@ END MODULE grid_information
 PROGRAM MAIN
 !**************************************************************************************************************
     use grid_information
+    use cases_reader
     IMPLICIT NONE
+
+    character(7) :: OS = 'Linux'
+
     character(8) :: d_start, d_stop
     character(10) :: t_start, t_stop
-    character(99) :: FNAME, dir
-    integer i
+    character(99) :: FNAME, DIR
+    integer nc, nc_max
 !==============================================================================================================
     call date_and_time(date = d_start, time = t_start)
 
-    print*,'FILE NAME?'
+    print*,'FILE NAME? (PATH is OK)'
     READ(5,'(A)') FNAME
 
-    i = index(FNAME, "/", back=.true.)
-    if(i <= 0) i = index(FNAME, "\", back=.true.)
+    nc_max = check_cases(FNAME)
 
-    if(i > 0) dir = FNAME(1:i)
+    do nc = 1, nc_max
 
-    INP = index(FNAME, '.inp') !INPファイルであれば自然数が返る。INPでないならゼロ。
+        if(nc_max > 1) then
+            call set_case_path(FNAME, nc)
+        end if
 
-    if(INP > 0) then
-        call readINP(FNAME)
-    else
-        call readfile(FNAME)
-    end if
+        call set_dir_from_path(FNAME, DIR)
 
-    if(IIMX <= 0) then
-        print*, 'ERROR_IIMX', IIMX
-        stop
-    end if
+        if(trim(OS) == 'Linux') then
+            call replace_str(FNAME, '\', '/')
+            call replace_str(DIR, '\', '/')
+        end if
 
-    call faceset
-    call facecheck
+        INP = index(FNAME, '.inp') !INPファイルであれば自然数が返る。INPでないならゼロ。
 
-    call boundaryset(dir)
-    call nextcell(dir)   !必ずboundarysetの後にcall
+        if(INP > 0) then
+            call readINP(FNAME)
+        else
+            call readfile(FNAME)
+        end if
 
-    call writeout
+        if(IIMX <= 0) then
+            print*, 'ERROR_IIMX', IIMX
+            stop
+        end if
+
+        call faceset
+        call facecheck
+
+        call boundaryset(DIR)
+        call nextcell(DIR)   !必ずboundarysetの後にcall
+
+        call deallocation_grid
+
+    end do
+
 
     call date_and_time(date = d_stop, time = t_stop)
     print*, 'date = ', d_start, ' time = ', t_start

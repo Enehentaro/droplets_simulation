@@ -2,7 +2,7 @@ module cases_reader
     implicit none
     
     type :: case_condition
-        character :: path*99, fname*20
+        character(99) :: path, path2
         integer T, RH
     end type case_condition
     type(case_condition), allocatable, private :: case_matrix(:)
@@ -10,6 +10,24 @@ module cases_reader
     integer, private :: num_cases = 1
 
     contains
+
+    integer function check_cases(fname)
+        character(*), intent(in) :: fname
+        integer i
+
+        i = index(fname, '.csv')
+
+        if(i <= 0) then
+            print*, 'Normal_program'
+            check_cases = 1
+
+        else
+            call read_cases(fname)
+            check_cases = num_cases
+            
+        end if
+
+    end function check_cases
 
     subroutine read_cases(FNAME)
         character(*), intent(in) :: FNAME
@@ -34,18 +52,44 @@ module cases_reader
             print *, 'NumCases =', num_cases
             read(n_unit, '()') !ヘッダーの読み飛ばし
             do i = 1, num_cases        !本読み込み
-                ! read(n_unit, '(A)') A
-                ! call replace_str( A, '/', '\' )
-                ! read(A, *) case_matrix(i)%path, case_matrix(i)%fname, case_matrix(i)%T, case_matrix(i)%RH
-                read(n_unit, *) case_matrix(i)%path, case_matrix(i)%fname, case_matrix(i)%T, case_matrix(i)%RH
-                ! if(trim(OS)=='Linux') call replace_str( case_matrix(i)%path, '\', '/' )
-                print *, trim(case_matrix(i)%path), case_matrix(i)%fname, case_matrix(i)%T, case_matrix(i)%RH
+                read(n_unit, *) case_matrix(i)%path, case_matrix(i)%path2, case_matrix(i)%T, case_matrix(i)%RH
+                print *, trim(case_matrix(i)%path), ' ', trim(case_matrix(i)%path2), case_matrix(i)%T, case_matrix(i)%RH
             end do
 
         close (n_unit)
 
 
     end subroutine read_cases
+
+    subroutine set_dir_from_path(path, directory, filename)
+        character(*), intent(in) :: path
+        character(*), intent(inout) :: directory
+        character(*), intent(inout), optional :: filename
+        character(1) delimiter
+        integer i
+
+        if(index(path, '/') > 0) then
+            delimiter = '/'
+
+        else if(index(path, '\') > 0) then
+            delimiter = '\'
+
+        else
+            print*, 'Delimiter was not found.'
+            if(present(filename)) filename = path
+            directory = ''
+            return
+
+        end if
+
+        i = index(path, delimiter, back=.true.)
+
+        if(present(filename)) filename = path(i+1:)
+        directory = path(:i)
+
+        print*, path, directory, filename
+
+    end subroutine set_dir_from_path
 
     subroutine replace_str( str, from, to )
         character (*),intent (inout) :: str
@@ -54,16 +98,10 @@ module cases_reader
 
         l = len_trim(str)
         do i=1, l
-              if ( str(i:i) == from ) str(i:i) = to
+            if ( str(i:i) == from ) str(i:i) = to
         end do
 
     end subroutine replace_str
-
-    integer function get_num_cases()
-
-        get_num_cases = num_cases
-
-    end function get_num_cases
 
     integer function get_temperature(index)
         integer, intent(in) :: index
@@ -79,40 +117,20 @@ module cases_reader
 
     end function get_humidity
 
-    ! subroutine set_path_out_base(path_out_base, index)
-    !     character(*), intent(inout) :: path_out_base
-    !     integer, intent(in) :: index
-    !     integer i
-
-    !     path_out_base = trim(case_matrix(index)%fname)
-    !     i = len_trim(path_out_base)
-    !     if(path_out_base(i:i) == '\') path_out_base(i:i) = ' '
-    !     path_out_base = '..\' // trim(path_out_base) // '_virus\'
-
-    ! end subroutine set_path_out_base
-
-    subroutine set_head_out(head_out, index)
-        character(*), intent(inout) :: head_out
+    subroutine set_case_path(case_path, index)
+        character(*), intent(inout) :: case_path
         integer, intent(in) :: index
 
-        head_out = trim(case_matrix(index)%fname)
+        case_path = trim(case_matrix(index)%path)
 
-    end subroutine set_head_out
+    end subroutine set_case_path
 
-    subroutine set_PATH_AIR(PATH_AIR, index)
-        character(*), intent(inout) :: PATH_AIR
+    subroutine set_case_path2(case_path, index)
+        character(*), intent(inout) :: case_path
         integer, intent(in) :: index
 
-        PATH_AIR = trim(case_matrix(index)%path)
+        case_path = trim(case_matrix(index)%path2)
 
-    end subroutine set_PATH_AIR
-
-    subroutine set_FNAME_FMT(FNAME_FMT, index)
-        character(*), intent(inout) :: FNAME_FMT
-        integer, intent(in) :: index
-
-        FNAME_FMT = trim(case_matrix(index)%fname)
-
-    end subroutine set_FNAME_FMT
+    end subroutine set_case_path2
 
 end module cases_reader

@@ -30,7 +30,13 @@ PROGRAM MAIN
 
       call set_initial_position
 
-      call check_cases
+      nc_max = check_cases(PATH_AIR)
+
+      if((nc_max > 1).and.(restart >= 1)) then
+            print*, 'ERROR_program:'
+            print*, 'Remove '//trim(FNAME_FMT)//' or Set restart_No.= 0'
+            stop
+      end if
 
       do nc = 1, nc_max
 
@@ -104,31 +110,6 @@ PROGRAM MAIN
 
       contains
 
-      subroutine check_cases
-            character(11) fname
-            integer n_unit, ios
-
-            fname = 'cases.csv'
-
-            open(newunit=n_unit, iostat=ios, file=fname, status='old')
-            close(n_unit)
-            if(ios /= 0) then
-                  print*, 'Normal_program'
-                  nc_max = 1
-    
-            else
-                  call read_cases(fname)
-                  nc_max = get_num_cases()
-                
-            end if
-
-            if((nc_max > 1).and.(restart >= 1)) then
-                  print*, 'ERROR_program:'
-                  print*, 'Remove '//trim(fname)//' or Set restart_No.= 0'
-                  stop
-            end if
-      end subroutine check_cases
-
       subroutine set_path
             character(20) :: temperature, humidity
             integer i
@@ -138,14 +119,16 @@ PROGRAM MAIN
                   T = get_temperature(nc)
                   RH = get_humidity(nc)
       
-                  call set_PATH_AIR(PATH_AIR, nc)
-                  call set_FNAME_FMT(FNAME_FMT, nc)
+                  call set_case_path(PATH_AIR, nc)
+                  call set_case_path2(path_out_base, nc)
 
             end if
 
-            call set_FILE_TYPE      !set_FNAME_FMTの後にcall
+            call set_dir_from_path(PATH_AIR, PATH_AIR, FNAME_FMT)
 
-            if(nc_max > 1) path_out_base = '..\' // trim(HEAD_AIR) // '_virus\'
+            call set_FILE_TYPE
+
+            ! if(nc_max > 1) path_out_base = '..\' // trim(HEAD_AIR) // '_virus\'
       
             print*, 'T =', T, 'degC'
             print*, 'RH =', RH, '%'

@@ -43,7 +43,6 @@ module motion_mod
             
                   read(n_unit,'()')
                   read(n_unit,'(A)') PATH_AIR
-                  read(n_unit,*) FNAME_FMT
                   read(n_unit,'()')
                   read(n_unit,*) DTa
                   read(n_unit,'()')
