@@ -183,7 +183,6 @@ module motion_virus
             
       end subroutine VirusCalculation
 
-      
       !*******************************************************************************************
       function get_velocity(vel_d, vel_a, radius_d) result(vel_d_next)
             !*******************************************************************************************
@@ -193,7 +192,7 @@ module motion_virus
             !=====================================================================================
 
             speed_r = norm2(vel_a(:) - vel_d(:))
-            Re_d = (speed_r * 2.0d0*radius_d) * Re
+            Re_d = (speed_r * 2.0d0*radius_d) * Re + 1.d-9  !ゼロ割回避のため、小さな値を足す
 
             Cd = (24.0d0/Re_d)*(1.0d0 + 0.15d0*(Re_d**0.687d0))
 
