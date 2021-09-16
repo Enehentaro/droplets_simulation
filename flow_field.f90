@@ -13,7 +13,7 @@ module flow_field
     integer, allocatable :: ICB(:,:)                !要素所有境界面ID
     integer, allocatable :: NBN(:,:)                !境界面所有節点ID
     
-    integer, allocatable, private :: CELL_TYPE(:)   !要素タイプ（テトラ、プリズム、ピラミッド）
+    integer, allocatable :: CELL_TYPE(:)   !要素タイプ（テトラ0、プリズム1、ピラミッド2）
     integer, allocatable :: NUM_NC(:)               !隣接要素数
     integer, allocatable :: NEXT_CELL(:,:)          !隣接要素ID
 
@@ -54,9 +54,11 @@ module flow_field
         integer II,KK,IIH, n_unit
         character AAA*7
         double precision, allocatable :: UVWK(:,:)
-        logical :: prism_flag = .false.
+        logical prism_flag
 
-        print*, 'READ:', FNAME
+        prism_flag = .false.
+
+        print*, 'READ_VTK:', FNAME
             
         open(newunit=n_unit,FILE=FNAME, STATUS='OLD')
             read(n_unit,'()')
@@ -92,6 +94,8 @@ module flow_field
             
             
             ICN(:,:) = ICN(:,:) + 1
+
+            if(.not.allocated(VELC)) allocate(VELC(3,IIMX))
 
             read(n_unit,'()')  !CELL_TYPES
             DO II = 1, IIMX
@@ -151,7 +155,7 @@ module flow_field
             
     end subroutine read_VTK
 
-    subroutine readINP(FNAME)
+    subroutine read_INP(FNAME)
         !  INPファイルを読み込み、節点データを要素データに変換する
         character(*), intent(in) :: FNAME
         INTEGER II,II2,KK,AAmax, IIMX2, AA, n_unit
@@ -159,7 +163,7 @@ module flow_field
         character(6) cellshape
         double precision, allocatable :: UVWK(:,:)
 
-        print*, 'READINP:', trim(FNAME)
+        print*, 'READ_INP:', trim(FNAME)
             
         open(newunit=n_unit,FILE=FNAME,STATUS='OLD')
             read(n_unit,*)KKMX,IIMX2
@@ -185,27 +189,27 @@ module flow_field
     
                 cellshape = adjustl(cellshape)    !左詰め
                 IF ((cellshape=='tet').or.(cellshape=='prism').or.(cellshape=='pyr')) THEN
-                II = II +1
-    
-                if (cellshape=='tet') then
-                    CELL_TYPE(II) = 0
-                    IITETMX = IITETMX +1
-                    read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II)    
-                if (ICN(1,II)==0.or.ICN(4,II)==0) print*, 'ICN_WARNING_tet:', ICN(:,II)
-                
-                ELSE IF(cellshape=='prism') THEN
-                    CELL_TYPE(II) = 1
-                    IIPRSMX = IIPRSMX +1
-                    read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II),ICN(5,II),ICN(6,II)
-                if (ICN(1,II)==0.or.ICN(6,II)==0) print*, 'ICN_WARNING_prism:', ICN(:,II)
-    
-                ELSE IF(cellshape=='pyr') THEN
-                    CELL_TYPE(II) = 2
-                    IIPYRMX = IIPYRMX +1
-                    read(n_unit,*)ICN(5,II),ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II) !INPは最初が山頂点であり、VTKでは最後が山頂点のため、読み込む順がこうなる。
-                if (ICN(1,II)==0.or.ICN(5,II)==0) print*, 'ICN_WARNING_pyr:', ICN(:,II)
-    
-                end if
+                    II = II +1
+        
+                    if (cellshape=='tet') then
+                        CELL_TYPE(II) = 0
+                        IITETMX = IITETMX +1
+                        read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II)    
+                        if (ICN(1,II)==0.or.ICN(4,II)==0) print*, 'ICN_WARNING_tet:', ICN(:,II)
+                    
+                    ELSE IF(cellshape=='prism') THEN
+                        CELL_TYPE(II) = 1
+                        IIPRSMX = IIPRSMX +1
+                        read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II),ICN(5,II),ICN(6,II)
+                        if (ICN(1,II)==0.or.ICN(6,II)==0) print*, 'ICN_WARNING_prism:', ICN(:,II)
+        
+                    ELSE IF(cellshape=='pyr') THEN
+                        CELL_TYPE(II) = 2
+                        IIPYRMX = IIPYRMX +1
+                        read(n_unit,*)ICN(5,II),ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II) !INPは最初が山頂点であり、VTKでは最後が山頂点のため、読み込む順がこうなる。
+                        if (ICN(1,II)==0.or.ICN(5,II)==0) print*, 'ICN_WARNING_pyr:', ICN(:,II)
+        
+                    end if
     
                 ELSE
                     read(n_unit,'()')  !テトラでもプリズムでもピラミッドでもないならスルー
@@ -237,7 +241,7 @@ module flow_field
             
         call point2cell(UVWK(:,:), VELC(:,:), ICN(:,:), CELL_TYPE(:))
             
-    end subroutine readINP
+    end subroutine read_INP
             
     !**************************************************************************************
     
@@ -317,7 +321,7 @@ module flow_field
 
             allocate(NoB(IIMX), source=0)
             allocate(ICB(4,IIMX), source=0)
-            allocate(CENC(3,IIMX), WIDC(IIMX), VELC(3,IIMX))
+            allocate(CENC(3,IIMX), WIDC(IIMX))
 
             ! DO II = 1, IIMX
             !   read(n_unit,*) NoB(II)  ! Number of Boundary
@@ -415,13 +419,21 @@ module flow_field
   
     end subroutine point2cell
 
+    integer function get_num_nodes()
+
+        get_num_nodes = KKMX
+
+    end function get_num_nodes
+
       
     subroutine deallocation_flow
 
         deallocate(CDN, ICN, CELL_TYPE, VELC)
-        deallocate(NEXT_CELL, NUM_NC, NoB, ICB, NBN)
-        deallocate(CENF, NVECF)
-        deallocate(CENC, WIDC)
+        if(allocated(NEXT_CELL)) deallocate(NEXT_CELL, NUM_NC)
+        deallocate(NoB, ICB)
+        if(allocated(NBN)) deallocate(NBN)
+        if(allocated(CENF)) deallocate(CENF, NVECF)
+        if(allocated(CENC)) deallocate(CENC, WIDC)
 
     end subroutine deallocation_flow
     

@@ -26,13 +26,13 @@ PROGRAM MAIN
       call date_and_time(date = d_start, time = t_start)
       print*,'date = ', trim(d_start), ' time = ', trim(t_start)
 
-      call input_condition
+      call input_condition    !条件TXTの読み込み
 
-      call set_initial_position
+      call set_initial_position     !飛沫初期配置の計算
 
-      nc_max = check_cases(PATH_AIR)
+      nc_max = check_cases(PATH_AIR)      !連続実行数の取得
 
-      if((nc_max > 1).and.(restart >= 1)) then
+      if((nc_max > 1).and.(restart >= 1)) then  !連続実行とリスタートは同時にできない
             print*, 'ERROR_program:'
             print*, 'Remove '//trim(FNAME_FMT)//' or Set restart_No.= 0'
             stop
@@ -40,23 +40,23 @@ PROGRAM MAIN
 
       do nc = 1, nc_max
 
-            call reset_status
+            call reset_status !飛沫の状態をリセット
 
-            call set_path
+            call set_path     !パスなどの整理
             
-            call Set_Coefficients
+            call Set_Coefficients   !方程式系の係数を計算
       
-            call initial_virus(restart)
+            call initial_virus(restart)   !初期配置、初期半径にセット
 
             if(restart > 0) then
                   n_start = restart
             else
                   n_start = 0
-                  call writeout(n_start)
+                  call writeout(n_start)  !リスタートでないなら初期配置出力
             end if
             
-            call read_nextcell
-            call read_flow_field(n_start)
+            call read_nextcell      !セルの隣接関係の取得
+            call read_flow_field(n_start) !流れ場の取得
 
             print*,'*******************************************'
             print*,'             START step_loop               '
@@ -66,16 +66,16 @@ PROGRAM MAIN
 
                   nowtime = real(n*dt*L_chara/U_chara)  !現在ステップ実時刻[sec]
 
-                  call survival_check(n)
+                  call survival_check(n)  !生存率に関する処理
 
-                  call set_vn_trans(vfloat)
+                  call set_vn_trans(vfloat)     !浮遊飛沫数の取得
 
                   !$omp parallel do private(vn)
                   DO vnf = 1, vfloat !浮遊粒子に対してのみループ
                         vn = vn_trans(vnf)
-                        call evaporation(vn)
-                        call VirusCalculation(vn)
-                        call update_status(vn)
+                        call evaporation(vn)    !半径変化方程式
+                        call VirusCalculation(vn)     !運動方程式
+                        call update_status(vn)  !状態の更新
                   END DO
                   !$omp end parallel do 
 
@@ -86,11 +86,11 @@ PROGRAM MAIN
                         print*, 'Number of floating', count(adhesion==0)
                         print*, 'Number of calling Nearest_Cell_Serch=', num_NCS
                         num_NCS = 0
-                        call writeout(n)
+                        call writeout(n)  !結果出力
                   end if
 
                   Step_air = int(dble(n)*Rdt)          !気流計算における経過ステップ数に相当
-                  if((mod(Step_air, INTERVAL_FLOW) == 0).and.(INTERVAL_FLOW > 0)) call read_flow_field(n)
+                  if((mod(Step_air, INTERVAL_FLOW) == 0).and.(INTERVAL_FLOW > 0)) call read_flow_field(n)   !流れ場の更新
 
             END DO
 
@@ -104,7 +104,7 @@ PROGRAM MAIN
 
             call final_result
 
-            call deallocation_flow
+            call deallocation_flow  !配列解放
             
       end do
 

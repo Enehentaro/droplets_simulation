@@ -1,5 +1,3 @@
-full_path,Temperature,Humidity
-..\Airest002\Airest002.inp, ..\air002\, 10, 20
-..\Airest003\Airest003.inp, ..\air003\, 10, 20
-..\Airest004\Airest004.inp, ..\air004\, 10, 20
-..\Airest005\Airest005.inp, ..\air005, 10, 20
+path_flow, path_output, Temperature, Humidity
+..\SAX\Af010001.vtk, ..\virus\,10,20
+..\SAX_1\Af010001.vtk, ..\virus1\,10,20

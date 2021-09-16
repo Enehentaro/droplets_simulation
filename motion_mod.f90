@@ -359,7 +359,7 @@ module motion_mod
                                   write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".inp")') FNUM
                               end if
                         end if
-                        call readINP(FNAME)   !INPを読み込む(SHARP用)
+                        call read_INP(FNAME)   !INPを読み込む(SHARP用)
 
                   case default
                         print*,'FILE_TYPE NG:', FILE_TYPE

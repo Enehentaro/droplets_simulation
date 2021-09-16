@@ -373,20 +373,22 @@ module virus_mod
     !=====================================================================
     subroutine survival_check(step)
         integer,intent(in) :: step
-        integer videal, vfloat, vn
+        integer vfloat, vn
+        double precision :: death_rate = 0.d0
             
         vfloat = count(adhesion == 0)
-        videal = int(dble(vfloat)*(survival_rate(step) - survival_rate(step+1)))!videal:このステップで死滅すべき飛沫数
-        vn = vnmax
-    
-        do while(videal > 0)
+        if(vfloat == 0) return
+        death_rate = death_rate + dble(vfloat)*(survival_rate(step) - survival_rate(step+1))    !このステップで死滅すべき飛沫数
+        
+        vn = vnmax  !チェックはIDの後ろから
+        do while(death_rate >= 1.d0)
             if (adhesion(vn) == 0) then           !浮遊粒子からのみ除去する
                 adhesion(vn) = -1
                 crd_drp(:,vn,2) = -1.0d0
                 vel_drp(:,vn,2) = 0.0d0
 
                 vn = vn - 1
-                videal = videal - 1
+                death_rate = death_rate - 1.d0
             else if (vn==0) then
                 exit
             end if
