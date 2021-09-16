@@ -43,15 +43,12 @@ module motion_virus
             
                   read(n_unit,'()')
                   read(n_unit,'(A)') PATH_AIR
-                  read(n_unit,*) HEAD_AIR
-                  read(n_unit,'()')
-                  read(n_unit,*) PRIS
                   read(n_unit,'()')
                   read(n_unit,*) DTa
                   read(n_unit,'()')
                   read(n_unit,*) OFFSET
                   read(n_unit,'()')
-                  read(n_unit,*) interval_flow
+                  read(n_unit,*) INTERVAL_FLOW
                   read(n_unit,'()')
                   read(n_unit,*) LoopS
                   read(n_unit,*) LoopF
@@ -73,13 +70,14 @@ module motion_virus
             print*, 'restart =',restart
             print*, 'n_end =',n_end
             print*, 'interval =',interval
-            print*, 'interval_air =',interval_flow
+            print*, 'interval_air =',INTERVAL_FLOW
             print*, 'loop=',loops,loopf
             print*, 'dt =',dt
             print*, 'Rdt', Rdt
             print*, 'Re =',Re
 
             print*, 'PATH_AIR=', PATH_AIR
+
   
       end subroutine input_condition
 
@@ -336,38 +334,39 @@ module motion_virus
             integer, intent(in) :: n_virus
             integer FNUM
             character(99) FNAME
+            character(4) digits_fmt
 
             FNUM = get_num_air(n_virus)
-                
-            if(PRIS==0)then
-                  if (interval_flow == -1) then !定常解析
-                        FNAME = trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'.vtk'
-                  else
-                        write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i6.6,".vtk")') FNUM
-                  end if
-                  call readnomal(FNAME)
 
-            else if(PRIS==1)then
-                  write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i7.7,".vtk")') FNUM
-                  call readprism(FNAME)
+            write(digits_fmt,'("i", i1, ".", i1)') FNAME_DIGITS, FNAME_DIGITS
 
-            else if(PRIS==-1) then
-                  if(interval_flow==-1) then
-                        FNAME = trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'.inp'
-                  else
-                        if(FNUM==0) then
-                            write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i6.6,".inp")') 1
+            select case(FILE_TYPE)
+                  case('VTK')
+                        if (INTERVAL_FLOW == -1) then !定常解析
+                              FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
                         else
-                            write(FNAME,'("'//trim(PATH_AIR)//'/'//trim(HEAD_AIR)//'",i6.6,".inp")') FNUM
+                              write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".vtk")') FNUM
+
                         end if
-                  end if
-                  call readINP(FNAME)   !INPを読み込む(SHARP用)
+                        call read_VTK(FNAME)
 
-            else
-                  print*,'PRIS NG:', PRIS
-                  STOP
+                  case('INP')
+                        if(INTERVAL_FLOW==-1) then
+                              FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
+                        else
+                              if(FNUM==0) then
+                                  write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".inp")') 1
+                              else
+                                  write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".inp")') FNUM
+                              end if
+                        end if
+                        call read_INP(FNAME)   !INPを読み込む(SHARP用)
 
-            end if
+                  case default
+                        print*,'FILE_TYPE NG:', FILE_TYPE
+                        STOP
+                        
+            end select
                 
             MAX_CDN(1) = maxval(CDN(1,:))
             MAX_CDN(2) = maxval(CDN(2,:))
@@ -429,6 +428,11 @@ module motion_virus
             end do
 
       end subroutine area_check
+
+      subroutine reset_status
+            nearcell(:) = 0                !飛沫近接要素ID
+            adhes_bound(:) = 0              !飛沫付着境界面ID
+      end subroutine reset_status
 
 
 end module motion_virus

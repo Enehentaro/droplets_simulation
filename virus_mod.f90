@@ -19,6 +19,7 @@ module virus_mod
 
     double precision, allocatable :: crd_drp(:,:,:)     !飛沫座標
     double precision, allocatable :: vel_drp(:,:,:)     !飛沫速度
+    double precision, allocatable :: crd_ini(:,:)     !飛沫初期座標
     double precision, allocatable :: radius(:,:), rad_min(:), rad_ini(:)    !飛沫半径、最小半径、初期半径
 
     contains
@@ -33,7 +34,7 @@ module virus_mod
         !====================================================================================
         !========= Initial Position of drplets ===========================
 
-        call set_initial_position
+        crd_drp(:,:,1) = crd_ini(:,:)
 
         vel_drp(:,:,:) = 0.0d0
         adhesion(:) = 0
@@ -138,10 +139,13 @@ module virus_mod
 
 
     subroutine set_initial_position
-
-        integer kx,ky,kz, num_node
-        integer ::  m=1, vn=0
+        integer kx,ky,kz, num_node, m, k
         double precision :: standard(3), delta(3), randble(3)
+
+        m = 1
+        k = 0
+
+        print*, 'set_initial_position', m, k
 
         standard(:) = center_posi(:) - 0.5d0*width_posi(3)
 
@@ -152,27 +156,27 @@ module virus_mod
 
         delta(:) = width_posi(:) / dble(num_node-1)
 
-            do kx = 1, num_node
+        do kx = 1, num_node
 
-                do ky = 1, num_node
+            do ky = 1, num_node
 
-                    do kz = 1, num_node
+                do kz = 1, num_node
 
-                        vn = vn + 1
-                        crd_drp(1,vn,1) = standard(1) + delta(1)*dble(kx - 1)
-                        crd_drp(2,vn,1) = standard(2) + delta(2)*dble(ky - 1)
-                        crd_drp(3,vn,1) = standard(3) + delta(3)*dble(kz - 1)
-                        
-                    end do
+                    k = k + 1
+                    crd_ini(1,k) = standard(1) + delta(1)*dble(kx - 1)
+                    crd_ini(2,k) = standard(2) + delta(2)*dble(ky - 1)
+                    crd_ini(3,k) = standard(3) + delta(3)*dble(kz - 1)
+                    
                 end do
-
             end do
 
-            do while(vn < vnmax)
-                vn = vn + 1
-                call random_number(randble(:))
-                crd_drp(:,vn,1) = standard(:) + width_posi(:)*randble(:)
-            end do
+        end do
+
+        do while(k < vnmax)
+            k = k + 1
+            call random_number(randble(:))
+            crd_ini(:,k) = standard(:) + width_posi(:)*randble(:)
+        end do
 
     end subroutine set_initial_position
 
@@ -430,20 +434,22 @@ module virus_mod
     !=====================================================================
     subroutine survival_check(step)
         integer,intent(in) :: step
-        integer videal, vfloat, vn
+        integer vfloat, vn
+        double precision :: death_rate = 0.d0
             
         vfloat = count(adhesion == 0)
-        videal = int(dble(vfloat)*(survival_rate(step) - survival_rate(step+1)))!videal:このステップで死滅すべき飛沫数
-        vn = vnmax
-    
-        do while(videal > 0)
+        if(vfloat == 0) return
+        death_rate = death_rate + dble(vfloat)*(survival_rate(step) - survival_rate(step+1))    !このステップで死滅すべき飛沫数
+        
+        vn = vnmax  !チェックはIDの後ろから
+        do while(death_rate >= 1.d0)
             if (adhesion(vn) == 0) then           !浮遊粒子からのみ除去する
                 adhesion(vn) = -1
                 crd_drp(:,vn,2) = -1.0d0
                 vel_drp(:,vn,2) = 0.0d0
 
                 vn = vn - 1
-                videal = videal - 1
+                death_rate = death_rate - 1.d0
             else if (vn==0) then
                 exit
             end if
@@ -493,6 +499,7 @@ module virus_mod
 
         allocate(crd_drp(3,num_virus,2),rad_min(num_virus),radius(num_virus,2), rad_ini(num_virus), vel_drp(3,num_virus,2))
         allocate(adhesion(num_virus),vn_trans(num_virus))
+        allocate(crd_ini(3,num_virus))
 
     end subroutine allocation_virus
 

@@ -13,8 +13,11 @@
 PROGRAM MAIN
       use motion_virus
       implicit none
-      integer n, vn, vnf, vfloat, PN, ios, case_num, num_programs
-      integer, allocatable :: program_values(:,:)
+
+      character(7), parameter :: OS = 'Linux'!'Windows'
+
+      integer n, vn, vnf, vfloat, nc, step_air, nc_max
+
       real nowtime
       double precision Step_air
       character(20) :: d_start, d_stop, t_start, t_stop
@@ -22,26 +25,38 @@ PROGRAM MAIN
       call date_and_time(date = d_start, time = t_start)
       print*,'date = ', trim(d_start), ' time = ', trim(t_start)
 
-      call input_condition
+      call input_condition    !条件TXTの読み込み
 
-      call read_program
+      call set_initial_position     !飛沫初期配置の計算
+
+      nc_max = check_cases(PATH_AIR)      !連続実行数の取得
+
+      if((nc_max > 1).and.(restart >= 1)) then  !連続実行とリスタートは同時にできない
+            print*, 'ERROR_program:'
+            print*, 'Remove '//trim(FNAME_FMT)//' or Set restart_No.= 0'
+            stop
+      end if
+
 
       do PN = 1, num_programs
 
-            call set_path
-            call Set_Coefficients
+            call reset_status !飛沫の状態をリセット
+
+            call set_path     !パスなどの整理
+            
+            call Set_Coefficients   !方程式系の係数を計算
       
-            call initial_virus(restart)
+            call initial_virus(restart)   !初期配置、初期半径にセット
 
             if(restart > 0) then
                   n_start = restart
             else
                   n_start = 0
-                  call writeout(n_start)
+                  call writeout(n_start)  !リスタートでないなら初期配置出力
             end if
             
-            call read_nextcell
-            call read_flow_field(n_start)
+            call read_nextcell      !セルの隣接関係の取得
+            call read_flow_field(n_start) !流れ場の取得
 
             print*,'*******************************************'
             print*,'             START step_loop               '
@@ -51,16 +66,16 @@ PROGRAM MAIN
 
                   nowtime = real(n*dt*L_chara/U_chara)  !現在ステップ実時刻[sec]
 
-                  call survival_check(n)
+                  call survival_check(n)  !生存率に関する処理
 
-                  call set_vn_trans(vfloat)
+                  call set_vn_trans(vfloat)     !浮遊飛沫数の取得
 
                   !$omp parallel do private(vn)
                   DO vnf = 1, vfloat !浮遊粒子に対してのみループ
                         vn = vn_trans(vnf)
-                        call evaporation(vn)
-                        call VirusCalculation(vn)
-                        call update_status(vn)
+                        call evaporation(vn)    !半径変化方程式
+                        call VirusCalculation(vn)     !運動方程式
+                        call update_status(vn)  !状態の更新
                   END DO
                   !$omp end parallel do 
 
@@ -71,12 +86,12 @@ PROGRAM MAIN
                         print*, 'Number of floating', count(adhesion==0)
                         print*, 'Number of calling Nearest_Cell_Serch=', num_NCS
                         num_NCS = 0
-                        call writeout(n)
+                        call writeout(n)  !結果出力
                   end if
 
-                  Step_air = dble(n) * Rdt          !気流計算における経過ステップ数に相当
-                  if((mod(Step_air, dble(interval_flow)) == 0.0d0).and.(interval_flow > 0)) &
-                        call read_flow_field(n)
+                  Step_air = int(dble(n)*Rdt)          !気流計算における経過ステップ数に相当
+                  if((mod(Step_air, INTERVAL_FLOW) == 0).and.(INTERVAL_FLOW > 0)) call read_flow_field(n)   !流れ場の更新
+
 
             END DO
 
@@ -90,64 +105,59 @@ PROGRAM MAIN
 
             call final_result
 
-            call deallocation_flow
+            call deallocation_flow  !配列解放
             
       end do
 
       contains
 
-      subroutine read_program
-            character(11) FNAME
-            integer n_unit
-
-            FNAME = 'program.csv'
-
-            open(newunit=n_unit, iostat=ios, file=FNAME, status='old')
-            close(n_unit)
-            if(ios /= 0) then
-                  print*, 'Normal_program'
-                  num_programs = 1
-            else
-                  call csv_reader_int(FNAME, program_values, 3)
-                  num_programs = size(program_values, dim=2)
-            end if
-
-            if((num_programs > 1).and.(restart>=1)) then
-                  print*, 'ERROR_program:'
-                  print*, 'Remove program.csv or Set restart_No.= 0'
-                  stop
-            end if
-
-      end subroutine read_program
-
       subroutine set_path
-            character(20) :: temperature, humidity, a
+            character(20) :: temperature, humidity
+            integer i
 
-            if(allocated(program_values)) then
-                  case_num = program_values(1,PN)
-                  T = program_values(2,PN)
-                  RH = program_values(3,PN)
+            if(nc_max > 1) then
+
+                  T = get_temperature(nc)
+                  RH = get_humidity(nc)
       
-                  write(path_out_base,'("ACAP",i3.3,"_virus")') case_num
-                  write(head_out,'("ac",i3.3,"_")') case_num
-      
-                  if (mod(case_num,10)==0) then
-                        write(PATH_AIR,'("ACAP0",i2.2)') case_num/10
-                        write(HEAD_AIR,'("ACAP0",i2.2)') case_num/10
-                  else
-                        write(PATH_AIR,'("ACAP0",i2.2,"-", i1.1)') case_num/10, case_num - case_num/10*10
-                        write(HEAD_AIR,'("ACAP0",i2.2,"-", i1.1)') case_num/10, case_num - case_num/10*10
-                  end if
+                  call set_case_path(PATH_AIR, nc)
+                  call set_case_path2(path_out_base, nc)
+
             end if
+
+            call set_dir_from_path(PATH_AIR, PATH_AIR, FNAME_FMT)
+
+            call set_FILE_TYPE
+
+            ! if(nc_max > 1) path_out_base = '..\' // trim(HEAD_AIR) // '_virus\'
       
             print*, 'T =', T, 'degC'
             print*, 'RH =', RH, '%'
       
             write(temperature,'(i3.3)') T
             write(humidity,'(i3.3)') RH
-            write(a,'(i1.1)') PN
-      
-            path_out = trim(path_out_base)//'_'//trim(temperature)//'_'//trim(humidity)
+
+            i = len_trim(path_out_base)
+            if(path_out_base(i:i) == '\') path_out_base(i:i) = ' '      !末尾が区切り文字であればこれを除去
+            path_out = trim(path_out_base)//'_'//trim(temperature)//'_'//trim(humidity)//'\'
+
+            select case(trim(OS))
+                  case ('Linux')  !for_Linux
+                        call replace_str(path_out, '\', '/' )
+                        call replace_str(PATH_AIR, '\', '/' )
+                        call system('mkdir -p -v '//path_out)
+                        call system('cp condition_virus.txt '//path_out)
+
+                  case ('Windows')  !for_Windows
+                        call system('md '//path_out)
+                        call system('copy condition_virus.txt '//path_out)
+
+                  case default
+                        print*, 'OS ERROR', OS
+                        stop
+                        
+            end select
+
             print*, 'Output_Path=', path_out
             ! if(num_programs > 1) path_out = trim(path_out)//'_'//trim(a)
             call system('mkdir -p -v '//path_out)  !サブルーチンsystem：引数文字列をコマンドとして実行する
