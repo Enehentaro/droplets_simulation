@@ -15,12 +15,11 @@ MODULE grid_information
 
     subroutine set_GRID_INFO
 
-        num_nodes = get_num_nodes()
-
-        num_cells = size(ICN, dim=2)
-        num_tetras = count(CELL_TYPE == 0)
-        num_prisms = count(CELL_TYPE == 1)
-        num_pyramids = count(CELL_TYPE == 2)
+        num_nodes = get_mesh_info('node')
+        num_cells = get_mesh_info('cell')
+        num_tetras = get_mesh_info('tetra')
+        num_prisms = get_mesh_info('prism')
+        num_pyramids = get_mesh_info('pyramid')
 
     end subroutine set_GRID_INFO
 
@@ -341,7 +340,7 @@ PROGRAM MAIN
     use cases_reader
     IMPLICIT NONE
 
-    character(7) :: OS = 'Linux'
+    character(7) :: OS = 'Windows'
 
     character(8) :: d_start, d_stop
     character(10) :: t_start, t_stop

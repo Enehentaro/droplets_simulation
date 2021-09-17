@@ -17,7 +17,7 @@ PROGRAM MAIN
       use cases_reader
       implicit none
 
-      character(7), parameter :: OS = 'Linux'!'Windows'
+      character(7), parameter :: OS = 'Windows'
 
       integer n, vn, vnf, vfloat, nc, nc_max
       real nowtime
