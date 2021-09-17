@@ -23,7 +23,7 @@ Simulation of Droplets Behavior in AFDET
   - csv_reader.f90   :一般的なCSVファイルを読み込む
 
   解くべき方程式は次の通り。  
-<img src="https://latex.codecogs.com/gif.latex?m_d&space;\frac{d&space;\mathbf{v}}{dt}&space;=&space;m_d&space;\mathbf{g}&space;&plus;&space;C_D&space;\cdot&space;\frac{1}{2}\rho_a&space;S&space;\left&space;|&space;\mathbf{u}_a&space;-&space;\mathbf{v}&space;\right&space;|(\mathbf{u}_a&space;-&space;\mathbf{v})" />
+<img src="https://latex.codecogs.com/gif.latex?m&space;\frac{d&space;\mathbf{v}}{dt}&space;=&space;m&space;\mathbf{g}&space;&plus;&space;C_D&space;\cdot&space;\frac{1}{2}\rho_a&space;S&space;\left&space;|&space;\mathbf{u}_a&space;-&space;\mathbf{v}&space;\right&space;|(\mathbf{u}_a&space;-&space;\mathbf{v})" />
 
-  プログラム内では、上式を離散化した次式を解いている。  
-<img src="https://latex.codecogs.com/gif.latex?\mathbf{v}^{n&plus;1}&space;=&space;\frac{\mathbf{v}^{n}&space;&plus;&space;(\mathbf{g}&space;&plus;&space;C\mathbf{u}_a)\Delta&space;t}{1&plus;C\Delta&space;t}" />
+  プログラム内では、上式を無次元化・離散化した次式を解いている。  
+<img src="https://latex.codecogs.com/gif.latex?\bar{\mathbf{v}}^{n&plus;1}&space;=&space;\frac{\bar{\mathbf{v}}^{n}&space;&plus;&space;(\bar{\mathbf{g}}&space;&plus;&space;C\bar{\mathbf{u}}_a)\Delta&space;\bar{t}}{1&plus;C\Delta&space;\bar{t}}" />
