@@ -45,6 +45,8 @@ module flow_field
             stop
         end if
 
+        print*, 'FILE_TYPE: ', FILE_TYPE, trim(FNAME_FMT)
+
     end subroutine set_FILE_TYPE
 
 

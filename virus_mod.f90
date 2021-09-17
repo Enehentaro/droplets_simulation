@@ -43,7 +43,7 @@ module virus_mod
         !========= drplet radius ===========================
         if(.not.allocated(rad_cnt)) then
 
-            call csv_reader_dble('radius_distribution.csv', threshold, 3)
+            call csv_reader_dble('radius_distribution.csv', threshold)
 
             allocate(rad_cnt(size(threshold, dim=2)))
 
@@ -332,7 +332,7 @@ module virus_mod
         Es = Es0*exp((Lv/Rv)*(1.0d0/T0 - 1.0d0/TK))       ! 室温に置ける飽和蒸気圧
 
         norm = norm2(direction_g(:))
-        G(:) = G_dim * L_chara/(U_chara*U_chara) / norm * direction_g(:)
+        G(:) = G_dim * L_chara/(U_chara*U_chara) / norm * direction_g(:)    !無次元重力加速度
         print*, 'G_no_dim=', G(:)
 
         coeff = -D/(U_chara*L_chara) * (1.0d0 - dble(RH)/100.d0)*Es / (Roh_d*Rv*TK) ! dr/dt の無次元係数

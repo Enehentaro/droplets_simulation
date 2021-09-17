@@ -358,14 +358,14 @@ PROGRAM MAIN
     do nc = 1, nc_max
 
         if(nc_max > 1) then
-            call set_case_path(FNAME, nc)   !FNAMEのセット
+            FNAME = get_case_path(nc)   !FNAMEのセット
         end if
 
         call set_dir_from_path(FNAME, DIR, FNAME_FMT)   !パスからディレクトリ部とファイル名を取得
 
         if(trim(OS) == 'Linux') then    !Linuxなら区切り文字を/にする
-            call replace_str(FNAME, '\', '/')
-            call replace_str(DIR, '\', '/')
+            FNAME = replace_str(FNAME, '\', '/')
+            DIR = replace_str(DIR, '\', '/')
         end if
         
         call set_FILE_TYPE  !文字列FNAME_FMTから、ファイル形式を取得

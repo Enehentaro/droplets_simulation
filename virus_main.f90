@@ -118,21 +118,19 @@ PROGRAM MAIN
             character(20) :: temperature, humidity
             integer i
 
-            if(nc_max > 1) then
+            if(cases_read_flag) then
 
                   T = get_temperature(nc)
                   RH = get_humidity(nc)
       
-                  call set_case_path(PATH_AIR, nc)
-                  call set_case_path2(path_out_base, nc)
+                  PATH_AIR = get_case_path(nc)
+                  path_out_base = get_case_path2(nc)
 
             end if
 
             call set_dir_from_path(PATH_AIR, PATH_AIR, FNAME_FMT)
 
             call set_FILE_TYPE
-
-            ! if(nc_max > 1) path_out_base = '..\' // trim(HEAD_AIR) // '_virus\'
       
             print*, 'T =', T, 'degC'
             print*, 'RH =', RH, '%'
@@ -146,8 +144,8 @@ PROGRAM MAIN
 
             select case(trim(OS))
                   case ('Linux')  !for_Linux
-                        call replace_str(path_out, '\', '/' )
-                        call replace_str(PATH_AIR, '\', '/' )
+                        path_out =  replace_str(path_out, '\', '/' )
+                        PATH_AIR = replace_str(PATH_AIR, '\', '/' )
                         call system('mkdir -p -v '//path_out)
                         call system('cp condition_virus.txt '//path_out)
 
