@@ -9,6 +9,8 @@ module cases_reader
 
     integer, private :: num_cases = 1
 
+    logical :: cases_read_flag = .false.
+
     contains
 
     integer function check_cases(fname)
@@ -24,27 +26,25 @@ module cases_reader
         else
             call read_cases(fname)
             check_cases = num_cases
+            cases_read_flag = .true.
             
         end if
 
     end function check_cases
 
     subroutine read_cases(FNAME)
+        use csv_reader
         character(*), intent(in) :: FNAME
-        ! character(99) A
-        integer n_unit, i, ios
+        integer n_unit, i
+        integer :: mat_size(2)
 
         print*, 'READ:', FNAME
             
         open (newunit=n_unit, file=FNAME, status='old')
-    
-            num_cases = 0
-            read(n_unit, '()') !ヘッダーの読み飛ばし
-            do        !レコード数を調べるループ
-                read(n_unit, '()', iostat=ios)
-                if(ios/=0) exit
-                num_cases = num_cases + 1
-            end do
+            
+            mat_size = get_size(n_unit, header_flag=.true.)
+
+            num_cases = mat_size(2)
 
             allocate(case_matrix(num_cases))
 
@@ -87,21 +87,25 @@ module cases_reader
         if(present(filename)) filename = path(i+1:)
         directory = path(:i)
 
-        print*, path, directory, filename
+        print*, 'Path= ', trim(path)
+        print*, 'Directory= ', trim(directory)
+        print*, 'Filename= ', trim(filename)
 
     end subroutine set_dir_from_path
 
-    subroutine replace_str( str, from, to )
-        character (*),intent (inout) :: str
+    function replace_str( str, from, to )
+        character (*),intent (in) :: str
         character (1),intent (in) :: from, to
+        character (len_trim(str)) :: replace_str
         integer :: i, l
 
+        replace_str = str
         l = len_trim(str)
-        do i=1, l
-            if ( str(i:i) == from ) str(i:i) = to
+        do i = 1, l
+            if ( str(i:i) == from ) replace_str(i:i) = to
         end do
 
-    end subroutine replace_str
+    end function replace_str
 
     integer function get_temperature(index)
         integer, intent(in) :: index
@@ -117,20 +121,20 @@ module cases_reader
 
     end function get_humidity
 
-    subroutine set_case_path(case_path, index)
-        character(*), intent(inout) :: case_path
+    function get_case_path(index)
         integer, intent(in) :: index
+        character(len_trim(case_matrix(index)%path)) get_case_path
 
-        case_path = trim(case_matrix(index)%path)
+        get_case_path = trim(case_matrix(index)%path)
 
-    end subroutine set_case_path
+    end function get_case_path
 
-    subroutine set_case_path2(case_path, index)
-        character(*), intent(inout) :: case_path
+    function get_case_path2(index)
         integer, intent(in) :: index
+        character(len_trim(case_matrix(index)%path2)) get_case_path2
 
-        case_path = trim(case_matrix(index)%path2)
+        get_case_path2 = trim(case_matrix(index)%path2)
 
-    end subroutine set_case_path2
+    end function get_case_path2
 
 end module cases_reader

@@ -1,3 +1,4 @@
+include 'csv_reader.f90'
 include 'cases_reader.f90'
 include 'flow_field.f90'
 !==============================================================================================================
@@ -14,12 +15,11 @@ MODULE grid_information
 
     subroutine set_GRID_INFO
 
-        num_nodes = get_num_nodes()
-
-        num_cells = size(ICN, dim=2)
-        num_tetras = count(CELL_TYPE == 0)
-        num_prisms = count(CELL_TYPE == 1)
-        num_pyramids = count(CELL_TYPE == 2)
+        num_nodes = get_mesh_info('node')
+        num_cells = get_mesh_info('cell')
+        num_tetras = get_mesh_info('tetra')
+        num_prisms = get_mesh_info('prism')
+        num_pyramids = get_mesh_info('pyramid')
 
     end subroutine set_GRID_INFO
 
@@ -340,7 +340,7 @@ PROGRAM MAIN
     use cases_reader
     IMPLICIT NONE
 
-    character(7) :: OS = 'Linux'
+    character(7) :: OS = 'Windows'
 
     character(8) :: d_start, d_stop
     character(10) :: t_start, t_stop
@@ -358,14 +358,14 @@ PROGRAM MAIN
     do nc = 1, nc_max
 
         if(nc_max > 1) then
-            call set_case_path(FNAME, nc)   !FNAMEのセット
+            FNAME = get_case_path(nc)   !FNAMEのセット
         end if
 
         call set_dir_from_path(FNAME, DIR, FNAME_FMT)   !パスからディレクトリ部とファイル名を取得
 
         if(trim(OS) == 'Linux') then    !Linuxなら区切り文字を/にする
-            call replace_str(FNAME, '\', '/')
-            call replace_str(DIR, '\', '/')
+            FNAME = replace_str(FNAME, '\', '/')
+            DIR = replace_str(DIR, '\', '/')
         end if
         
         call set_FILE_TYPE  !文字列FNAME_FMTから、ファイル形式を取得

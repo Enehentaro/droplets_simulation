@@ -45,6 +45,8 @@ module flow_field
             stop
         end if
 
+        print*, 'FILE_TYPE: ', FILE_TYPE, ' ', trim(FNAME_FMT)
+
     end subroutine set_FILE_TYPE
 
 
@@ -162,6 +164,8 @@ module flow_field
         integer :: IITETMX, IIPRSMX, IIPYRMX
         character(6) cellshape
         double precision, allocatable :: UVWK(:,:)
+        integer, allocatable :: ICN2(:,:)
+        integer, allocatable :: CELL_TYPE2(:)
 
         print*, 'READ_INP:', trim(FNAME)
             
@@ -170,8 +174,8 @@ module flow_field
             print*,'KKMX,IIMX2=',KKMX,IIMX2
             
             if(.not.allocated(CDN)) allocate(CDN(3,KKMX), source=0.0d0)
-            if(.not.allocated(ICN)) allocate(ICN(6,IIMX2), source=0)
-            if(.not.allocated(CELL_TYPE)) allocate(CELL_TYPE(IIMX2), source=0)
+            allocate(ICN2(6,IIMX2), source=0)
+            allocate(CELL_TYPE2(IIMX2), source=0)
                 
             DO KK = 1, KKMX
                 read(n_unit,*)AA,CDN(1,KK),CDN(2,KK),CDN(3,KK)
@@ -192,22 +196,22 @@ module flow_field
                     II = II +1
         
                     if (cellshape=='tet') then
-                        CELL_TYPE(II) = 0
+                        CELL_TYPE2(II) = 0
                         IITETMX = IITETMX +1
-                        read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II)    
-                        if (ICN(1,II)==0.or.ICN(4,II)==0) print*, 'ICN_WARNING_tet:', ICN(:,II)
+                        read(n_unit,*)ICN2(1,II),ICN2(2,II),ICN2(3,II),ICN2(4,II)    
+                        if (ICN2(1,II)==0.or.ICN2(4,II)==0) print*, 'ICN2_WARNING_tet:', ICN2(:,II)
                     
                     ELSE IF(cellshape=='prism') THEN
-                        CELL_TYPE(II) = 1
+                        CELL_TYPE2(II) = 1
                         IIPRSMX = IIPRSMX +1
-                        read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II),ICN(5,II),ICN(6,II)
-                        if (ICN(1,II)==0.or.ICN(6,II)==0) print*, 'ICN_WARNING_prism:', ICN(:,II)
+                        read(n_unit,*)ICN2(1,II),ICN2(2,II),ICN2(3,II),ICN2(4,II),ICN2(5,II),ICN2(6,II)
+                        if (ICN2(1,II)==0.or.ICN2(6,II)==0) print*, 'ICN2_WARNING_prism:', ICN2(:,II)
         
                     ELSE IF(cellshape=='pyr') THEN
-                        CELL_TYPE(II) = 2
+                        CELL_TYPE2(II) = 2
                         IIPYRMX = IIPYRMX +1
-                        read(n_unit,*)ICN(5,II),ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II) !INPは最初が山頂点であり、VTKでは最後が山頂点のため、読み込む順がこうなる。
-                        if (ICN(1,II)==0.or.ICN(5,II)==0) print*, 'ICN_WARNING_pyr:', ICN(:,II)
+                        read(n_unit,*)ICN2(5,II),ICN2(1,II),ICN2(2,II),ICN2(3,II),ICN2(4,II) !INPは最初が山頂点であり、VTKでは最後が山頂点のため、読み込む順がこうなる。
+                        if (ICN2(1,II)==0.or.ICN2(5,II)==0) print*, 'ICN2_WARNING_pyr:', ICN2(:,II)
         
                     end if
     
@@ -217,14 +221,8 @@ module flow_field
                 ENDIF
     
             END DO
-    
-            if (II == IIMX) then
-                print*, 'IIMX=', IIMX
-                print*, 'Tetra,Prism,Pyramid=', IITETMX, IIPRSMX, IIPYRMX
-            else
-                print*, 'IIMX_mismatch', II, '/', IIMX
-                stop
-            end if
+
+            IIMX = II
         
             allocate(UVWK(3,KKMX))
     
@@ -238,6 +236,13 @@ module flow_field
             END DO
                 
         close(n_unit)
+
+        if(.not.allocated(ICN)) allocate(ICN(6,IIMX))
+        if(.not.allocated(CELL_TYPE)) allocate(CELL_TYPE(IIMX))
+        ICN(:,:) = ICN2(:,:IIMX)
+        CELL_TYPE(:) = CELL_TYPE2(:IIMX)
+
+        if(.not.allocated(VELC)) allocate(VELC(3,IIMX))
             
         call point2cell(UVWK(:,:), VELC(:,:), ICN(:,:), CELL_TYPE(:))
             
@@ -419,11 +424,31 @@ module flow_field
   
     end subroutine point2cell
 
-    integer function get_num_nodes()
+    integer function get_mesh_info(name)
+        character(*), intent(in) :: name
+        
+        select case(name)
+            case('node')
+                get_mesh_info = KKMX
 
-        get_num_nodes = KKMX
+            case('cell')
+                get_mesh_info = IIMX
 
-    end function get_num_nodes
+            case('tetra')
+                get_mesh_info = count(CELL_TYPE == 0)
+
+            case('prism')
+                get_mesh_info = count(CELL_TYPE == 1)
+
+            case('pyramid')
+                get_mesh_info = count(CELL_TYPE == 2)
+
+            case default
+                get_mesh_info = 0
+
+        end select
+
+    end function get_mesh_info
 
       
     subroutine deallocation_flow
