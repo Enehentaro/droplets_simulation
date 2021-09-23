@@ -303,20 +303,20 @@ module flow_field
 
             !***********************************************************************
     subroutine read_nextcell
-        integer II,NC,JB, n_unit
+        implicit none
+        integer II,NC,JB, n_unit, num_cells
         character(50) FNAME
         !=======================================================================
                 
         FNAME = trim(PATH_AIR)//'nextcell.txt'
         print*, 'READ:', FNAME
 
-        open(newunit=n_unit,FILE=FNAME , STATUS='OLD')
-            read(n_unit,'(2(I12,2X))') IIMX
-
+        open(newunit=n_unit, FILE=FNAME, STATUS='OLD')
+            read(n_unit,*) num_cells
             read(n_unit,*) NCMAX
 
-            allocate(NEXT_CELL(NCMAX,IIMX),NUM_NC(IIMX))
-            DO II = 1, IIMX
+            allocate(NEXT_CELL(NCMAX,num_cells),NUM_NC(num_cells))
+            DO II = 1, num_cells
             read(n_unit,'(I5)',advance='no') NUM_NC(II)
             DO NC = 1, NUM_NC(II)
                 read(n_unit,'(I12)',advance='no') NEXT_CELL(NC,II)
@@ -324,14 +324,11 @@ module flow_field
             read(n_unit,'()')
             END DO
 
-            allocate(NoB(IIMX), source=0)
-            allocate(ICB(4,IIMX), source=0)
-            allocate(CENC(3,IIMX), WIDC(IIMX))
+            allocate(NoB(num_cells), source=0)
+            allocate(ICB(4,num_cells), source=0)
+            allocate(CENC(3,num_cells), WIDC(num_cells))
 
-            ! DO II = 1, IIMX
-            !   read(n_unit,*) NoB(II)  ! Number of Boundary
-            ! END DO
-            DO II = 1, IIMX
+            DO II = 1, num_cells
             read(n_unit, fmt='(I4)', advance='no') NoB(II)  ! Number of Boundary
             do JB = 1, NoB(II)
                 read(n_unit, fmt='(I10)', advance='no') ICB(JB,II)

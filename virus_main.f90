@@ -2,24 +2,21 @@
 !     Simulation of viral drplets
 !                                by KIYOTA OGURA(2021/1/10)
 !     updated by IDA (2021/07/13)
-
-!ToDo:      to modify module
 !
 !---------------------------------------------------------------------------------
       include 'csv_reader.f90'
       include 'cases_reader.f90'
-      include 'virus_mod.f90'
       include 'flow_field.f90'
-      include 'motion_mod.f90'
+      include 'drop_motion.f90'
 !*******************************************************************************************
 PROGRAM MAIN
-      use motion_mod
+      use drop_motion_mod
       use cases_reader
       implicit none
 
       character(7), parameter :: OS = 'Windows'
 
-      integer n, vn, vnf, vfloat, nc, nc_max
+      integer n, nc, nc_max
       real nowtime
       double precision Step_air
       character(20) :: d_start, d_stop, t_start, t_stop
@@ -29,33 +26,23 @@ PROGRAM MAIN
 
       call input_condition    !条件TXTの読み込み
 
-      call set_initial_position     !飛沫初期配置の計算
-
       nc_max = check_cases(PATH_AIR)      !連続実行数の取得
 
-      if((nc_max > 1).and.(restart >= 1)) then  !連続実行とリスタートは同時にできない
-            print*, 'ERROR_program:'
-            print*, 'Remove '//trim(FNAME_FMT)//' or Set restart_No.= 0'
-            stop
+      if((cases_read_flag).and.(num_restart >= 1)) then  !連続実行とリスタートを同時にするとどうなるのやら
+            print*, 'WARNING:Continuous execution and restart happened at the same time.'
+            print*, 'Recommend to Remove '//trim(FNAME_FMT)//' or to Set restart_No.= 0'
+            ! stop
       end if
 
+      call calc_initial_droplet     !初期配置、初期半径の計算
 
       do nc = 1, nc_max
 
-            call reset_status !飛沫の状態をリセット
-
             call set_path     !パスなどの整理
-            
-            call Set_Coefficients   !方程式系の係数を計算
-      
-            call initial_virus(restart)   !初期配置、初期半径にセット
 
-            if(restart > 0) then
-                  n_start = restart
-            else
-                  n_start = 0
-                  call writeout(n_start)  !リスタートでないなら初期配置出力
-            end if
+            call Set_Coefficients   !方程式系の係数を計算
+
+            call initialization_droplet
             
             call read_nextcell      !セルの隣接関係の取得
             call read_flow_field(n_start) !流れ場の取得
@@ -70,25 +57,11 @@ PROGRAM MAIN
 
                   call survival_check(n)  !生存率に関する処理
 
-                  call set_vn_trans(vfloat)     !浮遊飛沫数の取得
-
-                  !$omp parallel do private(vn)
-                  DO vnf = 1, vfloat !浮遊粒子に対してのみループ
-                        vn = vn_trans(vnf)
-                        call evaporation(vn)    !半径変化方程式
-                        call VirusCalculation(vn)     !運動方程式
-                        call update_status(vn)  !状態の更新
-                  END DO
-                  !$omp end parallel do 
+                  call Calculation_Droplets
 
                   if ((mod(n,interval) == 0)) then
-                        print*, 'Startdate = ', trim(d_start), ' time = ', trim(t_start)
-                        print*, 'Now_Step_Time=', nowtime, '[sec]'
-                        print*, 'X Position=',crd_drp(1,1,1),crd_drp(1,2,1),crd_drp(1,3,1)
-                        print*, 'Number of floating', count(adhesion==0)
-                        print*, 'Number of calling Nearest_Cell_Serch=', num_NCS
-                        num_NCS = 0
-                        call writeout(n)  !結果出力
+                        call standard_output
+                        call output(n)  !結果出力
                   end if
 
                   if(INTERVAL_FLOW > 0) then
@@ -161,9 +134,15 @@ PROGRAM MAIN
 
             print*, 'Output_Path=', path_out
 
-
-
       end subroutine set_path
+
+      subroutine standard_output
+            print*, 'Startdate = ', trim(d_start), ' time = ', trim(t_start)
+            print*, 'Now_Step_Time=', nowtime, '[sec]'
+            print*, 'Number of floating', get_drop_info('floating')
+            print*, 'Number of calling Nearest_Cell_Serch=', num_NCS
+            num_NCS = 0
+      end subroutine standard_output
 
       subroutine final_result
             integer n_unit
@@ -172,15 +151,11 @@ PROGRAM MAIN
                   write(n_unit,*)'date = ', d_start, ' time = ', t_start
                   write(n_unit,*)'date = ', d_stop,  ' time = ', t_stop
                   WRITE(n_unit,*) '======================================================='
-                  WRITE(n_unit,*) 'alive =', count(adhesion==0)
+                  WRITE(n_unit,*) 'alive =', get_drop_info('floating')
                   WRITE(n_unit,*) 'Step =', n !計算回数
                   write(n_unit,*) 'TIME[sec]=', nowtime
-                  WRITE(n_unit,*) 'vndeath =',count(adhesion==-1) !生存率で消滅
-                  WRITE(n_unit,*) 'vnadhesion =', count(adhesion >= 1) !付着したすべてのウイルス数
-                  WRITE(n_unit,*) 'vnwall =',count(adhesion==1),count(adhesion==2) !かべで止まったウイルス数
-                  WRITE(n_unit,*) 'vnfloor =',count(adhesion==3),count(adhesion==4) !ゆかで止まったウイルス数
-                  WRITE(n_unit,*) 'vnout =',count(adhesion==5) !流出したウイルス数
-                  write(n_unit,*) 'vncombination =',count(adhesion==-2) !結合回数
+                  WRITE(n_unit,*) 'vndeath =',get_drop_info('death') !生存率で消滅
+                  WRITE(n_unit,*) 'vnadhesion =', get_drop_info('adhesion') !付着したすべてのウイルス数
                   WRITE(n_unit,*) '======================================================='
             close(n_unit)
             
