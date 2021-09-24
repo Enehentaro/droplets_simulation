@@ -13,9 +13,6 @@ module drop_motion_mod
 
     integer, private :: num_droplets   !全飛沫数
     integer interval, T, RH
-
-    double precision coeff  !蒸発方程式の係数
-    double precision gumma  !空気と飛沫（水）の密度比
  
     character path_out_base*99, path_out*99, head_out*10
 
@@ -116,7 +113,8 @@ module drop_motion_mod
         real(8) random_rad
         !====================================================================================
 
-        call csv_reader_dble('radius_distribution.csv', threshold)
+        ! call csv_reader_dble('radius_distribution.csv', threshold)
+        threshold = read_csv_dble('radius_distribution.csv')
 
         allocate(rad_cnt(size(threshold, dim=2)), source=0)
 

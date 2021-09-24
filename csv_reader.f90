@@ -23,9 +23,10 @@ module csv_reader
             if(present(column)) mat_size(1) = column
 
             allocate(matrix(mat_size(1), mat_size(2)))
+            print *, 'Size =', mat_size(:)
 
             rewind (Num_unit)  ! ファイルの最初に戻る
-            print *, 'Size =', mat_size(:)
+
             if(header_flag) read (Num_unit, '()') !ヘッダーの読み飛ばし
             do i = 1, mat_size(2)        !本読み込み
                 read (Num_unit, *) matrix(:,i)
