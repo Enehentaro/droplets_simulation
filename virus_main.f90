@@ -7,6 +7,7 @@
       include 'csv_reader.f90'
       include 'cases_reader.f90'
       include 'flow_field.f90'
+      include 'equation_mod.f90'
       include 'drop_motion.f90'
 !*******************************************************************************************
 PROGRAM MAIN
@@ -17,14 +18,13 @@ PROGRAM MAIN
       character(7), parameter :: OS = 'Windows'
 
       integer n, nc, nc_max
-      real nowtime
-      double precision Step_air
+      double precision Step_air, now_time
       character(20) :: d_start, d_stop, t_start, t_stop
 !===========================================================================================
       call date_and_time(date = d_start, time = t_start)
       print*,'date = ', trim(d_start), ' time = ', trim(t_start)
 
-      call input_condition    !条件TXTの読み込み
+      call pre_setting    !条件TXTの読み込み
 
       nc_max = check_cases(PATH_AIR)      !連続実行数の取得
 
@@ -34,13 +34,11 @@ PROGRAM MAIN
             ! stop
       end if
 
-      call calc_initial_droplet     !初期配置、初期半径の計算
-
       do nc = 1, nc_max
 
             call set_path     !パスなどの整理
 
-            call Set_Coefficients   !方程式系の係数を計算
+            call set_coeff_drdt(T, RH)  !温湿度依存の係数の設定
 
             call initialization_droplet
             
@@ -53,7 +51,7 @@ PROGRAM MAIN
 
             DO n = n_start + 1, n_end
 
-                  nowtime = real(n*dt*L_chara/U_chara)  !現在ステップ実時刻[sec]
+                  now_time = real_time(n)  !現在ステップ実時刻[sec]
 
                   call survival_check(n)  !生存率に関する処理
 
@@ -120,11 +118,11 @@ PROGRAM MAIN
                         path_out =  replace_str(path_out, '\', '/' )
                         PATH_AIR = replace_str(PATH_AIR, '\', '/' )
                         call system('mkdir -p -v '//path_out)
-                        call system('cp condition_virus.txt '//path_out)
+                        call system('cp condition.txt '//path_out)
 
                   case ('Windows')  !for_Windows
                         call system('md '//path_out)
-                        call system('copy condition_virus.txt '//path_out)
+                        call system('copy condition.txt '//path_out)
 
                   case default
                         print*, 'OS ERROR', OS
@@ -138,7 +136,7 @@ PROGRAM MAIN
 
       subroutine standard_output
             print*, 'Startdate = ', trim(d_start), ' time = ', trim(t_start)
-            print*, 'Now_Step_Time=', nowtime, '[sec]'
+            print*, 'Now_Step_Time=', now_time, '[sec]'
             print*, 'Number of floating', get_drop_info('floating')
             print*, 'Number of calling Nearest_Cell_Serch=', num_NCS
             num_NCS = 0
@@ -153,7 +151,7 @@ PROGRAM MAIN
                   WRITE(n_unit,*) '======================================================='
                   WRITE(n_unit,*) 'alive =', get_drop_info('floating')
                   WRITE(n_unit,*) 'Step =', n !計算回数
-                  write(n_unit,*) 'TIME[sec]=', nowtime
+                  write(n_unit,*) 'TIME[sec]=', now_time
                   WRITE(n_unit,*) 'vndeath =',get_drop_info('death') !生存率で消滅
                   WRITE(n_unit,*) 'vnadhesion =', get_drop_info('adhesion') !付着したすべてのウイルス数
                   WRITE(n_unit,*) '======================================================='

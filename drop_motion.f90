@@ -1,5 +1,6 @@
 module drop_motion_mod
     use flow_field
+    use equation_mod
     implicit none
 
     type :: virus_droplet
@@ -12,30 +13,25 @@ module drop_motion_mod
 
     integer, private :: num_droplets   !全飛沫数
     integer interval, T, RH
- 
-    double precision dt, U_chara, L_chara, Roh_chara, Mu_chara
 
     double precision coeff  !蒸発方程式の係数
     double precision gumma  !空気と飛沫（水）の密度比
  
-    character path_out_base*20, path_out*99, head_out*10
-
-    double precision :: center_posi(3), width_posi(3)   !初期配置帯の中心座標および幅
-    double precision :: G(3), direction_g(3)            !無次元重力加速度ベクトル, 重力方向ベクトル
+    character path_out_base*99, path_out*99, head_out*10
 
     integer num_restart, n_start, n_end
     integer, private :: LoopS, LoopF, OFFSET
     integer :: num_NCS=0    !NearestCell探索を行った回数のカウンター
     double precision Rdt    !飛沫計算と気流計算の時間間隔の比
-    double precision, private :: Re     !レイノルズ数
 
     contains
 
-    subroutine input_condition
-        double precision DTa
-        integer L, n_unit
+    subroutine pre_setting
+        double precision DTa, dt, L, U, Rho, Mu
+        double precision :: direction_g(3)
+        integer i, n_unit
 
-        OPEN(newunit=n_unit,FILE='condition_virus.txt',STATUS='OLD')
+        OPEN(newunit=n_unit,FILE='condition.txt',STATUS='OLD')
             read(n_unit,'()')
             read(n_unit,*) num_restart
             read(n_unit,'()')
@@ -53,10 +49,7 @@ module drop_motion_mod
             read(n_unit,'()')
             read(n_unit,*) num_droplets
             read(n_unit,'()')
-            read(n_unit,*) (center_posi(L), L=1,3)
-            read(n_unit,*) (width_posi(L), L=1,3)
-            read(n_unit,'()')
-            read(n_unit,*) (direction_g(L), L=1,3)
+            read(n_unit,*) (direction_g(i), i=1,3)
             
             read(n_unit,'()')
     
@@ -72,15 +65,14 @@ module drop_motion_mod
             read(n_unit,*) LoopS
             read(n_unit,*) LoopF
             read(n_unit,'()')
-            read(n_unit,*) L_chara
-            read(n_unit,*) U_chara
-            read(n_unit,*) Roh_chara
-            read(n_unit,*) Mu_chara
+            read(n_unit,*) L
+            read(n_unit,*) U
+            read(n_unit,*) Rho
+            read(n_unit,*) Mu
 
         CLOSE(n_unit)
 
         Rdt = dt/DTa                       !データ読み込み時に時間軸合わせるパラメータ
-        Re = (Roh_chara*U_chara*L_chara)/Mu_chara
 
         allocate(droplets(num_droplets))
         if(num_restart <= 0) allocate(droplets_ini(num_droplets))
@@ -92,15 +84,12 @@ module drop_motion_mod
         print*, 'loop=',loops,loopf
         print*, 'dt =',dt
         print*, 'Rdt', Rdt
-        print*, 'Re =',Re
 
         print*, 'PATH_AIR=', PATH_AIR
 
+        call set_basical_variables(dt, L, U, Rho, Mu)
 
-    end subroutine input_condition
-
-    subroutine calc_initial_droplet
-        implicit none
+        call set_gravity_acceleration(direction_g)
 
         if(num_restart==0) then
             call calc_initial_position
@@ -115,8 +104,8 @@ module drop_motion_mod
         end if
 
         droplets_ini(:)%radius_min = get_minimum_radius(droplets_ini(:)%radius) !最小半径の計算
-    
-    end subroutine calc_initial_droplet
+
+    end subroutine pre_setting
 
     subroutine calc_initial_radius
         use csv_reader
@@ -149,7 +138,7 @@ module drop_motion_mod
 
         print*, shape(droplets_ini(:)%radius), shape(radius_dim(:))
 
-        droplets_ini(:)%radius = radius_dim(:) / L_chara         !初期飛沫半径のセットおよび無次元化
+        droplets_ini(:)%radius = radius_dim(:) / representative_value('Length') !初期飛沫半径のセットおよび無次元化
 
         if (sum(rad_cnt) /= num_droplets) then
             print*, 'random_rad_ERROR', sum(rad_cnt), num_droplets
@@ -185,43 +174,57 @@ module drop_motion_mod
     end function get_minimum_radius
 
     subroutine calc_initial_position
-        integer kx,ky,kz, num_node, m, k
-        double precision :: standard(3), delta(3), randble(3)
+        use csv_reader
+        integer kx,ky,kz, num_per_edge, m, k
+        integer i_box, num_box
+        double precision :: standard(3), delta(3), width(3), randble(3)
+        double precision, allocatable :: position_mat(:,:)
+
+        call csv_reader_dble('initial_position.csv', position_mat)
+
+        num_box = size(position_mat, dim=2)
+        
+        print*, 'calc_initial_position'
 
         m = 1
         k = 0
 
-        print*, 'calc_initial_position', m, k
-
-        standard(:) = center_posi(:) - 0.5d0*width_posi(3)
-
-        do while(m**3 < num_droplets)
+        do while(num_box*(m**3) < num_droplets)
             m = m + 1
         end do
-        num_node = m - 1
+        num_per_edge = m - 1    !配置帯一辺当たりの飛沫数
 
-        delta(:) = width_posi(:) / dble(num_node-1)
 
-        do kx = 1, num_node
+        do i_box = 1, num_box
+  
+            width(:) = position_mat(4:6, i_box)
+            standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
+            delta(:) = width(:) / dble(num_per_edge - 1)
 
-            do ky = 1, num_node
+            do kx = 1, num_per_edge
 
-                do kz = 1, num_node
+                do ky = 1, num_per_edge
 
-                    k = k + 1
-                    droplets_ini(k)%coordinate(1) = standard(1) + delta(1)*dble(kx - 1)
-                    droplets_ini(k)%coordinate(2) = standard(2) + delta(2)*dble(ky - 1)
-                    droplets_ini(k)%coordinate(3) = standard(3) + delta(3)*dble(kz - 1)
-                    
+                    do kz = 1, num_per_edge
+
+                        k = k + 1
+                        droplets_ini(k)%coordinate(1) = standard(1) + delta(1)*dble(kx - 1)
+                        droplets_ini(k)%coordinate(2) = standard(2) + delta(2)*dble(ky - 1)
+                        droplets_ini(k)%coordinate(3) = standard(3) + delta(3)*dble(kz - 1)
+                        
+                    end do
                 end do
+
             end do
 
         end do
 
         do while(k < num_droplets)
             k = k + 1
+            i_box = mod(k, num_box) + 1
             call random_number(randble(:))
-            droplets_ini(k)%coordinate(:) = standard(:) + width_posi(:)*randble(:)
+            randble(:) = randble(:) - 0.5d0     !-0.5~0.5の乱数にする
+            droplets_ini(k)%coordinate(:) = position_mat(1:3, i_box) + position_mat(4:6, i_box)*randble(:)
         end do
 
     end subroutine calc_initial_position
@@ -373,7 +376,7 @@ module drop_motion_mod
 
         end if
         
-            write(n_unit,*) step*dt*L_chara/U_chara, ',', count(droplets_out(:)%status==0), ',',&
+            write(n_unit,*) real_time(step), ',', count(droplets_out(:)%status==0), ',',&
                 count(droplets_out(:)%status==2), ',', count(droplets_out(:)%status==3)
         close(n_unit)
 
@@ -389,62 +392,6 @@ module drop_motion_mod
         integer, intent(in) :: step
         call output_droplet_VTK(droplets, step)
     end subroutine output
-
-    !*************************************************************************************
-    subroutine Set_Coefficients
-        !*************************************************************************************
-        !=====================================================================================
-        double precision Es, TK, norm
-        double precision, parameter :: Rv = 461.51d0                           ! 水蒸気の気体定数[J/(kg.K)]
-        double precision, parameter :: Roh_d = 0.99822d0*1.0d3          ! 粒子（水）の密度[kg/m3]
-        double precision, parameter :: T0 = 273.15d0                               ! [K]
-        double precision, parameter :: D = 0.2564d0*1.0d-4           ! 水蒸気の拡散定数[m2/s]
-        double precision, parameter :: Lv = 2.451d0*1.0d6                  ! 水の蒸発潜熱[J/kg]
-        double precision, parameter :: Es0 = 6.11d0*1.0d2                  ! 基準温度における飽和蒸気圧[Pa]
-        double precision, parameter :: G_dim = 9.806650d0                          ! 重力加速度[m/s2]
-        !=====================================================================================  
-
-        TK = dble(T) + T0                                    ! 室温を絶対温度[K]に変換
-        Es = Es0*exp((Lv/Rv)*(1.0d0/T0 - 1.0d0/TK))       ! 室温に置ける飽和蒸気圧
-
-        norm = norm2(direction_g(:))
-        G(:) = G_dim * L_chara/(U_chara*U_chara) / norm * direction_g(:)    !無次元重力加速度
-        print*, 'G_no_dim=', G(:)
-
-        coeff = -D/(U_chara*L_chara) * (1.0d0 - dble(RH)/100.d0)*Es / (Roh_d*Rv*TK) ! dr/dt の無次元係数
-        print*, 'coeff=', coeff
-    
-        gumma = Roh_chara / Roh_d     !密度比:    空気密度 / 飛沫(水)密度
-        print*, 'gumma=', gumma
-
-    end subroutine Set_Coefficients
-    !*******************************************************************************************
-
-    !*******************************************************************************************
-    subroutine evaporation(vn) !CALCULATE drplet evaporation
-        integer, intent(in) :: vn
-        real(8) drdt1,R1,R_approxi,drdt2,R2
-      
-            !========= 飛沫半径の変化の計算　(2次精度ルンゲクッタ（ホイン）) ===========================
-      
-        if (droplets(vn)%radius <= droplets(vn)%radius_min) then  !半径が最小になったものを除く
-            droplets(vn)%radius = droplets(vn)%radius_min
-            return
-        end if
-    
-        drdt1 = coeff / droplets(vn)%radius
-        R1 = dt*drdt1
-        R_approxi = droplets(vn)%radius + R1
-        if(R_approxi <= 0.0d0) R_approxi = droplets(vn)%radius
-        drdt2 = coeff / R_approxi
-        R2 = dt*drdt2
-        droplets(vn)%radius = droplets(vn)%radius + (R1+R2)*0.5d0
-        
-        droplets(vn)%radius = max(droplets(vn)%radius, droplets(vn)%radius_min)
-      
-        !*******************************************************************************************
-    end subroutine evaporation
-    !*******************************************************************************************
 
     !=====================================================================
     subroutine survival_check(step)
@@ -473,20 +420,6 @@ module drop_motion_mod
       
     end subroutine survival_check
 
-    double precision function survival_rate(step)
-        integer, intent(in) :: step
-        !-------- Calculate survival rate of virus ------------------------------
-        if(RH == 80)then  !　相対湿度80%の時使用
-            survival_rate = 0.67d0*0.5102d0**(((L_chara/U_chara)*dt*dble(step-1))/3600.0d0)
-        else if(RH == 50)then  !　相対湿度50%の時使用
-            survival_rate = 0.84d0*0.5735d0**(((L_chara/U_chara)*dt*dble(step-1))/3600.0d0)
-        else if(RH == 35)then  !　相対湿度35%の時使用
-            survival_rate = 0.86d0*0.9240d0**(((L_chara/U_chara)*dt*dble(step-1))/3600.0d0)
-        else !新型コロナウイルス（1.1時間で半減）(論文によると、湿度30,60,90%のときのデータしかない)
-            survival_rate = 0.999825d0**((L_chara/U_chara)*dt*dble(step-1))
-        end if
-    end function survival_rate
-
     subroutine Calculation_Droplets
         implicit none
         integer vn
@@ -500,6 +433,26 @@ module drop_motion_mod
         !$omp end parallel do 
 
     end subroutine Calculation_Droplets
+
+        !*******************************************************************************************
+    subroutine evaporation(vn) !CALCULATE drplet evaporation
+        integer, intent(in) :: vn
+        double precision radius_n
+      
+            !========= 飛沫半径の変化の計算　(2次精度ルンゲクッタ（ホイン）) ===========================
+      
+        if (droplets(vn)%radius <= droplets(vn)%radius_min) then  !半径が最小になったものを除く
+            droplets(vn)%radius = droplets(vn)%radius_min
+            return
+        end if
+    
+        radius_n = next_radius(droplets(vn)%radius)
+        
+        droplets(vn)%radius = max(radius_n, droplets(vn)%radius_min)
+      
+        !*******************************************************************************************
+    end subroutine evaporation
+    !*******************************************************************************************
 
     subroutine motion_calc(vn)
         integer, intent(in) :: vn
@@ -594,35 +547,14 @@ module drop_motion_mod
     
         else
     
-                droplets(vn)%velocity(:) = get_velocity(V(:), VELC(:, NCN), droplets(vn)%radius)
-                
-                droplets(vn)%coordinate(:) = X(:) + (V(:) + droplets(vn)%velocity(:))*0.5d0*dt
+            droplets(vn)%velocity(:) = next_velocity(V(:), VELC(:, NCN), droplets(vn)%radius)
+            
+            droplets(vn)%coordinate(:) = next_position(X(:), V(:), droplets(vn)%velocity(:))
             
         end if
     
         
     end subroutine motion_calc
-
-    !*******************************************************************************************
-    function get_velocity(vel_d, vel_a, radius_d) result(vel_d_next)
-        !*******************************************************************************************
-        !=====================================================================================
-        double precision, intent(in) :: vel_d(3), vel_a(3), radius_d
-        double precision speed_r, Re_d, Cd, Coefficient, vel_d_next(3)
-        !=====================================================================================
-
-        speed_r = norm2(vel_a(:) - vel_d(:))
-        Re_d = (speed_r * 2.0d0*radius_d) * Re + 1.d-9  !ゼロ割回避のため、小さな値を足す
-
-        Cd = (24.0d0/Re_d)*(1.0d0 + 0.15d0*(Re_d**0.687d0))
-
-        Coefficient = (3.0d0*Cd*gumma*speed_r)/(8.0d0*radius_d)
-
-        vel_d_next(:) = ( vel_d(:) + ( G(:) + Coefficient*vel_a(:) )*dt ) &
-                            / ( 1.0d0 + Coefficient*dt )
-
-    end function get_velocity
-    !----------------------------------------------------------------------------------
 
 !*******************************************************************************************
     integer function nearest_cell(X) !粒子vnに最も近いセルNCNの探索
