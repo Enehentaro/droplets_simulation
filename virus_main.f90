@@ -143,8 +143,6 @@ PROGRAM MAIN
             print*, 'Startdate = ', trim(d_start), ' time = ', trim(t_start)
             print*, 'Now_Step_Time=', now_time, '[sec]'
             print*, 'Number of floating', get_drop_info('floating')
-            print*, 'Number of calling Nearest_Cell_Serch=', num_NCS
-            num_NCS = 0
       end subroutine standard_output
 
       subroutine final_result
@@ -157,8 +155,9 @@ PROGRAM MAIN
                   WRITE(n_unit,*) 'alive =', get_drop_info('floating')
                   WRITE(n_unit,*) 'Step =', n_end !計算回数
                   write(n_unit,*) 'TIME[sec]=', now_time
-                  WRITE(n_unit,*) 'vndeath =',get_drop_info('death') !生存率で消滅
-                  WRITE(n_unit,*) 'vnadhesion =', get_drop_info('adhesion') !付着したすべてのウイルス数
+                  WRITE(n_unit,*) 'death =', get_drop_info('death') !生存率で消滅
+                  WRITE(n_unit,*) 'coalescence =', get_drop_info('coalescence') !生存率で消滅
+                  WRITE(n_unit,*) 'adhesion =', get_drop_info('adhesion') !付着したすべてのウイルス数
                   WRITE(n_unit,*) '======================================================='
             close(n_unit)
             

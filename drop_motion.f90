@@ -22,12 +22,33 @@ module drop_motion_mod
 
     integer num_restart, n_start, n_end
     integer, private :: LoopS, LoopF, OFFSET
-    integer :: num_NCS=0    !NearestCell探索を行った回数のカウンター
     double precision Rdt    !飛沫計算と気流計算の時間間隔の比
 
     contains
 
     subroutine pre_setting
+
+        call read_condition
+
+        if(num_restart==0) then
+            
+            call random_set  !実行時刻に応じた乱数シード設定
+            call calc_initial_position
+            call calc_initial_radius
+
+        else if(num_restart==-1) then
+            droplets_ini(:) = read_droplet_VTK('initial_distribution.vtk')
+
+        else
+            return  !リスタートなら無視
+
+        end if
+
+        droplets_ini(:)%radius_min = get_minimum_radius(droplets_ini(:)%radius, RH) !最小半径の計算
+
+    end subroutine pre_setting
+
+    subroutine read_condition
         double precision DTa, dt, L, U, Rho, Mu
         double precision :: direction_g(3)
         integer i, n_unit
@@ -92,23 +113,7 @@ module drop_motion_mod
 
         call set_gravity_acceleration(direction_g)
 
-        if(num_restart==0) then
-            
-            call random_set  !実行時刻に応じた乱数シード設定
-            call calc_initial_position
-            call calc_initial_radius
-
-        else if(num_restart==-1) then
-            droplets_ini(:) = read_droplet_VTK('initial_distribution.vtk')
-
-        else
-            return  !リスタートなら無視
-
-        end if
-
-        droplets_ini(:)%radius_min = get_minimum_radius(droplets_ini(:)%radius) !最小半径の計算
-
-    end subroutine pre_setting
+    end subroutine read_condition
 
     subroutine calc_initial_radius
         use csv_reader
@@ -152,28 +157,6 @@ module drop_motion_mod
         end do
 
     end subroutine calc_initial_radius
-
-    function get_minimum_radius(initial_radius) result(minimum_radius)
-        implicit none
-        double precision, intent(in) :: initial_radius(:)
-        double precision :: minimum_radius(size(initial_radius))
-
-        if(RH==100)then
-            minimum_radius(:) = initial_radius(:)
-        else if(RH > 90.and.RH < 100)then
-            minimum_radius(:) = initial_radius(:)*(0.0001*exp(0.0869*dble(RH)))
-        else if(RH==90)then
-            minimum_radius(:) = initial_radius(:)*0.28d0      !飛沫の最小半径
-        else if(RH >= 64.and.RH < 90)then
-            minimum_radius(:) = initial_radius(:)*(0.073*exp(0.014*dble(RH)))
-        else if(RH < 64)then
-            minimum_radius(:) = initial_radius(:)*0.19d0
-        else
-            print*,'rad_minERROR', RH
-            STOP
-        end if
-
-    end function get_minimum_radius
 
     subroutine calc_initial_position
         use csv_reader
@@ -255,7 +238,7 @@ module drop_motion_mod
 
                 write(fname_first,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') 0
                 droplets_first(:) = read_droplet_VTK(fname_first)
-                droplets(:)%radius_min = get_minimum_radius(droplets_first(:)%radius) !最小半径の計算
+                droplets(:)%radius_min = get_minimum_radius(droplets_first(:)%radius, RH) !最小半径の計算
             end block
 
             n_start = num_restart
@@ -286,7 +269,7 @@ module drop_motion_mod
             read(n_unit,'()')
             read(n_unit,'()')
             DO vn = 1,num_droplets
-                read(n_unit,'(3(F20.16,2X))') droplets_read(vn)%coordinate(:)
+                read(n_unit,'(3(E20.12,2X))') droplets_read(vn)%coordinate(:)
             END DO
             read(n_unit,'()')
             read(n_unit,'()')
@@ -303,7 +286,7 @@ module drop_motion_mod
             read(n_unit,'()')
             read(n_unit,'()')
             DO vn = 1,num_droplets
-                read(n_unit,'(F20.16)') diameter(vn)
+                read(n_unit,'(E20.12)') diameter(vn)
             END DO
             read(n_unit,'()')
             read(n_unit,'()')
@@ -312,7 +295,7 @@ module drop_motion_mod
             END DO
             read(n_unit,'()')
             DO vn = 1,num_droplets
-                read(n_unit,'(3(F20.16,2X))') droplets_read(vn)%velocity(:)
+                read(n_unit,'(3(E20.12,2X))') droplets_read(vn)%velocity(:)
             END DO
         close(n_unit)
     
@@ -339,7 +322,7 @@ module drop_motion_mod
             write(n_unit,'(A)') 'DATASET UNSTRUCTURED_GRID'
             write(n_unit,'(A,I12,A)') 'POINTS ',num_droplets,' float'                              !節点の数
             DO vn = 1,num_droplets                                                             !節点の数だけループ
-                write(n_unit,'(3(F20.16,2X))') droplets_out(vn)%coordinate(:)   !節点の座標（左から順にx,y,z）
+                write(n_unit,'(3(E20.12,2X))') droplets_out(vn)%coordinate(:)   !節点の座標（左から順にx,y,z）
             END DO
             write(n_unit,'()')                                                              !改行
             write(n_unit,'(A,I12,2X,I12)') 'CELLS ', num_droplets, num_droplets*2                          !セルの数、セルの数×2
@@ -356,7 +339,7 @@ module drop_motion_mod
             write(n_unit,'(A)') 'SCALARS Diameter float'                                  !まずは飛沫の直径
             write(n_unit,'(A)') 'LOOKUP_TABLE default'
             DO vn = 1,num_droplets                                                             !セルの数だけループ
-                write(n_unit,'(F20.16)') droplets_out(vn)%radius*2.0d0                            !飛沫の直径
+                write(n_unit,'(E20.12)') droplets_out(vn)%radius*2.0d0                            !飛沫の直径
             END DO
             write(n_unit,'(A)') 'SCALARS Status int'                                   !次は飛沫の状態(0:浮遊、1:付着、2:回収)
             write(n_unit,'(A)') 'LOOKUP_TABLE default'
@@ -365,7 +348,7 @@ module drop_motion_mod
             END DO
             write(n_unit,'(A)') 'VECTORS Velocity float'                             !最後に飛沫の速度
             DO vn = 1,num_droplets                                                             !セルの数だけループ
-                write(n_unit,'(3(F20.16,2X))') droplets_out(vn)%velocity(:)               !飛沫の速度
+                write(n_unit,'(3(E20.12,2X))') droplets_out(vn)%velocity(:)               !飛沫の速度
             END DO
         close(n_unit)
 
@@ -453,7 +436,7 @@ module drop_motion_mod
             return
         end if
     
-        radius_n = next_radius(droplets(vn)%radius)
+        radius_n = evaporatin_eq(droplets(vn)%radius)
         
         droplets(vn)%radius = max(radius_n, droplets(vn)%radius_min)
       
@@ -473,17 +456,17 @@ module drop_motion_mod
         NCN = droplets(vn)%cell_ref     !前回参照セルを代入
     
         if(NCN == 0) then   !参照セルが見つかっていない（＝初期ステップ）
-                NCN = nearest_cell(X)    
-                print*, 'FirstNCN:', NCN
-                droplets(:)%cell_ref = NCN !全粒子が同一セル参照と仮定して時間短縮を図る
+            NCN = nearest_cell(X)    
+            print*, 'FirstNCN:', NCN
+            droplets(:)%cell_ref = NCN !全粒子が同一セル参照と仮定して時間短縮を図る
     
         else
-                NCN = nearer_cell(X, NCN)
-                if (NCN == 0) then
-                    print*, 'NCN_ERROR:', vn, NCN
-                    stop
-                end if
-                if (.not.nearcell_check(X(:), NCN)) NCN = nearest_cell(X)
+            NCN = nearer_cell(X, NCN)
+            if (NCN == 0) then
+                print*, 'NCN_ERROR:', vn, NCN
+                stop
+            end if
+            if (.not.nearcell_check(X(:), NCN)) NCN = nearest_cell(X)
     
         end if
 
@@ -492,69 +475,69 @@ module drop_motion_mod
     
         droplets(vn)%cell_ref = NCN    !結果を参照セル配列に記憶
 
-        call area_check(vn, stopflag)
+        call area_check(X(:), stopflag)
     
         if (stopflag) then
             
-                ! if ((X(1)>1.59d0.and.X(1)<2.01d0).and.&
-                !       (X(2)>0.25d0.and.X(2)<0.35d0).and.&
-                !       (X(3)>0.01d0.and.X(3)<0.75d0)) then
-                !       droplets(vn)%status = 2       !AP_air_cleaner
-                ! else
-                !       droplets(vn)%status = 1
-                ! end if
-    
-                if ((X(1)>0.29d0.and.X(1)<0.31d0).and.&
-                        (X(2)>2.94d0.and.X(2)<3.36d0).and.&
-                        (X(3)>0.01d0.and.X(3)<0.74d0)) then
-    
-                    droplets(vn)%status = 2       !ACAP_air_cleaner_left
-    
-                else if ((X(1)>1.58d0.and.X(1)<2.02d0).and.&
-                        (X(2)>5.99d0.and.X(2)<6.01d0).and.&
-                        (X(3)>0.01d0.and.X(3)<0.74d0)) then
-    
-                    droplets(vn)%status = 2       !ACAP_air_cleaner_oposit
-    
-                else if ((X(1)>1.58d0.and.X(1)<2.02d0).and.&
-                        (X(2)>0.29d0.and.X(2)<0.31d0).and.&
-                        (X(3)>0.01d0.and.X(3)<0.74d0)) then
-    
-                    droplets(vn)%status = 2       !ACAP_air_cleaner_under
-    
-    
-                else if ((X(1)>1.43d0.and.X(1)<2.18d0).and.&
-                        (X(2)>0.01d0.and.X(2)<0.22d0).and.&
-                        (X(3)>2.15d0.and.X(3)<2.18d0)) then
-    
-                    call random_number(randble)
-    
-                    if (randble < 0.015d0) then
-                            droplets(vn)%status = 3       !ACAP_air_conditioner
-    
-                    else
-                            droplets(vn)%coordinate(1) = X(1)
-                            droplets(vn)%coordinate(2) = X(2) + 0.23d0
-                            droplets(vn)%coordinate(3) = X(3) - 0.26d0
-    
-                            droplets(vn)%velocity(:) = 0.0d0     !速度をゼロに
-    
-                            return
-            
-                    end if
-    
-    
-                else
-                    droplets(vn)%status = 1
+            ! if ((X(1)>1.59d0.and.X(1)<2.01d0).and.&
+            !       (X(2)>0.25d0.and.X(2)<0.35d0).and.&
+            !       (X(3)>0.01d0.and.X(3)<0.75d0)) then
+            !       droplets(vn)%status = 2       !AP_air_cleaner
+            ! else
+            !       droplets(vn)%status = 1
+            ! end if
 
+            if ((X(1)>0.29d0.and.X(1)<0.31d0).and.&
+                    (X(2)>2.94d0.and.X(2)<3.36d0).and.&
+                    (X(3)>0.01d0.and.X(3)<0.74d0)) then
+
+                droplets(vn)%status = 2       !ACAP_air_cleaner_left
+
+            else if ((X(1)>1.58d0.and.X(1)<2.02d0).and.&
+                    (X(2)>5.99d0.and.X(2)<6.01d0).and.&
+                    (X(3)>0.01d0.and.X(3)<0.74d0)) then
+
+                droplets(vn)%status = 2       !ACAP_air_cleaner_oposit
+
+            else if ((X(1)>1.58d0.and.X(1)<2.02d0).and.&
+                    (X(2)>0.29d0.and.X(2)<0.31d0).and.&
+                    (X(3)>0.01d0.and.X(3)<0.74d0)) then
+
+                droplets(vn)%status = 2       !ACAP_air_cleaner_under
+
+
+            else if ((X(1)>1.43d0.and.X(1)<2.18d0).and.&
+                    (X(2)>0.01d0.and.X(2)<0.22d0).and.&
+                    (X(3)>2.15d0.and.X(3)<2.18d0)) then
+
+                call random_number(randble)
+
+                if (randble < 0.015d0) then
+                        droplets(vn)%status = 3       !ACAP_air_conditioner
+
+                else
+                        droplets(vn)%coordinate(1) = X(1)
+                        droplets(vn)%coordinate(2) = X(2) + 0.23d0
+                        droplets(vn)%coordinate(3) = X(3) - 0.26d0
+
+                        droplets(vn)%velocity(:) = 0.0d0     !速度をゼロに
+
+                        return
+        
                 end if
-    
-                droplets(vn)%velocity(:) = 0.0d0     !速度をゼロに
-                droplets(vn)%coordinate(:) = X(:)
+
+
+            else
+                droplets(vn)%status = 1
+
+            end if
+
+            droplets(vn)%velocity(:) = 0.0d0     !速度をゼロに
+            droplets(vn)%coordinate(:) = X(:)
     
         else
     
-            droplets(vn)%velocity(:) = next_velocity(V(:), VELC(:, NCN), droplets(vn)%radius)
+            droplets(vn)%velocity(:) = motion_eq(V(:), VELC(:, NCN), droplets(vn)%radius)
             
             droplets(vn)%coordinate(:) = next_position(X(:), V(:), droplets(vn)%velocity(:))
             
@@ -562,75 +545,6 @@ module drop_motion_mod
     
         
     end subroutine motion_calc
-
-!*******************************************************************************************
-    integer function nearest_cell(X) !粒子vnに最も近いセルNCNの探索
-        double precision, intent(in) :: X(3)
-        integer II, IIMX
-        double precision, allocatable :: distance(:)
-        !=====================================================================================
-        num_NCS = num_NCS +1
-
-        IIMX = size(CENC, dim=2)
-
-        allocate(distance(IIMX))
-        !↓↓↓↓　一番近いセル中心の探索
-        !$omp parallel do
-        DO II = 1,IIMX
-                distance(II) = norm2(CENC(:,II) - X(:))
-        END DO
-        !$omp end parallel do 
-        !↑↑↑↑
-        
-        nearest_cell = minloc(distance, dim=1)   !最小値インデックス
-        
-    end function nearest_cell
-
-!----------------------------------------------------------------------------------   
-!*******************************************************************************************
-    integer function nearer_cell(X, NCN)  !近セルの探索（隣接セルから）
-        integer, intent(in) :: NCN
-        double precision, intent(in) :: X(3)
-        integer NC, IIaround, index_min
-        double precision :: distancecheck(2)
-        double precision, allocatable :: distance(:)
-        !=====================================================================================
-        nearer_cell = NCN
-        allocate(distance(NCMAX))
-        distancecheck(1) = norm2(CENC(:,nearer_cell)-X(:))   !注目セル重心と粒子との距離
-        
-        check:DO
-                distance(:) = 1.0d10     !初期値はなるべく大きくとる
-        
-                DO NC = 1, NUM_NC(nearer_cell)  !全隣接セルに対してループ。
-                    IIaround = NEXT_CELL(NC, nearer_cell)       !現時点で近いとされるセルの隣接セルのひとつに注目
-                    IF (IIaround > 0) then
-                            distance(NC) = norm2(CENC(:,IIaround)-X(:))   !注目セル重心と粒子との距離を距離配列に代入
-                    END IF
-        
-                END DO
-        
-                distancecheck(2) = minval(distance,dim=1)     !距離配列の最小値
-        
-                if(distancecheck(2) < distancecheck(1)) then !より近いセルの発見で条件満足
-                    distancecheck(1) = distancecheck(2)    !最小値の更新
-                    index_min = minloc(distance,dim=1)            !最小値のインデックス
-                    nearer_cell = NEXT_CELL(index_min, nearer_cell)    !現時点で近いとされるセルの更新
-                    if(nearer_cell==0) then
-                            print*,'nearer_cell_error', nearer_cell, X(:)
-                            return
-                    end if
-
-                else  !より近いセルを発見できなかった場合
-        
-                    exit check     !ループ脱出
-        
-                end if
-        
-        END DO check
-        
-    end function nearer_cell
-!*******************************************************************************************
                     
     logical function adhesion_check(vn, NCN)
 
@@ -655,24 +569,6 @@ module drop_motion_mod
 
     end function adhesion_check
 
-                    
-    logical function nearcell_check(X, NCN)
-        double precision, intent(in) :: X(3)
-        integer, intent(in) :: NCN
-        double precision :: distance
-
-        distance = norm2(X(:)-CENC(:,NCN))
-
-        if (distance < 1.0d1*WIDC(NCN)) then
-                nearcell_check = .True.
-        else
-                nearcell_check = .False.
-        end if
-
-
-    end function nearcell_check
-
-
     integer function get_num_air(n_virus)
         integer, intent(in) :: n_virus
         integer Lamda
@@ -695,7 +591,7 @@ module drop_motion_mod
 
         FNUM = get_num_air(n_virus)
 
-        write(digits_fmt,'("i", i1, ".", i1)') FNAME_DIGITS, FNAME_DIGITS
+        digits_fmt = get_digits_format()
 
         select case(FILE_TYPE)
             case('VTK')
@@ -742,14 +638,13 @@ module drop_motion_mod
         CENF(:,:,1) = CENF(:,:,2)
             
     end subroutine read_flow_field
-
-                                
+                      
     subroutine boundary_move !境界面の移動に合わせて付着飛沫も移動
         integer vn, JB
 
         ! print*, 'CALL:boundary_move'
 
-        do vn = 1, size(droplets)
+        do vn = 1, num_droplets
         
             if (droplets(vn)%status <= 0) cycle !付着していないならスルー
     
@@ -757,7 +652,7 @@ module drop_motion_mod
             if (JB > 0) then
                 droplets(vn)%coordinate(:) = droplets(vn)%coordinate(:) + CENF(:,JB,2) - CENF(:,JB,1) !面重心の移動量と同じだけ移動
             else
-                call area_check(vn)
+                call area_check(droplets(vn)%coordinate(:))
     
             end if
         
@@ -767,18 +662,18 @@ module drop_motion_mod
 
     end subroutine boundary_move
 
-    subroutine area_check(vn,check)
-        integer, intent(in) :: vn
+    subroutine area_check(x, check)
+        double precision, intent(inout) :: x(3)
         logical,optional,intent(inout) :: check
         integer L
 
         do L = 1, 3
     
-            if(droplets(vn)%coordinate(L) < MIN_CDN(L)) then
-                droplets(vn)%coordinate(L) = MIN_CDN(L)
+            if(x(L) < MIN_CDN(L)) then
+                x(L) = MIN_CDN(L)
                 if(present(check)) check = .true.
-            else if(droplets(vn)%coordinate(L) > MAX_CDN(L)) then
-                droplets(vn)%coordinate(L) = MAX_CDN(L)
+            else if(x(L) > MAX_CDN(L)) then
+                x(L) = MAX_CDN(L)
                 if(present(check)) check = .true.
             end if
 
@@ -798,6 +693,9 @@ module drop_motion_mod
 
             case('death')
                 get_drop_info = count(droplets(:)%status == -1)
+
+            case('coalescence')
+                get_drop_info = count(droplets(:)%status == -2)
 
             case default
                 get_drop_info = 0
@@ -849,8 +747,9 @@ module drop_motion_mod
         integer d1, d2, num_floating, i, i_origin
         integer, save :: last_coalescence
         type(vd_extracted), allocatable :: floatings(:)
-        double precision :: distance, r1, r2, rc, vol1, vol2, vc(3)
+        double precision :: distance, r1, r2
 
+    !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
         if((step - last_coalescence) > 100) return
 
         floatings = get_floating_droplets(droplets(:))
@@ -867,26 +766,8 @@ module drop_motion_mod
                 r2 = floatings(d2)%radius
 
                 if((r1+r2) >= distance) then
-                    vol1 = r1**3
-                    vol2 = r2**3
-                    rc = (vol1 + vol2)**(1.d0/3.d0)
-                    vc(:) = (vol1*floatings(d1)%velocity(:) + vol2*floatings(d2)%velocity(:)) / (vol1 + vol2)
-                    if(r1 >= r2) then
-                        floatings(d1)%radius = rc
-                        floatings(d1)%velocity(:) = vc(:)
-                        floatings(d2)%radius = 0.d0
-                        floatings(d2)%velocity(:) = 0.d0
-                        floatings(d2)%status = -2
-                    else
-                        floatings(d2)%radius = rc
-                        floatings(d2)%velocity(:) = vc(:)
-                        floatings(d1)%radius = 0.d0
-                        floatings(d1)%velocity(:) = 0.d0
-                        floatings(d1)%status = -2
-                        cycle drop1
-                    end if
-
                     print*, 'Coalescence', d1, d2
+                    call coalescence(floatings(d1)%virus_droplet, floatings(d2)%virus_droplet)
                     last_coalescence = step
 
                 end if
@@ -902,5 +783,29 @@ module drop_motion_mod
 
     end subroutine coalescence_check
 
+    subroutine coalescence(droplet1, droplet2)
+        type(virus_droplet), intent(inout) :: droplet1, droplet2
+        double precision :: radius_c, volume1, volume2, velocity_c(3)
+
+        volume1 = droplet1%radius**3
+        volume2 = droplet2%radius**3
+        radius_c = (volume1 + volume2)**(1.d0/3.d0)
+        velocity_c(:) = (volume1*droplet1%velocity(:) + volume2*droplet2%velocity(:)) / (volume1 + volume2)
+        
+        if(volume1 >= volume2) then
+            droplet1%radius = radius_c
+            droplet1%velocity(:) = velocity_c(:)
+            droplet2%radius = 0.d0
+            droplet2%velocity(:) = 0.d0
+            droplet2%status = -2
+        else
+            droplet2%radius = radius_c
+            droplet2%velocity(:) = velocity_c(:)
+            droplet1%radius = 0.d0
+            droplet1%velocity(:) = 0.d0
+            droplet1%status = -2
+        end if
+
+    end subroutine coalescence
 
 end module drop_motion_mod

@@ -115,17 +115,18 @@ module csv_reader
             read(Num_unit, '(A)', iostat=ios) A !ファイル終端であればiosに-1が返る
             if((trim(A) == '').or.(ios/=0)) exit    !終端もしくは空白行であればループ脱出
             mat_size(2) = mat_size(2) + 1
-            if(mat_size(1)==0) mat_size(1) = get_columns(A)
+            if(mat_size(1)==0) mat_size(1) = get_columns(trim(A))
         end do
 
     end function get_size_csv
 
     integer function get_columns(str)
         character(*), intent(in) :: str
-        character(1) :: delimiter = ','
+        character(1) delimiter
         integer i, j
 
-        ! if(index(str, ' ') > 0) delimiter = ' '
+        delimiter = ','
+        if(index(str, ',') == 0) delimiter = ' '
 
         get_columns = 1
         i = 1

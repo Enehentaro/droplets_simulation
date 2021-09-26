@@ -60,8 +60,28 @@ module equation_mod
     end subroutine set_coeff_drdt
     !*******************************************************************************************
 
+    function get_minimum_radius(initial_radius, RH) result(minimum_radius)
+        implicit none
+        double precision, intent(in) :: initial_radius(:)
+        integer, intent(in) :: RH
+        double precision :: minimum_radius(size(initial_radius))
+
+        if(RH < 64) then
+            minimum_radius(:) = initial_radius(:)*0.19d0
+        else if(RH < 90) then
+            minimum_radius(:) = initial_radius(:)*(0.073*exp(0.014*dble(RH)))
+        else if(RH == 90) then
+            minimum_radius(:) = initial_radius(:)*0.28d0
+        else if(RH < 100) then
+            minimum_radius(:) = initial_radius(:)*(0.0001*exp(0.0869*dble(RH)))
+        else
+            minimum_radius(:) = initial_radius(:)
+        end if
+
+    end function get_minimum_radius
+
     !*******************************************************************************************
-    double precision function next_radius(radius)
+    double precision function evaporatin_eq(radius)
         double precision, intent(in) :: radius
         double precision drdt1,R1,R_approxi,drdt2,R2
       
@@ -75,14 +95,14 @@ module equation_mod
         drdt2 = coeff_drdt / R_approxi
         R2 = delta_t*drdt2
 
-        next_radius = radius + (R1+R2)*0.5d0
+        evaporatin_eq = radius + (R1+R2)*0.5d0
       
         !*******************************************************************************************
-    end function next_radius
+    end function evaporatin_eq
     !*******************************************************************************************
 
     !*******************************************************************************************
-    function next_velocity(vel_d, vel_a, radius_d) result(vel_d_next)
+    function motion_eq(vel_d, vel_a, radius_d) result(vel_d_next)
         !*******************************************************************************************
         !=====================================================================================
         double precision, intent(in) :: vel_d(3), vel_a(3), radius_d
@@ -99,7 +119,7 @@ module equation_mod
         vel_d_next(:) = ( vel_d(:) + ( G(:) + Coefficient*vel_a(:) )* delta_t ) &
                             / ( 1.0d0 + Coefficient * delta_t )
 
-    end function next_velocity
+    end function motion_eq
     !----------------------------------------------------------------------------------
 
     !*******************************************************************************************
@@ -115,7 +135,7 @@ module equation_mod
     double precision function survival_rate(step)
         integer, intent(in) :: step
 
-        !このへんはインフルエンザのデータ（現在未使用）
+        !このへんはインフルエンザのデータ（現在不使用）
         ! if(RH == 80)then  !　相対湿度80%の時使用
         !     survival_rate = 0.67d0*0.5102d0**(((L_represent/U_represent)*dt*dble(step-1))/3600.0d0)
         ! else if(RH == 50)then  !　相対湿度50%の時使用
