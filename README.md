@@ -11,12 +11,14 @@ Simulation of Droplets Behavior in AFDET
   飛沫計算メインプログラム。以下をInclude。
   - flow_field.f90
   - drop_motion.f90
+  - equation_mod.f90
   - cases_reader.f90
   - csv_reader.f90
 
 ## 使用するモジュール
   - flow_field.f90   :流れ場の格子データに関する変数・手続き集
-  - drop_motion.f90   :飛沫の挙動に関する変数・手続き集
+  - drop_motion.f90  :飛沫の挙動に関する変数・手続き集
+  - equation_mod.f90 :方程式系を扱うモジュール
   - cases_reader.f90 :連続実行用ファイルcases.csvを読み込む
   - csv_reader.f90   :一般的なCSVファイルを読み込む
 
