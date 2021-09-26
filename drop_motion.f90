@@ -11,6 +11,10 @@ module drop_motion_mod
     type(virus_droplet), allocatable, private :: droplets(:)
     type(virus_droplet), allocatable, private :: droplets_ini(:)
 
+    type, extends(virus_droplet) :: vd_extracted
+        integer original_ID
+    end type
+
     integer, private :: num_droplets   !全飛沫数
     integer interval, T, RH
  
@@ -89,6 +93,8 @@ module drop_motion_mod
         call set_gravity_acceleration(direction_g)
 
         if(num_restart==0) then
+            
+            call random_set  !実行時刻に応じた乱数シード設定
             call calc_initial_position
             call calc_initial_radius
 
@@ -117,8 +123,6 @@ module drop_motion_mod
         threshold = read_csv_dble('radius_distribution.csv')
 
         allocate(rad_cnt(size(threshold, dim=2)), source=0)
-
-        call randomset  !実行時刻に応じた乱数シード設定
 
         do vn = 1, num_droplets                       !飛沫半径の分布を乱数によって与える
 
@@ -173,7 +177,7 @@ module drop_motion_mod
 
     subroutine calc_initial_position
         use csv_reader
-        integer kx,ky,kz, num_per_edge, m, k
+        integer kx,ky,kz, num_per_edge, num_per_box, m, k, k_end, cnt
         integer i_box, num_box
         double precision :: standard(3), delta(3), width(3), randble(3)
         double precision, allocatable :: position_mat(:,:)
@@ -181,18 +185,19 @@ module drop_motion_mod
         call csv_reader_dble('initial_position.csv', position_mat)
 
         num_box = size(position_mat, dim=2)
+
+        num_per_box = num_droplets / num_box
         
         print*, 'calc_initial_position'
 
         m = 1
-        k = 0
-
         do while(num_box*(m**3) < num_droplets)
             m = m + 1
         end do
         num_per_edge = m - 1    !配置帯一辺当たりの飛沫数
 
-
+        k = 0
+        cnt = 0
         do i_box = 1, num_box
   
             width(:) = position_mat(4:6, i_box)
@@ -211,18 +216,24 @@ module drop_motion_mod
                         droplets_ini(k)%coordinate(3) = standard(3) + delta(3)*dble(kz - 1)
                         
                     end do
+
                 end do
 
             end do
 
-        end do
+            k_end = i_box * num_per_box
+            if(i_box == num_box) k_end = num_droplets
 
-        do while(k < num_droplets)
-            k = k + 1
-            i_box = mod(k, num_box) + 1
-            call random_number(randble(:))
-            randble(:) = randble(:) - 0.5d0     !-0.5~0.5の乱数にする
-            droplets_ini(k)%coordinate(:) = position_mat(1:3, i_box) + position_mat(4:6, i_box)*randble(:)
+            do while(k < k_end)
+                k = k + 1
+                call random_number(randble(:))
+                droplets_ini(k)%coordinate(:) = standard(:) + width(:)*randble(:)
+            end do
+
+            print*, 'BOX', i_box, 'has', k - cnt, 'droplets.'
+
+            cnt = k
+
         end do
 
     end subroutine calc_initial_position
@@ -395,25 +406,23 @@ module drop_motion_mod
     subroutine survival_check(step)
         integer,intent(in) :: step
         integer vfloat, vn
+        double precision rand
         double precision, save :: death_rate = 0.d0
             
         vfloat = count(droplets(:)%status == 0)
-        if(vfloat == 0) return
+        if(vfloat == 0) return  !浮遊数がゼロならリターン
         death_rate = death_rate + dble(vfloat)*(survival_rate(step) - survival_rate(step+1))    !このステップで死滅すべき飛沫数
         
-        vn = num_droplets  !チェックはIDの後ろから
         do while(death_rate >= 1.0d0)
-            if (vn==0) then
-                exit
-
-            else if (droplets(vn)%status == 0) then !浮遊粒子からのみ除去する
+            call random_number(rand)    !死滅IDは乱数で決まる
+            vn = int(num_droplets*rand)
+            if (droplets(vn)%status == 0) then !浮遊粒子からのみ除去する
                 droplets(vn)%status = -1
-                droplets(vn)%coordinate(:) = -1.0d0
+                droplets(vn)%coordinate(:) = MIN_CDN(:) - 1.0d0 !計算エリア外に配置（不要かも）
                 droplets(vn)%velocity(:) = 0.0d0
                 death_rate = death_rate - 1.0d0
 
             end if
-            vn = vn - 1
         end do
       
     end subroutine survival_check
@@ -689,30 +698,30 @@ module drop_motion_mod
         write(digits_fmt,'("i", i1, ".", i1)') FNAME_DIGITS, FNAME_DIGITS
 
         select case(FILE_TYPE)
-                case('VTK')
-                    if (INTERVAL_FLOW == -1) then !定常解析
-                            FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
+            case('VTK')
+                if (INTERVAL_FLOW == -1) then !定常解析
+                    FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
+                else
+                    write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".vtk")') FNUM
+
+                end if
+                call read_VTK(FNAME)
+
+            case('INP')
+                if(INTERVAL_FLOW==-1) then
+                    FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
+                else
+                    if(FNUM==0) then
+                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".inp")') 1
                     else
-                            write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".vtk")') FNUM
-
+                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".inp")') FNUM
                     end if
-                    call read_VTK(FNAME)
+                end if
+                call read_INP(FNAME)   !INPを読み込む(SHARP用)
 
-                case('INP')
-                    if(INTERVAL_FLOW==-1) then
-                            FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
-                    else
-                            if(FNUM==0) then
-                                write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".inp")') 1
-                            else
-                                write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".inp")') FNUM
-                            end if
-                    end if
-                    call read_INP(FNAME)   !INPを読み込む(SHARP用)
-
-                case default
-                    print*,'FILE_TYPE NG:', FILE_TYPE
-                    STOP
+            case default
+                print*,'FILE_TYPE NG:', FILE_TYPE
+                STOP
                     
         end select
             
@@ -742,15 +751,15 @@ module drop_motion_mod
 
         do vn = 1, size(droplets)
         
-                if (droplets(vn)%status <= 0) cycle !付着していないならスルー
-        
-                JB = droplets(vn)%bound_adhes
-                if (JB > 0) then
-                    droplets(vn)%coordinate(:) = droplets(vn)%coordinate(:) + CENF(:,JB,2) - CENF(:,JB,1) !面重心の移動量と同じだけ移動
-                else
-                    call area_check(vn)
-        
-                end if
+            if (droplets(vn)%status <= 0) cycle !付着していないならスルー
+    
+            JB = droplets(vn)%bound_adhes
+            if (JB > 0) then
+                droplets(vn)%coordinate(:) = droplets(vn)%coordinate(:) + CENF(:,JB,2) - CENF(:,JB,1) !面重心の移動量と同じだけ移動
+            else
+                call area_check(vn)
+    
+            end if
         
         end do
 
@@ -797,12 +806,12 @@ module drop_motion_mod
 
     end function get_drop_info
 
-    subroutine randomset    !実行時刻に依存した乱数シードを指定する
+    subroutine random_set    !実行時刻に依存した乱数シードを指定する
         implicit none
         integer :: seedsize, i
         integer, allocatable :: seed(:)
 
-        print*, 'call:randomset'
+        print*, 'call:random_set'
     
         call random_seed(size=seedsize) !シードのサイズを取得。（コンパイラごとに異なるらしい）
         allocate(seed(seedsize)) !新シード配列サイズの割り当て
@@ -813,7 +822,85 @@ module drop_motion_mod
     
         call random_seed(put=seed(:)) !新シードを指定
           
-    end subroutine randomset
+    end subroutine random_set
+
+    function get_floating_droplets(droplets_in) result(floating_droplets)
+        implicit none
+        type(virus_droplet), intent(in) :: droplets_in(:)
+        type(vd_extracted), allocatable :: floating_droplets(:)
+        integer i, j, num_floating
+
+        num_floating = count(droplets_in(:)%status==0)
+        allocate(floating_droplets(num_floating))
+
+        j = 0
+        do i =  1, size(droplets_in(:))
+            if(droplets_in(i)%status==0) then
+                j = j + 1
+                floating_droplets(j)%virus_droplet = droplets_in(i)
+                floating_droplets(j)%original_ID = i
+            end if
+        end do
+
+    end function get_floating_droplets
+
+    subroutine coalescence_check(step)
+        integer,intent(in) :: step
+        integer d1, d2, num_floating, i, i_origin
+        integer, save :: last_coalescence
+        type(vd_extracted), allocatable :: floatings(:)
+        double precision :: distance, r1, r2, rc, vol1, vol2, vc(3)
+
+        if((step - last_coalescence) > 100) return
+
+        floatings = get_floating_droplets(droplets(:))
+        num_floating = size(floatings(:))
+
+        drop1 : do d1 = 1, num_floating - 1
+            if(floatings(d1)%status/=0) cycle drop1
+
+            drop2 : do d2 = d1 + 1, num_floating
+                if(floatings(d2)%status/=0) cycle drop2
+
+                distance = norm2(floatings(d2)%coordinate(:) - floatings(d1)%coordinate(:))
+                r1 = floatings(d1)%radius
+                r2 = floatings(d2)%radius
+
+                if((r1+r2) >= distance) then
+                    vol1 = r1**3
+                    vol2 = r2**3
+                    rc = (vol1 + vol2)**(1.d0/3.d0)
+                    vc(:) = (vol1*floatings(d1)%velocity(:) + vol2*floatings(d2)%velocity(:)) / (vol1 + vol2)
+                    if(r1 >= r2) then
+                        floatings(d1)%radius = rc
+                        floatings(d1)%velocity(:) = vc(:)
+                        floatings(d2)%radius = 0.d0
+                        floatings(d2)%velocity(:) = 0.d0
+                        floatings(d2)%status = -2
+                    else
+                        floatings(d2)%radius = rc
+                        floatings(d2)%velocity(:) = vc(:)
+                        floatings(d1)%radius = 0.d0
+                        floatings(d1)%velocity(:) = 0.d0
+                        floatings(d1)%status = -2
+                        cycle drop1
+                    end if
+
+                    print*, 'Coalescence', d1, d2
+                    last_coalescence = step
+
+                end if
+
+            end do drop2
+
+        end do drop1
+
+        do i = 1, num_floating
+            i_origin = floatings(i)%original_ID
+            droplets(i_origin) = floatings(i)%virus_droplet
+        end do
+
+    end subroutine coalescence_check
 
 
 end module drop_motion_mod

@@ -57,6 +57,8 @@ PROGRAM MAIN
 
                   call Calculation_Droplets
 
+                  call coalescence_check(n)
+
                   if ((mod(n,interval) == 0)) then
                         call standard_output
                         call output(n)  !結果出力
@@ -82,6 +84,9 @@ PROGRAM MAIN
             call deallocation_flow  !配列解放
             
       end do
+
+!===========================================================================================
+      !以下、内部手続き
 
       contains
 
@@ -145,12 +150,12 @@ PROGRAM MAIN
       subroutine final_result
             integer n_unit
 
-            open(newunit=n_unit, FILE= trim(path_out)//'/'//'final_result.txt',STATUS='REPLACE')
+            open(newunit=n_unit, FILE= trim(path_out)//'final_result.txt',STATUS='REPLACE')
                   write(n_unit,*)'date = ', d_start, ' time = ', t_start
                   write(n_unit,*)'date = ', d_stop,  ' time = ', t_stop
                   WRITE(n_unit,*) '======================================================='
                   WRITE(n_unit,*) 'alive =', get_drop_info('floating')
-                  WRITE(n_unit,*) 'Step =', n !計算回数
+                  WRITE(n_unit,*) 'Step =', n_end !計算回数
                   write(n_unit,*) 'TIME[sec]=', now_time
                   WRITE(n_unit,*) 'vndeath =',get_drop_info('death') !生存率で消滅
                   WRITE(n_unit,*) 'vnadhesion =', get_drop_info('adhesion') !付着したすべてのウイルス数
