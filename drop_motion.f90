@@ -259,7 +259,6 @@ module drop_motion_mod
         type(virus_droplet) :: droplets_read(num_droplets)
         double precision :: diameter(num_droplets)
         integer vn, n_unit
-        !=======================================================================
     
         print*, 'READ:', fname
         open(newunit=n_unit, file=fname, status='old')
