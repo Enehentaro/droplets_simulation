@@ -4,7 +4,7 @@ module drop_motion_mod
     implicit none
 
     type :: virus_droplet
-        double precision :: coordinate(3), velocity(3)
+        double precision :: coordinate(3), velocity(3)=0.d0
         double precision radius, radius_min
         integer :: status=0, cell_ref=0, bound_adhes=0
     end type virus_droplet
@@ -268,7 +268,7 @@ module drop_motion_mod
             read(n_unit,'()')
             read(n_unit,'()')
             DO vn = 1,num_droplets
-                read(n_unit,'(3(E20.12,2X))') droplets_read(vn)%coordinate(:)
+                read(n_unit, *) droplets_read(vn)%coordinate(:)
             END DO
             read(n_unit,'()')
             read(n_unit,'()')
@@ -285,7 +285,7 @@ module drop_motion_mod
             read(n_unit,'()')
             read(n_unit,'()')
             DO vn = 1,num_droplets
-                read(n_unit,'(E20.12)') diameter(vn)
+                read(n_unit, *) diameter(vn)
             END DO
             read(n_unit,'()')
             read(n_unit,'()')
@@ -294,7 +294,7 @@ module drop_motion_mod
             END DO
             read(n_unit,'()')
             DO vn = 1,num_droplets
-                read(n_unit,'(3(E20.12,2X))') droplets_read(vn)%velocity(:)
+                read(n_unit, *) droplets_read(vn)%velocity(:)
             END DO
         close(n_unit)
     
@@ -321,7 +321,7 @@ module drop_motion_mod
             write(n_unit,'(A)') 'DATASET UNSTRUCTURED_GRID'
             write(n_unit,'(A,I12,A)') 'POINTS ',num_droplets,' float'                              !節点の数
             DO vn = 1,num_droplets                                                             !節点の数だけループ
-                write(n_unit,'(3(E20.12,2X))') droplets_out(vn)%coordinate(:)   !節点の座標（左から順にx,y,z）
+                write(n_unit,'(3(E20.12e2,2X))') droplets_out(vn)%coordinate(:)   !節点の座標（左から順にx,y,z）
             END DO
             write(n_unit,'()')                                                              !改行
             write(n_unit,'(A,I12,2X,I12)') 'CELLS ', num_droplets, num_droplets*2                          !セルの数、セルの数×2
@@ -338,7 +338,7 @@ module drop_motion_mod
             write(n_unit,'(A)') 'SCALARS Diameter float'                                  !まずは飛沫の直径
             write(n_unit,'(A)') 'LOOKUP_TABLE default'
             DO vn = 1,num_droplets                                                             !セルの数だけループ
-                write(n_unit,'(E20.12)') droplets_out(vn)%radius*2.0d0                            !飛沫の直径
+                write(n_unit,'(E20.12e2)') droplets_out(vn)%radius*2.0d0                            !飛沫の直径
             END DO
             write(n_unit,'(A)') 'SCALARS Status int'                                   !次は飛沫の状態(0:浮遊、1:付着、2:回収)
             write(n_unit,'(A)') 'LOOKUP_TABLE default'
@@ -347,7 +347,7 @@ module drop_motion_mod
             END DO
             write(n_unit,'(A)') 'VECTORS Velocity float'                             !最後に飛沫の速度
             DO vn = 1,num_droplets                                                             !セルの数だけループ
-                write(n_unit,'(3(E20.12,2X))') droplets_out(vn)%velocity(:)               !飛沫の速度
+                write(n_unit,'(3(E20.12e2,2X))') droplets_out(vn)%velocity(:)               !飛沫の速度
             END DO
         close(n_unit)
 
