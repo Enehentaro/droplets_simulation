@@ -1,12 +1,12 @@
 module flow_field
     implicit none
     integer, private :: IIMX, KKMX, JBMX            !全要素数、全節点数、全境界面数
-    integer NCMAX                                   !隣接要素数の最大値
+    integer, private :: NCMAX                                   !隣接要素数の最大値
     integer INTERVAL_FLOW                           !気流データ出力間隔
 
     character PATH_AIR*99, HEAD_AIR*10, FNAME_FMT*20 !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
     character(3) FILE_TYPE  !ファイル形式（VTK,INP）
-    integer FNAME_DIGITS !ファイル名の整数部桁数
+    integer, private :: FNAME_DIGITS !ファイル名の整数部桁数
 
     integer, allocatable :: ICN(:,:)                !要素所有節点ID
     integer, allocatable :: NoB(:)                  !要素所有境界面の数
@@ -14,14 +14,14 @@ module flow_field
     integer, allocatable :: NBN(:,:)                !境界面所有節点ID
     
     integer, allocatable :: CELL_TYPE(:)   !要素タイプ（テトラ0、プリズム1、ピラミッド2）
-    integer, allocatable :: NUM_NC(:)               !隣接要素数
-    integer, allocatable :: NEXT_CELL(:,:)          !隣接要素ID
+    integer, allocatable, private :: NUM_NC(:)               !隣接要素数
+    integer, allocatable, private :: NEXT_CELL(:,:)          !隣接要素ID
 
     double precision, allocatable :: CDN(:,:)       !節点座標
     double precision MAX_CDN(3), MIN_CDN(3)         !節点座標の上限および下限
     double precision, allocatable :: VELC(:,:)      !要素流速
-    double precision, allocatable :: CENC(:,:)      !要素重心
-    double precision, allocatable :: WIDC(:)        !要素の1辺長さ
+    double precision, allocatable, private :: CENC(:,:)      !要素重心
+    double precision, allocatable, private :: WIDC(:)        !要素の1辺長さ
     double precision, allocatable :: CENF(:,:,:)    !面重心
     double precision, allocatable :: NVECF(:,:)     !面法線ベクトル
 
@@ -49,6 +49,11 @@ module flow_field
 
     end subroutine set_FILE_TYPE
 
+    character(4) function get_digits_format()
+
+        write(get_digits_format,'("i", i1, ".", i1)') FNAME_DIGITS, FNAME_DIGITS
+
+    end function get_digits_format
 
     subroutine read_VTK(FNAME, pointdata)
         character(*), intent(in) :: FNAME
@@ -300,23 +305,20 @@ module flow_field
         !$omp end parallel do 
     end subroutine set_gravity_center
 
-
-            !***********************************************************************
     subroutine read_nextcell
-        integer II,NC,JB, n_unit
+        implicit none
+        integer II,NC,JB, n_unit, num_cells
         character(50) FNAME
-        !=======================================================================
                 
         FNAME = trim(PATH_AIR)//'nextcell.txt'
         print*, 'READ:', FNAME
 
-        open(newunit=n_unit,FILE=FNAME , STATUS='OLD')
-            read(n_unit,'(2(I12,2X))') IIMX
-
+        open(newunit=n_unit, FILE=FNAME, STATUS='OLD')
+            read(n_unit,*) num_cells
             read(n_unit,*) NCMAX
 
-            allocate(NEXT_CELL(NCMAX,IIMX),NUM_NC(IIMX))
-            DO II = 1, IIMX
+            allocate(NEXT_CELL(NCMAX,num_cells),NUM_NC(num_cells))
+            DO II = 1, num_cells
             read(n_unit,'(I5)',advance='no') NUM_NC(II)
             DO NC = 1, NUM_NC(II)
                 read(n_unit,'(I12)',advance='no') NEXT_CELL(NC,II)
@@ -324,14 +326,11 @@ module flow_field
             read(n_unit,'()')
             END DO
 
-            allocate(NoB(IIMX), source=0)
-            allocate(ICB(4,IIMX), source=0)
-            allocate(CENC(3,IIMX), WIDC(IIMX))
+            allocate(NoB(num_cells), source=0)
+            allocate(ICB(4,num_cells), source=0)
+            allocate(CENC(3,num_cells), WIDC(num_cells))
 
-            ! DO II = 1, IIMX
-            !   read(n_unit,*) NoB(II)  ! Number of Boundary
-            ! END DO
-            DO II = 1, IIMX
+            DO II = 1, num_cells
             read(n_unit, fmt='(I4)', advance='no') NoB(II)  ! Number of Boundary
             do JB = 1, NoB(II)
                 read(n_unit, fmt='(I10)', advance='no') ICB(JB,II)
@@ -354,8 +353,86 @@ module flow_field
         allocate(CENF(3,JBMX,2), NVECF(3,JBMX))
         
     end subroutine read_nextcell
-        !*************************************************************************************
-        !----------------------------------------------------------------------------------                        
+
+    integer function nearest_cell(X) !最も近いセルNCNの探索
+        double precision, intent(in) :: X(3)
+        integer II, IIMX
+        double precision, allocatable :: distance(:)
+
+        IIMX = size(CENC, dim=2)
+
+        allocate(distance(IIMX))
+        !↓↓↓↓　一番近いセル中心の探索
+        !$omp parallel do
+        DO II = 1,IIMX
+                distance(II) = norm2(CENC(:,II) - X(:))
+        END DO
+        !$omp end parallel do 
+        !↑↑↑↑
+        
+        nearest_cell = minloc(distance, dim=1)   !最小値インデックス
+        
+    end function nearest_cell
+
+    integer function nearer_cell(X, NCN)  !近セルの探索（隣接セルから）
+        integer, intent(in) :: NCN
+        double precision, intent(in) :: X(3)
+        integer NC, IIaround, index_min
+        double precision :: distancecheck(2)
+        double precision, allocatable :: distance(:)
+
+        nearer_cell = NCN
+        allocate(distance(NCMAX))
+        distancecheck(1) = norm2(CENC(:,nearer_cell)-X(:))   !注目セル重心と粒子との距離
+        
+        check:DO
+                distance(:) = 1.0d10     !初期値はなるべく大きくとる
+        
+                DO NC = 1, NUM_NC(nearer_cell)  !全隣接セルに対してループ。
+                    IIaround = NEXT_CELL(NC, nearer_cell)       !現時点で近いとされるセルの隣接セルのひとつに注目
+                    IF (IIaround > 0) then
+                            distance(NC) = norm2(CENC(:,IIaround)-X(:))   !注目セル重心と粒子との距離を距離配列に代入
+                    END IF
+        
+                END DO
+        
+                distancecheck(2) = minval(distance,dim=1)     !距離配列の最小値
+        
+                if(distancecheck(2) < distancecheck(1)) then !より近いセルの発見で条件満足
+                    distancecheck(1) = distancecheck(2)    !最小値の更新
+                    index_min = minloc(distance,dim=1)            !最小値のインデックス
+                    nearer_cell = NEXT_CELL(index_min, nearer_cell)    !現時点で近いとされるセルの更新
+                    if(nearer_cell==0) then
+                            print*,'nearer_cell_error', nearer_cell, X(:)
+                            return
+                    end if
+
+                else  !より近いセルを発見できなかった場合
+        
+                    exit check     !ループ脱出
+        
+                end if
+        
+        END DO check
+        
+    end function nearer_cell
+
+    logical function nearcell_check(X, NCN)
+        double precision, intent(in) :: X(3)
+        integer, intent(in) :: NCN
+        double precision :: distance
+
+        distance = norm2(X(:)-CENC(:,NCN))
+
+        if (distance < 1.0d1*WIDC(NCN)) then
+            nearcell_check = .True.
+        else
+            nearcell_check = .False.
+        end if
+
+
+    end function nearcell_check
+                     
     subroutine boundary_set !全境界面に対して法線ベクトルと重心を算出
         integer II, JJ, JB
         double precision :: a(3), b(3), r(3), norm, inner
@@ -449,7 +526,6 @@ module flow_field
         end select
 
     end function get_mesh_info
-
       
     subroutine deallocation_flow
 

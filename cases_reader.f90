@@ -42,7 +42,7 @@ module cases_reader
             
         open (newunit=n_unit, file=FNAME, status='old')
             
-            mat_size = get_size(n_unit, header_flag=.true.)
+            mat_size = get_size_csv(n_unit, header_flag=.true.)
 
             num_cases = mat_size(2)
 
