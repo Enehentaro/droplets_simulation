@@ -263,7 +263,6 @@ module drop_motion_mod
         double precision, allocatable :: diameter(:)
         integer vn, n_unit, num_drop
         character(10) str
-        !=======================================================================
     
         print*, 'READ:', fname
         open(newunit=n_unit, file=fname, status='old')
