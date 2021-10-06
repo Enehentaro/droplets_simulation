@@ -1,5 +1,6 @@
 include 'csv_reader.f90'
 include 'cases_reader.f90'
+include 'fld_reader.f90'
 include 'flow_field.f90'
 !==============================================================================================================
 MODULE grid_information
@@ -376,6 +377,9 @@ PROGRAM MAIN
 
             case('INP')
                 call read_INP(FNAME)   !INPを読み込む(SHARP用)
+
+            case('FLD')
+                call read_FLD(FNAME) 
 
             case default
                 print*,'FILE_TYPE NG:', FILE_TYPE
