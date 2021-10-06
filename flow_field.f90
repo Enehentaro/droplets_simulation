@@ -1,10 +1,9 @@
 module flow_field
     implicit none
-    integer, private :: IIMX, KKMX, JBMX            !全要素数、全節点数、全境界面数
     integer, private :: NCMAX                                   !隣接要素数の最大値
     integer INTERVAL_FLOW                           !気流データ出力間隔
 
-    character PATH_AIR*99, HEAD_AIR*10, FNAME_FMT*20 !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
+    character PATH_AIR*99, HEAD_AIR*20, FNAME_FMT*30 !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
     character(3) FILE_TYPE  !ファイル形式（VTK,INP）
     integer, private :: FNAME_DIGITS !ファイル名の整数部桁数
 
@@ -31,14 +30,17 @@ module flow_field
         integer i
 
         i = index(FNAME_FMT, '0')
-        HEAD_AIR = FNAME_FMT(: i-1)             !ファイル名の接頭文字
-        FNAME_DIGITS = index(FNAME_FMT, '.') - i   !ファイル名の整数部桁数
+        HEAD_AIR = FNAME_FMT(: i-1)             !ファイル名の接頭文字(最初のゼロの手前まで)
+        FNAME_DIGITS = index(FNAME_FMT, '.') - i   !ファイル名の整数部桁数(最初のゼロの位置からドットまでの文字数)
 
         if(index(FNAME_FMT, '.vtk') > 0) then
             FILE_TYPE = 'VTK'
 
         else if(index(FNAME_FMT, '.inp') > 0) then
             FILE_TYPE = 'INP'
+
+        else if(index(FNAME_FMT, '.fld') > 0) then
+            FILE_TYPE = 'FLD'
 
         else
             print*, 'FNAME_FMT NG:', FNAME_FMT
@@ -58,7 +60,7 @@ module flow_field
     subroutine read_VTK(FNAME, pointdata)
         character(*), intent(in) :: FNAME
         logical, optional :: pointdata
-        integer II,KK,IIH, n_unit
+        integer II,KK,IIH, n_unit, KKMX, IIMX
         character AAA*7
         double precision, allocatable :: UVWK(:,:)
         logical prism_flag
@@ -166,7 +168,7 @@ module flow_field
         !  INPファイルを読み込み、節点データを要素データに変換する
         character(*), intent(in) :: FNAME
         INTEGER II,II2,KK,AAmax, IIMX2, AA, n_unit
-        integer :: IITETMX, IIPRSMX, IIPYRMX
+        integer :: IITETMX, IIPRSMX, IIPYRMX, KKMX, IIMX
         character(6) cellshape
         double precision, allocatable :: UVWK(:,:)
         integer, allocatable :: ICN2(:,:)
@@ -252,15 +254,75 @@ module flow_field
         call point2cell(UVWK(:,:), VELC(:,:), ICN(:,:), CELL_TYPE(:))
             
     end subroutine read_INP
+
+    subroutine read_FLD(FNAME)
+        use mod_SctFldReader
+        implicit none
+        character(*), intent(in) :: FNAME
+        integer unit, II,KK,KK_beg,KK_end,node_num
+        double precision, allocatable :: UVWK(:,:)
+
+  
+        call open_readFLD(unit, FNAME)
+            call read_Header_data(unit)
+            call read_Main_data(unit)
+        call close_fld(unit)
+  
+        if(.not.allocated(ICN)) then
+            allocate(ICN(6,size(ietyp)), source=0)
+            allocate(CELL_TYPE(size(ietyp)), source=0)
+            allocate(CDN(3,NNODS))
+  
+            KK_beg = 1
+  
+            do II = 1, size(ietyp)
+  
+                node_num = ietyp(II)-30
+                if (node_num==4) then
+                    CELL_TYPE(II) = 0
+                elseif(node_num==6) then
+                    CELL_TYPE(II) = 1
+                elseif(node_num==5) then
+                    CELL_TYPE(II) = 2
+                else
+                    print*, 'ERROR_node_num', node_num
+                end if
+    
+                KK_end = KK_beg + node_num - 1
+    
+                do KK = KK_beg, KK_end
+                    ICN(KK-KK_beg+1, II) = ndno(KK) + 1
+                end do
+            
+                KK_beg = KK_beg + node_num
+        
+            end do
+        end if
+  
+        CDN(1,:) = CDN_X(:)
+        CDN(2,:) = CDN_Y(:)
+        CDN(3,:) = CDN_Z(:)
+
+        allocate(UVWK(3, size(CDN_X)))
+        UVWK(1,:) = VEL_X(:)
+        UVWK(2,:) = VEL_Y(:)
+        UVWK(3,:) = VEL_Z(:)
+
+        if(.not.allocated(VELC)) allocate(VELC(3, size(ietyp)))
+
+        call point2cell(UVWK(:,:), VELC(:,:), ICN(:,:), CELL_TYPE(:))
+          
+    end subroutine read_FLD
             
     !**************************************************************************************
     
     !***********************************************************************
     subroutine set_gravity_center !セル重心の算出
-        integer II
+        integer II,IIMX
         integer ICN1,ICN2,ICN3,ICN4,ICN5,ICN6
             !=======================================================================
-            
+        IIMX = size(ICN(:,:), dim=2)    
+
         !$omp parallel do private(ICN1,ICN2,ICN3,ICN4,ICN5,ICN6)
         DO II = 1, IIMX
             IF (CELL_TYPE(II)==0) THEN
@@ -307,7 +369,7 @@ module flow_field
 
     subroutine read_nextcell
         implicit none
-        integer II,NC,JB, n_unit, num_cells
+        integer II,NC,JB, n_unit, num_cells, JBMX
         character(50) FNAME
                 
         FNAME = trim(PATH_AIR)//'nextcell.txt'
@@ -434,8 +496,10 @@ module flow_field
     end function nearcell_check
                      
     subroutine boundary_set !全境界面に対して法線ベクトルと重心を算出
-        integer II, JJ, JB
+        integer II, JJ, JB, IIMX
         double precision :: a(3), b(3), r(3), norm, inner
+
+        IIMX = size(ICN(:,:), dim=2)
         
         print*, 'SET:boundary'
         
@@ -506,10 +570,10 @@ module flow_field
         
         select case(name)
             case('node')
-                get_mesh_info = KKMX
+                get_mesh_info = size(CDN(:,:), dim = 2)
 
             case('cell')
-                get_mesh_info = IIMX
+                get_mesh_info = size(ICN(:,:), dim = 2)
 
             case('tetra')
                 get_mesh_info = count(CELL_TYPE == 0)

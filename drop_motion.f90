@@ -329,7 +329,7 @@ module drop_motion_mod
             write(n_unit,'(A)') 'DATASET UNSTRUCTURED_GRID'
             write(n_unit,'(A,I12,A)') 'POINTS ',num_droplets,' float'                              !節点の数
             DO vn = 1, num_drop                                                            !節点の数だけループ
-                write(n_unit,'(3(E20.12e2,2X))') droplets_out(vn)%coordinate(:)   !節点の座標（左から順にx,y,z）
+                write(n_unit,'(3(f20.15,2X))') droplets_out(vn)%coordinate(:)   !節点の座標（左から順にx,y,z）
             END DO
             write(n_unit,'()')                                                              !改行
             write(n_unit,'(A,I12,2X,I12)') 'CELLS ', num_droplets, num_droplets*2                          !セルの数、セルの数×2
@@ -346,7 +346,7 @@ module drop_motion_mod
             write(n_unit,'(A)') 'SCALARS Diameter float'                                  !まずは飛沫の直径
             write(n_unit,'(A)') 'LOOKUP_TABLE default'
             DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(E20.12e2)') droplets_out(vn)%radius*2.0d0                            !飛沫の直径
+                write(n_unit,'(f20.15)') droplets_out(vn)%radius*2.0d0                            !飛沫の直径
             END DO
             write(n_unit,'(A)') 'SCALARS Status int'                                   !次は飛沫の状態(0:浮遊、1:付着、2:回収)
             write(n_unit,'(A)') 'LOOKUP_TABLE default'
@@ -355,7 +355,7 @@ module drop_motion_mod
             END DO
             write(n_unit,'(A)') 'VECTORS Velocity float'                             !最後に飛沫の速度
             DO vn = 1, num_drop                                                             !セルの数だけループ
-                write(n_unit,'(3(E20.12e2,2X))') droplets_out(vn)%velocity(:)               !飛沫の速度
+                write(n_unit,'(3(f20.15,2X))') droplets_out(vn)%velocity(:)               !飛沫の速度
             END DO
         close(n_unit)
 
@@ -604,6 +604,29 @@ module drop_motion_mod
                     end if
                 end if
                 call read_INP(FNAME)   !INPを読み込む(SHARP用)
+
+            case('FLD')
+                if (INTERVAL_FLOW == -1) then !定常解析
+                    FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
+                else
+                    if (FNUM <= 9) then
+                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i1.1,".fld")') FNUM
+
+                    else if (FNUM <= 99) then
+                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i2.2,".fld")') FNUM
+
+                    else if(FNUM <= 999) then
+                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i3.3,".fld")') FNUM
+
+                    else if(FNUM <= 9999) then
+                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i4.4,".fld")') FNUM
+
+                    else
+                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i5.5,".fld")') FNUM
+
+                    end if
+                end if
+                call read_FLD(FNAME)
 
             case default
                 print*,'FILE_TYPE NG:', FILE_TYPE

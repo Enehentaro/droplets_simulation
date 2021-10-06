@@ -6,6 +6,7 @@
 !---------------------------------------------------------------------------------
       include 'csv_reader.f90'
       include 'cases_reader.f90'
+      include 'fld_reader.f90'
       include 'flow_field.f90'
       include 'equation_mod.f90'
       include 'drop_motion.f90'
