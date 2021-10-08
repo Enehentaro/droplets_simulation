@@ -58,7 +58,7 @@ module csv_reader
             allocate(matrix(mat_size(1), mat_size(2)))
             print *, 'Size =', mat_size(:)
 
-            rewind (Num_unit)  ! ファイルの最初に戻る
+            rewind (Num_unit)  ! ファイルの最初に戻
 
             if(header_flag) read (Num_unit, '()') !ヘッダーの読み飛ばし
             do i = 1, mat_size(2)        !本読み込み
