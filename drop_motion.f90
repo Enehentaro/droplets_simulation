@@ -3,11 +3,13 @@ module drop_motion_mod
     use equation_mod
     implicit none
 
-    type :: virus_droplet
+    type virus_droplet
         double precision :: coordinate(3), velocity(3)=0.d0
         double precision radius, radius_min
-        integer :: status=0, cell_ref=0, bound_adhes=0
+        integer :: status=0, bound_adhes=0
+        type(reference_cell_t) ref_cell
     end type virus_droplet
+
     type(virus_droplet), allocatable, private :: droplets(:)
     type(virus_droplet), allocatable, private :: droplets_ini(:)
 
@@ -362,28 +364,6 @@ module drop_motion_mod
         print*, 'WRITEOUT:', fname
 
     !=======飛沫データ（VTKファイル）の出力ここまで===========================
-
-        !以下はCSVファイルの出力
-
-        if(step==0) then !初期ステップならファイル新規作成
-            open(newunit=n_unit, file=trim(path_out)//'particle_'//trim(head_out)//'.csv', status='replace')
-            print*,'REPLACE:particle_data.csv'
-
-        else
-            open(newunit=n_unit, file=trim(path_out)//'particle_'//trim(head_out)//'.csv'&
-                , action='write', status='old', position='append')
-
-        end if
-        
-            write(n_unit,*) real_time(step), ',', count(droplets_out(:)%status==0), ',',&
-                count(droplets_out(:)%status==2), ',', count(droplets_out(:)%status==3)
-        close(n_unit)
-
-        ! if(count(adhesion==0) <= 0) then !浮遊粒子がなくなれば計算終了
-        !   print*,'all viruses terminated',N
-        !   STOP
-        ! end if
-
     end subroutine output_droplet_VTK
 
     subroutine output_droplet_CSV(droplets_out, step)
@@ -449,14 +429,12 @@ module drop_motion_mod
     subroutine Calculation_Droplets
         implicit none
         integer vn
-        
-        !$omp parallel do private(vn)
+
         DO vn = 1, num_droplets
             if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
             call evaporation(vn)    !半径変化方程式
             call motion_calc(vn)     !運動方程式
         END DO
-        !$omp end parallel do 
 
     end subroutine Calculation_Droplets
 
@@ -465,7 +443,7 @@ module drop_motion_mod
         integer, intent(in) :: vn
         double precision radius_n
       
-            !========= 飛沫半径の変化の計算　(2次精度ルンゲクッタ（ホイン）) ===========================
+        !========= 飛沫半径の変化の計算　(2次精度ルンゲクッタ（ホイン）) ===========================
       
         if (droplets(vn)%radius <= droplets(vn)%radius_min) then  !半径が最小になったものを除く
             droplets(vn)%radius = droplets(vn)%radius_min
@@ -482,19 +460,23 @@ module drop_motion_mod
 
     subroutine motion_calc(vn)
         integer, intent(in) :: vn
-        double precision  :: X(3), V(3)
-        integer NCN
+        double precision  :: X(3), V(3), Va(3)
+        type(reference_cell_t) :: RefC
         logical stopflag
+        logical, save :: first = .true.
     
         X(:) = droplets(vn)%coordinate(:)
         V(:) = droplets(vn)%velocity(:)
 
-        droplets(vn)%cell_ref = search_cell_ref(X(:), droplets(vn)%cell_ref)
+        droplets(vn)%ref_cell = search_ref_cell(X(:), droplets(vn)%ref_cell)
 
-        NCN = droplets(vn)%cell_ref
+        RefC = droplets(vn)%ref_cell
+        if(first) then
+            droplets(:)%ref_cell = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
+            first = .false.
+        end if
 
-        stopflag = .false.
-        if (NoB(NCN) >= 1) stopflag = adhesion_check(vn, NCN)
+        stopflag = adhesion_check(vn, RefC%ID)
 
         call area_check(X(:), stopflag)
     
@@ -504,57 +486,40 @@ module drop_motion_mod
             droplets(vn)%coordinate(:) = X(:)
     
         else
-    
-            droplets(vn)%velocity(:) = motion_eq(V(:), VELC(:, NCN), droplets(vn)%radius)
+
+            Va(:) = get_velocity_flow(RefC)
+
+            droplets(vn)%velocity(:) = motion_eq(V(:), Va(:), droplets(vn)%radius)
             
             droplets(vn)%coordinate(:) = next_position(X(:), V(:), droplets(vn)%velocity(:))
             
         end if
         
     end subroutine motion_calc
-
-    function search_cell_ref(X, NCN) result(cell_reference)
-        double precision, intent(in) :: X(3)
-        integer, intent(in) :: NCN
-        integer cell_reference
-            
-        if(NCN == 0) then   !参照セルが見つかっていない（＝初期ステップ）
-            cell_reference = nearest_cell(X)    
-            print*, 'FirstNCN:', cell_reference
-            droplets(:)%cell_ref = cell_reference !全粒子が同一セル参照と仮定して時間短縮を図る
-    
-        else
-            cell_reference = nearer_cell(X, NCN)
-            if (cell_reference == 0) then
-                print*, 'NCN_ERROR:', X(:), cell_reference
-                stop
-            end if
-
-            if (.not.nearcell_check(X(:), cell_reference)) cell_reference = nearest_cell(X)
-    
-        end if
-
-    end function search_cell_ref
                     
     logical function adhesion_check(vn, NCN)
-
         integer JJ, JB
         integer, intent(in) :: vn, NCN
         double precision :: r_vector(3), inner
 
+        if(FILE_TYPE=='P3D') then
+            adhesion_check = adhesion_check_inSTL(real(droplets(vn)%coordinate(:)))
+            return
+        end if
+
         adhesion_check = .false.
 
         do JJ = 1, NoB(NCN)
-                JB = ICB(JJ, NCN)
+            JB = ICB(JJ, NCN)
 
-                r_vector(:) = droplets(vn)%coordinate(:) - CENF(:,JB,1)
+            r_vector(:) = droplets(vn)%coordinate(:) - CENF(:,JB,1)
 
-                inner = sum(r_vector(:)*NVECF(:,JB))
+            inner = sum(r_vector(:)*NVECF(:,JB))
 
-                if (inner >= 0.0d0) then
-                    adhesion_check = .true. !外向き法線ベクトルと位置ベクトルの内積が正なら付着判定
-                    droplets(vn)%bound_adhes = JB     !付着した境界面番号
-                end if
+            if (inner >= 0.0d0) then
+                adhesion_check = .true. !外向き法線ベクトルと位置ベクトルの内積が正なら付着判定
+                droplets(vn)%bound_adhes = JB     !付着した境界面番号
+            end if
         end do
 
     end function adhesion_check
@@ -627,6 +592,27 @@ module drop_motion_mod
                     end if
                 end if
                 call read_FLD(FNAME)
+
+            case('P3D')
+                if (INTERVAL_FLOW == -1) then !定常解析
+                    FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
+                else
+                    write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".f")') FNUM
+
+                end if
+                call read_CUBE_data(FNAME, trim(PATH_AIR))
+
+                block
+                    real min_max(6)
+
+                    min_max = get_minMax_CUBE()
+
+                    MIN_CDN(:) = min_max(1:3)
+                    MAX_CDN(:) = min_max(4:6)
+
+                end block
+
+                return
 
             case default
                 print*,'FILE_TYPE NG:', FILE_TYPE
@@ -758,12 +744,15 @@ module drop_motion_mod
     subroutine coalescence_check(step)
         integer,intent(in) :: step
         integer d1, d2, num_floating, i, i_origin
-        integer, save :: last_coalescence
+        integer, save :: last_coalescence = 0
         type(vd_extracted), allocatable :: floatings(:)
         double precision :: distance, r1, r2
 
+        if(last_coalescence == 0) last_coalescence = step
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
         if((step - last_coalescence) > 100) return
+
+        print*, 'Coalescence_check', step
 
         floatings = get_floating_droplets(droplets(:))
         num_floating = size(floatings(:))

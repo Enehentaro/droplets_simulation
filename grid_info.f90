@@ -255,7 +255,7 @@ MODULE grid_information
         !**************************************************************************************
         
         !=======================================================================
-    subroutine nextcell(DIR)
+    subroutine write_nextcell(DIR)
         integer II, JJ, JJJ, numnext, JB, n_unit
         integer, parameter :: LF = 1
         character(*), intent(in) :: DIR
@@ -313,9 +313,8 @@ MODULE grid_information
         
         close(n_unit)
           
-          
         print*, 'WRITEOUT:', FNAME
-    end subroutine nextcell
+    end subroutine write_nextcell
 
     subroutine deallocation_grid
 
@@ -398,7 +397,7 @@ PROGRAM MAIN
         call facecheck  !同一面のチェック
 
         call boundaryset(DIR)   !境界面情報の出力
-        call nextcell(DIR)   !セル隣接情報の出力
+        call write_nextcell(DIR)   !セル隣接情報の出力
 
         call deallocation_flow  !配列解放
         call deallocation_grid  !配列解放

@@ -6,12 +6,17 @@
 !---------------------------------------------------------------------------------
       include 'csv_reader.f90'
       include 'cases_reader.f90'
+      include 'stl_reader.f90'
       include 'fld_reader.f90'
+      include 'plot3d_operator.f90'
+      include 'CUBE_mod.f90'
+      include 'unstructured_grid.f90'
       include 'flow_field.f90'
       include 'equation_mod.f90'
       include 'drop_motion.f90'
 !*******************************************************************************************
 PROGRAM MAIN
+      !$ use omp_lib
       use drop_motion_mod
       use cases_reader
       implicit none
@@ -22,6 +27,12 @@ PROGRAM MAIN
       double precision Step_air, now_time
       character(20) :: d_start, d_stop, t_start, t_stop
 !===========================================================================================
+      !$OMP parallel
+      !$OMP single
+      !$ print *, "Num threads:", omp_get_num_threads()
+      !$OMP end single
+      !$OMP end parallel
+
       call date_and_time(date = d_start, time = t_start)
       print*,'date = ', trim(d_start), ' time = ', trim(t_start)
 
@@ -43,7 +54,7 @@ PROGRAM MAIN
 
             call initialization_droplet
             
-            call read_nextcell      !セルの隣接関係の取得
+            call pre_setting_onFlow
             call read_flow_field(n_start) !流れ場の取得
 
             print*,'*******************************************'
