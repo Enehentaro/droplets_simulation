@@ -11,7 +11,7 @@ Simulation of Droplets Behavior in AFDET
   - PLOT3D
 
 ## 使い方
-  コンパイルにmakeコマンドを使います（makeのインストールが必要）。
+  コンパイルに`make`コマンドを使います（makeのインストールが必要）。
   - main.f90の冒頭部で、OSを指定する箇所があるので、適宜編集
   - Makefileを開き、コンパイラおよびコンパイルオプションを適宜編集（変数名：FC, FCFLAG）
   - ソースファイルのあるディレクトリで `make` コマンド実行
