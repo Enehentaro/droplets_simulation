@@ -10,6 +10,14 @@ Simulation of Droplets Behavior in AFDET
   - FLD
   - PLOT3D
 
+## 使い方
+  コンパイルにmakeコマンドを使います（makeのインストールが必要）。
+  - main.f90の冒頭部で、OSを指定する箇所があるので、適宜編集
+  - Makefileを開き、コンパイラおよびコンパイルオプションを適宜編集（変数名：FC, FCFLAG）
+  - ソースファイルのあるディレクトリで `make` コマンド実行
+  - 「droplet」という実行ファイルが現れるので、それを実行
+
+## 方程式
 
   解くべき方程式は次の通り。  
 <img src="https://latex.codecogs.com/gif.latex?m&space;\frac{d&space;\mathbf{v}}{dt}&space;=&space;m&space;\mathbf{g}&space;&plus;&space;C_D&space;\cdot&space;\frac{1}{2}\rho_a&space;S&space;\left&space;|&space;\mathbf{u}_a&space;-&space;\mathbf{v}&space;\right&space;|(\mathbf{u}_a&space;-&space;\mathbf{v})" />
