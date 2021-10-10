@@ -1,10 +1,5 @@
-include 'csv_reader.f90'
-include 'cases_reader.f90'
-include 'fld_reader.f90'
-include 'flow_field.f90'
-!==============================================================================================================
-MODULE grid_information
-    use flow_field
+MODULE adjacent_information
+    use unstructuredGrid_mod
     IMPLICIT NONE
     integer num_nodes, num_cells, num_tetras, num_prisms, num_pyramids
     INTEGER JJMX, JJJMX, JJTOTAL
@@ -27,9 +22,10 @@ MODULE grid_information
     subroutine FACESET
         INTEGER II,JJJ, face, node
         integer, parameter :: numface(3) = [4,5,5]
-        integer, parameter :: ICNtrans(3,5,4) = reshape([1,2,3,0, 2,3,4,0, 3,4,1,0, 4,1,2,0, 0,0,0,0,&
-                                                        1,2,3,0, 4,5,6,0, 1,2,4,5, 2,3,5,6, 3,1,6,4,&
-                                                        5,1,2,0, 5,2,3,0, 5,3,4,0, 5,4,1,0, 1,2,3,4], [3,5,4], order=[3,2,1])
+        integer, parameter :: ICNtrans(4,5,3) = reshape([ &
+                                1,2,3,0, 2,3,4,0, 3,4,1,0, 4,1,2,0, 0,0,0,0,&
+                                1,2,3,0, 4,5,6,0, 1,2,4,5, 2,3,5,6, 3,1,6,4,&
+                                5,1,2,0, 5,2,3,0, 5,3,4,0, 5,4,1,0, 1,2,3,4 ], shape(ICNtrans))
                                                         
         num_squares = 0
 
@@ -52,10 +48,10 @@ MODULE grid_information
             do face = 1, numface(CELL_TYPE(II)+1)
                 JJJ = JJJ + 1
                 do node = 1, 3
-                    NFN(node,JJJ) = ICN(ICNtrans(CELL_TYPE(II)+1, face, node), II)
+                    NFN(node,JJJ) = ICN(ICNtrans(node, face, CELL_TYPE(II)+1), II)
                 end do
-                if(ICNtrans(CELL_TYPE(II)+1, face, 4) > 0) then
-                    NFN(4,JJJ) = ICN(ICNtrans(CELL_TYPE(II)+1, face, 4), II) !四角形面なら4点目を代入
+                if(ICNtrans(4, face, CELL_TYPE(II)+1) > 0) then
+                    NFN(4,JJJ) = ICN(ICNtrans(4, face, CELL_TYPE(II)+1), II) !四角形面なら4点目を代入
                     num_squares = num_squares + 1   !四角形面カウント
                 end if
                 NFC(1,JJJ) = II
@@ -211,115 +207,83 @@ MODULE grid_information
         
           
     END subroutine facecheck
-          !**************************************************************************************
-          !**************************************************************************************
-           
-        !**************************************************************************************
-    subroutine boundaryset(DIR)
-        INTEGER II,JJ,JB, n_unit
-        integer, parameter :: LF=1
-        character(*), intent(in) :: DIR
-        character(99) FNAME
-        !=======================================================================
-        !-----BC SET-------------------------------------------------------
+
+    subroutine find_nodeID_onBoundFace
+        INTEGER II,JJ,JB
+        integer, allocatable :: nodeID_onBoundFace(:,:)
+  
         allocate(NoB(num_cells), source=0)
         allocate(ICB(4,num_cells), source=0) !II consists Boundaries
-        
-        FNAME = trim(DIR)//'boundaries.txt'
-        open(newunit=n_unit,FILE= FNAME, STATUS='REPLACE')
-            write(n_unit,*) num_BoundFaces
+
+        allocate(nodeID_onBoundFace(3, num_BoundFaces))
+        JB = 0
+
+        DO JJ = 1, JJMX
+            IF (NFC(2,JJ) /= 0) cycle   !境界面以外はスルー
+            JB = JB +1
+            II = NFC(1,JJ) !JJが属する要素番号
+            NoB(II) = NoB(II) +1 !IIが所有する境界面数カウント
+            ICB(NoB(II),II) = JB !IIが所有する境界面番号
     
-            JB = 0
-    
-            DO JJ = 1, JJMX
-                IF (NFC(2,JJ) /= 0) cycle   !境界面以外はスルー
-                JB = JB +1
-                II = NFC(1,JJ) !JJが属する要素番号
-                NoB(II) = NoB(II) +1 !IIが所有する境界面数カウント
-                ICB(NoB(II),II) = JB !IIが所有する境界面番号
+            nodeID_onBoundFace(1:3, JB) = NFN(1:3,JJ)
+
+        END DO
+
+        call set_nodeID_onBoundFace(nodeID_onBoundFace)
+       
+    END subroutine find_nodeID_onBoundFace
         
-                write(n_unit,*) NFN(1,JJ), NFN(2,JJ), NFN(3,JJ)
-            END DO
-    
-        close(n_unit)
+    subroutine solve_adjacency
+        integer II, JJ, JJJ, numnext, cnt
+        integer, parameter :: LF = 1
+        integer, allocatable :: num_adjacent(:), adjacentCellID(:,:)
         
-        if (JB /= num_BoundFaces) then
-            print*, 'ERROR_num_BoundFaces', JB, num_BoundFaces
-            stop
+        allocate(num_adjacent(num_cells))
+
+        if(num_prisms==0)then
+            allocate(adjacentCellID(4, num_cells))
+        else
+            allocate(adjacentCellID(5, num_cells))
         end if
     
-        print*, 'WRITEOUT:', FNAME
-        
-        !=======================================================================
-    END subroutine boundaryset
-        !**************************************************************************************
-        
-        !=======================================================================
-    subroutine nextcell(DIR)
-        integer II, JJ, JJJ, numnext, JB, n_unit
-        integer, parameter :: LF = 1
-        character(*), intent(in) :: DIR
-        character(99) FNAME
-    
-        FNAME = trim(DIR)//'nextcell.txt'
-          
-        open(newunit=n_unit,FILE= FNAME, STATUS='REPLACE')
-        
-            write(n_unit,*) num_cells
-        
-            if(num_prisms==0)then
-                write(n_unit,*) 4
+        do II = 1, num_cells
+            if(CELL_TYPE(II) == 0) then !テトラ
+                numnext = 4 !隣接セル数
+            else if(CELL_TYPE(II) == 1) then
+                numnext = 5
+            else if(CELL_TYPE(II) == 2) then
+                numnext = 5
             else
-                write(n_unit,*) 5
+                print*, 'CELL_TYPE error:', CELL_TYPE(II)
+                stop
             end if
-        
-            do II = 1, num_cells
-                if(CELL_TYPE(II) == 0) then !テトラ
-                    numnext = 4 !隣接セル数
-                else if(CELL_TYPE(II) == 1) then
-                    numnext = 5
-                else if(CELL_TYPE(II) == 2) then
-                    numnext = 5
+            num_adjacent(II) = numnext
+    
+            cnt = 1
+            do JJJ = ICF(1,II), ICF(1,II) + numnext -1
+                JJ = NCF(JJJ)
+                if((JJ <= 0).or.(JJ > JJMX)) then
+                    print*, 'NCF_ERROR', JJ, JJJ, II
+                    stop
                 end if
-                write(n_unit, fmt='(I5)', advance='no') numnext
         
-                do JJJ = ICF(1,II), ICF(1,II) + numnext -1
-                    JJ = NCF(JJJ)
-                    if((JJ <= 0).or.(JJ > JJMX)) then
-                        print*, 'NCF_ERROR', JJ, JJJ, II
-                        close(n_unit)
-                        stop
-                    end if
-            
-                    if (NFC(1,JJ) == II) then
-                        write(n_unit, fmt='(I12)', advance='no') NFC(2,JJ)
-                    else
-                        write(n_unit, fmt='(I12)', advance='no') NFC(1,JJ)
-                    end if
-                    
-                end do
-        
-            write(n_unit,'()')  !改行
-        
+                if (NFC(1,JJ) == II) then
+                    adjacentCellID(cnt,II) = NFC(2,JJ)
+                else
+                    adjacentCellID(cnt,II) = NFC(1,JJ)
+                end if
+                cnt = cnt + 1
             end do
-        
-            DO II = 1, num_cells
-                write(n_unit, fmt='(I4)', advance='no') NoB(II)  ! Number of Boundary
-                do JB = 1, NoB(II)
-                    write(n_unit, fmt='(I10)', advance='no') ICB(JB,II)
-                end do
-                write(n_unit,'()')  !改行
-            END DO
-        
-        close(n_unit)
-          
-          
-        print*, 'WRITEOUT:', FNAME
-    end subroutine nextcell
+    
+        end do
 
-    subroutine deallocation_grid
+        call set_adjacency(num_adjacent, adjacentCellID)
 
-        print*, 'Deallocation'
+    end subroutine solve_adjacency
+
+    subroutine deallocation_adjacent
+
+        print*, 'Deallocation AdjacentInfo'
 
         if(allocated(NFN)) deallocate(NFN)
         if(allocated(NFC)) deallocate(NFC)
@@ -327,65 +291,9 @@ MODULE grid_information
         if(allocated(NFNSUM)) deallocate(NFNSUM)
         if(allocated(ICF)) deallocate(ICF)
 
-    end subroutine deallocation_grid
+    end subroutine deallocation_adjacent
 
-
-END MODULE grid_information
-!==============================================================================================================
-!境界面情報出力を追加(2021/04/08)
-!飛沫計算用に特化させ、不要なサブルーチン削除(2021/04/27)
-!**************************************************************************************************************
-PROGRAM MAIN
-!**************************************************************************************************************
-    use grid_information
-    use cases_reader
-    IMPLICIT NONE
-
-    character(7) :: OS = 'Windows'
-
-    character(8) :: d_start, d_stop
-    character(10) :: t_start, t_stop
-
-    character(99) :: FNAME, DIR
-    integer nc, nc_max
-!==============================================================================================================
-    call date_and_time(date = d_start, time = t_start)
-
-    print*,'FILE NAME? (PATH is OK)'
-    READ(5,'(A)') FNAME
-
-    nc_max = check_cases(FNAME) !連続実行数の取得
-
-    do nc = 1, nc_max
-
-        if(nc_max > 1) then
-            FNAME = get_case_path(nc)   !FNAMEのセット
-        end if
-
-        call set_dir_from_path(FNAME, DIR, FNAME_FMT)   !パスからディレクトリ部とファイル名を取得
-
-        if(trim(OS) == 'Linux') then    !Linuxなら区切り文字を/にする
-            FNAME = replace_str(FNAME, '\', '/')
-            DIR = replace_str(DIR, '\', '/')
-        end if
-        
-        call set_FILE_TYPE  !文字列FNAME_FMTから、ファイル形式を取得
-
-        select case(FILE_TYPE)  !ファイル形式ごとに分岐
-            case('VTK')
-                call read_VTK(FNAME)
-
-            case('INP')
-                call read_INP(FNAME)   !INPを読み込む(SHARP用)
-
-            case('FLD')
-                call read_FLD(FNAME) 
-
-            case default
-                print*,'FILE_TYPE NG:', FILE_TYPE
-                STOP
-                
-        end select
+    subroutine solve_adjacentInformation
 
         call set_GRID_INFO  !要素番号等の取得
 
@@ -397,17 +305,12 @@ PROGRAM MAIN
         call faceset    !面情報のセッティング
         call facecheck  !同一面のチェック
 
-        call boundaryset(DIR)   !境界面情報の出力
-        call nextcell(DIR)   !セル隣接情報の出力
+        call find_nodeID_onBoundFace   !境界面情報
 
-        call deallocation_flow  !配列解放
-        call deallocation_grid  !配列解放
+        call solve_adjacency   !セル隣接情報
 
-    end do
+        call deallocation_adjacent  !配列解放
 
+    end subroutine solve_adjacentInformation
 
-    call date_and_time(date = d_stop, time = t_stop)
-    print*, 'date = ', d_start, ' time = ', t_start
-    print*, 'date = ', d_stop,  ' time = ', t_stop
-
-END PROGRAM MAIN
+END MODULE adjacent_information

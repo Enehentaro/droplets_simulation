@@ -1,26 +1,23 @@
-# droplets_simulation
+# Droplets Simulation
 Simulation of Droplets Behavior in AFDET
 
-## grid_info.f90
-  前処理用プログラム。格子隣接関係・境界面情報を出力。以下をInclude。
-  - flow_field.f90
-  - cases_reader.f90
-  - csv_reader.f90
-  
-## virus_main.f90
-  飛沫計算メインプログラム。以下をInclude。
-  - flow_field.f90
-  - drop_motion.f90
-  - equation_mod.f90
-  - cases_reader.f90
-  - csv_reader.f90
+## main.f90
+  飛沫計算メインプログラム。前処理プログラムは取り込まれました。
+  実行時にファイルの有無から判断して、必要であれば前処理が勝手に行われます。
+  現在可能な流れ場ファイル：
+  - VTK
+  - INP
+  - FLD
+  - PLOT3D
 
-## 使用するモジュール
-  - flow_field.f90   :流れ場の格子データに関する変数・手続き集
-  - drop_motion.f90  :飛沫の挙動に関する変数・手続き集
-  - equation_mod.f90 :方程式系を扱うモジュール
-  - cases_reader.f90 :連続実行用ファイルcases.csvを読み込む
-  - csv_reader.f90   :一般的なCSVファイルを読み込む
+## 使い方
+  コンパイルに`make`コマンドを使います（makeのインストールが必要）。
+  - main.f90の冒頭部で、OSを指定する箇所があるので、適宜編集
+  - Makefileを開き、コンパイラおよびコンパイルオプションを適宜編集（変数名：FC, FCFLAG）
+  - ソースファイルのあるディレクトリで `make` コマンド実行
+  - 「droplet」という実行ファイルが現れるので、それを実行
+
+## 方程式
 
   解くべき方程式は次の通り。  
 <img src="https://latex.codecogs.com/gif.latex?m&space;\frac{d&space;\mathbf{v}}{dt}&space;=&space;m&space;\mathbf{g}&space;&plus;&space;C_D&space;\cdot&space;\frac{1}{2}\rho_a&space;S&space;\left&space;|&space;\mathbf{u}_a&space;-&space;\mathbf{v}&space;\right&space;|(\mathbf{u}_a&space;-&space;\mathbf{v})" />
