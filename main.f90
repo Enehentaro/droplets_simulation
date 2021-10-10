@@ -3,18 +3,6 @@
 !                                by KIYOTA OGURA(2021/1/10)
 !     updated by IDA
 !---------------------------------------------------------------------------------
-      include 'csv_reader.f90'
-      include 'cases_reader.f90'
-      include 'stl_reader.f90'
-      include 'fld_reader.f90'
-      include 'plot3d_operator.f90'
-      include 'CUBE_mod.f90'
-      include 'unstructured_grid.f90'
-      include 'adjacency_solver.f90'
-      include 'flow_field.f90'
-      include 'equation_mod.f90'
-      include 'drop_motion.f90'
-!*******************************************************************************************
 PROGRAM MAIN
       !$ use omp_lib
       use drop_motion_mod
@@ -26,7 +14,7 @@ PROGRAM MAIN
       integer n, nc, nc_max
       double precision Step_air, now_time
       character(20) :: d_start, d_stop, t_start, t_stop
-!===========================================================================================
+      !===========================================================================================
       !$OMP parallel
             !$OMP single
             !$ print *, "Num threads:", omp_get_num_threads()
@@ -86,7 +74,7 @@ PROGRAM MAIN
             
       end do
 
-!===========================================================================================
+      !===========================================================================================
       !以下、内部手続き
 
       contains
@@ -192,6 +180,5 @@ PROGRAM MAIN
             close(n_unit)
             
       end subroutine final_result
-
 
 END PROGRAM MAIN
