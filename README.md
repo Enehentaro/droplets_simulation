@@ -1,4 +1,4 @@
-# droplets_simulation
+# Droplets Simulation
 Simulation of Droplets Behavior in AFDET
 
 ## main.f90
