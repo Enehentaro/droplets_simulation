@@ -28,7 +28,7 @@ module drop_motion_mod
 
     contains
 
-    subroutine pre_setting
+    subroutine first_setting
 
         call read_and_set_condition
 
@@ -48,7 +48,7 @@ module drop_motion_mod
 
         droplets_ini(:)%radius_min = get_minimum_radius(droplets_ini(:)%radius, RH) !最小半径の計算
 
-    end subroutine pre_setting
+    end subroutine first_setting
 
     subroutine read_and_set_condition
         double precision DTa, dt, L, U
@@ -677,7 +677,7 @@ module drop_motion_mod
             end do
         close(n_unit)
 
-        print*, 'WRITEOUT:', fname
+        print*, 'writeOUT:', fname
 
     end subroutine output_backup
 
@@ -782,7 +782,7 @@ module drop_motion_mod
             END DO
         close(n_unit)
 
-        print*, 'WRITEOUT:', fname
+        print*, 'writeOUT:', fname
 
         !=======飛沫データ（VTKファイル）の出力ここまで===========================
     end subroutine output_droplet_VTK
