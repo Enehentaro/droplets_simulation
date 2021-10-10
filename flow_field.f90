@@ -6,8 +6,8 @@ module flow_field
     integer INTERVAL_FLOW                           !気流データ出力間隔
 
     character PATH_AIR*99, HEAD_AIR*20, FNAME_FMT*30 !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
-    character(3) FILE_TYPE  !ファイル形式（VTK,INP）
     integer, private :: FNAME_DIGITS !ファイル名の整数部桁数
+    logical unstructuredGrid
 
     double precision MAX_CDN(3), MIN_CDN(3)         !節点座標の上限および下限
 
@@ -17,33 +17,27 @@ module flow_field
 
     contains
     !***********************************************************************
-    subroutine set_FILE_TYPE
+    subroutine check_FILE_GRID
         integer i
+        character(3) type_name
+
+        unstructuredGrid = .true.
 
         i = index(FNAME_FMT, '0')
         HEAD_AIR = FNAME_FMT(: i-1)             !ファイル名の接頭文字(最初のゼロの手前まで)
         FNAME_DIGITS = index(FNAME_FMT, '.') - i   !ファイル名の整数部桁数(最初のゼロの位置からドットまでの文字数)
-
-        if(index(FNAME_FMT, '.vtk') > 0) then
-            FILE_TYPE = 'VTK'
-
-        else if(index(FNAME_FMT, '.inp') > 0) then
-            FILE_TYPE = 'INP'
-
-        else if(index(FNAME_FMT, '.fld') > 0) then
-            FILE_TYPE = 'FLD'
-
-        else if(index(FNAME_FMT, '.f') > 0) then
-            FILE_TYPE = 'P3D'
+        
+        if(index(FNAME_FMT, '.f') > 0) then
+            type_name = 'P3D'
+            unstructuredGrid = .false.
+            print*, 'FILE_GRID : CUBE', trim(FNAME_FMT)
 
         else
-            print*, 'FNAME_FMT NG:', FNAME_FMT
-            stop
+            call check_FILE_TYPE(FNAME_FMT)
+
         end if
 
-        print*, 'FILE_TYPE: ', FILE_TYPE, ' ', trim(FNAME_FMT)
-
-    end subroutine set_FILE_TYPE
+    end subroutine check_FILE_GRID
 
     character(4) function get_digits_format()
 
@@ -52,67 +46,127 @@ module flow_field
     end function get_digits_format
 
     subroutine pre_setting_onFlow
-        if(FILE_TYPE=='P3D') then
+        use adjacent_information
+        logical success
+
+        if(unstructuredGrid) then
+            call read_adjacency(PATH_AIR, success)
+            if(success) then
+                call read_boundaries(PATH_AIR)
+
+            else
+                call solve_adjacentInformation
+                call output_boundaries(PATH_AIR)
+                call output_adjacency(PATH_AIR)
+
+            end if
+            call boundary_setting
+
+        else
             call read_faceShape(PATH_AIR)
             call set_faceShape
-        else
-            call read_nextcell(PATH_AIR)
-            call read_boundaries(PATH_AIR)
         end if
 
     end subroutine
 
-    function get_velocity_flow(cell) result(velocity)
-        type(reference_cell_t) :: cell
-        double precision velocity(3)
+    subroutine read_flow_data(FNUM, first)
+        integer, intent(in) :: FNUM
+        character(99) FNAME
+        character(4) digits_fmt
+        logical, intent(in) :: first
 
-        if(FILE_TYPE == 'P3D') then
-            velocity(:) = get_velocity_f(cell%nodeID, cell%ID)
+        digits_fmt = get_digits_format()
+
+        if(unstructuredGrid) then
+            if (INTERVAL_FLOW == -1) then !定常解析
+                FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
+                call read_unstructuredGrid(FNAME)
+            else
+                FNAME = trim(PATH_AIR)//trim(HEAD_AIR)
+                call read_unstructuredGrid(FNAME, digits_fmt, FNUM)
+            end if
+                       
+            MAX_CDN(1) = maxval(CDN(1,:))
+            MAX_CDN(2) = maxval(CDN(2,:))
+            MAX_CDN(3) = maxval(CDN(3,:))
+            print*, 'MAX_coordinates=', MAX_CDN(:)
+                
+            MIN_CDN(1) = minval(CDN(1,:))
+            MIN_CDN(2) = minval(CDN(2,:))
+            MIN_CDN(3) = minval(CDN(3,:))
+            print*, 'MIN_coordinates=', MIN_CDN(:)
+                
+            call set_gravity_center
+                   
+            if(.not.first) call boundary_setting
+
         else
-            velocity(:) = VELC(:, cell%ID)
+
+            if (INTERVAL_FLOW == -1) then !定常解析
+                FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
+            else
+                write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".f")') FNUM
+
+            end if
+            call read_CUBE_data(FNAME, trim(PATH_AIR))
+
+            block
+                real min_max(6)
+
+                min_max = get_minMax_CUBE()
+
+                MIN_CDN(:) = min_max(1:3)
+                MAX_CDN(:) = min_max(4:6)
+
+            end block
+
         end if
-    end function get_velocity_flow
+            
+    end subroutine read_flow_data
 
     function search_ref_cell(X, ref_cel_pre) result(reference_cell)
+        double precision, intent(in) :: X(3)
+        integer, intent(in) :: ref_cel_pre
+        integer reference_cell
+
+        if(ref_cel_pre == 0) then   !参照セルが見つかっていない（＝初期ステップ）
+            reference_cell = nearest_cell(X)    
+            print*, 'FirstNCN:', reference_cell
+    
+        else
+            reference_cell = nearer_cell(X, ref_cel_pre)
+            if (reference_cell == 0) then
+                print*, 'NCN_ERROR:', X(:), reference_cell
+                stop
+            end if
+
+            if (.not.nearcell_check(X(:), reference_cell)) reference_cell = nearest_cell(X)
+    
+        end if
+
+    end function search_ref_cell
+
+    function search_ref_cell_onCUBE(X, ref_cel_pre) result(reference_cell)
         double precision, intent(in) :: X(3)
         type(reference_cell_t), intent(in) :: ref_cel_pre
         type(reference_cell_t) reference_cell
 
-        if(FILE_TYPE=='P3D') then
-            if(ref_cel_pre%ID == 0) then   !参照セルが見つかっていない（＝初期ステップ）
+        if(ref_cel_pre%ID == 0) then   !参照セルが見つかっていない（＝初期ステップ）
+            reference_cell%ID = get_cube_contains(real(X))    
+            reference_cell%nodeID(:) = nearest_node(real(X), reference_cell%ID)
+            print*, 'FirstNCN:', reference_cell
+    
+        else
+            reference_cell%ID = ref_cel_pre%ID
+            reference_cell%nodeID(:) = nearer_node(real(X), ref_cel_pre%nodeID, ref_cel_pre%ID)
+
+            if (.not.nearNode_check(real(X), reference_cell%nodeID, reference_cell%ID)) then
                 reference_cell%ID = get_cube_contains(real(X))    
                 reference_cell%nodeID(:) = nearest_node(real(X), reference_cell%ID)
-                print*, 'FirstNCN:', reference_cell
-        
-            else
-                reference_cell%ID = ref_cel_pre%ID
-                reference_cell%nodeID(:) = nearer_node(real(X), ref_cel_pre%nodeID, ref_cel_pre%ID)
-
-                if (.not.nearNode_check(real(X), reference_cell%nodeID, reference_cell%ID)) then
-                    reference_cell%ID = get_cube_contains(real(X))    
-                    reference_cell%nodeID(:) = nearest_node(real(X), reference_cell%ID)
-                end if
-        
             end if
-
-        else
-            if(ref_cel_pre%ID == 0) then   !参照セルが見つかっていない（＝初期ステップ）
-                reference_cell%ID = nearest_cell(X)    
-                print*, 'FirstNCN:', reference_cell%ID
-        
-            else
-                reference_cell%ID = nearer_cell(X, ref_cel_pre%ID)
-                if (reference_cell%ID == 0) then
-                    print*, 'NCN_ERROR:', X(:), reference_cell
-                    stop
-                end if
     
-                if (.not.nearcell_check(X(:), reference_cell%ID)) reference_cell%ID = nearest_cell(X)
-        
-            end if
-
         end if
 
-    end function search_ref_cell
+    end function search_ref_cell_onCUBE
     
 end module flow_field

@@ -1,8 +1,7 @@
 !---------------------------------------------------------------------------------
-!     Simulation of viral drplets
+!     Simulation of viral droplets
 !                                by KIYOTA OGURA(2021/1/10)
-!     updated by IDA (2021/07/13)
-!
+!     updated by IDA
 !---------------------------------------------------------------------------------
       include 'csv_reader.f90'
       include 'cases_reader.f90'
@@ -11,6 +10,7 @@
       include 'plot3d_operator.f90'
       include 'CUBE_mod.f90'
       include 'unstructured_grid.f90'
+      include 'adjacency_solver.f90'
       include 'flow_field.f90'
       include 'equation_mod.f90'
       include 'drop_motion.f90'
@@ -28,23 +28,16 @@ PROGRAM MAIN
       character(20) :: d_start, d_stop, t_start, t_stop
 !===========================================================================================
       !$OMP parallel
-      !$OMP single
-      !$ print *, "Num threads:", omp_get_num_threads()
-      !$OMP end single
+            !$OMP single
+            !$ print *, "Num threads:", omp_get_num_threads()
+            !$OMP end single
       !$OMP end parallel
-
-      call date_and_time(date = d_start, time = t_start)
-      print*,'date = ', trim(d_start), ' time = ', trim(t_start)
 
       call pre_setting    !条件TXTの読み込み
 
       nc_max = check_cases(PATH_AIR)      !連続実行数の取得
 
-      if((cases_read_flag).and.(num_restart >= 1)) then  !連続実行とリスタートを同時にするとどうなるのやら
-            print*, 'WARNING:Continuous execution and restart happened at the same time.'
-            print*, 'Recommend to Remove '//trim(FNAME_FMT)//' or to Set restart_No.= 0'
-            ! stop
-      end if
+      call check_point
 
       do nc = 1, nc_max
 
@@ -53,9 +46,9 @@ PROGRAM MAIN
             call set_coeff_drdt(T, RH)  !温湿度依存の係数の設定
 
             call initialization_droplet
-            
-            call pre_setting_onFlow
+
             call read_flow_field(n_start) !流れ場の取得
+            call pre_setting_onFlow
 
             print*,'*******************************************'
             print*,'             START step_loop               '
@@ -87,10 +80,6 @@ PROGRAM MAIN
             print*,'             END step_loop                 '
             print*,'*******************************************'
 
-            call date_and_time(date = d_stop, time = t_stop)
-            print*,'date = ', d_start, ' time = ', t_start
-            print*,'date = ', d_stop,  ' time = ', t_stop
-
             call final_result
 
             call deallocation_flow  !配列解放
@@ -101,6 +90,28 @@ PROGRAM MAIN
       !以下、内部手続き
 
       contains
+
+      subroutine check_point
+            character(1) input
+
+            do
+                  print*, 'Do you want to start the calculation? (y/n)'
+                  read(5,*) input
+
+                  select case(input)
+                        case('y')
+                              call date_and_time(date = d_start, time = t_start)
+                              print*,'date = ', trim(d_start), ' time = ', trim(t_start)
+                              exit
+
+                        case('n')
+                              stop
+
+                  end select
+
+            end do
+
+      end subroutine
 
       subroutine set_path
             character(20) :: temperature, humidity
@@ -118,7 +129,7 @@ PROGRAM MAIN
 
             call set_dir_from_path(PATH_AIR, PATH_AIR, FNAME_FMT)
 
-            call set_FILE_TYPE
+            call check_FILE_GRID
       
             print*, 'T =', T, 'degC'
             print*, 'RH =', RH, '%'
@@ -129,16 +140,19 @@ PROGRAM MAIN
             i = len_trim(path_out_base)
             if(path_out_base(i:i) == '\') path_out_base(i:i) = ' '      !末尾が区切り文字であればこれを除去
             path_out = trim(path_out_base)//'_'//trim(temperature)//'_'//trim(humidity)//'\'
+            path_backup = 'backup\'
 
             select case(trim(OS))
                   case ('Linux')  !for_Linux
                         path_out =  replace_str(path_out, '\', '/' )
+                        path_backup = replace_str(path_backup, '\', '/')
                         PATH_AIR = replace_str(PATH_AIR, '\', '/' )
-                        call system('mkdir -p -v '//path_out)
+                        call system('mkdir -p -v '//trim(path_out)//trim(path_backup))
                         call system('cp condition.txt '//path_out)
 
                   case ('Windows')  !for_Windows
-                        call system('md '//path_out)
+
+                        call system('md '//trim(path_out)//trim(path_backup))
                         call system('copy condition.txt '//path_out)
 
                   case default
@@ -159,6 +173,10 @@ PROGRAM MAIN
 
       subroutine final_result
             integer n_unit
+            
+            call date_and_time(date = d_stop, time = t_stop)
+            print*,'date = ', d_start, ' time = ', t_start
+            print*,'date = ', d_stop,  ' time = ', t_stop
 
             open(newunit=n_unit, FILE= trim(path_out)//'final_result.txt',STATUS='REPLACE')
                   write(n_unit,*)'date = ', d_start, ' time = ', t_start

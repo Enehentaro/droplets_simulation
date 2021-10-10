@@ -1,5 +1,8 @@
 module unstructuredGrid_mod
     implicit none
+    character(3), private :: FILE_TYPE  !ファイル形式
+    character(13), private, parameter :: adjacencyFileName = 'adjacency.txt'
+    character(12), private, parameter :: boundaryFileName = 'boundary.txt'
 
     integer, allocatable :: ICN(:,:)                !要素所有節点ID
     integer, allocatable :: NoB(:)                  !要素所有境界面の数
@@ -17,7 +20,115 @@ module unstructuredGrid_mod
     double precision, allocatable :: CENF(:,:,:)    !面重心
     double precision, allocatable :: NVECF(:,:)     !面法線ベクトル
 
+    interface read_unstructuredGrid
+        module procedure read_unstructuredGrid_byNAME
+        module procedure read_unstructuredGrid_byNumber
+    end interface
+
     contains
+
+    subroutine check_FILE_TYPE(FNAME)
+        character(*), intent(in) :: FNAME
+
+        if(index(FNAME, '.vtk') > 0) then
+            FILE_TYPE = 'VTK'
+
+        else if(index(FNAME, '.inp') > 0) then
+            FILE_TYPE = 'INP'
+
+        else if(index(FNAME, '.fld') > 0) then
+            FILE_TYPE = 'FLD'
+
+        else
+            print*, 'FILE_TYPE NG:', FNAME
+            stop
+        end if
+
+        print*, 'FILE_TYPE:', FILE_TYPE
+
+    end subroutine check_FILE_TYPE
+
+    subroutine read_unstructuredGrid_byNAME(FNAME)
+        character(*), intent(in) :: FNAME
+        integer num_cell
+
+        select case(FILE_TYPE)
+            case('VTK')
+                call read_VTK(FNAME)
+
+            case('INP')
+                call read_INP(FNAME)   !INPを読み込む(SHARP用)
+
+            case('FLD')
+                call read_FLD(FNAME)
+
+            case default
+                print*,'FILE_TYPE NG:', FILE_TYPE
+                STOP
+                    
+        end select
+
+        num_cell = size(ICN(:,:), dim=2)
+
+        allocate(CENC(3, num_cell), WIDC(num_cell))
+            
+    end subroutine read_unstructuredGrid_byNAME
+
+    subroutine read_unstructuredGrid_byNumber(path, digits_fmt, FNUM)
+        character(*), intent(in) :: path
+        integer, intent(in) :: FNUM
+        character(99) :: FNAME
+        character(4) digits_fmt
+        integer num_cell
+
+        select case(FILE_TYPE)
+            case('VTK')
+
+                write(FNAME,'("'//trim(path)//'",'//digits_fmt//',".vtk")') FNUM
+                call read_VTK(FNAME)
+
+            case('INP')
+
+                if(FNUM==0) then
+                    write(FNAME,'("'//trim(path)//'",'//digits_fmt//',".inp")') 1
+                else
+                    write(FNAME,'("'//trim(path)//'",'//digits_fmt//',".inp")') FNUM
+                end if
+
+                call read_INP(FNAME)   !INPを読み込む(SHARP用)
+
+            case('FLD')
+
+                if (FNUM <= 9) then
+                    write(FNAME,'("'//trim(path)//'",i1.1,".fld")') FNUM
+
+                else if (FNUM <= 99) then
+                    write(FNAME,'("'//trim(path)//'",i2.2,".fld")') FNUM
+
+                else if(FNUM <= 999) then
+                    write(FNAME,'("'//trim(path)//'",i3.3,".fld")') FNUM
+
+                else if(FNUM <= 9999) then
+                    write(FNAME,'("'//trim(path)//'",i4.4,".fld")') FNUM
+
+                else
+                    write(FNAME,'("'//trim(path)//'",i5.5,".fld")') FNUM
+
+                end if
+
+                call read_FLD(FNAME)
+
+            case default
+                print*,'FILE_TYPE NG:', FILE_TYPE
+                STOP
+                
+        end select
+
+        num_cell = size(ICN(:,:), dim=2)
+
+        allocate(CENC(3, num_cell), WIDC(num_cell))
+            
+    end subroutine read_unstructuredGrid_byNumber
 
     subroutine read_VTK(FNAME, pointdata)
         character(*), intent(in) :: FNAME
@@ -329,13 +440,19 @@ module unstructuredGrid_mod
         !$omp end parallel do 
     end subroutine set_gravity_center
 
-    subroutine read_nextcell(path)
+    subroutine read_adjacency(path, success)
         implicit none
         character(*), intent(in) :: path
+        logical, optional :: success
         integer II,NC,JB, n_unit, num_cells, NCMAX
         character(len_trim(path)+20) FNAME
                 
-        FNAME = trim(path)//'nextcell.txt'
+        FNAME = trim(path)//adjacencyFileName
+        if(present(success)) then
+            inquire(file = FNAME, exist = success)
+            if(.not.success) return
+        end if
+
         print*, 'READ:', FNAME
 
         open(newunit=n_unit, FILE=FNAME, STATUS='OLD')
@@ -344,28 +461,68 @@ module unstructuredGrid_mod
 
             allocate(NEXT_CELL(NCMAX,num_cells),NUM_NC(num_cells))
             DO II = 1, num_cells
-            read(n_unit,'(I5)',advance='no') NUM_NC(II)
-            DO NC = 1, NUM_NC(II)
-                read(n_unit,'(I12)',advance='no') NEXT_CELL(NC,II)
-            END DO
-            read(n_unit,'()')
+                read(n_unit,'(I5)',advance='no') NUM_NC(II)
+                DO NC = 1, NUM_NC(II)
+                    read(n_unit,'(I12)',advance='no') NEXT_CELL(NC,II)
+                END DO
+                read(n_unit,'()')
             END DO
 
-            allocate(NoB(num_cells), source=0)
-            allocate(ICB(4,num_cells), source=0)
-            allocate(CENC(3,num_cells), WIDC(num_cells))
+            if(.not.allocated(NoB)) then
+
+                allocate(NoB(num_cells), source=0)
+                allocate(ICB(4,num_cells), source=0)
+
+                DO II = 1, num_cells
+                read(n_unit, fmt='(I4)', advance='no') NoB(II)  ! Number of Boundary
+                do JB = 1, NoB(II)
+                    read(n_unit, fmt='(I10)', advance='no') ICB(JB,II)
+                end do
+                read(n_unit,'()')  !改行
+                END DO
+
+            end if
+
+        close(n_unit)
+
+    end subroutine read_adjacency
+
+    subroutine output_adjacency(path)
+        implicit none
+        character(*), intent(in) :: path
+        integer II,NC,JB, n_unit, num_cells, NCMAX
+        character(len_trim(path)+20) FNAME
+                
+        FNAME = trim(path)//adjacencyFileName
+
+        print*, 'READ:', FNAME
+
+        num_cells = size(NEXT_CELL(:,:), dim=2)
+        NCMAX = size(NEXT_CELL(:,:), dim=1)
+
+        open(newunit=n_unit, FILE=FNAME, STATUS='replace')
+            write(n_unit,*) num_cells
+            write(n_unit,*) NCMAX
 
             DO II = 1, num_cells
-            read(n_unit, fmt='(I4)', advance='no') NoB(II)  ! Number of Boundary
-            do JB = 1, NoB(II)
-                read(n_unit, fmt='(I10)', advance='no') ICB(JB,II)
-            end do
-            read(n_unit,'()')  !改行
+                write(n_unit,'(I5)',advance='no') NUM_NC(II)
+                DO NC = 1, NUM_NC(II)
+                    write(n_unit,'(I12)',advance='no') NEXT_CELL(NC,II)
+                END DO
+                write(n_unit,'()')
+            END DO
+
+            DO II = 1, num_cells
+                write(n_unit, fmt='(I4)', advance='no') NoB(II)  ! Number of Boundary
+                do JB = 1, NoB(II)
+                    write(n_unit, fmt='(I10)', advance='no') ICB(JB,II)
+                end do
+                write(n_unit,'()')  !改行
             END DO
 
         close(n_unit)
 
-    end subroutine read_nextcell
+    end subroutine output_adjacency
 
     subroutine read_boundaries(path)
         implicit none
@@ -373,7 +530,7 @@ module unstructuredGrid_mod
         integer JB, n_unit, JBMX
         character(len_trim(path)+20) FNAME
 
-        FNAME = trim(path)//'boundaries.txt'
+        FNAME = trim(path)//boundaryFileName
         print*, 'READ:', FNAME
         open(newunit=n_unit, FILE=FNAME , STATUS='old')
             read(n_unit,*) JBMX
@@ -382,9 +539,40 @@ module unstructuredGrid_mod
                 read(n_unit,*) NBN(1,JB), NBN(2,JB), NBN(3,JB)
             end do
         close(n_unit)
-        allocate(CENF(3,JBMX,2), NVECF(3,JBMX))
         
     end subroutine read_boundaries
+
+    subroutine output_boundaries(path)
+        implicit none
+        character(*), intent(in) :: path
+        integer JB, n_unit, JBMX
+        character(len_trim(path)+20) FNAME
+
+        FNAME = trim(path)//boundaryFileName
+        print*, 'READ:', FNAME
+        JBMX = size(NBN(:,:), dim=2)
+        open(newunit=n_unit, FILE=FNAME , STATUS='replace')
+            write(n_unit,*) JBMX
+            do JB = 1, JBMX
+                write(n_unit,*) NBN(1,JB), NBN(2,JB), NBN(3,JB)
+            end do
+        close(n_unit)
+        
+    end subroutine output_boundaries
+
+    subroutine set_nodeID_onBoundFace(nodeID_onBoundFace)
+        integer, intent(in) :: nodeID_onBoundFace(:,:)
+
+        NBN = nodeID_onBoundFace
+    end subroutine set_nodeID_onBoundFace
+
+    subroutine set_adjacency(num_adjacent, adjacentCellID)
+        integer, intent(in) :: num_adjacent(:), adjacentCellID(:,:)
+
+        NUM_NC = num_adjacent
+        NEXT_CELL = adjacentCellID
+    end subroutine set_adjacency
+
 
     integer function nearest_cell(X) !最も近いセルNCNの探索
         double precision, intent(in) :: X(3)
@@ -463,11 +651,17 @@ module unstructuredGrid_mod
 
     end function nearcell_check
                      
-    subroutine boundary_set !全境界面に対して外向き法線ベクトルと重心を算出
-        integer II, JJ, JB, IIMX
+    subroutine boundary_setting !全境界面に対して外向き法線ベクトルと重心を算出
+        integer II, JJ, JB, IIMX, JBMX
         double precision :: a(3), b(3), r(3), norm, inner
+        if(.not.allocated(NoB)) return
 
         IIMX = size(ICN(:,:), dim=2)
+
+        if(.not.allocated(CENF)) then
+            JBMX = size(NBN(:,:), dim=2)
+            allocate(CENF(3,JBMX,2), NVECF(3,JBMX))
+        end if
         
         print*, 'SET:boundary'
         
@@ -498,10 +692,8 @@ module unstructuredGrid_mod
             end do
         
         end do
-        
-        !----------------------------------------------------------------------------------
-    end subroutine boundary_set
-        !----------------------------------------------------------------------------------
+
+    end subroutine boundary_setting
 
     subroutine point2cell(pointdata, celldata, cell2node, celltype)
         implicit none

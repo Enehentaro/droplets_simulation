@@ -20,7 +20,7 @@ module drop_motion_mod
     integer, private :: num_droplets   !全飛沫数
     integer interval, T, RH
  
-    character path_out_base*99, path_out*99, head_out*10
+    character path_out_base*99, path_out*99, head_out*10, path_backup*7
 
     integer num_restart, n_start, n_end
     integer, private :: LoopS, LoopF, OFFSET
@@ -51,7 +51,7 @@ module drop_motion_mod
     end subroutine pre_setting
 
     subroutine read_and_set_condition
-        double precision DTa, dt, L, U, Rho, Mu
+        double precision DTa, dt, L, U
         double precision :: direction_g(3)
         integer i, n_unit
 
@@ -91,8 +91,6 @@ module drop_motion_mod
             read(n_unit,'()')
             read(n_unit,*) L
             read(n_unit,*) U
-            read(n_unit,*) Rho
-            read(n_unit,*) Mu
 
         CLOSE(n_unit)
 
@@ -103,17 +101,27 @@ module drop_motion_mod
             allocate(droplets_ini(num_droplets))
         end if
 
-        print*, 'restart =',num_restart
+        if(num_restart > 0) then
+            print*, 'Restart from', num_restart
+        else if(num_restart == -1) then
+            print*, 'InitialDistributon is Specified.'
+        end if
+
         print*, 'n_end =',n_end
         print*, 'interval =',interval
-        print*, 'interval_air =',INTERVAL_FLOW
-        print*, 'loop=',loops,loopf
-        print*, 'dt =',dt
+
+        if(INTERVAL_FLOW > 0) then
+            print*, 'Interval of AirFlow =', INTERVAL_FLOW
+        else
+            print*, 'AirFlow is Steady'
+        end if
+
+        if(loopf - loops > 0) print*, 'Loop is from', loops, 'to', loopf
+        print*, 'Delta_Time =', dt
         print*, 'Rdt', Rdt
+        print*, 'FileName of AirFlow : ', PATH_AIR
 
-        print*, 'PATH_AIR=', PATH_AIR
-
-        call set_basical_variables(dt, L, U, Rho, Mu)
+        call set_basical_variables(dt, L, U)
 
         call set_gravity_acceleration(direction_g)
 
@@ -156,8 +164,8 @@ module drop_motion_mod
             stop
         end if
 
-        do vn = 1, size(rad_cnt)
-            print*,'rad_cnt(',vn,') =',rad_cnt(vn)
+        do i = 1, size(rad_cnt)
+            print*,'rad_cnt(', threshold(1, i), ') =', rad_cnt(i)
         end do
 
     end subroutine calc_initial_radius
@@ -233,18 +241,20 @@ module drop_motion_mod
 
             print*, 'RESTRAT'
             
-            write(fname,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') num_restart
-            droplets = read_droplet_VTK(fname)   !ここで自動割り付け
+            ! write(fname,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') num_restart
+            ! droplets = read_droplet_VTK(fname)   !ここで自動割り付け
+            write(fname,'("'//trim(path_out)//trim(path_backup)//'backup", i8.8, ".bu")') num_restart
+            droplets = read_backup(fname)   !ここで自動割り付け
             num_droplets = size(droplets(:))
 
-            block
-                character(99) fname_first
-                type(virus_droplet), allocatable ::  droplets_first(:)
+            ! block
+            !     character(99) fname_first
+            !     type(virus_droplet), allocatable ::  droplets_first(:)
 
-                write(fname_first,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') 0
-                droplets_first = read_droplet_VTK(fname_first)   !自動割り付け
-                droplets(:)%radius_min = get_minimum_radius(droplets_first(:)%radius, RH) !最小半径の計算
-            end block
+            !     write(fname_first,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') 0
+            !     droplets_first = read_droplet_VTK(fname_first)   !自動割り付け
+            !     droplets(:)%radius_min = get_minimum_radius(droplets_first(:)%radius, RH) !最小半径の計算
+            ! end block
 
             n_start = num_restart
 
@@ -257,151 +267,6 @@ module drop_motion_mod
             
     end subroutine initialization_droplet
 
-    !***********************************************************************
-    function read_droplet_VTK(fname) result(droplets_read)
-        implicit none
-        character(*), intent(in) :: fname
-        type(virus_droplet), allocatable :: droplets_read(:)
-        double precision, allocatable :: diameter(:)
-        integer vn, n_unit, num_drop
-        character(10) str
-    
-        print*, 'READ:', fname
-        open(newunit=n_unit, file=fname, status='old')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit, *) str, num_drop
-
-            allocate(droplets_read(num_drop), diameter(num_drop))
-
-            DO vn = 1, num_drop
-                read(n_unit, *) droplets_read(vn)%coordinate(:)
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO vn = 1, num_drop
-                read(n_unit,'()')
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO vn = 1, num_drop
-                read(n_unit,'()')
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO vn = 1, num_drop
-                read(n_unit, *) diameter(vn)
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO vn = 1, num_drop
-                read(n_unit,'(I12)') droplets_read(vn)%status
-            END DO
-            read(n_unit,'()')
-            DO vn = 1, num_drop
-                read(n_unit, *) droplets_read(vn)%velocity(:)
-            END DO
-        close(n_unit)
-    
-        droplets_read(:)%radius = diameter(:) * 0.5d0
-      
-    end function read_droplet_VTK
-
-    !***********************************************************************
-    subroutine output_droplet_VTK(droplets_out, step)
-        implicit none
-        integer, intent(in) :: step
-        type(virus_droplet), intent(in) :: droplets_out(:)
-        integer vn, n_unit, num_drop
-        character(99) fname
-        !======================================================================= 
-
-        num_drop = size(droplets_out(:))
-        write(fname,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') step
-
-        !=======ここから飛沫データ（VTKファイル）の出力===========================
-        open(newunit=n_unit, file=fname, status='replace')                                             !ここで出力ファイルを指定
-            write(n_unit,'(A)') '# vtk DataFile Version 2.0'                                !ファイルの始め4行は文字列（決まり文句）
-            write(n_unit,'(A)') 'FOR TEST'
-            write(n_unit,'(A)') 'ASCII'
-            write(n_unit,'(A)') 'DATASET UNSTRUCTURED_GRID'
-            write(n_unit,'(A,I12,A)') 'POINTS ',num_droplets,' float'                              !節点の数
-            DO vn = 1, num_drop                                                            !節点の数だけループ
-                write(n_unit,'(3(f20.15,2X))') droplets_out(vn)%coordinate(:)   !節点の座標（左から順にx,y,z）
-            END DO
-            write(n_unit,'()')                                                              !改行
-            write(n_unit,'(A,I12,2X,I12)') 'CELLS ', num_droplets, num_droplets*2                          !セルの数、セルの数×2
-            DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(2(I12,2X))')  1, vn-1                                          !まずセルを構成する点の数（セル形状が点なので1）、その点のID
-            END DO
-            write(n_unit,'()')                                                              !改行
-            write(n_unit,'(A,I12)') 'CELL_TYPES',num_droplets
-            DO vn = 1, num_drop                                                           !セルの数だけループ
-                write(n_unit,'(I12)') 1                                                        !セルの形状（1は点であることを意味する）
-            END DO
-            write(n_unit,'()')                                                              !改行
-            write(n_unit,'(A,I12)') 'CELL_DATA ',num_droplets                                      !ここからセルのデータという合図、セルの数
-            write(n_unit,'(A)') 'SCALARS Diameter float'                                  !まずは飛沫の直径
-            write(n_unit,'(A)') 'LOOKUP_TABLE default'
-            DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(f20.15)') droplets_out(vn)%radius*2.0d0                            !飛沫の直径
-            END DO
-            write(n_unit,'(A)') 'SCALARS Status int'                                   !次は飛沫の状態(0:浮遊、1:付着、2:回収)
-            write(n_unit,'(A)') 'LOOKUP_TABLE default'
-            DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(I12)') droplets_out(vn)%status                                            !次は飛沫の状態(0:浮遊、1:付着、2:回収)
-            END DO
-            write(n_unit,'(A)') 'VECTORS Velocity float'                             !最後に飛沫の速度
-            DO vn = 1, num_drop                                                             !セルの数だけループ
-                write(n_unit,'(3(f20.15,2X))') droplets_out(vn)%velocity(:)               !飛沫の速度
-            END DO
-        close(n_unit)
-
-        print*, 'WRITEOUT:', fname
-
-    !=======飛沫データ（VTKファイル）の出力ここまで===========================
-    end subroutine output_droplet_VTK
-
-    subroutine output_droplet_CSV(droplets_out, step)
-        implicit none
-        integer, intent(in) :: step
-        type(virus_droplet), intent(in) :: droplets_out(:)
-        integer n_unit
-
-        !以下はCSVファイルの出力
-
-        if(step==0) then !初期ステップならファイル新規作成
-            open(newunit=n_unit, file=trim(path_out)//'particle_'//trim(head_out)//'.csv', status='replace')
-            print*,'REPLACE:particle_data.csv'
-
-        else
-            open(newunit=n_unit, file=trim(path_out)//'particle_'//trim(head_out)//'.csv'&
-                , action='write', status='old', position='append')
-
-        end if
-        
-            write(n_unit,*) real_time(step), ',', count(droplets_out(:)%status==0), ',',&
-                count(droplets_out(:)%status==2), ',', count(droplets_out(:)%status==3)
-        close(n_unit)
-
-        ! if(count(adhesion==0) <= 0) then !浮遊粒子がなくなれば計算終了
-        !   print*,'all viruses terminated',N
-        !   STOP
-        ! end if
-
-    end subroutine output_droplet_CSV
-
-    subroutine output(step)
-        integer, intent(in) :: step
-        call output_droplet_VTK(droplets, step)
-        call output_droplet_CSV(droplets, step)
-    end subroutine output
-
-    !=====================================================================
     subroutine survival_check(step)
         integer,intent(in) :: step
         integer vfloat, vn
@@ -430,37 +295,39 @@ module drop_motion_mod
         implicit none
         integer vn
 
-        DO vn = 1, num_droplets
-            if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
-            call evaporation(vn)    !半径変化方程式
-            call motion_calc(vn)     !運動方程式
-        END DO
+        if(unstructuredGrid) then
+            do vn = 1, num_droplets
+                if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
+                call evaporation(vn)    !蒸発方程式関連の処理
+                call motion_calc(vn)     !運動方程式関連の処理
+            end do
+
+        else
+            do vn = 1, num_droplets
+                if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
+                call evaporation(vn)    !蒸発方程式関連の処理
+                call motion_calc_onCUBE(vn)     !運動方程式関連の処理
+            end do
+
+        end if
 
     end subroutine Calculation_Droplets
 
-        !*******************************************************************************************
-    subroutine evaporation(vn) !CALCULATE drplet evaporation
+    subroutine evaporation(vn) !CALCULATE droplet evaporation
         integer, intent(in) :: vn
         double precision radius_n
       
-        !========= 飛沫半径の変化の計算　(2次精度ルンゲクッタ（ホイン）) ===========================
-      
-        if (droplets(vn)%radius <= droplets(vn)%radius_min) then  !半径が最小になったものを除く
-            droplets(vn)%radius = droplets(vn)%radius_min
-            return
-        end if
+        if (droplets(vn)%radius <= droplets(vn)%radius_min) return  !半径が最小になったものを除く
     
         radius_n = evaporatin_eq(droplets(vn)%radius)
         
         droplets(vn)%radius = max(radius_n, droplets(vn)%radius_min)
       
-        !*******************************************************************************************
     end subroutine evaporation
-    !*******************************************************************************************
 
     subroutine motion_calc(vn)
         integer, intent(in) :: vn
-        double precision  :: X(3), V(3), Va(3)
+        double precision  :: X(3), V(3), vel_air(3)
         type(reference_cell_t) :: RefC
         logical stopflag
         logical, save :: first = .true.
@@ -468,7 +335,7 @@ module drop_motion_mod
         X(:) = droplets(vn)%coordinate(:)
         V(:) = droplets(vn)%velocity(:)
 
-        droplets(vn)%ref_cell = search_ref_cell(X(:), droplets(vn)%ref_cell)
+        droplets(vn)%ref_cell%ID = search_ref_cell(X(:), droplets(vn)%ref_cell%ID)
 
         RefC = droplets(vn)%ref_cell
         if(first) then
@@ -479,33 +346,67 @@ module drop_motion_mod
         stopflag = adhesion_check(vn, RefC%ID)
 
         call area_check(X(:), stopflag)
+
+        vel_air(:) = VELC(:, RefC%ID)
     
+        droplets(vn) = motion_result(droplets(vn), vel_air, stopflag)
+        
+    end subroutine motion_calc
+
+    subroutine motion_calc_onCUBE(vn)
+        integer, intent(in) :: vn
+        double precision  :: X(3), V(3), vel_air(3)
+        type(reference_cell_t) :: RefC
+        logical stopflag
+        logical, save :: first = .true.
+    
+        X(:) = droplets(vn)%coordinate(:)
+        V(:) = droplets(vn)%velocity(:)
+
+        droplets(vn)%ref_cell = search_ref_cell_onCUBE(X(:), droplets(vn)%ref_cell)
+
+        RefC = droplets(vn)%ref_cell
+        if(first) then
+            droplets(:)%ref_cell = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
+            first = .false.
+        end if
+
+        stopflag = adhesion_check_onSTL(real(droplets(vn)%coordinate(:)))
+
+        call area_check(X(:), stopflag)
+
+        vel_air(:) = get_velocity_f(RefC%nodeID, RefC%ID)
+
+        droplets(vn) = motion_result(droplets(vn), vel_air, stopflag)
+    
+    end subroutine motion_calc_onCUBE
+
+    function motion_result(drop_p, Va, stopflag) result(drop_n)
+        type(virus_droplet), intent(in) :: drop_p
+        double precision, intent(in) :: Va(3)
+        logical, intent(in) :: stopflag
+        type(virus_droplet) drop_n
+
+        drop_n = drop_p
+
         if (stopflag) then
-            droplets(vn)%status = 1
-            droplets(vn)%velocity(:) = 0.0d0     !速度をゼロに
-            droplets(vn)%coordinate(:) = X(:)
+            drop_n%status = 1
+            drop_n%velocity(:) = 0.0d0     !速度をゼロに
     
         else
 
-            Va(:) = get_velocity_flow(RefC)
-
-            droplets(vn)%velocity(:) = motion_eq(V(:), Va(:), droplets(vn)%radius)
+            drop_n%velocity(:) = motion_eq(drop_p%velocity, Va(:), drop_p%radius)
             
-            droplets(vn)%coordinate(:) = next_position(X(:), V(:), droplets(vn)%velocity(:))
+            drop_n%coordinate(:) = next_position(drop_p%coordinate, drop_p%velocity, drop_n%velocity(:))
             
         end if
-        
-    end subroutine motion_calc
+
+    end function motion_result
                     
     logical function adhesion_check(vn, NCN)
         integer JJ, JB
         integer, intent(in) :: vn, NCN
         double precision :: r_vector(3), inner
-
-        if(FILE_TYPE=='P3D') then
-            adhesion_check = adhesion_check_inSTL(real(droplets(vn)%coordinate(:)))
-            return
-        end if
 
         adhesion_check = .false.
 
@@ -541,106 +442,26 @@ module drop_motion_mod
     subroutine read_flow_field(n_virus)
         integer, intent(in) :: n_virus
         integer FNUM
-        character(99) FNAME
-        character(4) digits_fmt
+        logical first
 
         FNUM = get_num_air(n_virus)
 
-        digits_fmt = get_digits_format()
+        if(n_virus == n_start) then
+            first = .true.
+        else
+            first = .false.
+        end if
 
-        select case(FILE_TYPE)
-            case('VTK')
-                if (INTERVAL_FLOW == -1) then !定常解析
-                    FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
-                else
-                    write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".vtk")') FNUM
+        call read_flow_data(FNUM, first)
 
-                end if
-                call read_VTK(FNAME)
-
-            case('INP')
-                if(INTERVAL_FLOW==-1) then
-                    FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
-                else
-                    if(FNUM==0) then
-                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".inp")') 1
-                    else
-                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".inp")') FNUM
-                    end if
-                end if
-                call read_INP(FNAME)   !INPを読み込む(SHARP用)
-
-            case('FLD')
-                if (INTERVAL_FLOW == -1) then !定常解析
-                    FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
-                else
-                    if (FNUM <= 9) then
-                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i1.1,".fld")') FNUM
-
-                    else if (FNUM <= 99) then
-                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i2.2,".fld")') FNUM
-
-                    else if(FNUM <= 999) then
-                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i3.3,".fld")') FNUM
-
-                    else if(FNUM <= 9999) then
-                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i4.4,".fld")') FNUM
-
-                    else
-                        write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",i5.5,".fld")') FNUM
-
-                    end if
-                end if
-                call read_FLD(FNAME)
-
-            case('P3D')
-                if (INTERVAL_FLOW == -1) then !定常解析
-                    FNAME = trim(PATH_AIR)//trim(FNAME_FMT)
-                else
-                    write(FNAME,'("'//trim(PATH_AIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".f")') FNUM
-
-                end if
-                call read_CUBE_data(FNAME, trim(PATH_AIR))
-
-                block
-                    real min_max(6)
-
-                    min_max = get_minMax_CUBE()
-
-                    MIN_CDN(:) = min_max(1:3)
-                    MAX_CDN(:) = min_max(4:6)
-
-                end block
-
-                return
-
-            case default
-                print*,'FILE_TYPE NG:', FILE_TYPE
-                STOP
-                    
-        end select
-            
-        MAX_CDN(1) = maxval(CDN(1,:))
-        MAX_CDN(2) = maxval(CDN(2,:))
-        MAX_CDN(3) = maxval(CDN(3,:))
-        print*, 'MAX_coordinates=', MAX_CDN(:)
-            
-        MIN_CDN(1) = minval(CDN(1,:))
-        MIN_CDN(2) = minval(CDN(2,:))
-        MIN_CDN(3) = minval(CDN(3,:))
-        print*, 'MIN_coordinates=', MIN_CDN(:)
-            
-        call set_gravity_center
-        call boundary_set
-        if(n_virus > n_start) call boundary_move
-
-        CENF(:,:,1) = CENF(:,:,2)
+        if(unstructuredGrid .and. (.not.first)) call boundary_move
             
     end subroutine read_flow_field
                       
     subroutine boundary_move !境界面の移動に合わせて付着飛沫も移動
         integer vn, JB
 
+        if(.not.allocated(CENF)) return
         ! print*, 'CALL:boundary_move'
 
         do vn = 1, num_droplets
@@ -656,6 +477,8 @@ module drop_motion_mod
             end if
         
         end do
+
+        CENF(:,:,1) = CENF(:,:,2)
 
         ! print*, 'FIN:boundary_move'
 
@@ -809,5 +632,188 @@ module drop_motion_mod
         end if
 
     end subroutine coalescence
+
+    subroutine output(step)
+        integer, intent(in) :: step
+        call output_droplet_VTK(droplets, step)
+        call output_droplet_CSV(droplets, step)
+        call output_backup(droplets, step)
+    end subroutine output
+
+    function read_backup(fname) result(droplets_read)
+        implicit none
+        character(*), intent(in) :: fname
+        type(virus_droplet), allocatable :: droplets_read(:)
+        integer i, n_unit, num_drop
+    
+        print*, 'READ:', fname
+        open(newunit=n_unit, form='unformatted', file=fname, status='old')
+            read(n_unit) num_drop
+
+            allocate(droplets_read(num_drop))
+
+            do i = 1, num_drop
+                read(n_unit) droplets_read(i)
+            end do
+        close(n_unit)
+    
+      
+    end function read_backup
+
+    subroutine output_backup(droplets_out, step)
+        implicit none
+        integer, intent(in) :: step
+        type(virus_droplet), intent(in) :: droplets_out(:)
+        integer i, n_unit, num_drop
+        character(99) fname
+
+        num_drop = size(droplets_out(:))
+        write(fname,'("'//trim(path_out)//trim(path_backup)//'backup", i8.8, ".bu")') step
+
+        open(newunit=n_unit, form='unformatted', file=fname, status='replace')
+            write(n_unit) num_drop
+            do i = 1, num_drop
+                write(n_unit) droplets_out(i)
+            end do
+        close(n_unit)
+
+        print*, 'WRITEOUT:', fname
+
+    end subroutine output_backup
+
+    function read_droplet_VTK(fname) result(droplets_read)
+        implicit none
+        character(*), intent(in) :: fname
+        type(virus_droplet), allocatable :: droplets_read(:)
+        double precision, allocatable :: diameter(:)
+        integer vn, n_unit, num_drop
+        character(10) str
+    
+        print*, 'READ:', fname
+        open(newunit=n_unit, file=fname, status='old')
+            read(n_unit,'()')
+            read(n_unit,'()')
+            read(n_unit,'()')
+            read(n_unit,'()')
+            read(n_unit, *) str, num_drop
+
+            allocate(droplets_read(num_drop), diameter(num_drop))
+
+            DO vn = 1, num_drop
+                read(n_unit, *) droplets_read(vn)%coordinate(:)
+            END DO
+            read(n_unit,'()')
+            read(n_unit,'()')
+            DO vn = 1, num_drop
+                read(n_unit,'()')
+            END DO
+            read(n_unit,'()')
+            read(n_unit,'()')
+            DO vn = 1, num_drop
+                read(n_unit,'()')
+            END DO
+            read(n_unit,'()')
+            read(n_unit,'()')
+            read(n_unit,'()')
+            read(n_unit,'()')
+            DO vn = 1, num_drop
+                read(n_unit, *) diameter(vn)
+            END DO
+            read(n_unit,'()')
+            read(n_unit,'()')
+            DO vn = 1, num_drop
+                read(n_unit,'(I12)') droplets_read(vn)%status
+            END DO
+            read(n_unit,'()')
+            DO vn = 1, num_drop
+                read(n_unit, *) droplets_read(vn)%velocity(:)
+            END DO
+        close(n_unit)
+    
+        droplets_read(:)%radius = diameter(:) * 0.5d0
+      
+    end function read_droplet_VTK
+
+    subroutine output_droplet_VTK(droplets_out, step)
+        implicit none
+        integer, intent(in) :: step
+        type(virus_droplet), intent(in) :: droplets_out(:)
+        integer vn, n_unit, num_drop
+        character(99) fname
+
+        num_drop = size(droplets_out(:))
+        write(fname,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') step
+
+        !=======ここから飛沫データ（VTKファイル）の出力===========================
+        open(newunit=n_unit, file=fname, status='replace')                                             !ここで出力ファイルを指定
+            write(n_unit,'(A)') '# vtk DataFile Version 2.0'                                !ファイルの始め4行は文字列（決まり文句）
+            write(n_unit,'(A)') 'FOR TEST'
+            write(n_unit,'(A)') 'ASCII'
+            write(n_unit,'(A)') 'DATASET UNSTRUCTURED_GRID'
+            write(n_unit,'(A,I12,A)') 'POINTS ',num_droplets,' float'                              !節点の数
+            DO vn = 1, num_drop                                                            !節点の数だけループ
+                write(n_unit,'(3(f20.15,2X))') droplets_out(vn)%coordinate(:)   !節点の座標（左から順にx,y,z）
+            END DO
+            write(n_unit,'()')                                                              !改行
+            write(n_unit,'(A,I12,2X,I12)') 'CELLS ', num_droplets, num_droplets*2                          !セルの数、セルの数×2
+            DO vn = 1, num_drop                                                            !セルの数だけループ
+                write(n_unit,'(2(I12,2X))')  1, vn-1                                          !まずセルを構成する点の数（セル形状が点なので1）、その点のID
+            END DO
+            write(n_unit,'()')                                                              !改行
+            write(n_unit,'(A,I12)') 'CELL_TYPES',num_droplets
+            DO vn = 1, num_drop                                                           !セルの数だけループ
+                write(n_unit,'(I12)') 1                                                        !セルの形状（1は点であることを意味する）
+            END DO
+            write(n_unit,'()')                                                              !改行
+            write(n_unit,'(A,I12)') 'CELL_DATA ',num_droplets                                      !ここからセルのデータという合図、セルの数
+            write(n_unit,'(A)') 'SCALARS Diameter float'                                  !まずは飛沫の直径
+            write(n_unit,'(A)') 'LOOKUP_TABLE default'
+            DO vn = 1, num_drop                                                            !セルの数だけループ
+                write(n_unit,'(f20.15)') droplets_out(vn)%radius*2.0d0                            !飛沫の直径
+            END DO
+            write(n_unit,'(A)') 'SCALARS Status int'                                   !次は飛沫の状態(0:浮遊、1:付着、2:回収)
+            write(n_unit,'(A)') 'LOOKUP_TABLE default'
+            DO vn = 1, num_drop                                                            !セルの数だけループ
+                write(n_unit,'(I12)') droplets_out(vn)%status                                            !次は飛沫の状態(0:浮遊、1:付着、2:回収)
+            END DO
+            write(n_unit,'(A)') 'VECTORS Velocity float'                             !最後に飛沫の速度
+            DO vn = 1, num_drop                                                             !セルの数だけループ
+                write(n_unit,'(3(f20.15,2X))') droplets_out(vn)%velocity(:)               !飛沫の速度
+            END DO
+        close(n_unit)
+
+        print*, 'WRITEOUT:', fname
+
+        !=======飛沫データ（VTKファイル）の出力ここまで===========================
+    end subroutine output_droplet_VTK
+
+    subroutine output_droplet_CSV(droplets_out, step)
+        implicit none
+        integer, intent(in) :: step
+        type(virus_droplet), intent(in) :: droplets_out(:)
+        integer n_unit
+
+        !以下はCSVファイルの出力
+
+        if(step==0) then !初期ステップならファイル新規作成
+            open(newunit=n_unit, file=trim(path_out)//'particle_'//trim(head_out)//'.csv', status='replace')
+            print*,'REPLACE:particle_data.csv'
+
+        else
+            open(newunit=n_unit, file=trim(path_out)//'particle_'//trim(head_out)//'.csv'&
+                , action='write', status='old', position='append')
+
+        end if
+        
+            write(n_unit,*) real_time(step), ',', count(droplets_out(:)%status==0), ',',&
+                count(droplets_out(:)%status==2), ',', count(droplets_out(:)%status==3)
+        close(n_unit)
+
+        ! if(count(adhesion==0) <= 0) then !浮遊粒子がなくなれば計算終了
+        !   print*,'all viruses terminated',N
+        !   STOP
+        ! end if
+
+    end subroutine output_droplet_CSV
 
 end module drop_motion_mod

@@ -258,12 +258,12 @@ module CUBE_mod
 
     end subroutine set_faceShape
 
-    logical function adhesion_check_inSTL(X)
+    logical function adhesion_check_onSTL(X)
         integer i, num_face
         real, intent(in) :: X(3)
         real r_vec(3), inner, AS(3), BS(3), CS(3), Across(3), Bcross(3), Ccross(3)
 
-        adhesion_check_inSTL = .false.
+        adhesion_check_onSTL = .false.
 
         num_face = size(faceShape)
         !$OMP parallel do private(r_vec, inner, AS, BS, CS, Across, Bcross, Ccross)
@@ -278,17 +278,18 @@ module CUBE_mod
             Bcross = cross_product(faceShape(i)%BC, BS)
             Ccross = cross_product(faceShape(i)%CA, CS)
 
-            if(inner_product(Across, Bcross) < 0.0) cycle !三角形の外部
-            if(inner_product(Across, Ccross) < 0.0) cycle
-
-            if (abs(inner) <= 1.0d-2) then
-                print*, 'inner=', inner
-                adhesion_check_inSTL = .true.
+            !三角形面の内部にあるか判定
+            if((inner_product(Across, Bcross) > 0.0).and.(inner_product(Across, Ccross) > 0.0)) then
+                if (abs(inner) <= 1.0d-2) then
+                    print*, 'inner=', inner
+                    adhesion_check_onSTL = .true.
+                end if
             end if
+
         end do
         !$OMP end parallel do
 
-    end function adhesion_check_inSTL
+    end function adhesion_check_onSTL
 
     function cross_product(a, b) result(cross)
         real,intent(in) :: a(3), b(3)
