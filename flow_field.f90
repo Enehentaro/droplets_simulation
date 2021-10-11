@@ -39,9 +39,14 @@ module flow_field
 
     end subroutine check_FILE_GRID
 
-    character(4) function get_digits_format()
+    function get_digits_format() result(format)
+        character(2*(FNAME_DIGITS/10 +1) + 2) format
 
-        write(get_digits_format,'("i", i1, ".", i1)') FNAME_DIGITS, FNAME_DIGITS
+        if(FNAME_DIGITS <= 9) then
+            write(format,'("i", i1, ".", i1)') FNAME_DIGITS, FNAME_DIGITS
+        else
+            write(format,'("i", i2, ".", i2)') FNAME_DIGITS, FNAME_DIGITS
+        end if
 
     end function get_digits_format
 
@@ -69,11 +74,10 @@ module flow_field
 
     end subroutine
 
-    subroutine read_flow_data(FNUM, first)
+    subroutine read_flow_data(FNUM)
         integer, intent(in) :: FNUM
         character(99) FNAME
-        character(4) digits_fmt
-        logical, intent(in) :: first
+        character(:),allocatable :: digits_fmt
 
         digits_fmt = get_digits_format()
 
@@ -98,7 +102,7 @@ module flow_field
                 
             call set_gravity_center
                    
-            if(.not.first) call boundary_setting
+            call boundary_setting
 
         else
 

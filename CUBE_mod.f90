@@ -190,7 +190,7 @@ module CUBE_mod
         character(len=99), allocatable :: stl_fname(:)
         integer i, num_face, num_file
     
-        stl_fname = read_stl_fName()
+        stl_fname = read_stl_fName(path)
         num_file = size(stl_fname)
         print*, 'num_stlFile=', num_file
         solid1 = read_stl(trim(path)//trim(stl_fname(1)))
@@ -216,14 +216,15 @@ module CUBE_mod
 
     end subroutine read_faceShape
 
-    function read_stl_fName() result(stl_fnames)
+    function read_stl_fName(path) result(stl_fnames)
+        character(*), intent(in) :: path
         character(len=99), allocatable :: stl_fnames(:)
         integer n_unit, num_rec, ios, i
         character(len=99) str
 
         num_rec = 0
 
-        open(newunit=n_unit, file='stl_fnames.txt', status='old')
+        open(newunit=n_unit, file=trim(path)//'stl_list.txt', status='old')
             do        !レコード数を調べるループ
                 read(n_unit, *, iostat=ios) str !ファイル終端であればiosに-1が返る
                 if((trim(str) == '').or.(ios/=0)) exit    !空白か終端であればループ脱出

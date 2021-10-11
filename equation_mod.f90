@@ -167,11 +167,11 @@ module equation_mod
 
     end function representative_value
 
-    double precision function real_time(step)
+    double precision function dimensional_time(step)
         integer, intent(in) :: step
 
-        real_time = step * delta_t * L_represent / U_represent
+        dimensional_time = step * delta_t * L_represent / U_represent
 
-    end function real_time
+    end function dimensional_time
 
 end module equation_mod
