@@ -11,9 +11,11 @@ PROGRAM MAIN
 
       character(7), parameter :: OS = 'Windows'
 
-      integer n, nc, nc_max
-      double precision Step_air
+      integer, pointer :: n => n_time
+      integer nc, nc_max
       character(50) start_date
+      real start_time
+      double precision Step_air
       !===========================================================================================
       !$OMP parallel
             !$OMP single
@@ -44,16 +46,13 @@ PROGRAM MAIN
 
             DO n = n_start + 1, n_end           !ステップ数だけループ
 
-                  call survival_check(n)        !生存率に関する処理
+                  call survival_check        !生存率に関する処理
 
                   call Calculation_Droplets     !飛沫の運動計算
 
-                  call coalescence_check(n)     !飛沫間の合体判定
+                  call coalescence_check     !飛沫間の合体判定
 
-                  if ((mod(n,interval) == 0)) then
-                        call standard_output
-                        call output(n)          !結果出力
-                  end if
+                  if ((mod(n,interval) == 0)) call output             !出力
 
                   if(INTERVAL_FLOW > 0) then
                         Step_air = dble(n)*Rdt          !気流計算における経過ステップ数に相当
@@ -72,6 +71,7 @@ PROGRAM MAIN
             
       end do
 
+      !プログラムここまで
       !===========================================================================================
       !以下、内部手続き
 
@@ -87,6 +87,7 @@ PROGRAM MAIN
 
                   select case(input)
                         case('y')
+                              call cpu_time(start_time)
                               call date_and_time(date = d_start, time = t_start)
                               start_date = '[Start Date] ' &
                               //d_start(1:4)//'/'//d_start(5:6)//'/'//d_start(7:8)//' ' &
@@ -154,17 +155,20 @@ PROGRAM MAIN
 
       end subroutine set_path
 
-      subroutine standard_output
+      subroutine output
             print*, start_date
-            print*, 'Now_Step_Time=', real_time(n), '[sec]'
-            print*, 'Number of floating', get_drop_info('floating')
-      end subroutine standard_output
+            print*, 'Now_Step_Time=', dimensional_time(n), '[sec]'
+            print*, 'Number of floating', drop_counter('floating')
+            call output_droplet
+      end subroutine output
 
       subroutine final_result
             integer n_unit
+            real end_time
             character(50) end_date
             character(10) d_end, t_end
             
+            call cpu_time(end_time)
             call date_and_time(date = d_end, time = t_end)
 
             end_date = '[ END  Date] ' &
@@ -174,16 +178,26 @@ PROGRAM MAIN
             print*, end_date
 
             open(newunit=n_unit, FILE= trim(path_out)//'final_result.txt',STATUS='REPLACE')
+                  write(n_unit,*)'*******************************************'
+                  write(n_unit,*)'*                                         *'
+                  write(n_unit,*)'*             Final Results               *'
+                  write(n_unit,*)'*                                         *'
+                  write(n_unit,*)'*******************************************'
+                  write(n_unit,'()')
                   write(n_unit,*) start_date
                   write(n_unit,*) end_date
-                  write(n_unit,*) '======================================================='
-                  write(n_unit,'(A20, F20.8)') 'TIME[sec] =', real_time(n_end)
-                  write(n_unit,'(A20, I20)') 'Step =', n_end !計算回数
-                  write(n_unit,'(A20, I20)') 'alive =', get_drop_info('floating')
-                  write(n_unit,'(A20, I20)') 'death =', get_drop_info('death') !生存率で消滅
-                  write(n_unit,'(A20, I20)') 'coalescence =', get_drop_info('coalescence') !生存率で消滅
-                  write(n_unit,'(A20, I20)') 'adhesion =', get_drop_info('adhesion') !付着したすべてのウイルス数
-                  write(n_unit,*) '======================================================='
+                  write(n_unit, *) 'Erapsed Time =', end_time - start_time, '[sec]'
+                  write(n_unit, *) 'Cost of Calc =', &
+                        (end_time - start_time) / (dimensional_time(n_end) - dimensional_time(n_start)), '[sec/sec]'
+                  write(n_unit,'(A)') '======================================================='
+                  write(n_unit, '(A12, 2(F20.8,2x,A1))') 'Time[sec] =', dimensional_time(n_start), '-', dimensional_time(n_end)
+                  write(n_unit, '(A12, 2(I20,2x,A1))') 'Step =', n_start, '-', n_end !計算回数
+                  write(n_unit,'(A)') '======================================================='
+                  write(n_unit,'(A15, I20)') 'num_droplets =', drop_counter('total')
+                  write(n_unit,'(A15, I20)') 'alive =', drop_counter('floating')
+                  write(n_unit,'(A15, I20)') 'death =', drop_counter('death') !生存率で消滅
+                  write(n_unit,'(A15, I20)') 'coalescence =', drop_counter('coalescence') !生存率で消滅
+                  write(n_unit,'(A15, I20)') 'adhesion =', drop_counter('adhesion') !付着したすべてのウイルス数
             close(n_unit)
             
       end subroutine final_result

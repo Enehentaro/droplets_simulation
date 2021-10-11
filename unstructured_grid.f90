@@ -17,7 +17,8 @@ module unstructuredGrid_mod
     double precision, allocatable :: VELC(:,:)      !要素流速
     double precision, allocatable, private :: CENC(:,:)      !要素重心
     double precision, allocatable, private :: WIDC(:)        !要素の1辺長さ
-    double precision, allocatable :: CENF(:,:,:)    !面重心
+    double precision, allocatable :: CENF(:,:)    !面重心
+    double precision, allocatable :: MOVF(:,:)    !面重心移動量
     double precision, allocatable :: NVECF(:,:)     !面法線ベクトル
 
     interface read_unstructuredGrid
@@ -70,7 +71,7 @@ module unstructuredGrid_mod
 
         num_cell = size(ICN(:,:), dim=2)
 
-        allocate(CENC(3, num_cell), WIDC(num_cell))
+        if(.not.allocated(CENC)) allocate(CENC(3, num_cell), WIDC(num_cell))
             
     end subroutine read_unstructuredGrid_byNAME
 
@@ -126,7 +127,7 @@ module unstructuredGrid_mod
 
         num_cell = size(ICN(:,:), dim=2)
 
-        allocate(CENC(3, num_cell), WIDC(num_cell))
+        if(.not.allocated(CENC)) allocate(CENC(3, num_cell), WIDC(num_cell))
             
     end subroutine read_unstructuredGrid_byNumber
 
@@ -654,13 +655,17 @@ module unstructuredGrid_mod
     subroutine boundary_setting !全境界面に対して外向き法線ベクトルと重心を算出
         integer II, JJ, JB, IIMX, JBMX
         double precision :: a(3), b(3), r(3), norm, inner
+        double precision, allocatable :: CENF_pre(:,:)
+
         if(.not.allocated(NoB)) return
 
         IIMX = size(ICN(:,:), dim=2)
 
         if(.not.allocated(CENF)) then
             JBMX = size(NBN(:,:), dim=2)
-            allocate(CENF(3,JBMX,2), NVECF(3,JBMX))
+            allocate(CENF(3,JBMX), NVECF(3,JBMX))
+        else
+            allocate(CENF_pre, source=CENF)
         end if
         
         print*, 'SET:boundary'
@@ -670,7 +675,7 @@ module unstructuredGrid_mod
             do JJ = 1, NoB(II)
                 JB = ICB(JJ,II)
                 
-                CENF(:,JB,2) = (CDN(:,NBN(1,JB)) + CDN(:,NBN(2,JB)) + CDN(:,NBN(3,JB)))/3.0d0
+                CENF(:,JB) = (CDN(:,NBN(1,JB)) + CDN(:,NBN(2,JB)) + CDN(:,NBN(3,JB)))/3.0d0
             
                 a(:) =  CDN(:,NBN(2,JB)) - CDN(:,NBN(1,JB))
                 b(:) =  CDN(:,NBN(3,JB)) - CDN(:,NBN(1,JB))
@@ -681,7 +686,7 @@ module unstructuredGrid_mod
             
                 norm = norm2(NVECF(:,JB))
             
-                r(:) = CENC(:,II) - CENF(:,JB,2)  !面重心からセル重心へのベクトル
+                r(:) = CENC(:,II) - CENF(:,JB)  !面重心からセル重心へのベクトル
             
                 inner = sum(NVECF(:,JB)*r(:))
             
@@ -692,6 +697,8 @@ module unstructuredGrid_mod
             end do
         
         end do
+
+        if(allocated(CENF_pre)) MOVF = CENF - CENF_pre  !自動割付
 
     end subroutine boundary_setting
 
