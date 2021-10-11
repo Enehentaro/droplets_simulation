@@ -23,9 +23,10 @@ module drop_motion_mod
     character path_out_base*99, path_out*99, head_out*10, path_backup*7
 
     integer, target :: n_time  !時間ステップ
-    integer num_restart, n_start, n_end
+    integer, private :: num_restart
+    integer n_start, n_end
     integer, private :: LoopS, LoopF, OFFSET
-    double precision Rdt    !飛沫計算と気流計算の時間間隔の比
+    double precision, private :: Rdt    !飛沫計算と気流計算の時間間隔の比
 
     contains
 
@@ -431,23 +432,33 @@ module drop_motion_mod
 
     integer function get_num_air(n_virus)
         integer, intent(in) :: n_virus
-        integer Lamda
+        integer Lamda, Delta
 
-        get_num_air = int(dble(N_virus)*RDT)    !気流計算における経過ステップ数に相当
+        get_num_air = int(dble(N_virus)*RDT) + OFFSET   !気流計算における経過ステップ数に相当
 
         Lamda = LoopF - LoopS
         
-        if((Lamda>0).and.(get_num_air>(LoopF-OFFSET))) get_num_air = mod(get_num_air, Lamda)
-
-        get_num_air = get_num_air + OFFSET
+        if((Lamda > 0).and.(get_num_air > LoopF)) then
+            Delta = mod(get_num_air - LoopS, Lamda)
+            get_num_air = LoopS + Delta
+        end if
 
     end function
 
-    subroutine read_flow_field(n_virus)
-        integer, intent(in) :: n_virus
+    subroutine update_flow_check
+        double precision Step_air
+
+        if(INTERVAL_FLOW > 0) then
+              Step_air = dble(n_time)*Rdt          !気流計算における経過ステップ数に相当
+              if(mod(Step_air, dble(INTERVAL_FLOW)) == 0.d0) call read_flow_field   !流れ場の更新
+        end if
+
+    end subroutine update_flow_check
+
+    subroutine read_flow_field
         integer FNUM
 
-        FNUM = get_num_air(n_virus)
+        FNUM = get_num_air(n_time)
 
         call read_flow_data(FNUM)
 

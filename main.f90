@@ -15,7 +15,6 @@ PROGRAM MAIN
       integer nc, nc_max
       character(50) start_date
       real start_time
-      double precision Step_air
       !===========================================================================================
       !$OMP parallel
             !$OMP single
@@ -37,7 +36,7 @@ PROGRAM MAIN
 
             call initialization_droplet         !初期状態を代入
 
-            call read_flow_field(n_start)       !流れ場の取得
+            call read_flow_field                !流れ場の取得
             call preprocess_onFlowField         !流れ場の前処理
 
             print*,'*******************************************'
@@ -46,18 +45,15 @@ PROGRAM MAIN
 
             DO n = n_start + 1, n_end           !ステップ数だけループ
 
-                  call survival_check        !生存率に関する処理
+                  call survival_check           !生存率に関する処理
 
                   call Calculation_Droplets     !飛沫の運動計算
 
-                  call coalescence_check     !飛沫間の合体判定
+                  call coalescence_check        !飛沫間の合体判定
 
                   if ((mod(n,interval) == 0)) call output             !出力
 
-                  if(INTERVAL_FLOW > 0) then
-                        Step_air = dble(n)*Rdt          !気流計算における経過ステップ数に相当
-                        if(mod(Step_air, dble(INTERVAL_FLOW)) == 0.d0) call read_flow_field(n)   !流れ場の更新
-                  end if
+                  call update_flow_check        !流れ場の更新チェック
 
             END DO
 
