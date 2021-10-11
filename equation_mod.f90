@@ -2,8 +2,10 @@ module equation_mod
     implicit none
 
     double precision, private :: delta_t !無次元時間間隔
-    double precision, private :: L_represent, U_represent, Rho_represent, Mu_represent, Re
+    double precision, private :: L_represent, U_represent, Re
 
+    double precision, parameter :: Rho_represent = 1.205d0          ! 空気の密度[kg/m3]
+    double precision, parameter :: Mu_represent = 1.822d-5          ! 空気の粘性係数[kg/m3]
     double precision, parameter :: Rho_d = 0.99822d0*1.0d3          ! 飛沫（水）の密度[kg/m3]
 
     double precision, private :: coeff_drdt !半径変化率の無次元係数
@@ -12,16 +14,14 @@ module equation_mod
 
     contains
 
-    subroutine set_basical_variables(dt, L, U, Rho, Mu)
-        double precision, intent(in) :: dt, L, U, Rho, Mu
+    subroutine set_basical_variables(dt, L, U)
+        double precision, intent(in) :: dt, L, U
         delta_t = dt
         L_represent = L
         U_represent = U
-        Rho_represent = Rho
-        Mu_represent = Mu
 
         gumma = Rho_represent / Rho_d     !密度比:    空気密度 / 飛沫(水)密度
-        print*, 'gumma=', gumma
+        print*, 'gumma =', gumma
 
         Re = U_represent*L_represent*Rho_represent / Mu_represent
 
@@ -34,7 +34,8 @@ module equation_mod
 
         norm = norm2(direction_g(:))
         G(:) = G_dim * L_represent/(U_represent*U_represent) / norm * direction_g(:)    !無次元重力加速度
-        print*, 'G_no_dim=', G(:)
+        print*, 'Dimensionless Acceleration of Gravity :'
+        print*, G(:)
 
     end subroutine set_gravity_acceleration
 
@@ -166,11 +167,11 @@ module equation_mod
 
     end function representative_value
 
-    double precision function real_time(step)
+    double precision function dimensional_time(step)
         integer, intent(in) :: step
 
-        real_time = step * delta_t * L_represent / U_represent
+        dimensional_time = step * delta_t * L_represent / U_represent
 
-    end function real_time
+    end function dimensional_time
 
 end module equation_mod
