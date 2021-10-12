@@ -45,6 +45,8 @@ PROGRAM MAIN
             print*,'*******************************************'
 
             DO n = n_start + 1, n_end           !ステップ数だけループ
+                  
+                  call management_droplets      !飛沫を周期的に初期位置に表示
 
                   call survival_check        !生存率に関する処理
 

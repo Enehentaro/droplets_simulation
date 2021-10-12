@@ -192,7 +192,7 @@ module drop_motion_mod
         k = 0
         cnt = 0
         do i_box = 1, num_box
-  
+
             width(:) = position_mat(4:6, i_box)
             standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
             delta(:) = width(:) / dble(num_per_edge - 1)
@@ -292,7 +292,7 @@ module drop_motion_mod
 
             end if
         end do
-      
+    
     end subroutine survival_check
 
     subroutine Calculation_Droplets
@@ -320,13 +320,13 @@ module drop_motion_mod
     subroutine evaporation(vn) !CALCULATE droplet evaporation
         integer, intent(in) :: vn
         double precision radius_n
-      
+    
         if (droplets(vn)%radius <= droplets(vn)%radius_min) return  !半径が最小になったものを除く
     
         radius_n = evaporatin_eq(droplets(vn)%radius)
         
         droplets(vn)%radius = max(radius_n, droplets(vn)%radius_min)
-      
+    
     end subroutine evaporation
 
     subroutine motion_calc(vn)
