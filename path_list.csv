@@ -1,0 +1,5 @@
+path_to_FlowFile,path_to_outputDIR
+..\CUBE\office1\field_0000008000.f, ..\CUBEtest\
+
+..\SAX\AF010001.vtk, ..\virus\
+..\SAX_1\AF010001.vtk, ..\virus1\
