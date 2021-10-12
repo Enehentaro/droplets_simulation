@@ -14,8 +14,10 @@ Simulation of Droplets Behavior in AFDET
   コンパイルに`make`コマンドを使います（makeのインストールが必要）。
   - main.f90の冒頭部で、OSを指定する箇所があるので、適宜編集
   - Makefileを開き、コンパイラおよびコンパイルオプションを適宜編集（変数名：FC, FCFLAG）
-  - ソースファイルのあるディレクトリで `make` コマンド実行
-  - 「droplet」という実行ファイルが現れるので、それを実行
+  - Makefileのあるディレクトリで `make` コマンド（コンパイル）
+  - 「toFlowDIR」ディレクトリ内にあるファイルを編集したのち、気流ファイルディレクトリにコピペ
+  - 「path_list.txt」を編集してディレクトリ指定
+  - 「droplet」という実行ファイルを実行
 
 ## 方程式
 
