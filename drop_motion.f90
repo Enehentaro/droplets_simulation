@@ -18,9 +18,11 @@ module drop_motion_mod
     end type
 
     integer, private :: num_droplets   !全飛沫数
-    integer interval, T, RH
+    integer interval
+    real, private :: T, RH
  
-    character path_out_base*99, path_out*99, head_out*10, path_backup*7
+    character path_out*99, path_backup*7!, path_out_base*99, 
+    character(4) ::  head_out = 'drop'
 
     integer, target :: n_time  !時間ステップ
     integer, private :: num_restart
@@ -33,6 +35,7 @@ module drop_motion_mod
     subroutine first_setting
 
         call read_and_set_condition
+        call set_coeff_drdt(T, RH)          !温湿度依存の係数の設定
 
         if(num_restart==0) then
             
@@ -53,11 +56,12 @@ module drop_motion_mod
     end subroutine first_setting
 
     subroutine read_and_set_condition
+        use filename_mod
         double precision DTa, dt, L, U
         double precision :: direction_g(3)
         integer i, n_unit, num_drop
 
-        OPEN(newunit=n_unit,FILE='condition.txt',STATUS='OLD')
+        OPEN(newunit=n_unit,FILE=trim(PATH_FlowDIR)//conditionFName,STATUS='OLD')
             read(n_unit,'()')
             read(n_unit,*) num_restart
             read(n_unit,'()')
@@ -66,9 +70,6 @@ module drop_motion_mod
             read(n_unit,*) dt
             read(n_unit,'()')
             read(n_unit,*) interval
-            read(n_unit,'()')
-            read(n_unit,'(A)') path_out_base
-            read(n_unit,*) head_out
             read(n_unit,'()')
             read(n_unit,*) T
             read(n_unit,*) RH
@@ -79,8 +80,6 @@ module drop_motion_mod
             
             read(n_unit,'()')
     
-            read(n_unit,'()')
-            read(n_unit,'(A)') PATH_AIR
             read(n_unit,'()')
             read(n_unit,*) DTa
             read(n_unit,'()')
@@ -118,7 +117,6 @@ module drop_motion_mod
         if(loopf - loops > 0) print*, 'Loop is from', loops, 'to', loopf
         print*, 'Delta_Time =', dt
         print*, 'Rdt', Rdt
-        print*, 'FileName of AirFlow : ', PATH_AIR
 
         call set_basical_variables(dt, L, U)
 
@@ -135,8 +133,8 @@ module drop_motion_mod
         real(8) random_rad
 
         num_drop = size(droplets_ini)
-        ! call csv_reader_dble('radius_distribution.csv', threshold)
-        threshold = read_csv_dble('radius_distribution.csv')
+        call read_CSV('data/radius_distribution.csv', threshold)
+        ! threshold = read_csv_dble('radius_distribution.csv')
 
         allocate(rad_cnt(size(threshold, dim=2)), source=0)
 
@@ -169,6 +167,7 @@ module drop_motion_mod
 
     subroutine calc_initial_position
         use csv_reader
+        use filename_mod
         integer kx,ky,kz, num_per_edge, num_per_box, m, k, k_end, cnt
         integer i_box, num_box, num_drop
         double precision :: standard(3), delta(3), width(3), randble(3)
@@ -176,7 +175,7 @@ module drop_motion_mod
         
         num_drop = size(droplets_ini)
 
-        call csv_reader_dble('initial_position.csv', position_mat)
+        call read_CSV(trim(PATH_FlowDIR)//IniPositionFName, position_mat)
 
         num_box = size(position_mat, dim=2)
 
@@ -287,7 +286,7 @@ module drop_motion_mod
             vn = int(num_droplets*rand)
             if (droplets(vn)%status == 0) then !浮遊粒子からのみ除去する
                 droplets(vn)%status = -1
-                droplets(vn)%coordinate(:) = MIN_CDN(:) - 1.0d0 !計算エリア外に配置（不要かも）
+                ! droplets(vn)%coordinate(:) = MIN_CDN(:) - 1.0d0 !計算エリア外に配置（不要かも）
                 droplets(vn)%velocity(:) = 0.0d0
                 death_rate = death_rate - 1.0d0
 
@@ -335,12 +334,12 @@ module drop_motion_mod
         double precision  :: X(3), V(3), vel_air(3)
         type(reference_cell_t) :: RefC
         logical stopflag
-        logical, save :: first = .true.
+        logical first
     
         X(:) = droplets(vn)%coordinate(:)
         V(:) = droplets(vn)%velocity(:)
 
-        droplets(vn)%ref_cell%ID = search_ref_cell(X(:), droplets(vn)%ref_cell%ID)
+        call search_ref_cell(X(:), droplets(vn)%ref_cell%ID, first)
 
         RefC = droplets(vn)%ref_cell
         if(first) then
@@ -363,12 +362,12 @@ module drop_motion_mod
         double precision  :: X(3), V(3), vel_air(3)
         type(reference_cell_t) :: RefC
         logical stopflag
-        logical, save :: first = .true.
+        logical first
     
         X(:) = droplets(vn)%coordinate(:)
         V(:) = droplets(vn)%velocity(:)
 
-        droplets(vn)%ref_cell = search_ref_cell_onCUBE(X(:), droplets(vn)%ref_cell)
+        call search_ref_cell_onCUBE(X(:), droplets(vn)%ref_cell, first)
 
         RefC = droplets(vn)%ref_cell
         if(first) then
@@ -600,7 +599,11 @@ module drop_motion_mod
 
                 if((r1+r2) >= distance) then
                     print*, 'Coalescence', d1, d2
-                    call coalescence(floatings(d1)%virus_droplet, floatings(d2)%virus_droplet)
+                    if(r1 >= r2) then
+                        call coalescence(floatings(d1)%virus_droplet, floatings(d2)%virus_droplet)
+                    else
+                        call coalescence(floatings(d2)%virus_droplet, floatings(d1)%virus_droplet)
+                    end if
                     last_coalescence = n_time
 
                 end if
@@ -625,20 +628,12 @@ module drop_motion_mod
         radius_c = (volume1 + volume2)**(1.d0/3.d0) !結合後の飛沫半径
         velocity_c(:) = (volume1*droplet1%velocity(:) + volume2*droplet2%velocity(:)) / (volume1 + volume2)
         
-        if(volume1 >= volume2) then
-            droplet1%radius = radius_c
-            droplet1%velocity(:) = velocity_c(:)
-            droplet2%radius = 0.d0
-            droplet2%velocity(:) = 0.d0
-            droplet2%status = -2
-        else
-            droplet2%radius = radius_c
-            droplet2%velocity(:) = velocity_c(:)
-            droplet1%radius = 0.d0
-            droplet1%velocity(:) = 0.d0
-            droplet1%status = -2
-        end if
-
+        droplet1%radius = radius_c
+        droplet1%velocity(:) = velocity_c(:)
+        droplet2%radius = 0.d0
+        droplet2%velocity(:) = 0.d0
+        droplet2%status = -2
+        
     end subroutine coalescence
 
     subroutine output_droplet
@@ -816,5 +811,26 @@ module drop_motion_mod
         ! end if
 
     end subroutine output_droplet_CSV
+
+    real function environment(name)
+        character(*), intent(in) :: name
+
+        select case(name)
+            case('Temperature')
+                environment = T
+            case('Relative Humidity')
+                environment = RH
+            case default
+                environment = 0.0
+        end select
+
+    end function environment
+
+    subroutine deallocation_droplet
+
+        deallocate(droplets)
+        if(allocated(droplets_ini)) deallocate(droplets_ini)
+        
+    end subroutine deallocation_droplet
 
 end module drop_motion_mod

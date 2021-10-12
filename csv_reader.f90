@@ -1,12 +1,49 @@
 module csv_reader
     implicit none
 
+    interface read_CSV
+        module procedure read_csv_dble, read_csv_int, read_csv_char
+    end interface
+
     contains
 
-    function read_csv_dble(filename, column, header) result(matrix)
+    ! function read_csv_dble(filename, column, header) result(matrix)
+    !     integer i, Num_unit
+    !     character(*), intent(in) :: filename
+    !     double precision, allocatable :: matrix(:,:)
+    !     integer :: mat_size(2)
+    !     integer, intent(in), optional :: column
+    !     logical, optional :: header
+    !     logical :: header_flag = .true.
+
+    !     if(present(header)) header_flag = header
+
+    !     print*, 'CSV_READER:', filename
+
+    !     open (newunit=Num_unit, file=filename, status='old')
+
+    !         mat_size = get_size_csv(Num_unit, header_flag)
+
+    !         if(present(column)) mat_size(1) = column
+
+    !         allocate(matrix(mat_size(1), mat_size(2)))
+    !         print *, 'Size =', mat_size(:)
+
+    !         rewind (Num_unit)  ! ファイルの最初に戻る
+
+    !         if(header_flag) read (Num_unit, '()') !ヘッダーの読み飛ばし
+    !         do i = 1, mat_size(2)        !本読み込み
+    !             read (Num_unit, *) matrix(:,i)
+    !             print *, matrix(:,i)
+    !         end do
+    !     close (Num_unit)
+
+    ! end function read_csv_dble
+
+    subroutine read_csv_char(filename, matrix, column, header)
         integer i, Num_unit
         character(*), intent(in) :: filename
-        double precision, allocatable :: matrix(:,:)
+        character(*), intent(inout), allocatable :: matrix(:,:)
         integer :: mat_size(2)
         integer, intent(in), optional :: column
         logical, optional :: header
@@ -30,13 +67,13 @@ module csv_reader
             if(header_flag) read (Num_unit, '()') !ヘッダーの読み飛ばし
             do i = 1, mat_size(2)        !本読み込み
                 read (Num_unit, *) matrix(:,i)
-                print *, matrix(:,i)
+                ! print *, matrix(:,i)
             end do
         close (Num_unit)
 
-    end function read_csv_dble
+    end subroutine read_csv_char
 
-    subroutine csv_reader_dble(filename, matrix, column, header)
+    subroutine read_csv_dble(filename, matrix, column, header)
         integer i, Num_unit
         character(*), intent(in) :: filename
         double precision, intent(inout), allocatable :: matrix(:,:)
@@ -63,13 +100,13 @@ module csv_reader
             if(header_flag) read (Num_unit, '()') !ヘッダーの読み飛ばし
             do i = 1, mat_size(2)        !本読み込み
                 read (Num_unit, *) matrix(:,i)
-                print *, matrix(:,i)
+                ! print *, matrix(:,i)
             end do
         close (Num_unit)
 
-    end subroutine csv_reader_dble
+    end subroutine read_csv_dble
 
-    subroutine csv_reader_int(filename, matrix, column, header)
+    subroutine read_csv_int(filename, matrix, column, header)
         integer i, Num_unit
         character(*), intent(in) :: filename
         integer, intent(inout), allocatable :: matrix(:,:)
@@ -96,11 +133,11 @@ module csv_reader
             if(header_flag) read (Num_unit, '()') !ヘッダーの読み飛ばし
             do i = 1, mat_size(2)        !本読み込み
                 read (Num_unit, *) matrix(:,i)
-                print *, matrix(:,i)
+                ! print *, matrix(:,i)
             end do
         close (Num_unit)
 
-    end subroutine csv_reader_int
+    end subroutine read_csv_int
 
     function get_size_csv(Num_unit, header_flag) result(mat_size)
         integer, intent(in) :: Num_unit

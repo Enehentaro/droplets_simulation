@@ -41,9 +41,8 @@ module equation_mod
 
     !*************************************************************************************
     subroutine set_coeff_drdt(T, RH)
-        !*************************************************************************************
         !=====================================================================================
-        integer, intent(in) :: T, RH   !温度[℃]、相対湿度[%]
+        real, intent(in) :: T, RH   !温度[℃]、相対湿度[%]
         double precision Es, TK
         double precision, parameter :: Rv = 461.51d0                           ! 水蒸気の気体定数[J/(kg.K)]
         double precision, parameter :: T0 = 273.15d0                               ! [K]
@@ -62,22 +61,35 @@ module equation_mod
     !*******************************************************************************************
 
     function get_minimum_radius(initial_radius, RH) result(minimum_radius)
+        use csv_reader
         implicit none
         double precision, intent(in) :: initial_radius(:)
-        integer, intent(in) :: RH
+        real, intent(in) :: RH
         double precision :: minimum_radius(size(initial_radius))
+        double precision, allocatable :: rad_mat(:,:)
+        integer i, i_max
 
-        if(RH < 64) then
-            minimum_radius(:) = initial_radius(:)*0.19d0
-        else if(RH < 90) then
-            minimum_radius(:) = initial_radius(:)*(0.073*exp(0.014*dble(RH)))
-        else if(RH == 90) then
-            minimum_radius(:) = initial_radius(:)*0.28d0
-        else if(RH < 100) then
-            minimum_radius(:) = initial_radius(:)*(0.0001*exp(0.0869*dble(RH)))
-        else
-            minimum_radius(:) = initial_radius(:)
-        end if
+        ! if(RH < 64) then
+        !     minimum_radius(:) = initial_radius(:)*0.19d0
+        ! else if(RH < 90) then
+        !     minimum_radius(:) = initial_radius(:)*(0.073*exp(0.014*dble(RH)))
+        ! else if(RH == 90) then
+        !     minimum_radius(:) = initial_radius(:)*0.28d0
+        ! else if(RH < 100) then
+        !     minimum_radius(:) = initial_radius(:)*(0.0001*exp(0.0869*dble(RH)))
+        ! else
+        !     minimum_radius(:) = initial_radius(:)
+        ! end if
+
+        call read_CSV('data/minimum_radius.csv', rad_mat)
+        i_max = size(rad_mat, dim=2)
+        i = 1
+        do while(rad_mat(1,i) < RH)
+            i = i + 1
+            if(i == i_max) exit
+        end do
+        print*, 'Dmin/D0 =', rad_mat(2,i), RH
+        minimum_radius(:) = initial_radius(:) * rad_mat(2,i)
 
     end function get_minimum_radius
 

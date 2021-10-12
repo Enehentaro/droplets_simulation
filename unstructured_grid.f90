@@ -1,8 +1,6 @@
 module unstructuredGrid_mod
     implicit none
     character(3), private :: FILE_TYPE  !ファイル形式
-    character(13), private, parameter :: adjacencyFileName = 'adjacency.txt'
-    character(12), private, parameter :: boundaryFileName = 'boundary.txt'
 
     integer, allocatable :: ICN(:,:)                !要素所有節点ID
     integer, allocatable :: NoB(:)                  !要素所有境界面の数
@@ -442,6 +440,7 @@ module unstructuredGrid_mod
     end subroutine set_gravity_center
 
     subroutine read_adjacency(path, success)
+        use filename_mod
         implicit none
         character(*), intent(in) :: path
         logical, optional :: success
@@ -489,6 +488,7 @@ module unstructuredGrid_mod
     end subroutine read_adjacency
 
     subroutine output_adjacency(path)
+        use filename_mod
         implicit none
         character(*), intent(in) :: path
         integer II,NC,JB, n_unit, num_cells, NCMAX
@@ -526,6 +526,7 @@ module unstructuredGrid_mod
     end subroutine output_adjacency
 
     subroutine read_boundaries(path)
+        use filename_mod
         implicit none
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
@@ -544,6 +545,7 @@ module unstructuredGrid_mod
     end subroutine read_boundaries
 
     subroutine output_boundaries(path)
+        use filename_mod
         implicit none
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
