@@ -16,7 +16,7 @@ Simulation of Droplets Behavior in AFDET
   - Makefileを開き、コンパイラおよびコンパイルオプションを適宜編集（変数名：FC, FCFLAG）
   - Makefileのあるディレクトリで `make` コマンド（コンパイル）
   - 「toFlowDIR」ディレクトリ内にあるファイルを編集したのち、気流ファイルディレクトリにコピペ
-  - 「path_list.txt」を編集してディレクトリ指定
+  - 「path_list.」を編集してディレクトリ指定
   - 「droplet」という実行ファイルを実行
 
 ## 方程式
