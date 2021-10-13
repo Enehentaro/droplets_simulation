@@ -1,46 +1,50 @@
-module path_list_m
+module path_operator_m
     implicit none
 
-    type path_set_t
-        character(99) path2FlowDIR
-        character(30) FlowFileName
-        character(99) path2outputDIR
-    end type path_set_t
+    ! type path_set_t
+    !     character(99) case_name
+    !     character(99) path2FlowDIR
+    !     character(30) FlowFileName
+    ! end type path_set_t
 
-    type(path_set_t), allocatable :: path_list(:)
+    ! type(path_set_t), allocatable :: path_list(:)
 
     contains
 
-    subroutine check_path_list(num_case)
-        use csv_reader
-        use filename_mod
-        character(99), allocatable :: path_mat(:,:)
-        character DIR*99, FNAME*30
-        integer, intent(out) :: num_case
-        integer i, n_unit
+    ! subroutine check_path_list(num_case)
+    !     use csv_reader
+    !     use filename_mod
+    !     character(99), allocatable :: path_mat(:,:)
+    !     character(:), allocatable :: case_name
+    !     character DIR*99, FNAME*30
+    !     integer, intent(out) :: num_case
+    !     integer i, n_unit
 
-        call read_CSV('path_list.csv', matrix=path_mat)
+    !     print*, 'Case Name ?'
+    !     read(5,*) case_name
 
-        num_case = size(path_mat, dim=2)
+    !     ! call read_CSV('path_list.csv', matrix=path_mat)
+    !     ! num_case = size(path_mat, dim=2)
+    !     num_case = 1
 
-        allocate(path_list(num_case))
+    !     allocate(path_list(num_case))
 
-        do i = 1, num_case
-            open(newunit=n_unit, file=path_mat(1,i), status='old')  !確認用open
-            close(n_unit)
-            call set_dir_from_path(path_mat(1,i), DIR, FNAME)
-            open(newunit=n_unit, file=trim(DIR)//conditionFName, status='old')  !確認用open
-            close(n_unit)
-            open(newunit=n_unit, file=trim(DIR)//IniPositionFName, status='old')  !確認用open
-            close(n_unit)
-            path_list(i)%path2FlowDIR = DIR
-            path_list(i)%FlowFileName = FNAME
-            path_list(i)%path2outputDIR = path_mat(2,i)
-        end do
+    !     ! do i = 1, num_case
+    !     !     open(newunit=n_unit, file=path_mat(1,i), status='old')  !確認用open
+    !     !     close(n_unit)
+    !     !     call set_dir_from_path(path_mat(1,i), DIR, FNAME)
+    !     !     open(newunit=n_unit, file=trim(DIR)//conditionFName, status='old')  !確認用open
+    !     !     close(n_unit)
+    !     !     open(newunit=n_unit, file=trim(DIR)//IniPositionFName, status='old')  !確認用open
+    !     !     close(n_unit)
+    !     !     path_list(i)%path2FlowDIR = DIR
+    !     !     path_list(i)%FlowFileName = FNAME
+    !     !     path_list(i)%path2outputDIR = path_mat(2,i)
+    !     ! end do
 
-        print*,'The Number of Cases =', num_case
+    !     print*,'The Number of Cases =', num_case
 
-    end subroutine check_path_list
+    ! end subroutine check_path_list
 
     
     subroutine set_dir_from_path(path, directory, filename)
@@ -89,4 +93,4 @@ module path_list_m
 
     end function replace_str
 
-end module path_list_m
+end module path_operator_m

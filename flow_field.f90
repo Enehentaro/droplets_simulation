@@ -7,6 +7,7 @@ module flow_field
 
     character PATH_FlowDIR*99, HEAD_AIR*20, FNAME_FMT*30 !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
     integer, private :: FNAME_DIGITS !ファイル名の整数部桁数
+    
     logical unstructuredGrid
 
     double precision MAX_CDN(3), MIN_CDN(3)         !節点座標の上限および下限

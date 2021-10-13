@@ -20,9 +20,12 @@ module drop_motion_mod
     integer, private :: num_droplets   !全飛沫数
     integer interval
     real, private :: T, RH
- 
-    character path_out*99, path_backup*7!, path_out_base*99, 
-    character(4) ::  head_out = 'drop'
+
+    type path_drop
+        character(:), allocatable :: DIR, VTK, backup
+    end type path_drop
+
+    type(path_drop) path
 
     integer, target :: n_time  !時間ステップ
     integer, private :: num_restart
@@ -55,13 +58,22 @@ module drop_motion_mod
 
     end subroutine first_setting
 
+    subroutine set_case_path(case_name)
+        character(*), intent(in) :: case_name
+        path%DIR = trim(case_name)//'/'
+        path%VTK = trim(case_name)//'/VTK/'
+        path%backup = trim(case_name)//'/backup/'
+    end subroutine set_case_path
+
     subroutine read_and_set_condition
         use filename_mod
+        use path_operator_m
         double precision DTa, dt, L, U
         double precision :: direction_g(3)
+        character(99) path2FlowFile
         integer i, n_unit, num_drop
 
-        OPEN(newunit=n_unit,FILE=trim(PATH_FlowDIR)//conditionFName,STATUS='OLD')
+        OPEN(newunit=n_unit, FILE=path%DIR//conditionFName, STATUS='OLD')
             read(n_unit,'()')
             read(n_unit,*) num_restart
             read(n_unit,'()')
@@ -80,6 +92,8 @@ module drop_motion_mod
             
             read(n_unit,'()')
     
+            read(n_unit,'()')
+            read(n_unit,'(A)') path2FlowFile
             read(n_unit,'()')
             read(n_unit,*) DTa
             read(n_unit,'()')
@@ -117,6 +131,10 @@ module drop_motion_mod
         if(loopf - loops > 0) print*, 'Loop is from', loops, 'to', loopf
         print*, 'Delta_Time =', dt
         print*, 'Rdt', Rdt
+
+        call set_dir_from_path(path2FlowFile, PATH_FlowDIR, FNAME_FMT)
+
+        call check_FILE_GRID    !気流ファイルのタイプをチェック
 
         call set_basical_variables(dt, L, U)
 
@@ -238,20 +256,9 @@ module drop_motion_mod
         if(num_restart > 0) then
 
             print*, 'RESTRAT'
-            
-            ! write(fname,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') num_restart
-            ! droplets = read_droplet_VTK(fname)   !ここで自動割り付け
-            write(fname,'("'//trim(path_out)//trim(path_backup)//'backup", i8.8, ".bu")') num_restart
+
+            write(fname,'("'//trim(path%backup)//'backup", i8.8, ".bu")') num_restart
             droplets = read_backup(fname)   !ここで自動割り付け
-
-            ! block
-            !     character(99) fname_first
-            !     type(virus_droplet), allocatable ::  droplets_first(:)
-
-            !     write(fname_first,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') 0
-            !     droplets_first = read_droplet_VTK(fname_first)   !自動割り付け
-            !     droplets(:)%radius_min = get_minimum_radius(droplets_first(:)%radius, RH) !最小半径の計算
-            ! end block
 
             n_start = num_restart
             n_time = n_start
@@ -668,7 +675,7 @@ module drop_motion_mod
         character(99) fname
 
         num_drop = size(droplets(:))
-        write(fname,'("'//trim(path_out)//trim(path_backup)//'backup", i8.8, ".bu")') n_time
+        write(fname,'("'//path%backup//'backup", i8.8, ".bu")') n_time
 
         open(newunit=n_unit, form='unformatted', file=fname, status='replace')
             write(n_unit) num_drop
@@ -738,9 +745,11 @@ module drop_motion_mod
         implicit none
         integer vn, n_unit, num_drop
         character(99) fname
+        character(4) ::  head_out = 'drop'
+
 
         num_drop = size(droplets)
-        write(fname,'("'//trim(path_out)//trim(head_out)//'",i8.8,".vtk")') n_time
+        write(fname,'("'//path%VTK//trim(head_out)//'",i8.8,".vtk")') n_time
 
         !=======ここから飛沫データ（VTKファイル）の出力===========================
         open(newunit=n_unit, file=fname, status='replace')                                             !ここで出力ファイルを指定
@@ -792,11 +801,11 @@ module drop_motion_mod
         !以下はCSVファイルの出力
 
         if(n_time==0) then !初期ステップならファイル新規作成
-            open(newunit=n_unit, file=trim(path_out)//'particle_'//trim(head_out)//'.csv', status='replace')
+            open(newunit=n_unit, file=path%DIR//'/particle.csv', status='replace')
             print*,'REPLACE:particle_data.csv'
 
         else
-            open(newunit=n_unit, file=trim(path_out)//'particle_'//trim(head_out)//'.csv'&
+            open(newunit=n_unit, file=path%DIR//'/particle.csv'&
                 , action='write', status='old', position='append')
 
         end if
