@@ -11,12 +11,19 @@ OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o stl_reader.o a
     unstructured_grid.o adjacency_solver.o flow_field.o equation_mod.o drop_motion.o \
 	main.o
 
-${PROGRAM}: ${OBJS}
-	${FC} -o ${PROGRAM} ${OBJS}
+SRCDIR    = src
+OBJDIR    = obj
+OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
+MODDIR = ${OBJDIR}
 
-%.o: %.f90
-	${FCCOMPILE} -o $@ -c $<
+$(PROGRAM): $(OBJECTS)
+	$(FC) -o $@ $^
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.f90
+	$(FCCOMPILE) -o $@ -c $<
+# $(FCCOMPILE) -o $@ -c $< -module $(MODDIR)
 
 clean:
-	- del *.o *.mod *.exe
+	- del /Q ${OBJDIR}\*.o *.mod *.exe
+# - del *.o *.mod *.exe
 # - rm -f *.o *~ *.mod
