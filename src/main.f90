@@ -6,7 +6,7 @@
 PROGRAM MAIN
       !$ use omp_lib
       use drop_motion_mod
-      use cases_reader
+      use case_list_m
       implicit none
 
       character(7), parameter :: OS = 'Windows'
@@ -14,6 +14,7 @@ PROGRAM MAIN
       integer, pointer :: n => n_time
       integer nc, nc_max
       character(50) start_date
+      character(:), allocatable :: case_name
       real start_time
       !===========================================================================================
       !$OMP parallel
@@ -22,22 +23,21 @@ PROGRAM MAIN
             !$OMP end single
       !$OMP end parallel
 
-      call first_setting                        !条件TXTの読み込み、飛沫初期分布の計算など
+      call case_check(num_case=nc_max) 
 
-      nc_max = check_cases(PATH_AIR)            !連続実行数の取得（通常1回）
-
-      call check_point                          !計算条件の確認のためのチェックポイント
-
-      do nc = 1, nc_max                         !連続実行数だけループ（通常1回）
-
-            call set_path                       !パスなどの整理
-
-            call set_coeff_drdt(T, RH)          !温湿度依存の係数の設定
+      do nc = 1, nc_max                         !実行数だけループ（通常1回）
+            case_name = get_case_name(nc)
+            call set_case_path(case_name)
+            
+            call make_directory                     !ディレクトリ作成
+            
+            call first_setting                        !条件TXTの読み込み、飛沫初期分布の計算など
 
             call initialization_droplet         !初期状態を代入
 
-            call read_flow_field                !流れ場の取得
-            call preprocess_onFlowField         !流れ場の前処理
+            call check_point                    !計算条件の確認および時刻計測のためのチェックポイント
+
+            call read_flow_field(first=.true.)                !流れ場の取得
 
             print*,'*******************************************'
             print*,'             START step_loop               '
@@ -64,6 +64,7 @@ PROGRAM MAIN
             call final_result       !最終結果出力
 
             call deallocation_flow  !流れ場配列解放
+            call deallocation_droplet  !飛沫配列解放
             
       end do
 
@@ -77,69 +78,68 @@ PROGRAM MAIN
             character(1) input
             character(10) d_start, t_start
 
-            do
-                  print*, 'Do you want to start the calculation? (y/n)'
-                  read(5,*) input
+            if(nc == 1) then
+                  do
+                        print*, 'Do you want to start the calculation? (y/n)'
+                        read(5,*) input
 
-                  select case(input)
-                        case('y')
-                              call cpu_time(start_time)
-                              call date_and_time(date = d_start, time = t_start)
-                              start_date = '[Start Date] ' &
-                              //d_start(1:4)//'/'//d_start(5:6)//'/'//d_start(7:8)//' ' &
-                              //t_start(1:2)//':'//t_start(3:4)//':'//t_start(5:)
-                              exit
+                        select case(input)
+                              case('y')
+                                    exit
 
-                        case('n')
-                              stop
+                              case('n')
+                                    stop
 
-                  end select
+                        end select
 
-            end do
+                  end do
+            end if
+
+            call cpu_time(start_time)
+            call date_and_time(date = d_start, time = t_start)
+            start_date = '[Start Date] ' &
+            //d_start(1:4)//'/'//d_start(5:6)//'/'//d_start(7:8)//' ' &
+            //t_start(1:2)//':'//t_start(3:4)//':'//t_start(5:)
 
       end subroutine
 
-      subroutine set_path
-            character(20) :: temperature, humidity
-            integer i
+      subroutine make_directory
+            use path_operator_m
+            character(:), allocatable :: VTK_DIR, backup_DIR
 
-            if(cases_read_flag) then
+            print*, '#', nc
 
-                  T = get_temperature(nc)
-                  RH = get_humidity(nc)
+            ! PATH_FlowDIR = path_list(nc)%path2FlowDIR
+            ! FNAME_FMT = path_list(nc)%FlowFileName
+
+            ! call check_FILE_GRID    !気流ファイルのタイプをチェック
       
-                  PATH_AIR = get_case_path(nc)
-                  path_out_base = get_case_path2(nc)
+            ! write(temperature,'(i3.3)') T
+            ! write(humidity,'(i3.3)') RH
 
-            end if
+            ! i = len_trim(path_out_base)
+            ! if(path_out_base(i:i) == '\') path_out_base(i:i) = ' '      !末尾が区切り文字であればこれを除去
+            ! ! path_out = trim(path_out_base)//'_'//trim(temperature)//'_'//trim(humidity)//'\'
 
-            call set_dir_from_path(PATH_AIR, PATH_AIR, FNAME_FMT)
-
-            call check_FILE_GRID
-      
-            print*, 'T =', T, 'degC'
-            print*, 'RH =', RH, '%'
-      
-            write(temperature,'(i3.3)') T
-            write(humidity,'(i3.3)') RH
-
-            i = len_trim(path_out_base)
-            if(path_out_base(i:i) == '\') path_out_base(i:i) = ' '      !末尾が区切り文字であればこれを除去
-            path_out = trim(path_out_base)//'_'//trim(temperature)//'_'//trim(humidity)//'\'
-            path_backup = 'backup\'
+            VTK_DIR = path%VTK
+            ! i = len_trim(path_out)
+            ! if(path_out(i:i) /= '\') path_out(i+1:i+1) = '\'
+            backup_DIR = path%backup
 
             select case(trim(OS))
                   case ('Linux')  !for_Linux
-                        path_out =  replace_str(path_out, '\', '/' )
-                        path_backup = replace_str(path_backup, '\', '/')
-                        PATH_AIR = replace_str(PATH_AIR, '\', '/' )
-                        call system('mkdir -p -v '//trim(path_out)//trim(path_backup))
-                        call system('cp condition.txt '//path_out)
+                        VTK_DIR =  replace_str(VTK_DIR, '\', '/' )
+                        backup_DIR = replace_str(backup_DIR, '\', '/')
+                        call system('mkdir -p -v '//VTK_DIR)
+                        call system('mkdir -p -v '//backup_DIR)
+                        ! call system('cp condition.txt '//path_out)
 
                   case ('Windows')  !for_Windows
-
-                        call system('md '//trim(path_out)//trim(path_backup))
-                        call system('copy condition.txt '//path_out)
+                        VTK_DIR =  replace_str(VTK_DIR, '/', '\' )
+                        backup_DIR = replace_str(backup_DIR, '/', '\')
+                        call system('md '//VTK_DIR)
+                        call system('md '//backup_DIR)
+                        ! call system('copy condition.txt '//path_out)
 
                   case default
                         print*, 'OS ERROR', OS
@@ -147,9 +147,7 @@ PROGRAM MAIN
                         
             end select
 
-            print*, 'Output_Path=', path_out
-
-      end subroutine set_path
+      end subroutine make_directory
 
       subroutine output
             print*, start_date
@@ -173,7 +171,7 @@ PROGRAM MAIN
             print*, start_date
             print*, end_date
 
-            open(newunit=n_unit, FILE= trim(path_out)//'final_result.txt',STATUS='REPLACE')
+            open(newunit=n_unit, FILE= case_name//'/final_result.txt',STATUS='REPLACE')
                   write(n_unit,*)'*******************************************'
                   write(n_unit,*)'*                                         *'
                   write(n_unit,*)'*             Final Results               *'
@@ -194,6 +192,11 @@ PROGRAM MAIN
                   write(n_unit,'(A15, I20)') 'death =', drop_counter('death') !生存率で消滅
                   write(n_unit,'(A15, I20)') 'coalescence =', drop_counter('coalescence') !生存率で消滅
                   write(n_unit,'(A15, I20)') 'adhesion =', drop_counter('adhesion') !付着したすべてのウイルス数
+                  write(n_unit,'(A)') '======================================================='
+                  write(n_unit,'(A15, F10.2)') 'Temp [degC] =', environment('Temperature')
+                  write(n_unit,'(A15, F10.2)') 'RH [%] =', environment('Relative Humidity')
+                  write(n_unit, *) 'Used FlowFile : ', trim(PATH_FlowDIR), trim(FNAME_FMT)
+
             close(n_unit)
             
       end subroutine final_result

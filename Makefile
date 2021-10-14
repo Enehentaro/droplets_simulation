@@ -6,16 +6,24 @@ FCFLAGS = -O -fbacktrace -g
 
 FCCOMPILE = ${FC} ${FCFLAGS}
 
-OBJS = csv_reader.o cases_reader.o stl_reader.o fld_reader.o plot3d_operator.o CUBE_mod.o \
+OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o stl_reader.o adhesion_onSTL.o \
+	fld_reader.o plot3d_operator.o CUBE_mod.o vtkMesh_operator.o\
     unstructured_grid.o adjacency_solver.o flow_field.o equation_mod.o drop_motion.o \
 	main.o
 
-${PROGRAM}: ${OBJS}
-	${FCCOMPILE} -o ${PROGRAM} ${OBJS}
+SRCDIR    = src
+OBJDIR    = obj
+OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
+MODDIR = ${OBJDIR}
 
-%.o:%.f90
-	${FCCOMPILE} -c $<
+$(PROGRAM): $(OBJECTS)
+	$(FC) -o $@ $^
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.f90
+	$(FCCOMPILE) -o $@ -c $<
+# $(FCCOMPILE) -o $@ -c $< -module $(MODDIR)
 
 clean:
-	- del *.o *.mod
+	- del /Q ${OBJDIR}\*.o *.mod *.exe
+# - del *.o *.mod *.exe
 # - rm -f *.o *~ *.mod
