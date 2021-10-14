@@ -10,7 +10,7 @@ module flow_field
     
     logical unstructuredGrid
 
-    double precision MAX_CDN(3), MIN_CDN(3)         !節点座標の上限および下限
+    real MAX_CDN(3), MIN_CDN(3)         !節点座標の上限および下限
 
     type reference_cell_t
         integer :: ID = 0, nodeID(3) = 0
@@ -52,6 +52,7 @@ module flow_field
     end function get_digits_format
 
     subroutine preprocess_onFlowField
+        use adhesion_onSTL_m
         use adjacent_information
         logical success
 
@@ -66,14 +67,13 @@ module flow_field
                 call output_adjacency(PATH_FlowDIR)
 
             end if
-            call boundary_setting
 
         else
             call read_faceShape(PATH_FlowDIR)
             call set_faceShape
         end if
 
-    end subroutine
+    end subroutine preprocess_onFlowField
 
     subroutine read_flow_data(FNUM)
         integer, intent(in) :: FNUM
@@ -91,19 +91,17 @@ module flow_field
                 call read_unstructuredGrid(FNAME, digits_fmt, FNUM)
             end if
                        
-            MAX_CDN(1) = maxval(CDN(1,:))
-            MAX_CDN(2) = maxval(CDN(2,:))
-            MAX_CDN(3) = maxval(CDN(3,:))
+            MAX_CDN(1) = maxval(NODEs(:)%coordinate(1))
+            MAX_CDN(2) = maxval(NODEs(:)%coordinate(2))
+            MAX_CDN(3) = maxval(NODEs(:)%coordinate(3))
             print*, 'MAX_coordinates=', MAX_CDN(:)
                 
-            MIN_CDN(1) = minval(CDN(1,:))
-            MIN_CDN(2) = minval(CDN(2,:))
-            MIN_CDN(3) = minval(CDN(3,:))
+            MIN_CDN(1) = minval(NODEs(:)%coordinate(1))
+            MIN_CDN(2) = minval(NODEs(:)%coordinate(2))
+            MIN_CDN(3) = minval(NODEs(:)%coordinate(3))
             print*, 'MIN_coordinates=', MIN_CDN(:)
                 
             call set_gravity_center
-                   
-            call boundary_setting
 
         else
 
@@ -114,6 +112,14 @@ module flow_field
 
             end if
             call read_CUBE_data(FNAME, trim(PATH_FlowDIR))
+
+            ! block
+            !     character(7) :: unstructuredGRID_fname = 'USG.vtk'
+            !     call check_FILE_TYPE(unstructuredGRID_fname)
+
+            !     call read_VTK(trim(PATH_FlowDIR)//unstructuredGRID_fname, meshONLY=.true.)
+
+            ! end block
 
             block
                 real min_max(6)
@@ -130,7 +136,7 @@ module flow_field
     end subroutine read_flow_data
 
     subroutine search_ref_cell(X, reference_cell, first)
-        double precision, intent(in) :: X(3)
+        real, intent(in) :: X(3)
         integer, intent(inout) :: reference_cell
         logical, intent(out) :: first
 
@@ -154,27 +160,35 @@ module flow_field
     end subroutine search_ref_cell
 
     subroutine search_ref_cell_onCUBE(X, reference_cell, first)
-        double precision, intent(in) :: X(3)
+        real, intent(in) :: X(3)
         type(reference_cell_t), intent(inout) :: reference_cell
         logical, intent(out) :: first
 
         if(reference_cell%ID == 0) then   !参照セルが見つかっていない（＝初期ステップ）
-            reference_cell%ID = get_cube_contains(real(X))    
-            reference_cell%nodeID(:) = nearest_node(real(X), reference_cell%ID)
+            reference_cell%ID = get_cube_contains(X)    
+            reference_cell%nodeID(:) = nearest_node(X, reference_cell%ID)
             first = .true.
             print*, 'FirstNCN:', reference_cell
     
         else
             reference_cell%ID = reference_cell%ID
-            reference_cell%nodeID(:) = nearer_node(real(X), reference_cell%nodeID, reference_cell%ID)
+            reference_cell%nodeID(:) = nearer_node(X, reference_cell%nodeID, reference_cell%ID)
             first = .false.
-            if (.not.nearNode_check(real(X), reference_cell%nodeID, reference_cell%ID)) then
-                reference_cell%ID = get_cube_contains(real(X))    
-                reference_cell%nodeID(:) = nearest_node(real(X), reference_cell%ID)
+            if (.not.nearNode_check(X, reference_cell%nodeID, reference_cell%ID)) then
+                reference_cell%ID = get_cube_contains(X)    
+                reference_cell%nodeID(:) = nearest_node(X, reference_cell%ID)
             end if
     
         end if
 
     end subroutine search_ref_cell_onCUBE
+
+    subroutine deallocation_flow
+        if(unstructuredGrid) then
+            call deallocation_unstructuredGRID
+        else
+            call deallocation_CUBE
+        end if
+    end subroutine deallocation_flow
     
 end module flow_field

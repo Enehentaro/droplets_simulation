@@ -21,11 +21,11 @@ module drop_motion_mod
     integer interval
     real, private :: T, RH
 
-    type path_drop
+    type path_drop_t
         character(:), allocatable :: DIR, VTK, backup
-    end type path_drop
+    end type path_drop_t
 
-    type(path_drop) path
+    type(path_drop_t) path
 
     integer, target :: n_time  !時間ステップ
     integer, private :: num_restart
@@ -193,7 +193,7 @@ module drop_motion_mod
         
         num_drop = size(droplets_ini)
 
-        call read_CSV(trim(PATH_FlowDIR)//IniPositionFName, position_mat)
+        call read_CSV(trim(path%DIR)//IniPositionFName, position_mat)
 
         num_box = size(position_mat, dim=2)
 
@@ -346,7 +346,7 @@ module drop_motion_mod
         X(:) = droplets(vn)%coordinate(:)
         V(:) = droplets(vn)%velocity(:)
 
-        call search_ref_cell(X(:), droplets(vn)%ref_cell%ID, first)
+        call search_ref_cell(real(X(:)), droplets(vn)%ref_cell%ID, first)
 
         RefC = droplets(vn)%ref_cell
         if(first) then
@@ -358,13 +358,14 @@ module drop_motion_mod
 
         call area_check(X(:), stopflag)
 
-        vel_air(:) = VELC(:, RefC%ID)
+        vel_air(:) = CELLs(RefC%ID)%flowVelocity(:)
     
         droplets(vn) = motion_result(droplets(vn), vel_air, stopflag)
         
     end subroutine motion_calc
 
     subroutine motion_calc_onCUBE(vn)
+        use adhesion_onSTL_m
         integer, intent(in) :: vn
         double precision  :: X(3), V(3), vel_air(3)
         type(reference_cell_t) :: RefC
@@ -374,7 +375,7 @@ module drop_motion_mod
         X(:) = droplets(vn)%coordinate(:)
         V(:) = droplets(vn)%velocity(:)
 
-        call search_ref_cell_onCUBE(X(:), droplets(vn)%ref_cell, first)
+        call search_ref_cell_onCUBE(real(X(:)), droplets(vn)%ref_cell, first)
 
         RefC = droplets(vn)%ref_cell
         if(first) then
@@ -421,12 +422,12 @@ module drop_motion_mod
 
         adhesion_check = .false.
 
-        do JJ = 1, NoB(NCN)
-            JB = ICB(JJ, NCN)
+        do JJ = 1, size(CELLs(NCN)%boundFaceID)
+            JB = CELLs(NCN)%boundFaceID(JJ)
 
-            r_vector(:) = droplets(vn)%coordinate(:) - CENF(:,JB)
+            r_vector(:) = droplets(vn)%coordinate(:) - BoundFACEs(JB)%center(:)
 
-            inner = sum(r_vector(:)*NVECF(:,JB))
+            inner = sum(r_vector(:)*BoundFACEs(JB)%normalVector(:))
 
             if (inner > 0.0d0) then
                 adhesion_check = .true. !外向き法線ベクトルと位置ベクトルの内積が正なら付着判定
@@ -454,28 +455,35 @@ module drop_motion_mod
     subroutine update_flow_check
         double precision Step_air
 
-        if(INTERVAL_FLOW > 0) then
-              Step_air = dble(n_time)*Rdt          !気流計算における経過ステップ数に相当
-              if(mod(Step_air, dble(INTERVAL_FLOW)) == 0.d0) call read_flow_field   !流れ場の更新
+        if(INTERVAL_FLOW <= 0) return
+
+        Step_air = dble(n_time)*Rdt          !気流計算における経過ステップ数に相当
+        if(mod(Step_air, dble(INTERVAL_FLOW)) == 0.d0) then
+            call read_flow_field(first=.false.)   !流れ場の更新
         end if
 
     end subroutine update_flow_check
 
-    subroutine read_flow_field
+    subroutine read_flow_field(first)
+        logical, intent(in) :: first
         integer FNUM
 
         FNUM = get_num_air(n_time)
 
         call read_flow_data(FNUM)
 
-        if(unstructuredGrid) call boundary_move
+        if(first) call preprocess_onFlowField         !流れ場の前処理
+
+        if(unstructuredGrid) then
+            call boundary_setting(first)
+            if(.not.first) call boundary_move
+        end if
             
     end subroutine read_flow_field
                       
     subroutine boundary_move !境界面の移動に合わせて付着飛沫も移動
         integer vn, JB
 
-        if(.not.allocated(MOVF)) return
         ! print*, 'CALL:boundary_move'
 
         do vn = 1, num_droplets
@@ -484,7 +492,8 @@ module drop_motion_mod
     
             JB = droplets(vn)%bound_adhes
             if (JB > 0) then
-                droplets(vn)%coordinate(:) = droplets(vn)%coordinate(:) + MOVF(:,JB) !面重心の移動量と同じだけ移動
+                droplets(vn)%coordinate(:) &
+                    = droplets(vn)%coordinate(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
             else
                 call area_check(droplets(vn)%coordinate(:))
     

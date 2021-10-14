@@ -2,22 +2,41 @@ module unstructuredGrid_mod
     implicit none
     character(3), private :: FILE_TYPE  !ファイル形式
 
-    integer, allocatable :: ICN(:,:)                !要素所有節点ID
-    integer, allocatable :: NoB(:)                  !要素所有境界面の数
-    integer, allocatable :: ICB(:,:)                !要素所有境界面ID
-    integer, allocatable :: NBN(:,:)                !境界面所有節点ID
-    
-    integer, allocatable :: CELL_TYPE(:)   !要素タイプ（テトラ0、プリズム1、ピラミッド2）
-    integer, allocatable, private :: NUM_NC(:)               !隣接要素数
-    integer, allocatable, private :: NEXT_CELL(:,:)          !隣接要素ID
+    type node_t
+        real coordinate(3)
+    end type node_t
 
-    double precision, allocatable :: CDN(:,:)       !節点座標
-    double precision, allocatable :: VELC(:,:)      !要素流速
-    double precision, allocatable, private :: CENC(:,:)      !要素重心
-    double precision, allocatable, private :: WIDC(:)        !要素の1辺長さ
-    double precision, allocatable :: CENF(:,:)    !面重心
-    double precision, allocatable :: MOVF(:,:)    !面重心移動量
-    double precision, allocatable :: NVECF(:,:)     !面法線ベクトル
+    type boundFace_t
+        integer nodeID(3)
+        real center(3), normalVector(3), moveVector(3)
+    end type boundFace_t
+
+    type cell_t
+        character(5) typeName
+        integer, allocatable :: nodeID(:), boundFaceID(:), adjacentCellID(:)
+        real center(3), flowVelocity(3), width
+    end type cell_t
+
+    type(node_t), allocatable :: NODEs(:)
+    type(boundFace_t), allocatable :: BoundFACEs(:)
+    type(cell_t), allocatable :: CELLs(:)
+
+    ! integer, allocatable :: ICN(:,:)                !要素所有節点ID
+    ! integer, allocatable :: NoB(:)                  !要素所有境界面の数
+    ! integer, allocatable :: ICB(:,:)                !要素所有境界面ID
+    ! integer, allocatable :: NBN(:,:)                !境界面所有節点ID
+    
+    ! integer, allocatable :: CELL_TYPE(:)   !要素タイプ（テトラ0、プリズム1、ピラミッド2）
+    ! integer, allocatable, private :: NUM_NC(:)               !隣接要素数
+    ! integer, allocatable, private :: NEXT_CELL(:,:)          !隣接要素ID
+
+    ! double precision, allocatable :: CDN(:,:)       !節点座標
+    ! double precision, allocatable :: VELC(:,:)      !要素流速
+    ! double precision, allocatable :: CENC(:,:)      !要素重心
+    ! double precision, allocatable, private :: WIDC(:)        !要素の1辺長さ
+    ! double precision, allocatable :: CENF(:,:)    !面重心
+    ! double precision, allocatable :: MOVF(:,:)    !面重心移動量
+    ! double precision, allocatable :: NVECF(:,:)     !面法線ベクトル
 
     interface read_unstructuredGrid
         module procedure read_unstructuredGrid_byNAME
@@ -49,7 +68,6 @@ module unstructuredGrid_mod
 
     subroutine read_unstructuredGrid_byNAME(FNAME)
         character(*), intent(in) :: FNAME
-        integer num_cell
 
         select case(FILE_TYPE)
             case('VTK')
@@ -66,10 +84,6 @@ module unstructuredGrid_mod
                 STOP
                     
         end select
-
-        num_cell = size(ICN(:,:), dim=2)
-
-        if(.not.allocated(CENC)) allocate(CENC(3, num_cell), WIDC(num_cell))
             
     end subroutine read_unstructuredGrid_byNAME
 
@@ -78,7 +92,6 @@ module unstructuredGrid_mod
         integer, intent(in) :: FNUM
         character(99) :: FNAME
         character(4) digits_fmt
-        integer num_cell
 
         select case(FILE_TYPE)
             case('VTK')
@@ -122,117 +135,52 @@ module unstructuredGrid_mod
                 STOP
                 
         end select
-
-        num_cell = size(ICN(:,:), dim=2)
-
-        if(.not.allocated(CENC)) allocate(CENC(3, num_cell), WIDC(num_cell))
             
     end subroutine read_unstructuredGrid_byNumber
 
     subroutine read_VTK(FNAME, pointdata)
+        use vtkMesh_operator_m
         character(*), intent(in) :: FNAME
         logical, optional :: pointdata
-        integer II,KK,IIH, n_unit, KKMX, IIMX
-        character AAA*7
-        double precision, allocatable :: UVWK(:,:)
-        logical prism_flag
+        integer II,KK,IIH, KKMX, IIMX
+        real, allocatable :: UVWK(:,:)
 
-        prism_flag = .false.
+        call read_VTK_mesh(FNAME)
 
-        print*, 'READ_VTK:', FNAME
-            
-        open(newunit=n_unit,FILE=FNAME, STATUS='OLD')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,*) AAA,KKMX
-                
-            if(.not.allocated(CDN)) allocate(CDN(3,KKMX), source=0.0d0)      
-            DO KK = 1, KKMX
-                read(n_unit,*) CDN(1,KK),CDN(2,KK),CDN(3,KK)
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'(A,I12)') AAA,IIMX
-            
-            if(.not.allocated(ICN)) allocate(ICN(6,IIMX), source=0)
-            if(.not.allocated(CELL_TYPE)) allocate(CELL_TYPE(IIMX), source=-1)      
-            DO II = 1, IIMX
-                read(n_unit,fmt='(I12)',advance='no') IIH
-                IF(IIH==6) THEN
-                    read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II),ICN(5,II),ICN(6,II)
-                    CELL_TYPE(II)=  1
-                    prism_flag = .true.
-                ELSE IF(IIH==5) THEN
-                    read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II),ICN(5,II)
-                    CELL_TYPE(II) = 2
-                ELSE IF(IIH==4) THEN
-                    read(n_unit,*)ICN(1,II),ICN(2,II),ICN(3,II),ICN(4,II)
-                    CELL_TYPE(II) = 0
-                END IF
-            END DO
-            read(n_unit,'()')
-            
-            
-            ICN(:,:) = ICN(:,:) + 1
+        KKMX = size(node_array)
+        if(.not.allocated(NODEs)) allocate(NODEs(KKMX))
+        do KK = 1, KKMX
+            NODEs(KK)%coordinate(:) = node_array(KK-1)%coordinate(:)
+        end do
+        
+        IIMX = size(cell_array)
+        if(.not.allocated(CELLs)) allocate(CELLs(IIMX))
+        do II = 1, IIMX
+            IIH = size(cell_array(II-1)%nodeID)
+            CELLs(II)%nodeID = cell_array(II-1)%nodeID(1:IIH) + 1
+            select case(cell_array(II-1)%n_TYPE)
+                case(10)
+                    CELLs(II)%typeName = 'tetra'
+                case(13)
+                    CELLs(II)%typeName = 'prism'
+                case(14)
+                    CELLs(II)%typeName = 'pyrmd'
+            end select
+            CELLs(II)%flowVelocity(:) = cell_array(II-1)%vector(:)
+        end do
 
-            if(.not.allocated(VELC)) allocate(VELC(3,IIMX))
+        ! print*, NODEs(KKMX)%coordinate(:)
+        ! print*, CELLs(IIMX)%flowVelocity(:)
 
-            read(n_unit,'()')  !CELL_TYPES
-            DO II = 1, IIMX
-                read(n_unit,'()')
-            END DO
-            read(n_unit,'()')
+        if(present(pointdata)) then
+            if(pointdata) then
+                allocate(UVWK(3,KKMX))
 
-            if(.not.prism_flag) then
-                read(n_unit,'()')
-                read(n_unit,'()')
-                read(n_unit,'()')
-                DO II = 1, IIMX
-                    read(n_unit,'()')
-                END DO
-                read(n_unit,'()')
-            
-                DO II = 1, IIMX
-                    read(n_unit,*) VELC(1,II),VELC(2,II),VELC(3,II)
-                END DO
+                call point2cellVelocity(UVWK)
 
-            else
-
-                if(present(pointdata)) then
-                    if(pointdata) then
-                        allocate(UVWK(3,KKMX))
-                        read(n_unit,'()')
-                        read(n_unit,'()')
-                        DO KK = 1, KKMX
-                        read(n_unit,*) UVWK(1,KK),UVWK(2,KK),UVWK(3,KK)
-                        END DO
-                        call point2cell(UVWK, VELC, ICN, CELL_TYPE)
-                        close(n_unit)
-                        return
-                    end if
-                end if
-                
-                read(n_unit,'()')
-                read(n_unit,'()')
-                read(n_unit,'()')
-                DO II = 1, IIMX
-                    read(n_unit,'()')
-                END DO
-                read(n_unit,'()')
-                read(n_unit,'()')
-                DO II = 1, IIMX
-                    read(n_unit,*) AAA
-                END DO
-                read(n_unit,'()')
-            
-                DO II = 1, IIMX
-                    read(n_unit,*) VELC(1,II),VELC(2,II),VELC(3,II)
-                END DO
+                return
             end if
-
-            
-        close(n_unit)
+        end if
             
     end subroutine read_VTK
 
@@ -240,9 +188,9 @@ module unstructuredGrid_mod
         !  INPファイルを読み込み、節点データを要素データに変換する
         character(*), intent(in) :: FNAME
         INTEGER II,II2,KK,AAmax, IIMX2, AA, n_unit
-        integer :: IITETMX, IIPRSMX, IIPYRMX, KKMX, IIMX
+        integer KKMX, IIMX
         character(6) cellshape
-        double precision, allocatable :: UVWK(:,:)
+        real, allocatable :: UVWK(:,:)
         integer, allocatable :: ICN2(:,:)
         integer, allocatable :: CELL_TYPE2(:)
 
@@ -252,18 +200,15 @@ module unstructuredGrid_mod
             read(n_unit,*)KKMX,IIMX2
             print*,'KKMX,IIMX2=',KKMX,IIMX2
             
-            if(.not.allocated(CDN)) allocate(CDN(3,KKMX), source=0.0d0)
+            if(.not.allocated(NODEs)) allocate(NODEs(KKMX))
             allocate(ICN2(6,IIMX2), source=0)
             allocate(CELL_TYPE2(IIMX2), source=0)
                 
             DO KK = 1, KKMX
-                read(n_unit,*)AA,CDN(1,KK),CDN(2,KK),CDN(3,KK)
+                read(n_unit,*)AA, NODEs(KK)%coordinate(:)
             END DO
                 
             II = 0
-            IITETMX = 0
-            IIPRSMX = 0
-            IIPYRMX = 0
             DO II2 = 1, IIMX2
     
                 read(n_unit,fmt='(I10)',advance='no')AA  !ここはセル番号なので無視
@@ -276,19 +221,16 @@ module unstructuredGrid_mod
         
                     if (cellshape=='tet') then
                         CELL_TYPE2(II) = 0
-                        IITETMX = IITETMX +1
                         read(n_unit,*)ICN2(1,II),ICN2(2,II),ICN2(3,II),ICN2(4,II)    
                         if (ICN2(1,II)==0.or.ICN2(4,II)==0) print*, 'ICN2_WARNING_tet:', ICN2(:,II)
                     
                     ELSE IF(cellshape=='prism') THEN
                         CELL_TYPE2(II) = 1
-                        IIPRSMX = IIPRSMX +1
                         read(n_unit,*)ICN2(1,II),ICN2(2,II),ICN2(3,II),ICN2(4,II),ICN2(5,II),ICN2(6,II)
                         if (ICN2(1,II)==0.or.ICN2(6,II)==0) print*, 'ICN2_WARNING_prism:', ICN2(:,II)
         
                     ELSE IF(cellshape=='pyr') THEN
                         CELL_TYPE2(II) = 2
-                        IIPYRMX = IIPYRMX +1
                         read(n_unit,*)ICN2(5,II),ICN2(1,II),ICN2(2,II),ICN2(3,II),ICN2(4,II) !INPは最初が山頂点であり、VTKでは最後が山頂点のため、読み込む順がこうなる。
                         if (ICN2(1,II)==0.or.ICN2(5,II)==0) print*, 'ICN2_WARNING_pyr:', ICN2(:,II)
         
@@ -311,19 +253,27 @@ module unstructuredGrid_mod
                 read(n_unit,'()')
             END DO
             DO KK = 1, KKMX
-                read(n_unit,*)AA,UVWK(1,KK),UVWK(2,KK),UVWK(3,KK)
+                read(n_unit,*)AA, UVWK(:,KK)
             END DO
                 
         close(n_unit)
 
-        if(.not.allocated(ICN)) allocate(ICN(6,IIMX))
-        if(.not.allocated(CELL_TYPE)) allocate(CELL_TYPE(IIMX))
-        ICN(:,:) = ICN2(:,:IIMX)
-        CELL_TYPE(:) = CELL_TYPE2(:IIMX)
-
-        if(.not.allocated(VELC)) allocate(VELC(3,IIMX))
+        if(.not.allocated(CELLs)) allocate(CELLs(IIMX))
+        do II = 1, IIMX
+            select case(CELL_TYPE2(II))
+                case(0)
+                    CELLs(II)%nodeID = ICN2(1:4, II)
+                    CELLs(II)%typeName = 'tatra'
+                case(1)
+                    CELLs(II)%nodeID = ICN2(1:6, II)
+                    CELLs(II)%typeName = 'prism'
+                case(2)
+                    CELLs(II)%nodeID = ICN2(1:5, II)
+                    CELLs(II)%typeName = 'pyrmd'
+            end select
+        end do
             
-        call point2cell(UVWK(:,:), VELC(:,:), ICN(:,:), CELL_TYPE(:))
+        call point2cellVelocity(UVWK)
             
     end subroutine read_INP
 
@@ -331,8 +281,8 @@ module unstructuredGrid_mod
         use mod_SctFldReader
         implicit none
         character(*), intent(in) :: FNAME
-        integer unit, II,KK,KK_beg,KK_end,node_num
-        double precision, allocatable :: UVWK(:,:)
+        integer unit, II,KK,KK_beg,KK_end, num_node
+        real, allocatable :: UVWK(:,:)
 
   
         call open_readFLD(unit, FNAME)
@@ -340,49 +290,48 @@ module unstructuredGrid_mod
             call read_Main_data(unit)
         call close_fld(unit)
   
-        if(.not.allocated(ICN)) then
-            allocate(ICN(6,size(ietyp)), source=0)
-            allocate(CELL_TYPE(size(ietyp)), source=0)
-            allocate(CDN(3,NNODS))
+        if(.not.allocated(CELLs)) then
+            allocate(CELLs(size(ietyp)))
+            allocate(NODEs(NNODS))
   
             KK_beg = 1
   
             do II = 1, size(ietyp)
   
-                node_num = ietyp(II)-30
-                if (node_num==4) then
-                    CELL_TYPE(II) = 0
-                elseif(node_num==6) then
-                    CELL_TYPE(II) = 1
-                elseif(node_num==5) then
-                    CELL_TYPE(II) = 2
-                else
-                    print*, 'ERROR_node_num', node_num
-                end if
+                num_node = ietyp(II)-30
+                select case(num_node)
+                    case(4)
+                        CELLs%typeName = 'tatra'
+                    case(6)
+                        CELLs%typeName = 'prism'
+                    case(5)
+                        CELLs%typeName = 'pyrmd'
+                end select
+
+                allocate(CELLs(II)%nodeID(num_node))
     
-                KK_end = KK_beg + node_num - 1
+                KK_end = KK_beg + num_node - 1
     
                 do KK = KK_beg, KK_end
-                    ICN(KK-KK_beg+1, II) = ndno(KK) + 1
+                    CELLs(II)%nodeID(KK-KK_beg+1) = ndno(KK) + 1
+                    ! ICN(KK-KK_beg+1, II) = ndno(KK) + 1
                 end do
             
-                KK_beg = KK_beg + node_num
+                KK_beg = KK_beg + num_node
         
             end do
         end if
   
-        CDN(1,:) = CDN_X(:)
-        CDN(2,:) = CDN_Y(:)
-        CDN(3,:) = CDN_Z(:)
+        NODEs(:)%coordinate(1) = real(CDN_X(:))
+        NODEs(:)%coordinate(2) = real(CDN_Y(:))
+        NODEs(:)%coordinate(3) = real(CDN_Z(:))
 
         allocate(UVWK(3, size(CDN_X)))
-        UVWK(1,:) = VEL_X(:)
-        UVWK(2,:) = VEL_Y(:)
-        UVWK(3,:) = VEL_Z(:)
+        UVWK(1,:) = real(VEL_X(:))
+        UVWK(2,:) = real(VEL_Y(:))
+        UVWK(3,:) = real(VEL_Z(:))
 
-        if(.not.allocated(VELC)) allocate(VELC(3, size(ietyp)))
-
-        call point2cell(UVWK(:,:), VELC(:,:), ICN(:,:), CELL_TYPE(:))
+        call point2cellVelocity(UVWK)
           
     end subroutine read_FLD
             
@@ -390,50 +339,22 @@ module unstructuredGrid_mod
     
     !***********************************************************************
     subroutine set_gravity_center !セル重心の算出
-        integer II,IIMX
-        integer ICN1,ICN2,ICN3,ICN4,ICN5,ICN6
-            !=======================================================================
-        IIMX = size(ICN(:,:), dim=2)    
+        integer II,IIMX, n, num_node, ID
 
-        !$omp parallel do private(ICN1,ICN2,ICN3,ICN4,ICN5,ICN6)
+        IIMX = size(CELLs)
+
+        !$omp parallel do private(num_node, ID)
         DO II = 1, IIMX
-            IF (CELL_TYPE(II)==0) THEN
-                ICN1 = ICN(1,II)
-                ICN2 = ICN(2,II) 
-                ICN3 = ICN(3,II)
-                ICN4 = ICN(4,II)
+            CELLs(II)%center(:) = 0.0
+            num_node = size(CELLs(II)%nodeID)
+            do n = 1, num_node
+                ID = CELLs(II)%nodeID(n)
+                CELLs(II)%center(:) = CELLs(II)%center(:) + NODEs(ID)%coordinate(:)
+            end do
+            CELLs(II)%center(:) = CELLs(II)%center(:) / num_node
             
-                CENC(1,II) = 0.25d0*(CDN(1,ICN1)+CDN(1,ICN2)+CDN(1,ICN3)+CDN(1,ICN4))
-                CENC(2,II) = 0.25d0*(CDN(2,ICN1)+CDN(2,ICN2)+CDN(2,ICN3)+CDN(2,ICN4))
-                CENC(3,II) = 0.25d0*(CDN(3,ICN1)+CDN(3,ICN2)+CDN(3,ICN3)+CDN(3,ICN4))
-            ELSE IF (CELL_TYPE(II)==1) THEN
-                ICN1 = ICN(1,II)
-                ICN2 = ICN(2,II) 
-                ICN3 = ICN(3,II)
-                ICN4 = ICN(4,II)
-                ICN5 = ICN(5,II)
-                ICN6 = ICN(6,II)
-            
-                CENC(1,II) = (CDN(1,ICN1)+CDN(1,ICN2)+CDN(1,ICN3)+CDN(1,ICN4)+CDN(1,ICN5)+CDN(1,ICN6))/6.0d0
-                CENC(2,II) = (CDN(2,ICN1)+CDN(2,ICN2)+CDN(2,ICN3)+CDN(2,ICN4)+CDN(2,ICN5)+CDN(2,ICN6))/6.0d0
-                CENC(3,II) = (CDN(3,ICN1)+CDN(3,ICN2)+CDN(3,ICN3)+CDN(3,ICN4)+CDN(3,ICN5)+CDN(3,ICN6))/6.0d0    
-            ELSE IF (CELL_TYPE(II)==2) THEN
-                ICN1 = ICN(1,II)
-                ICN2 = ICN(2,II) 
-                ICN3 = ICN(3,II)
-                ICN4 = ICN(4,II)
-                ICN5 = ICN(5,II)
-            
-                CENC(1,II) = 0.20d0*(CDN(1,ICN1)+CDN(1,ICN2)+CDN(1,ICN3)+CDN(1,ICN4)+CDN(1,ICN5))
-                CENC(2,II) = 0.20d0*(CDN(2,ICN1)+CDN(2,ICN2)+CDN(2,ICN3)+CDN(2,ICN4)+CDN(2,ICN5))
-                CENC(3,II) = 0.20d0*(CDN(3,ICN1)+CDN(3,ICN2)+CDN(3,ICN3)+CDN(3,ICN4)+CDN(3,ICN5))
-
-            else
-                print*, 'CELL_TYPE_ERROR', CELL_TYPE(II)
-                stop
-            END IF
-            
-            WIDC(II) = norm2(CDN(:,ICN2)-CDN(:,ICN1))
+            CELLs(II)%width = norm2( &
+                NODEs(CELLs(II)%nodeID(2))%coordinate(:) - NODEs(CELLs(II)%nodeID(1))%coordinate(:))
         
         END DO
         !$omp end parallel do 
@@ -444,7 +365,7 @@ module unstructuredGrid_mod
         implicit none
         character(*), intent(in) :: path
         logical, optional :: success
-        integer II,NC,JB, n_unit, num_cells, NCMAX
+        integer II,NA,JB, n_unit, num_cells, num_adj, num_BF, NCMAX
         character(len_trim(path)+20) FNAME
                 
         FNAME = trim(path)//adjacencyFileName
@@ -459,29 +380,25 @@ module unstructuredGrid_mod
             read(n_unit,*) num_cells
             read(n_unit,*) NCMAX
 
-            allocate(NEXT_CELL(NCMAX,num_cells),NUM_NC(num_cells))
+            ! allocate(NEXT_CELL(NCMAX,num_cells),NUM_NC(num_cells))
             DO II = 1, num_cells
-                read(n_unit,'(I5)',advance='no') NUM_NC(II)
-                DO NC = 1, NUM_NC(II)
-                    read(n_unit,'(I12)',advance='no') NEXT_CELL(NC,II)
+                read(n_unit,'(I5)',advance='no') num_adj
+                allocate(CELLs(II)%adjacentCellID(num_adj))
+                DO NA = 1, num_adj
+                    read(n_unit,'(I12)',advance='no') CELLs(II)%adjacentCellID(NA)
                 END DO
                 read(n_unit,'()')
             END DO
 
-            if(.not.allocated(NoB)) then
-
-                allocate(NoB(num_cells), source=0)
-                allocate(ICB(4,num_cells), source=0)
-
-                DO II = 1, num_cells
-                read(n_unit, fmt='(I4)', advance='no') NoB(II)  ! Number of Boundary
-                do JB = 1, NoB(II)
-                    read(n_unit, fmt='(I10)', advance='no') ICB(JB,II)
+            DO II = 1, num_cells
+                read(n_unit, fmt='(I4)', advance='no') num_BF  ! Number of Boundary
+                allocate(CELLs(II)%boundFaceID(num_BF))
+                do JB = 1, num_BF
+                    read(n_unit, fmt='(I10)', advance='no') CELLs(II)%boundFaceID(JB)
                 end do
                 read(n_unit,'()')  !改行
-                END DO
+            END DO
 
-            end if
 
         close(n_unit)
 
@@ -491,32 +408,32 @@ module unstructuredGrid_mod
         use filename_mod
         implicit none
         character(*), intent(in) :: path
-        integer II,NC,JB, n_unit, num_cells, NCMAX
+        integer II,NA,JB, n_unit, num_cells, NCMAX
         character(len_trim(path)+20) FNAME
                 
         FNAME = trim(path)//adjacencyFileName
 
         print*, 'READ:', FNAME
 
-        num_cells = size(NEXT_CELL(:,:), dim=2)
-        NCMAX = size(NEXT_CELL(:,:), dim=1)
+        num_cells = size(CELLs)
+        NCMAX = 5   !size(NEXT_CELL(:,:), dim=1)
 
         open(newunit=n_unit, FILE=FNAME, STATUS='replace')
             write(n_unit,*) num_cells
             write(n_unit,*) NCMAX
 
             DO II = 1, num_cells
-                write(n_unit,'(I5)',advance='no') NUM_NC(II)
-                DO NC = 1, NUM_NC(II)
-                    write(n_unit,'(I12)',advance='no') NEXT_CELL(NC,II)
+                write(n_unit,'(I5)',advance='no') size(CELLs(II)%adjacentCellID)
+                DO NA = 1, size(CELLs(II)%adjacentCellID)
+                    write(n_unit,'(I12)',advance='no') CELLs(II)%adjacentCellID(NA)
                 END DO
                 write(n_unit,'()')
             END DO
 
             DO II = 1, num_cells
-                write(n_unit, fmt='(I4)', advance='no') NoB(II)  ! Number of Boundary
-                do JB = 1, NoB(II)
-                    write(n_unit, fmt='(I10)', advance='no') ICB(JB,II)
+                write(n_unit, fmt='(I4)', advance='no') size(CELLs(II)%boundFaceID)  ! Number of Boundary
+                do JB = 1, size(CELLs(II)%boundFaceID)
+                    write(n_unit, fmt='(I10)', advance='no') CELLs(II)%boundFaceID(JB)
                 end do
                 write(n_unit,'()')  !改行
             END DO
@@ -536,9 +453,9 @@ module unstructuredGrid_mod
         print*, 'READ:', FNAME
         open(newunit=n_unit, FILE=FNAME , STATUS='old')
             read(n_unit,*) JBMX
-            allocate(NBN(3,JBMX), source=-1)
+            allocate(BoundFACEs(JBMX))
             do JB = 1, JBMX
-                read(n_unit,*) NBN(1,JB), NBN(2,JB), NBN(3,JB)
+                read(n_unit,*) BoundFACEs(JB)%nodeID(:)
             end do
         close(n_unit)
         
@@ -553,41 +470,50 @@ module unstructuredGrid_mod
 
         FNAME = trim(path)//boundaryFileName
         print*, 'READ:', FNAME
-        JBMX = size(NBN(:,:), dim=2)
+        JBMX = size(BoundFACEs)
         open(newunit=n_unit, FILE=FNAME , STATUS='replace')
             write(n_unit,*) JBMX
             do JB = 1, JBMX
-                write(n_unit,*) NBN(1,JB), NBN(2,JB), NBN(3,JB)
+                write(n_unit,*) BoundFACEs(JB)%nodeID(:)
             end do
         close(n_unit)
         
     end subroutine output_boundaries
 
-    subroutine set_nodeID_onBoundFace(nodeID_onBoundFace)
-        integer, intent(in) :: nodeID_onBoundFace(:,:)
+    ! subroutine set_nodeID_onBoundFace(nodeID_onBoundFace)
+    !     integer, intent(in) :: nodeID_onBoundFace(:,:)
+    !     integer i, num_BF
 
-        NBN = nodeID_onBoundFace
-    end subroutine set_nodeID_onBoundFace
+    !     num_BF = size(nodeID_onBoundFace, dim=2)
+    !     allocate(BoundFACEs(num_BF))
 
-    subroutine set_adjacency(num_adjacent, adjacentCellID)
-        integer, intent(in) :: num_adjacent(:), adjacentCellID(:,:)
+    !     do i = 1, num_BF
+    !         BoundFACEs(i)%nodeID = nodeID_onBoundFace(:,i)
+    !     end do
+    ! end subroutine set_nodeID_onBoundFace
 
-        NUM_NC = num_adjacent
-        NEXT_CELL = adjacentCellID
-    end subroutine set_adjacency
+    ! subroutine set_adjacency(num_adjacent, adjacentCellID)
+    !     integer, intent(in) :: num_adjacent(:), adjacentCellID(:,:)
+    !     integer i, num_cell
 
+    !     num_cell = size(CELLs)
+    !     do i = 1, num_cell
+    !         CELLs(i)%adjacentCellID = adjacentCellID(1:num_adjacent(i), i)
+    !     end do
+
+    ! end subroutine set_adjacency
 
     integer function nearest_cell(X) !最も近いセルNCNの探索
-        double precision, intent(in) :: X(3)
+        real, intent(in) :: X(3)
         integer II, IIMX
-        double precision, allocatable :: distance(:)
+        real, allocatable :: distance(:)
 
-        IIMX = size(CENC, dim=2)
+        IIMX = size(CELLs)
         allocate(distance(IIMX))
 
         !$omp parallel do
         DO II = 1,IIMX
-                distance(II) = norm2(CENC(:,II) - X(:))
+            distance(II) = norm2(CELLs(II)%center(:) - X(:))
         END DO
         !$omp end parallel do 
         
@@ -597,161 +523,186 @@ module unstructuredGrid_mod
 
     integer function nearer_cell(X, NCN)  !近セルの探索（隣接セルから）
         integer, intent(in) :: NCN
-        double precision, intent(in) :: X(3)
-        integer NC, IIaround, index_min
-        double precision :: distancecheck(2)
-        double precision, allocatable :: distance(:)
+        real, intent(in) :: X(3)
+        integer NA, IIaround
+        real distance, distance_min
+        logical update
 
         nearer_cell = NCN
-        allocate(distance(size(NEXT_CELL(:,:), dim=1)))
-        distancecheck(1) = norm2(CENC(:,nearer_cell)-X(:))   !注目セル重心と粒子との距離
-        
-        check:DO
-                distance(:) = 1.0d10     !初期値はなるべく大きくとる
-        
-                DO NC = 1, NUM_NC(nearer_cell)  !全隣接セルに対してループ。
-                    IIaround = NEXT_CELL(NC, nearer_cell)       !現時点で近いとされるセルの隣接セルのひとつに注目
-                    IF (IIaround > 0) then
-                            distance(NC) = norm2(CENC(:,IIaround)-X(:))   !注目セル重心と粒子との距離を距離配列に代入
-                    END IF
-        
-                END DO
-        
-                distancecheck(2) = minval(distance,dim=1)     !距離配列の最小値
-        
-                if(distancecheck(2) < distancecheck(1)) then !より近いセルの発見で条件満足
-                    distancecheck(1) = distancecheck(2)    !最小値の更新
-                    index_min = minloc(distance,dim=1)            !最小値のインデックス
-                    nearer_cell = NEXT_CELL(index_min, nearer_cell)    !現時点で近いとされるセルの更新
-                    if(nearer_cell==0) then
-                            print*,'nearer_cell_error', nearer_cell, X(:)
-                            return
+        distance_min = norm2(CELLs(nearer_cell)%center(:) - X(:))   !注目セル重心と粒子との距離
+        update = .true.
+        do while(update)    !更新が起こり続ける限り繰り返し
+            update = .false.
+            do NA = 1, size(CELLs(nearer_cell)%adjacentCellID)  !全隣接セルに対してループ。
+                IIaround = CELLs(nearer_cell)%adjacentCellID(NA)  !現時点で近いとされるセルの隣接セルのひとつに注目
+                if (IIaround > 0) then
+                    distance = norm2(CELLs(IIaround)%center(:) - X(:))   !注目セル重心と粒子との距離を距離配列に代入
+                    if(distance < distance_min) then
+                        nearer_cell = IIaround
+                        distance_min = distance
+                        update = .true.
                     end if
-
-                else  !より近いセルを発見できなかった場合
-        
-                    exit check     !ループ脱出
-        
                 end if
+            end do
+        end do
         
-        END DO check
+        ! check:DO
+        !     distance(:) = 1.0d10     !初期値はなるべく大きくとる
+    
+        !     DO NA = 1, size(CELLs(nearer_cell)%adjacentCellID)  !全隣接セルに対してループ。
+        !         IIaround = CELLs(nearer_cell)%adjacentCellID(NA)  !現時点で近いとされるセルの隣接セルのひとつに注目
+        !         IF (IIaround > 0) distance(NA) = norm2(CENC(:,IIaround)-X(:))   !注目セル重心と粒子との距離を距離配列に代入
+        !     END DO
+    
+        !     distancecheck(2) = minval(distance,dim=1)     !距離配列の最小値
+    
+        !     if(distancecheck(2) < distancecheck(1)) then !より近いセルの発見で条件満足
+        !         distancecheck(1) = distancecheck(2)    !最小値の更新
+        !         index_min = minloc(distance,dim=1)            !最小値のインデックス
+        !         nearer_cell = NEXT_CELL(index_min, nearer_cell)    !現時点で近いとされるセルの更新
+        !         if(nearer_cell==0) then
+        !             print*,'nearer_cell_error', nearer_cell, X(:)
+        !             return
+        !         end if
+
+        !     else  !より近いセルを発見できなかった場合
+    
+        !         exit check     !ループ脱出
+    
+        !     end if
+        
+        ! END DO check
         
     end function nearer_cell
 
     logical function nearcell_check(X, NCN)
-        double precision, intent(in) :: X(3)
+        real, intent(in) :: X(3)
         integer, intent(in) :: NCN
-        double precision :: distance
+        real :: distance
 
-        distance = norm2(X(:)-CENC(:,NCN))
+        distance = norm2(X(:) - CELLs(NCN)%center(:))
 
-        if (distance < 1.0d1*WIDC(NCN)) then
+        if (distance < 1.0d1*CELLs(NCN)%width) then
             nearcell_check = .True.
         else
             nearcell_check = .False.
+            print*, 'false', distance, CELLs(NCN)%width
         end if
-
 
     end function nearcell_check
                      
-    subroutine boundary_setting !全境界面に対して外向き法線ベクトルと重心を算出
-        integer II, JJ, JB, IIMX, JBMX
-        double precision :: a(3), b(3), r(3), norm, inner
-        double precision, allocatable :: CENF_pre(:,:)
+    subroutine boundary_setting(first) !全境界面に対して外向き法線ベクトルと重心を算出
+        logical, intent(in) :: first
+        integer II, JJ, JB, IIMX, JBMX, nodeID(3)
+        real :: a(3), b(3), r(3), norm, inner
+        type(boundFace_t), allocatable :: BoundFACEs_pre(:)
 
-        if(.not.allocated(NoB)) return
+        if(.not.allocated(BoundFACEs)) return
 
-        IIMX = size(ICN(:,:), dim=2)
+        IIMX = size(CELLs)
 
-        if(.not.allocated(CENF)) then
-            JBMX = size(NBN(:,:), dim=2)
-            allocate(CENF(3,JBMX), NVECF(3,JBMX))
-        else
-            allocate(CENF_pre, source=CENF)
-        end if
+        if(.not.first) BoundFACEs_pre = BoundFACEs
         
         print*, 'SET:boundary'
         
         do II = 1, IIMX
             
-            do JJ = 1, NoB(II)
-                JB = ICB(JJ,II)
+            do JJ = 1, size(CELLs(II)%boundFaceID)
+                JB = CELLs(II)%boundFaceID(JJ)
+                nodeID(:) = BoundFACEs(JB)%nodeID(:)
                 
-                CENF(:,JB) = (CDN(:,NBN(1,JB)) + CDN(:,NBN(2,JB)) + CDN(:,NBN(3,JB)))/3.0d0
+                BoundFACEs(JB)%center(:) = ( NODEs(nodeID(1))%coordinate(:) &
+                                            + NODEs(nodeID(2))%coordinate(:) &
+                                            + NODEs(nodeID(3))%coordinate(:) ) / 3.0
             
-                a(:) =  CDN(:,NBN(2,JB)) - CDN(:,NBN(1,JB))
-                b(:) =  CDN(:,NBN(3,JB)) - CDN(:,NBN(1,JB))
+                a(:) =  NODEs(nodeID(2))%coordinate(:) - NODEs(nodeID(1))%coordinate(:)
+                b(:) =  NODEs(nodeID(3))%coordinate(:) - NODEs(nodeID(1))%coordinate(:)
             
-                NVECF(1,JB) = a(2)*b(3) - a(3)*b(2)  !外積
-                NVECF(2,JB) = a(3)*b(1) - a(1)*b(3)
-                NVECF(3,JB) = a(1)*b(2) - a(2)*b(1)
+                BoundFACEs(JB)%normalVector(1) = a(2)*b(3) - a(3)*b(2)  !外積
+                BoundFACEs(JB)%normalVector(2) = a(3)*b(1) - a(1)*b(3)
+                BoundFACEs(JB)%normalVector(3) = a(1)*b(2) - a(2)*b(1)
             
-                norm = norm2(NVECF(:,JB))
+                norm = norm2(BoundFACEs(JB)%normalVector(:))
             
-                r(:) = CENC(:,II) - CENF(:,JB)  !面重心からセル重心へのベクトル
+                r(:) = CELLs(II)%center(:) - BoundFACEs(JB)%center(:)  !面重心からセル重心へのベクトル
             
-                inner = sum(NVECF(:,JB)*r(:))
+                inner = sum(BoundFACEs(JB)%normalVector(:)*r(:))
             
-                if (inner > 0.0d0) norm = norm * (-1.0d0) !内積が正なら内向きなので、外に向けるべくノルムを負に
+                if(inner > 0.0) norm = norm * (-1.0) !内積が正なら内向きなので、外に向けるべくノルムを負に
             
-                NVECF(:,JB) = NVECF(:,JB) / norm !ノルムで割り算して単位ベクトルに
+                BoundFACEs(JB)%normalVector(:) = BoundFACEs(JB)%normalVector(:) / norm !ノルムで割り算して単位ベクトルに
         
+                ! print*,'center:',BoundFACEs(JB)%center(:)
+                ! print*,'n_vector:',BoundFACEs(JB)%normalVector(:)
             end do
         
         end do
 
-        if(allocated(CENF_pre)) MOVF = CENF - CENF_pre  !自動割付
+        if(.not.first) then
+            JBMX = size(BoundFACEs)
+            do JB = 1, JBMX
+                BoundFACEs(JB)%moveVector(:) = BoundFACEs(JB)%center(:) - BoundFACEs_pre(JB)%center(:)
+            end do
+        end if
 
     end subroutine boundary_setting
 
-    subroutine point2cell(pointdata, celldata, cell2node, celltype)
-        implicit none
-        double precision, intent(in) :: pointdata(:,:)
-        double precision, intent(inout) :: celldata(:,:)
-        integer, intent(in) :: cell2node(:,:), celltype(:)
-        integer II
+    subroutine point2cellVelocity(pointVector)
+        real, intent(in) :: pointVector(:,:)
+        integer II, IIMX, n, ID, num_node
+
+        IIMX = size(CELLs)
+        DO II = 1, IIMX
+            CELLs(II)%flowVelocity(:) = 0.0
+            num_node = size(CELLs(II)%nodeID)
+            do n = 1, num_node
+                ID = CELLs(II)%nodeID(n)
+                CELLs(II)%flowVelocity(:) = CELLs(II)%flowVelocity(:) + pointVector(:,ID)
+            end do
+            CELLs(II)%flowVelocity(:) = CELLs(II)%flowVelocity(:) / num_node
+        END DO
   
-        do II = 1, size(celldata, dim=2)   !点データをセルデータに変換
+        ! do II = 1, size(celldata, dim=2)   !点データをセルデータに変換
               
-            IF (celltype(II)==0) THEN
+        !     IF (celltype(II)==0) THEN
   
-                celldata(:,II) = 0.25d0*(pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) &
-                    + pointdata(:, cell2node(3,II)) + pointdata(:, cell2node(4,II)))
+        !         celldata(:,II) = 0.25d0*(pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) &
+        !             + pointdata(:, cell2node(3,II)) + pointdata(:, cell2node(4,II)))
   
-            ELSE IF (celltype(II)==1) THEN
+        !     ELSE IF (celltype(II)==1) THEN
   
-                celldata(:,II) = (pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) + pointdata(:, cell2node(3,II)) &
-                    + pointdata(:, cell2node(4,II)) + pointdata(:, cell2node(5,II)) + pointdata(:, cell2node(6,II))) / 6.0d0
+        !         celldata(:,II) = (pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) + pointdata(:, cell2node(3,II)) &
+        !             + pointdata(:, cell2node(4,II)) + pointdata(:, cell2node(5,II)) + pointdata(:, cell2node(6,II))) / 6.0d0
   
-            ELSE IF (celltype(II)==2) THEN
+        !     ELSE IF (celltype(II)==2) THEN
   
-                celldata(:,II) = 0.20d0*(pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) &
-                    + pointdata(:, cell2node(3,II)) + pointdata(:, cell2node(4,II)) + pointdata(:, cell2node(5,II)))
+        !         celldata(:,II) = 0.20d0*(pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) &
+        !             + pointdata(:, cell2node(3,II)) + pointdata(:, cell2node(4,II)) + pointdata(:, cell2node(5,II)))
   
-            END IF
+        !     END IF
   
-        end do
+        ! end do
   
-    end subroutine point2cell
+    end subroutine point2cellVelocity
 
     integer function get_mesh_info(name)
         character(*), intent(in) :: name
         
         select case(name)
             case('node')
-                get_mesh_info = size(CDN(:,:), dim = 2)
+                get_mesh_info = size(NODEs)
 
             case('cell')
-                get_mesh_info = size(ICN(:,:), dim = 2)
+                get_mesh_info = size(CELLs)
 
             case('tetra')
-                get_mesh_info = count(CELL_TYPE == 0)
+                get_mesh_info = count(CELLs(:)%typeName == 'tetra')
 
             case('prism')
-                get_mesh_info = count(CELL_TYPE == 1)
+                get_mesh_info = count(CELLs(:)%typeName == 'prism')
 
             case('pyramid')
-                get_mesh_info = count(CELL_TYPE == 2)
+                get_mesh_info = count(CELLs(:)%typeName == 'pyrmd')
 
             case default
                 get_mesh_info = 0
@@ -760,15 +711,13 @@ module unstructuredGrid_mod
 
     end function get_mesh_info
       
-    subroutine deallocation_flow
+    subroutine deallocation_unstructuredGRID
+        use vtkMesh_operator_m
 
-        if(allocated(CDN)) deallocate(CDN, ICN, CELL_TYPE, VELC)
-        if(allocated(NEXT_CELL)) deallocate(NEXT_CELL, NUM_NC)
-        if(allocated(NoB)) deallocate(NoB, ICB)
-        if(allocated(NBN)) deallocate(NBN)
-        if(allocated(CENF)) deallocate(CENF, NVECF)
-        if(allocated(CENC)) deallocate(CENC, WIDC)
-
-    end subroutine deallocation_flow
+        deallocate(CELLs)
+        deallocate(NODEs)
+        deallocate(BoundFACEs)
+        if(FILE_TYPE=='VTK') call deallocation_VTK
+    end subroutine deallocation_unstructuredGRID
     
 end module unstructuredGrid_mod
