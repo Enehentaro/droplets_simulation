@@ -413,7 +413,7 @@ module unstructuredGrid_mod
                 
         FNAME = trim(path)//adjacencyFileName
 
-        print*, 'READ:', FNAME
+        print*, 'OUTPUT:', FNAME
 
         num_cells = size(CELLs)
         NCMAX = 5   !size(NEXT_CELL(:,:), dim=1)
@@ -469,7 +469,7 @@ module unstructuredGrid_mod
         character(len_trim(path)+20) FNAME
 
         FNAME = trim(path)//boundaryFileName
-        print*, 'READ:', FNAME
+        print*, 'OUTPUT:', FNAME
         JBMX = size(BoundFACEs)
         open(newunit=n_unit, FILE=FNAME , STATUS='replace')
             write(n_unit,*) JBMX

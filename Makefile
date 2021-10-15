@@ -18,7 +18,7 @@ OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o stl_reader.o a
 SRCDIR    = src
 OBJDIR    = obj
 OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
-MODDIR = ${OBJDIR}
+MODDIR = ${SRCDIR}
 
 $(PROGRAM): $(OBJECTS)
 	$(FC) -o $@ $^
