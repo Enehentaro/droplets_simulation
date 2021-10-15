@@ -9,7 +9,7 @@ PROGRAM MAIN
       use case_list_m
       implicit none
 
-      character(7), parameter :: OS = 'Windows'
+      character(7), parameter :: OS = 'Linux'
 
       integer, pointer :: n => n_time
       integer nc, nc_max
