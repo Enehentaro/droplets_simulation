@@ -5,7 +5,7 @@ module drop_motion_mod
 
     type virus_droplet
         double precision :: coordinate(3), velocity(3)=0.d0
-        double precision radius, radius_min
+        double precision radius, radius_min, death_param
         integer :: status=0, bound_adhes=0
         type(reference_cell_t) ref_cell
     end type virus_droplet
@@ -13,9 +13,9 @@ module drop_motion_mod
     type(virus_droplet), allocatable :: droplets(:)
     type(virus_droplet), allocatable, private :: droplets_ini(:)
 
-    type, extends(virus_droplet) :: vd_extracted
-        integer original_ID
-    end type
+    ! type, extends(virus_droplet) :: vd_extracted
+    !     integer original_ID
+    ! end type
 
     integer, private :: num_droplets   !全飛沫数
     integer interval
@@ -45,6 +45,7 @@ module drop_motion_mod
             call random_set  !実行時刻に応じた乱数シード設定
             call calc_initial_position
             call calc_initial_radius
+            call set_death_param
 
         else if(num_restart==-1) then
             droplets_ini = read_droplet_VTK('initial_distribution.vtk') !自動割付
@@ -249,6 +250,19 @@ module drop_motion_mod
 
     end subroutine calc_initial_position
 
+    subroutine set_death_param
+        integer i, num_drop
+        double precision randble
+
+        num_drop = size(droplets_ini)
+
+        do i = 1, num_drop
+            call random_number(randble)
+            droplets_ini(i)%death_param = randble
+        end do
+
+    end subroutine set_death_param
+
     subroutine initialization_droplet
         implicit none
         character(99) fname
@@ -278,27 +292,36 @@ module drop_motion_mod
 
     subroutine survival_check
         integer vfloat, vn
-        double precision rand
-        double precision, save :: death_rate = 0.d0
+        ! double precision rand
+        ! double precision, save :: death_rate = 0.d0
             
         vfloat = count(droplets(:)%status == 0)
         if(vfloat == 0) then
             print*, 'No Droplet is Floating', n_time
             return  !浮遊数がゼロならリターン
         end if
-        death_rate = death_rate + dble(vfloat)*(survival_rate(n_time) - survival_rate(n_time+1))    !このステップで死滅すべき飛沫数
-        
-        do while(death_rate >= 1.0d0)
-            call random_number(rand)    !死滅IDは乱数で決まる
-            vn = int(num_droplets*rand)
-            if (droplets(vn)%status == 0) then !浮遊粒子からのみ除去する
-                droplets(vn)%status = -1
-                ! droplets(vn)%coordinate(:) = MIN_CDN(:) - 1.0d0 !計算エリア外に配置（不要かも）
-                droplets(vn)%velocity(:) = 0.0d0
-                death_rate = death_rate - 1.0d0
 
+        do vn = 1, num_droplets
+            if ((droplets(vn)%status == 0).and.(droplets(vn)%death_param > survival_rate(n_time))) then
+                droplets(vn)%status = -1
+                droplets(vn)%velocity(:) = 0.0d0
             end if
         end do
+
+        ! death_rate = death_rate + dble(vfloat)*(survival_rate(n_time) - survival_rate(n_time+1))    !このステップで死滅すべき飛沫数
+        
+        ! do while(death_rate >= 1.0d0)
+        !     call random_number(rand)    !死滅IDは乱数で決まる
+        !     vn = int(num_droplets*rand)
+        !     if(vn < 1) cycle
+        !     if (droplets(vn)%status == 0) then !浮遊粒子からのみ除去する
+        !         droplets(vn)%status = -1
+        !         ! droplets(vn)%coordinate(:) = MIN_CDN(:) - 1.0d0 !計算エリア外に配置（不要かも）
+        !         droplets(vn)%velocity(:) = 0.0d0
+        !         death_rate = death_rate - 1.0d0
+
+        !     end if
+        ! end do
       
     end subroutine survival_check
 
@@ -349,10 +372,7 @@ module drop_motion_mod
         call search_ref_cell(real(X(:)), droplets(vn)%ref_cell%ID, first)
 
         RefC = droplets(vn)%ref_cell
-        if(first) then
-            droplets(:)%ref_cell = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
-            first = .false.
-        end if
+        if(first) droplets(:)%ref_cell = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
 
         stopflag = adhesion_check(vn, RefC%ID)
 
@@ -378,10 +398,7 @@ module drop_motion_mod
         call search_ref_cell_onCUBE(real(X(:)), droplets(vn)%ref_cell, first)
 
         RefC = droplets(vn)%ref_cell
-        if(first) then
-            droplets(:)%ref_cell = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
-            first = .false.
-        end if
+        if(first) droplets(:)%ref_cell = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
 
         stopflag = adhesion_check_onSTL(real(droplets(vn)%coordinate(:)))
 
@@ -568,30 +585,29 @@ module drop_motion_mod
           
     end subroutine random_set
 
-    function get_floating_droplets(droplets_in) result(floating_droplets)
-        implicit none
-        type(virus_droplet), intent(in) :: droplets_in(:)
-        type(vd_extracted), allocatable :: floating_droplets(:)
-        integer i, j, num_floating
+    ! function get_floating_droplets(droplets_in) result(floating_droplets)
+    !     implicit none
+    !     type(virus_droplet), intent(in) :: droplets_in(:)
+    !     type(vd_extracted), allocatable :: floating_droplets(:)
+    !     integer i, j, num_floating
 
-        num_floating = count(droplets_in(:)%status==0)
-        allocate(floating_droplets(num_floating))
+    !     num_floating = count(droplets_in(:)%status==0)
+    !     allocate(floating_droplets(num_floating))
 
-        j = 0
-        do i =  1, size(droplets_in(:))
-            if(droplets_in(i)%status==0) then
-                j = j + 1
-                floating_droplets(j)%virus_droplet = droplets_in(i)
-                floating_droplets(j)%original_ID = i
-            end if
-        end do
+    !     j = 0
+    !     do i =  1, size(droplets_in(:))
+    !         if(droplets_in(i)%status==0) then
+    !             j = j + 1
+    !             floating_droplets(j)%virus_droplet = droplets_in(i)
+    !             floating_droplets(j)%original_ID = i
+    !         end if
+    !     end do
 
-    end function get_floating_droplets
+    ! end function get_floating_droplets
 
     subroutine coalescence_check
-        integer d1, d2, num_floating, i, i_origin
+        integer d1, d2
         integer, save :: last_coalescence = 0
-        type(vd_extracted), allocatable :: floatings(:)
         double precision :: distance, r1, r2
 
         if(last_coalescence == 0) last_coalescence = n_time
@@ -600,25 +616,22 @@ module drop_motion_mod
 
         print*, 'Coalescence_check', n_time
 
-        floatings = get_floating_droplets(droplets(:))
-        num_floating = size(floatings(:))
+        drop1 : do d1 = 1, num_droplets - 1
+            if(droplets(d1)%status/=0) cycle drop1
 
-        drop1 : do d1 = 1, num_floating - 1
-            if(floatings(d1)%status/=0) cycle drop1
+            drop2 : do d2 = d1 + 1, num_droplets
+                if(droplets(d2)%status/=0) cycle drop2
 
-            drop2 : do d2 = d1 + 1, num_floating
-                if(floatings(d2)%status/=0) cycle drop2
-
-                distance = norm2(floatings(d2)%coordinate(:) - floatings(d1)%coordinate(:))
-                r1 = floatings(d1)%radius
-                r2 = floatings(d2)%radius
+                distance = norm2(droplets(d2)%coordinate(:) - droplets(d1)%coordinate(:))
+                r1 = droplets(d1)%radius
+                r2 = droplets(d2)%radius
 
                 if((r1+r2) >= distance) then
                     print*, 'Coalescence', d1, d2
                     if(r1 >= r2) then
-                        call coalescence(floatings(d1)%virus_droplet, floatings(d2)%virus_droplet)
+                        call coalescence(droplets(d1), droplets(d2))
                     else
-                        call coalescence(floatings(d2)%virus_droplet, floatings(d1)%virus_droplet)
+                        call coalescence(droplets(d2), droplets(d1))
                     end if
                     last_coalescence = n_time
 
@@ -627,11 +640,6 @@ module drop_motion_mod
             end do drop2
 
         end do drop1
-
-        do i = 1, num_floating
-            i_origin = floatings(i)%original_ID
-            droplets(i_origin) = floatings(i)%virus_droplet
-        end do
 
     end subroutine coalescence_check
 

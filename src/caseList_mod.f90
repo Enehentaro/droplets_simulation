@@ -6,8 +6,11 @@ module case_list_m
     contains
 
     subroutine case_check(num_case)
+        use filename_mod
         character(30) case_name
         integer, intent(out) :: num_case
+        integer i
+        logical existance
 
         print*, 'Case Name ?'
         read(5, *) case_name
@@ -19,6 +22,14 @@ module case_list_m
             allocate(case_list(1))
             case_list(1) = case_name
         end if
+
+        do i = 1, num_case
+            inquire(file=trim(case_list(i))//'/'//conditionFName, exist=existance)
+            if(.not.existance) then
+                print*, 'Case : ', trim(case_list(i)), ' is not found.'
+                stop
+            end if
+        end do
 
     end subroutine case_check
 

@@ -171,7 +171,6 @@ module flow_field
             print*, 'FirstNCN:', reference_cell
     
         else
-            reference_cell%ID = reference_cell%ID
             reference_cell%nodeID(:) = nearer_node(X, reference_cell%nodeID, reference_cell%ID)
             first = .false.
             if (.not.nearNode_check(X, reference_cell%nodeID, reference_cell%ID)) then
