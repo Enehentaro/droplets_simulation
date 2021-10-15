@@ -263,7 +263,7 @@ module unstructuredGrid_mod
             select case(CELL_TYPE2(II))
                 case(0)
                     CELLs(II)%nodeID = ICN2(1:4, II)
-                    CELLs(II)%typeName = 'tatra'
+                    CELLs(II)%typeName = 'tetra'
                 case(1)
                     CELLs(II)%nodeID = ICN2(1:6, II)
                     CELLs(II)%typeName = 'prism'
@@ -301,7 +301,7 @@ module unstructuredGrid_mod
                 num_node = ietyp(II)-30
                 select case(num_node)
                     case(4)
-                        CELLs%typeName = 'tatra'
+                        CELLs%typeName = 'tetra'
                     case(6)
                         CELLs%typeName = 'prism'
                     case(5)
@@ -524,7 +524,7 @@ module unstructuredGrid_mod
     integer function nearer_cell(X, NCN)  !近セルの探索（隣接セルから）
         integer, intent(in) :: NCN
         real, intent(in) :: X(3)
-        integer NA, IIaround
+        integer NA, featuredCELL, adjacentCELL
         real distance, distance_min
         logical update
 
@@ -533,17 +533,23 @@ module unstructuredGrid_mod
         update = .true.
         do while(update)    !更新が起こり続ける限り繰り返し
             update = .false.
-            do NA = 1, size(CELLs(nearer_cell)%adjacentCellID)  !全隣接セルに対してループ。
-                IIaround = CELLs(nearer_cell)%adjacentCellID(NA)  !現時点で近いとされるセルの隣接セルのひとつに注目
-                if (IIaround > 0) then
-                    distance = norm2(CELLs(IIaround)%center(:) - X(:))   !注目セル重心と粒子との距離を距離配列に代入
-                    if(distance < distance_min) then
-                        nearer_cell = IIaround
-                        distance_min = distance
-                        update = .true.
-                    end if
+            featuredCELL = nearer_cell
+
+            checkAdjacent : do NA = 1, size(CELLs(featuredCELL)%adjacentCellID)  !全隣接セルに対してループ。
+
+                adjacentCELL = CELLs(featuredCELL)%adjacentCellID(NA)  !注目セルの隣接セルのひとつに注目
+                if (adjacentCELL <= 0) cycle checkAdjacent
+
+                distance = norm2(CELLs(adjacentCELL)%center(:) - X(:))   !注目セル重心と粒子との距離
+                if(distance < distance_min) then
+                    nearer_cell = adjacentCELL
+                    distance_min = distance
+                    update = .true.
+
                 end if
-            end do
+
+            end do checkAdjacent
+
         end do
         
         ! check:DO

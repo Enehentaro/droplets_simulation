@@ -1,7 +1,11 @@
 PROGRAM = droplet
 
-FC = gfortran
-FCFLAGS = -O -fbacktrace -g
+FC = ifort
+FCFLAGS = -traceback -CB -g -O0
+# FCFLAGS = -qopenmp
+
+# FC = gfortran
+# FCFLAGS = -O -fbacktrace -g
 # FCFLAGS = -Wall -fbounds-check -O -Wuninitialized -fbacktrace -g
 
 FCCOMPILE = ${FC} ${FCFLAGS}
@@ -20,10 +24,13 @@ $(PROGRAM): $(OBJECTS)
 	$(FC) -o $@ $^
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
-	$(FCCOMPILE) -o $@ -c $<
-# $(FCCOMPILE) -o $@ -c $< -module $(MODDIR)
+	@if [ ! -d $(OBJDIR) ]; then \
+		mkdir -p $(OBJDIR); \
+	fi
+	$(FCCOMPILE) -o $@ -c $< -module $(MODDIR)
+# $(FCCOMPILE) -o $@ -c $<
 
 clean:
-	- del /Q ${OBJDIR}\*.o *.mod *.exe
+	- rm -f -r $(OBJDIR) $(SRCDIR)/*.mod $(PROGRAM)
+# - del /Q ${OBJDIR}\*.o *.mod *.exe
 # - del *.o *.mod *.exe
-# - rm -f *.o *~ *.mod
