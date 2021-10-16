@@ -33,7 +33,7 @@ PROGRAM MAIN
             
             call first_setting                        !条件TXTの読み込み、飛沫初期分布の計算など
 
-            call initialization_droplet         !初期状態を代入
+            call set_initialDroplet         !初期状態を代入
 
             call check_point                    !計算条件の確認および時刻計測のためのチェックポイント
 

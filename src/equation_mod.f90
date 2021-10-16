@@ -147,6 +147,7 @@ module equation_mod
     
     double precision function survival_rate(step)
         integer, intent(in) :: step
+        double precision time
 
         !このへんはインフルエンザのデータ（現在不使用）
         ! if(RH == 80)then  !　相対湿度80%の時使用
@@ -157,8 +158,9 @@ module equation_mod
         !     survival_rate = 0.86d0*0.9240d0**(((L_represent/U_represent)*dt*dble(step-1))/3600.0d0)
         ! end if
 
+        time = dimensional_time(step)
         !新型コロナウイルス（1.1時間で半減）(論文によると、湿度30,60,90%のときのデータしかない)
-        survival_rate = 0.999825d0**((L_represent/U_represent) * delta_t * dble(step-1))
+        survival_rate = 0.999825d0**(time)
     end function survival_rate
 
     double precision function representative_value(name)
