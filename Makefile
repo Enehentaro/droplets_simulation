@@ -32,6 +32,6 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 # $(FCCOMPILE) -o $@ -c $<
 
 clean:
-	- rm -f -r $(OBJDIR) $(SRCDIR)/*.mod $(PROGRAM)
+	- rm -f -r $(OBJDIR) $(SRCDIR)/*.mod *.mod $(PROGRAM)
 # - del /Q ${OBJDIR}\*.o *.mod *.exe
 # - del *.o *.mod *.exe

@@ -6,7 +6,7 @@ module equation_mod
 
     double precision, parameter :: Rho_represent = 1.205d0          ! 空気の密度[kg/m3]
     double precision, parameter :: Mu_represent = 1.822d-5          ! 空気の粘性係数[kg/m3]
-    double precision, parameter :: Rho_d = 0.99822d0*1.0d3          ! 飛沫（水）の密度[kg/m3]
+    double precision, parameter :: Rho_d = 0.99822d3          ! 飛沫（水）の密度[kg/m3]
 
     double precision, private :: coeff_drdt !半径変化率の無次元係数
     double precision, private :: gumma      !密度比（空気密度 / 飛沫(水)密度）

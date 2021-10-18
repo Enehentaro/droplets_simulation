@@ -288,7 +288,7 @@ module unstructuredGrid_mod
             IIMX = size(ietyp)
   
             do II = 1, IIMX
-                if(mod(II, 1000) == 0) print*, II, '/', IIMX
+                if(mod(II, 10000) == 0) print*, II, '/', IIMX
   
                 num_node = ietyp(II)-30
                 select case(num_node)
