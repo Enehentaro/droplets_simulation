@@ -1,21 +1,15 @@
 module drop_motion_mod
     use flow_field
+    use virusDroplet_m
     use equation_mod
     implicit none
 
-    type virus_droplet
-        double precision :: coordinate(3), velocity(3)=0.d0
-        double precision radius, radius_min, death_param
-        integer :: status=0, bound_adhes=0
-        type(reference_cell_t) ref_cell
-    end type virus_droplet
+    type, extends(virusDroplet_t) :: Droplet_onFlow
+        integer :: adhesBoundID = 0
+        type(reference_cell_t) refCELL
+    end type Droplet_onFlow
 
-    type(virus_droplet), allocatable :: droplets(:)
-    type(virus_droplet), allocatable, private :: droplets_ini(:)
-
-    ! type, extends(virus_droplet) :: vd_extracted
-    !     integer original_ID
-    ! end type
+    type(Droplet_onFlow), allocatable :: droplets(:)
 
     integer, private :: num_droplets   !全飛沫数
     integer interval
@@ -43,19 +37,19 @@ module drop_motion_mod
         if(num_restart==0) then
             
             call random_set  !実行時刻に応じた乱数シード設定
-            call calc_initial_position
+            call calc_initial_position(path%DIR)
             call calc_initial_radius
             call set_death_param
 
         else if(num_restart==-1) then
-            droplets_ini = read_droplet_VTK('initial_distribution.vtk') !自動割付
+            call read_initialDistribution
 
         else
             return  !リスタートなら無視
 
         end if
 
-        droplets_ini(:)%radius_min = get_minimum_radius(droplets_ini(:)%radius, RH) !最小半径の計算
+        call calc_minimumRadius(RH) !最小半径の計算
 
     end subroutine first_setting
 
@@ -112,7 +106,7 @@ module drop_motion_mod
 
         Rdt = dt/DTa                       !データ読み込み時に時間軸合わせるパラメータ
 
-        if(num_restart == 0) allocate(droplets_ini(num_drop)) !通常実行なら割付
+        if(num_restart == 0) call allocation_initialDroplets(num_drop) !通常実行なら割付
 
         if(num_restart > 0) then
             print*, 'Restart from', num_restart
@@ -143,129 +137,10 @@ module drop_motion_mod
 
     end subroutine read_and_set_condition
 
-    subroutine calc_initial_radius
-        use csv_reader
-        integer vn, i, num_drop
-        double precision, allocatable :: threshold(:,:)
-        integer, allocatable :: rad_cnt(:)
-        double precision :: radius_dim(size(droplets_ini))
-        real(8) random_rad
-
-        num_drop = size(droplets_ini)
-        call read_CSV('data/radius_distribution.csv', threshold)
-        ! threshold = read_csv_dble('radius_distribution.csv')
-
-        allocate(rad_cnt(size(threshold, dim=2)), source=0)
-
-        do vn = 1, num_drop                       !飛沫半径の分布を乱数によって与える
-
-            call random_number(random_rad)
-
-            do i = 1, size(threshold, dim=2)
-                if(random_rad < threshold(2, i)) then
-                    radius_dim(vn) = threshold(1, i) * 1.0d-6
-                    rad_cnt(i) = rad_cnt(i) + 1
-                    exit
-                end if
-            end do
-
-        end do
-
-        droplets_ini(:)%radius = radius_dim(:) / representative_value('Length') !初期飛沫半径のセットおよび無次元化
-
-        if (sum(rad_cnt) /= num_drop) then
-            print*, 'random_rad_ERROR', sum(rad_cnt), num_drop
-            stop
-        end if
-
-        do i = 1, size(rad_cnt)
-            print*,'rad_cnt(', threshold(1, i), ') =', rad_cnt(i)
-        end do
-
-    end subroutine calc_initial_radius
-
-    subroutine calc_initial_position
-        use csv_reader
-        use filename_mod
-        integer kx,ky,kz, num_per_edge, num_per_box, m, k, k_end, cnt
-        integer i_box, num_box, num_drop
-        double precision :: standard(3), delta(3), width(3), randble(3)
-        double precision, allocatable :: position_mat(:,:)
-        
-        num_drop = size(droplets_ini)
-
-        call read_CSV(trim(path%DIR)//IniPositionFName, position_mat)
-
-        num_box = size(position_mat, dim=2)
-
-        num_per_box = num_drop / num_box
-        
-        print*, 'calc_initial_position'
-
-        m = 1
-        do while(num_box*(m**3) < num_drop)
-            m = m + 1
-        end do
-        num_per_edge = m - 1    !配置帯一辺当たりの飛沫数
-
-        k = 0
-        cnt = 0
-        do i_box = 1, num_box
-  
-            width(:) = position_mat(4:6, i_box)
-            standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
-            delta(:) = width(:) / dble(num_per_edge - 1)
-
-            do kx = 1, num_per_edge
-
-                do ky = 1, num_per_edge
-
-                    do kz = 1, num_per_edge
-
-                        k = k + 1
-                        droplets_ini(k)%coordinate(1) = standard(1) + delta(1)*dble(kx - 1)
-                        droplets_ini(k)%coordinate(2) = standard(2) + delta(2)*dble(ky - 1)
-                        droplets_ini(k)%coordinate(3) = standard(3) + delta(3)*dble(kz - 1)
-                        
-                    end do
-
-                end do
-
-            end do
-
-            k_end = i_box * num_per_box
-            if(i_box == num_box) k_end = num_drop
-
-            do while(k < k_end)
-                k = k + 1
-                call random_number(randble(:))
-                droplets_ini(k)%coordinate(:) = standard(:) + width(:)*randble(:)
-            end do
-
-            print*, 'BOX', i_box, 'has', k - cnt, 'droplets.'
-
-            cnt = k
-
-        end do
-
-    end subroutine calc_initial_position
-
-    subroutine set_death_param
-        integer i, num_drop
-        double precision randble
-
-        num_drop = size(droplets_ini)
-
-        do i = 1, num_drop
-            call random_number(randble)
-            droplets_ini(i)%death_param = randble
-        end do
-
-    end subroutine set_death_param
-
-    subroutine initialization_droplet
+    subroutine set_initialDroplet
         implicit none
         character(99) fname
+        type(virusDroplet_t), allocatable :: droplets_ini(:)
 
         if(num_restart > 0) then
 
@@ -278,7 +153,9 @@ module drop_motion_mod
             n_time = n_start
 
         else
-            droplets = droplets_ini !自動割付
+            droplets_ini = get_initialState_of_droplets()
+            allocate(droplets(size(droplets_ini)))
+            droplets(:)%virusDroplet_t = droplets_ini(:)
             n_start = 0
             n_time = n_start
             call output_droplet  !リスタートでないなら初期配置出力
@@ -288,7 +165,7 @@ module drop_motion_mod
         num_droplets = size(droplets)
         print*, 'num_droplets =', num_droplets
             
-    end subroutine initialization_droplet
+    end subroutine set_initialDroplet
 
     subroutine survival_check
         integer vfloat, vn
@@ -316,7 +193,7 @@ module drop_motion_mod
         !     if(vn < 1) cycle
         !     if (droplets(vn)%status == 0) then !浮遊粒子からのみ除去する
         !         droplets(vn)%status = -1
-        !         ! droplets(vn)%coordinate(:) = MIN_CDN(:) - 1.0d0 !計算エリア外に配置（不要かも）
+        !         ! droplets(vn)%position(:) = MIN_CDN(:) - 1.0d0 !計算エリア外に配置（不要かも）
         !         droplets(vn)%velocity(:) = 0.0d0
         !         death_rate = death_rate - 1.0d0
 
@@ -361,76 +238,76 @@ module drop_motion_mod
 
     subroutine motion_calc(vn)
         integer, intent(in) :: vn
-        double precision  :: X(3), V(3), vel_air(3)
-        type(reference_cell_t) :: RefC
-        logical stopflag
-        logical first
+        double precision  :: X(3), velAir(3)
+        integer RefCellID
+        logical stopflag, first
     
-        X(:) = droplets(vn)%coordinate(:)
-        V(:) = droplets(vn)%velocity(:)
+        X(:) = droplets(vn)%position(:)
 
-        call search_ref_cell(real(X(:)), droplets(vn)%ref_cell%ID, first)
+        call search_refCELL(real(X(:)), droplets(vn)%refCELL%ID, first)
 
-        RefC = droplets(vn)%ref_cell
-        if(first) droplets(:)%ref_cell = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
+        RefCellID = droplets(vn)%refCELL%ID
+        if(first) then
+            block
+                integer i
 
-        stopflag = adhesion_check(vn, RefC%ID)
+                do i = 1, size(leaderID) - 1
+                    if(vn == leaderID(i)) &
+                        droplets(leaderID(i):leaderID(i+1)-1)%refCELL%ID = RefCellID !時間短縮を図る
+                end do
+            end block
+           
+        end if
+
+        stopflag = adhesion_check(vn, RefCellID)
 
         call area_check(X(:), stopflag)
 
-        vel_air(:) = CELLs(RefC%ID)%flowVelocity(:)
+        velAir(:) = CELLs(RefCellID)%flowVelocity(:)
     
-        droplets(vn) = motion_result(droplets(vn), vel_air, stopflag)
+        call calc_motionResult(droplets(vn)%virusDroplet_t, velAir, stopflag)
         
     end subroutine motion_calc
 
     subroutine motion_calc_onCUBE(vn)
         use adhesion_onSTL_m
         integer, intent(in) :: vn
-        double precision  :: X(3), V(3), vel_air(3)
+        double precision  :: X(3), velAir(3)
         type(reference_cell_t) :: RefC
-        logical stopflag
-        logical first
+        logical stopflag, first
     
-        X(:) = droplets(vn)%coordinate(:)
-        V(:) = droplets(vn)%velocity(:)
+        X(:) = droplets(vn)%position(:)
 
-        call search_ref_cell_onCUBE(real(X(:)), droplets(vn)%ref_cell, first)
+        call search_refCELL_onCUBE(real(X(:)), droplets(vn)%refCELL, first)
 
-        RefC = droplets(vn)%ref_cell
-        if(first) droplets(:)%ref_cell = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
+        RefC = droplets(vn)%refCELL
+        if(first) droplets(:)%refCELL = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
 
-        stopflag = adhesion_check_onSTL(real(droplets(vn)%coordinate(:)))
+        stopflag = adhesion_check_onSTL(real(droplets(vn)%position(:)))
 
         call area_check(X(:), stopflag)
 
-        vel_air(:) = get_velocity_f(RefC%nodeID, RefC%ID)
+        velAir(:) = get_velocity_f(RefC%nodeID, RefC%ID)
 
-        droplets(vn) = motion_result(droplets(vn), vel_air, stopflag)
+        call calc_motionResult(droplets(vn)%virusDroplet_t, velAir, stopflag)
     
     end subroutine motion_calc_onCUBE
 
-    function motion_result(drop_p, Va, stopflag) result(drop_n)
-        type(virus_droplet), intent(in) :: drop_p
+    subroutine calc_motionResult(droplet, Va, stopflag)
+        type(virusDroplet_t), intent(inout) :: droplet
         double precision, intent(in) :: Va(3)
         logical, intent(in) :: stopflag
-        type(virus_droplet) drop_n
-
-        drop_n = drop_p
 
         if (stopflag) then
-            drop_n%status = 1
-            drop_n%velocity(:) = 0.0d0     !速度をゼロに
+            droplet%status = 1
+            droplet%velocity(:) = 0.0d0     !速度をゼロに
     
         else
-
-            drop_n%velocity(:) = motion_eq(drop_p%velocity, Va(:), drop_p%radius)
-            
-            drop_n%coordinate(:) = next_position(drop_p%coordinate, drop_p%velocity, drop_n%velocity(:))
+            call solve_motionEquation(droplet%position(:), droplet%velocity(:), Va(:), droplet%radius)
             
         end if
 
-    end function motion_result
+    end subroutine calc_motionResult
                     
     logical function adhesion_check(vn, NCN)
         integer JJ, JB
@@ -442,13 +319,13 @@ module drop_motion_mod
         do JJ = 1, size(CELLs(NCN)%boundFaceID)
             JB = CELLs(NCN)%boundFaceID(JJ)
 
-            r_vector(:) = droplets(vn)%coordinate(:) - BoundFACEs(JB)%center(:)
+            r_vector(:) = droplets(vn)%position(:) - BoundFACEs(JB)%center(:)
 
             inner = sum(r_vector(:)*BoundFACEs(JB)%normalVector(:))
 
             if (inner > 0.0d0) then
                 adhesion_check = .true. !外向き法線ベクトルと位置ベクトルの内積が正なら付着判定
-                droplets(vn)%bound_adhes = JB     !付着した境界面番号
+                droplets(vn)%adhesBoundID = JB     !付着した境界面番号
             end if
         end do
 
@@ -507,12 +384,12 @@ module drop_motion_mod
         
             if (droplets(vn)%status <= 0) cycle !付着していないならスルー
     
-            JB = droplets(vn)%bound_adhes
+            JB = droplets(vn)%adhesBoundID
             if (JB > 0) then
-                droplets(vn)%coordinate(:) &
-                    = droplets(vn)%coordinate(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
+                droplets(vn)%position(:) &
+                    = droplets(vn)%position(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
             else
-                call area_check(droplets(vn)%coordinate(:))
+                call area_check(droplets(vn)%position(:))
     
             end if
         
@@ -567,44 +444,6 @@ module drop_motion_mod
 
     end function drop_counter
 
-    subroutine random_set    !実行時刻に依存した乱数シードを指定する
-        implicit none
-        integer :: seedsize, i
-        integer, allocatable :: seed(:)
-
-        print*, 'call:random_set'
-    
-        call random_seed(size=seedsize) !シードのサイズを取得。（コンパイラごとに異なるらしい）
-        allocate(seed(seedsize)) !新シード配列サイズの割り当て
-    
-        do i = 1, seedsize
-            call system_clock(count=seed(i)) !時間を新シード配列に取得
-        end do
-    
-        call random_seed(put=seed(:)) !新シードを指定
-          
-    end subroutine random_set
-
-    ! function get_floating_droplets(droplets_in) result(floating_droplets)
-    !     implicit none
-    !     type(virus_droplet), intent(in) :: droplets_in(:)
-    !     type(vd_extracted), allocatable :: floating_droplets(:)
-    !     integer i, j, num_floating
-
-    !     num_floating = count(droplets_in(:)%status==0)
-    !     allocate(floating_droplets(num_floating))
-
-    !     j = 0
-    !     do i =  1, size(droplets_in(:))
-    !         if(droplets_in(i)%status==0) then
-    !             j = j + 1
-    !             floating_droplets(j)%virus_droplet = droplets_in(i)
-    !             floating_droplets(j)%original_ID = i
-    !         end if
-    !     end do
-
-    ! end function get_floating_droplets
-
     subroutine coalescence_check
         integer d1, d2
         integer, save :: last_coalescence = 0
@@ -622,16 +461,16 @@ module drop_motion_mod
             drop2 : do d2 = d1 + 1, num_droplets
                 if(droplets(d2)%status/=0) cycle drop2
 
-                distance = norm2(droplets(d2)%coordinate(:) - droplets(d1)%coordinate(:))
+                distance = norm2(droplets(d2)%position(:) - droplets(d1)%position(:))
                 r1 = droplets(d1)%radius
                 r2 = droplets(d2)%radius
 
                 if((r1+r2) >= distance) then
                     print*, 'Coalescence', d1, d2
                     if(r1 >= r2) then
-                        call coalescence(droplets(d1), droplets(d2))
+                        call coalescence(droplets(d1)%virusDroplet_t, droplets(d2)%virusDroplet_t)
                     else
-                        call coalescence(droplets(d2), droplets(d1))
+                        call coalescence(droplets(d2)%virusDroplet_t, droplets(d1)%virusDroplet_t)
                     end if
                     last_coalescence = n_time
 
@@ -644,7 +483,7 @@ module drop_motion_mod
     end subroutine coalescence_check
 
     subroutine coalescence(droplet1, droplet2)
-        type(virus_droplet), intent(inout) :: droplet1, droplet2
+        type(virusDroplet_t), intent(inout) :: droplet1, droplet2
         double precision :: radius_c, volume1, volume2, velocity_c(3)
 
         volume1 = droplet1%radius**3
@@ -661,15 +500,22 @@ module drop_motion_mod
     end subroutine coalescence
 
     subroutine output_droplet
-        call output_droplet_VTK
-        call output_droplet_CSV
+        character(99) fname
+        character(4) :: head_out = 'drop'
+
+        write(fname,'("'//path%VTK//trim(head_out)//'",i8.8,".vtk")') n_time
+        call output_droplet_VTK(fname, droplets(:)%virusDroplet_t)
+
+        fname = path%DIR//'/particle.csv'
+        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, n_time)
+
         call output_backup
     end subroutine
 
     function read_backup(fname) result(droplets_read)
         implicit none
         character(*), intent(in) :: fname
-        type(virus_droplet), allocatable :: droplets_read(:)
+        type(Droplet_onFlow), allocatable :: droplets_read(:)
         integer i, n_unit, num_drop
     
         print*, 'READ:', fname
@@ -701,142 +547,9 @@ module drop_motion_mod
             end do
         close(n_unit)
 
-        print*, 'writeOUT:', fname
+        print*, 'writeOUT:', trim(fname)
 
     end subroutine output_backup
-
-    function read_droplet_VTK(fname) result(droplets_read)
-        implicit none
-        character(*), intent(in) :: fname
-        type(virus_droplet), allocatable :: droplets_read(:)
-        double precision, allocatable :: diameter(:)
-        integer vn, n_unit, num_drop
-        character(10) str
-    
-        print*, 'READ:', fname
-        open(newunit=n_unit, file=fname, status='old')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit, *) str, num_drop
-
-            allocate(droplets_read(num_drop), diameter(num_drop))
-
-            DO vn = 1, num_drop
-                read(n_unit, *) droplets_read(vn)%coordinate(:)
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO vn = 1, num_drop
-                read(n_unit,'()')
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO vn = 1, num_drop
-                read(n_unit,'()')
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO vn = 1, num_drop
-                read(n_unit, *) diameter(vn)
-            END DO
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO vn = 1, num_drop
-                read(n_unit,'(I12)') droplets_read(vn)%status
-            END DO
-            read(n_unit,'()')
-            DO vn = 1, num_drop
-                read(n_unit, *) droplets_read(vn)%velocity(:)
-            END DO
-        close(n_unit)
-    
-        droplets_read(:)%radius = diameter(:) * 0.5d0
-      
-    end function read_droplet_VTK
-
-    subroutine output_droplet_VTK
-        implicit none
-        integer vn, n_unit, num_drop
-        character(99) fname
-        character(4) ::  head_out = 'drop'
-
-
-        num_drop = size(droplets)
-        write(fname,'("'//path%VTK//trim(head_out)//'",i8.8,".vtk")') n_time
-
-        !=======ここから飛沫データ（VTKファイル）の出力===========================
-        open(newunit=n_unit, file=fname, status='replace')                                             !ここで出力ファイルを指定
-            write(n_unit,'(A)') '# vtk DataFile Version 2.0'                                !ファイルの始め4行は文字列（決まり文句）
-            write(n_unit,'(A)') 'FOR TEST'
-            write(n_unit,'(A)') 'ASCII'
-            write(n_unit,'(A)') 'DATASET UNSTRUCTURED_GRID'
-            write(n_unit,'(A,I12,A)') 'POINTS ', num_drop,' float'                              !節点の数
-            DO vn = 1, num_drop                                                            !節点の数だけループ
-                write(n_unit,'(3(f20.15,2X))') droplets(vn)%coordinate(:)   !節点の座標（左から順にx,y,z）
-            END DO
-            write(n_unit,'()')                                                              !改行
-            write(n_unit,'(A,I12,2X,I12)') 'CELLS ', num_drop, num_drop*2                          !セルの数、セルの数×2
-            DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(2(I12,2X))')  1, vn-1                                          !まずセルを構成する点の数（セル形状が点なので1）、その点のID
-            END DO
-            write(n_unit,'()')                                                              !改行
-            write(n_unit,'(A,I12)') 'CELL_TYPES', num_drop
-            DO vn = 1, num_drop                                                           !セルの数だけループ
-                write(n_unit,'(I12)') 1                                                        !セルの形状（1は点であることを意味する）
-            END DO
-            write(n_unit,'()')                                                              !改行
-            write(n_unit,'(A,I12)') 'CELL_DATA ', num_drop                                      !ここからセルのデータという合図、セルの数
-            write(n_unit,'(A)') 'SCALARS Diameter float'                                  !まずは飛沫の直径
-            write(n_unit,'(A)') 'LOOKUP_TABLE default'
-            DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(f20.15)') droplets(vn)%radius*2.0d0                            !飛沫の直径
-            END DO
-            write(n_unit,'(A)') 'SCALARS Status int'                                   !次は飛沫の状態(0:浮遊、1:付着、2:回収)
-            write(n_unit,'(A)') 'LOOKUP_TABLE default'
-            DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(I12)') droplets(vn)%status                                            !次は飛沫の状態(0:浮遊、1:付着、2:回収)
-            END DO
-            write(n_unit,'(A)') 'VECTORS Velocity float'                             !最後に飛沫の速度
-            DO vn = 1, num_drop                                                             !セルの数だけループ
-                write(n_unit,'(3(f20.15,2X))') droplets(vn)%velocity(:)               !飛沫の速度
-            END DO
-        close(n_unit)
-
-        print*, 'writeOUT:', fname
-
-        !=======飛沫データ（VTKファイル）の出力ここまで===========================
-    end subroutine output_droplet_VTK
-
-    subroutine output_droplet_CSV
-        implicit none
-        integer n_unit
-
-        !以下はCSVファイルの出力
-
-        if(n_time==0) then !初期ステップならファイル新規作成
-            open(newunit=n_unit, file=path%DIR//'/particle.csv', status='replace')
-            print*,'REPLACE:particle_data.csv'
-
-        else
-            open(newunit=n_unit, file=path%DIR//'/particle.csv'&
-                , action='write', status='old', position='append')
-
-        end if
-        
-            write(n_unit,*) dimensional_time(n_time), ',', count(droplets(:)%status==0), ',',&
-                count(droplets(:)%status==2), ',', count(droplets(:)%status==3)
-        close(n_unit)
-
-        ! if(count(adhesion==0) <= 0) then !浮遊粒子がなくなれば計算終了
-        !   print*,'all viruses terminated',N
-        !   STOP
-        ! end if
-
-    end subroutine output_droplet_CSV
 
     real function environment(name)
         character(*), intent(in) :: name
@@ -855,7 +568,6 @@ module drop_motion_mod
     subroutine deallocation_droplet
 
         deallocate(droplets)
-        if(allocated(droplets_ini)) deallocate(droplets_ini)
         
     end subroutine deallocation_droplet
 

@@ -28,10 +28,10 @@ module flow_field
         HEAD_AIR = FNAME_FMT(: i-1)             !ファイル名の接頭文字(最初のゼロの手前まで)
         FNAME_DIGITS = index(FNAME_FMT, '.') - i   !ファイル名の整数部桁数(最初のゼロの位置からドットまでの文字数)
         
-        if(index(FNAME_FMT, '.f') > 0) then
-            type_name = 'P3D'
+        i = len_trim(FNAME_FMT)
+        if(FNAME_FMT(i-1 : i) == '.f') then
             unstructuredGrid = .false.
-            print*, 'FILE_GRID : CUBE', trim(FNAME_FMT)
+            print*, 'FILE_GRID : [CUBE] ', trim(FNAME_FMT)
 
         else
             call check_FILE_TYPE(FNAME_FMT)
@@ -135,7 +135,7 @@ module flow_field
             
     end subroutine read_flow_data
 
-    subroutine search_ref_cell(X, reference_cell, first)
+    subroutine search_refCELL(X, reference_cell, first)
         real, intent(in) :: X(3)
         integer, intent(inout) :: reference_cell
         logical, intent(out) :: first
@@ -157,9 +157,9 @@ module flow_field
     
         end if
 
-    end subroutine search_ref_cell
+    end subroutine search_refCELL
 
-    subroutine search_ref_cell_onCUBE(X, reference_cell, first)
+    subroutine search_refCELL_onCUBE(X, reference_cell, first)
         real, intent(in) :: X(3)
         type(reference_cell_t), intent(inout) :: reference_cell
         logical, intent(out) :: first
@@ -180,7 +180,7 @@ module flow_field
     
         end if
 
-    end subroutine search_ref_cell_onCUBE
+    end subroutine search_refCELL_onCUBE
 
     subroutine deallocation_flow
         if(unstructuredGrid) then
