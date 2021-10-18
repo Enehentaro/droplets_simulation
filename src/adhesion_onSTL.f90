@@ -99,6 +99,7 @@ module adhesion_onSTL_m
 
             r_vec(:) = X(:) - faceShape(i)%nodes(1)%coordinate(:)  !点Aから飛沫への位置ベクトル
             inner = inner_product(r_vec, faceShape(i)%n_vector(:))    !位置ベクトルと法線ベクトルとの内積
+            if (abs(inner) > 1.0d-2) cycle
             AS(:) = r_vec(:) - inner * faceShape(i)%n_vector(:)  !位置ベクトルを面へ投影
             BS(:) = - faceShape(i)%AB(:) + AS(:)
             CS(:) = faceShape(i)%CA(:) + AS(:)
@@ -108,10 +109,7 @@ module adhesion_onSTL_m
 
             !三角形面の内部にあるか判定
             if((inner_product(Across, Bcross) > 0.0).and.(inner_product(Across, Ccross) > 0.0)) then
-                if (abs(inner) <= 1.0d-2) then
-                    print*, 'inner=', inner
-                    adhesion_check_onSTL = .true.
-                end if
+                adhesion_check_onSTL = .true.
             end if
 
         end do

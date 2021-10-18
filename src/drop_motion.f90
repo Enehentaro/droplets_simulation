@@ -15,11 +15,11 @@ module drop_motion_mod
     integer interval
     real, private :: T, RH
 
-    type path_drop_t
+    type pathCase_t
         character(:), allocatable :: DIR, VTK, backup
-    end type path_drop_t
+    end type pathCase_t
 
-    type(path_drop_t) path
+    type(pathCase_t) path
 
     integer, target :: n_time  !時間ステップ
     integer, private :: num_restart

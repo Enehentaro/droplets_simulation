@@ -45,6 +45,8 @@ PROGRAM MAIN
 
             DO n = n_start + 1, n_end           !ステップ数だけループ
 
+                  call management_droplet       !外部サブルーチンによる管理
+
                   call survival_check           !生存率に関する処理
 
                   call coalescence_check        !飛沫間の合体判定
