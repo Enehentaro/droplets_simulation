@@ -87,8 +87,8 @@ module unstructuredGrid_mod
             
     end subroutine read_unstructuredGrid_byNAME
 
-    subroutine read_unstructuredGrid_byNumber(path, digits_fmt, FNUM)
-        character(*), intent(in) :: path
+    subroutine read_unstructuredGrid_byNumber(path_and_head, digits_fmt, FNUM)
+        character(*), intent(in) :: path_and_head
         integer, intent(in) :: FNUM
         character(99) :: FNAME
         character(4) digits_fmt
@@ -96,38 +96,26 @@ module unstructuredGrid_mod
         select case(FILE_TYPE)
             case('VTK')
 
-                write(FNAME,'("'//trim(path)//'",'//digits_fmt//',".vtk")') FNUM
+                write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".vtk")') FNUM
                 call read_VTK(FNAME)
 
             case('INP')
 
                 if(FNUM==0) then
-                    write(FNAME,'("'//trim(path)//'",'//digits_fmt//',".inp")') 1
+                    write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".inp")') 1
                 else
-                    write(FNAME,'("'//trim(path)//'",'//digits_fmt//',".inp")') FNUM
+                    write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".inp")') FNUM
                 end if
 
                 call read_INP(FNAME)   !INPを読み込む(SHARP用)
 
             case('FLD')
-
-                if (FNUM <= 9) then
-                    write(FNAME,'("'//trim(path)//'",i1.1,".fld")') FNUM
-
-                else if (FNUM <= 99) then
-                    write(FNAME,'("'//trim(path)//'",i2.2,".fld")') FNUM
-
-                else if(FNUM <= 999) then
-                    write(FNAME,'("'//trim(path)//'",i3.3,".fld")') FNUM
-
-                else if(FNUM <= 9999) then
-                    write(FNAME,'("'//trim(path)//'",i4.4,".fld")') FNUM
-
-                else
-                    write(FNAME,'("'//trim(path)//'",i5.5,".fld")') FNUM
-
+                if(.not.allocated(CELLs).and.FNUM > 0) then
+                    write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') 0
+                    call read_FLD(FNAME)
                 end if
 
+                write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FNUM
                 call read_FLD(FNAME)
 
             case default
@@ -281,8 +269,10 @@ module unstructuredGrid_mod
         use mod_SctFldReader
         implicit none
         character(*), intent(in) :: FNAME
-        integer unit, II,KK,KK_beg,KK_end, num_node
+        integer unit, II,KK,KK_beg,KK_end, num_node, IIMX
         real, allocatable :: UVWK(:,:)
+
+        print*, 'readFLD : ', trim(FNAME)
 
   
         call open_readFLD(unit, FNAME)
@@ -295,17 +285,19 @@ module unstructuredGrid_mod
             allocate(NODEs(NNODS))
   
             KK_beg = 1
+            IIMX = size(ietyp)
   
-            do II = 1, size(ietyp)
+            do II = 1, IIMX
+                if(mod(II, 1000) == 0) print*, II, '/', IIMX
   
                 num_node = ietyp(II)-30
                 select case(num_node)
                     case(4)
-                        CELLs%typeName = 'tetra'
+                        CELLs(II)%typeName = 'tetra'
                     case(6)
-                        CELLs%typeName = 'prism'
+                        CELLs(II)%typeName = 'prism'
                     case(5)
-                        CELLs%typeName = 'pyrmd'
+                        CELLs(II)%typeName = 'pyrmd'
                 end select
 
                 allocate(CELLs(II)%nodeID(num_node))

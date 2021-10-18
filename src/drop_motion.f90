@@ -6,7 +6,7 @@ module drop_motion_mod
 
     type, extends(virusDroplet_t) :: Droplet_onFlow
         integer :: adhesBoundID = 0
-        type(reference_cell_t) ref_cell
+        type(reference_cell_t) refCELL
     end type Droplet_onFlow
 
     type(Droplet_onFlow), allocatable :: droplets(:)
@@ -193,7 +193,7 @@ module drop_motion_mod
         !     if(vn < 1) cycle
         !     if (droplets(vn)%status == 0) then !浮遊粒子からのみ除去する
         !         droplets(vn)%status = -1
-        !         ! droplets(vn)%coordinate(:) = MIN_CDN(:) - 1.0d0 !計算エリア外に配置（不要かも）
+        !         ! droplets(vn)%position(:) = MIN_CDN(:) - 1.0d0 !計算エリア外に配置（不要かも）
         !         droplets(vn)%velocity(:) = 0.0d0
         !         death_rate = death_rate - 1.0d0
 
@@ -238,76 +238,76 @@ module drop_motion_mod
 
     subroutine motion_calc(vn)
         integer, intent(in) :: vn
-        double precision  :: X(3), V(3), vel_air(3)
-        type(reference_cell_t) :: RefC
-        logical stopflag
-        logical first
+        double precision  :: X(3), velAir(3)
+        integer RefCellID
+        logical stopflag, first
     
-        X(:) = droplets(vn)%coordinate(:)
-        V(:) = droplets(vn)%velocity(:)
+        X(:) = droplets(vn)%position(:)
 
-        call search_ref_cell(real(X(:)), droplets(vn)%ref_cell%ID, first)
+        call search_refCELL(real(X(:)), droplets(vn)%refCELL%ID, first)
 
-        RefC = droplets(vn)%ref_cell
-        if(first) droplets(:)%ref_cell = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
+        RefCellID = droplets(vn)%refCELL%ID
+        if(first) then
+            block
+                integer i
 
-        stopflag = adhesion_check(vn, RefC%ID)
+                do i = 1, size(leaderID) - 1
+                    if(vn == leaderID(i)) &
+                        droplets(leaderID(i):leaderID(i+1)-1)%refCELL%ID = RefCellID !時間短縮を図る
+                end do
+            end block
+           
+        end if
+
+        stopflag = adhesion_check(vn, RefCellID)
 
         call area_check(X(:), stopflag)
 
-        vel_air(:) = CELLs(RefC%ID)%flowVelocity(:)
+        velAir(:) = CELLs(RefCellID)%flowVelocity(:)
     
-        droplets(vn)%virusDroplet_t = motion_result(droplets(vn)%virusDroplet_t, vel_air, stopflag)
+        call calc_motionResult(droplets(vn)%virusDroplet_t, velAir, stopflag)
         
     end subroutine motion_calc
 
     subroutine motion_calc_onCUBE(vn)
         use adhesion_onSTL_m
         integer, intent(in) :: vn
-        double precision  :: X(3), V(3), vel_air(3)
+        double precision  :: X(3), velAir(3)
         type(reference_cell_t) :: RefC
-        logical stopflag
-        logical first
+        logical stopflag, first
     
-        X(:) = droplets(vn)%coordinate(:)
-        V(:) = droplets(vn)%velocity(:)
+        X(:) = droplets(vn)%position(:)
 
-        call search_ref_cell_onCUBE(real(X(:)), droplets(vn)%ref_cell, first)
+        call search_refCELL_onCUBE(real(X(:)), droplets(vn)%refCELL, first)
 
-        RefC = droplets(vn)%ref_cell
-        if(first) droplets(:)%ref_cell = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
+        RefC = droplets(vn)%refCELL
+        if(first) droplets(:)%refCELL = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
 
-        stopflag = adhesion_check_onSTL(real(droplets(vn)%coordinate(:)))
+        stopflag = adhesion_check_onSTL(real(droplets(vn)%position(:)))
 
         call area_check(X(:), stopflag)
 
-        vel_air(:) = get_velocity_f(RefC%nodeID, RefC%ID)
+        velAir(:) = get_velocity_f(RefC%nodeID, RefC%ID)
 
-        droplets(vn)%virusDroplet_t = motion_result(droplets(vn)%virusDroplet_t, vel_air, stopflag)
+        call calc_motionResult(droplets(vn)%virusDroplet_t, velAir, stopflag)
     
     end subroutine motion_calc_onCUBE
 
-    function motion_result(drop_p, Va, stopflag) result(drop_n)
-        type(virusDroplet_t), intent(in) :: drop_p
+    subroutine calc_motionResult(droplet, Va, stopflag)
+        type(virusDroplet_t), intent(inout) :: droplet
         double precision, intent(in) :: Va(3)
         logical, intent(in) :: stopflag
-        type(virusDroplet_t) drop_n
-
-        drop_n = drop_p
 
         if (stopflag) then
-            drop_n%status = 1
-            drop_n%velocity(:) = 0.0d0     !速度をゼロに
+            droplet%status = 1
+            droplet%velocity(:) = 0.0d0     !速度をゼロに
     
         else
-
-            drop_n%velocity(:) = motion_eq(drop_p%velocity, Va(:), drop_p%radius)
-            
-            drop_n%coordinate(:) = next_position(drop_p%coordinate, drop_p%velocity, drop_n%velocity(:))
+            call solve_motionEquation(droplet%position(:), droplet%velocity(:), Va(:), droplet%radius)
             
         end if
 
-    end function motion_result
+    end subroutine calc_motionResult
                     
     logical function adhesion_check(vn, NCN)
         integer JJ, JB
@@ -319,7 +319,7 @@ module drop_motion_mod
         do JJ = 1, size(CELLs(NCN)%boundFaceID)
             JB = CELLs(NCN)%boundFaceID(JJ)
 
-            r_vector(:) = droplets(vn)%coordinate(:) - BoundFACEs(JB)%center(:)
+            r_vector(:) = droplets(vn)%position(:) - BoundFACEs(JB)%center(:)
 
             inner = sum(r_vector(:)*BoundFACEs(JB)%normalVector(:))
 
@@ -386,10 +386,10 @@ module drop_motion_mod
     
             JB = droplets(vn)%adhesBoundID
             if (JB > 0) then
-                droplets(vn)%coordinate(:) &
-                    = droplets(vn)%coordinate(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
+                droplets(vn)%position(:) &
+                    = droplets(vn)%position(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
             else
-                call area_check(droplets(vn)%coordinate(:))
+                call area_check(droplets(vn)%position(:))
     
             end if
         
@@ -461,7 +461,7 @@ module drop_motion_mod
             drop2 : do d2 = d1 + 1, num_droplets
                 if(droplets(d2)%status/=0) cycle drop2
 
-                distance = norm2(droplets(d2)%coordinate(:) - droplets(d1)%coordinate(:))
+                distance = norm2(droplets(d2)%position(:) - droplets(d1)%position(:))
                 r1 = droplets(d1)%radius
                 r2 = droplets(d2)%radius
 

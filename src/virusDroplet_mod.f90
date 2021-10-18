@@ -2,12 +2,14 @@ module virusDroplet_m
     implicit none
 
     type virusDroplet_t
-        double precision :: coordinate(3), velocity(3)=0.d0
+        double precision :: position(3), velocity(3)=0.d0
         double precision radius, radius_min, death_param
         integer :: status=0
     end type virusDroplet_t
 
     type(virusDroplet_t), allocatable, private :: droplets_ini(:)
+
+    integer, allocatable :: leaderID(:)
 
     contains
 
@@ -86,9 +88,13 @@ module virusDroplet_m
         end do
         num_per_edge = m - 1    !配置帯一辺当たりの飛沫数
 
-        k = 0
-        cnt = 0
+        if(allocated(leaderID)) deallocate(leaderID)
+        allocate(leaderID(num_box + 1))
+
+        k = 1
+        cnt = 1
         do i_box = 1, num_box
+            leaderID(i_box) = k
   
             width(:) = position_mat(4:6, i_box)
             standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
@@ -100,10 +106,10 @@ module virusDroplet_m
 
                     do kz = 1, num_per_edge
 
+                        droplets_ini(k)%position(1) = standard(1) + delta(1)*dble(kx - 1)
+                        droplets_ini(k)%position(2) = standard(2) + delta(2)*dble(ky - 1)
+                        droplets_ini(k)%position(3) = standard(3) + delta(3)*dble(kz - 1)
                         k = k + 1
-                        droplets_ini(k)%coordinate(1) = standard(1) + delta(1)*dble(kx - 1)
-                        droplets_ini(k)%coordinate(2) = standard(2) + delta(2)*dble(ky - 1)
-                        droplets_ini(k)%coordinate(3) = standard(3) + delta(3)*dble(kz - 1)
                         
                     end do
 
@@ -114,17 +120,19 @@ module virusDroplet_m
             k_end = i_box * num_per_box
             if(i_box == num_box) k_end = num_drop
 
-            do while(k < k_end)
-                k = k + 1
+            do while(k <= k_end)
                 call random_number(randble(:))
-                droplets_ini(k)%coordinate(:) = standard(:) + width(:)*randble(:)
+                droplets_ini(k)%position(:) = standard(:) + width(:)*randble(:)
+                k = k + 1
             end do
 
-            print*, 'BOX', i_box, 'has', k - cnt, 'droplets.'
+            print*, 'BOX', i_box, 'has', k - cnt, 'droplets. LeaderID:', leaderID(i_box)
 
             cnt = k
 
         end do
+
+        leaderID(num_box + 1) = num_drop + 1
 
     end subroutine calc_initial_position
 
@@ -199,7 +207,7 @@ module virusDroplet_m
             allocate(droplets_read(num_drop), diameter(num_drop))
 
             DO vn = 1, num_drop
-                read(n_unit, *) droplets_read(vn)%coordinate(:)
+                read(n_unit, *) droplets_read(vn)%position(:)
             END DO
             read(n_unit,'()')
             read(n_unit,'()')
@@ -248,7 +256,7 @@ module virusDroplet_m
             write(n_unit,'(A)') 'DATASET UNSTRUCTURED_GRID'
             write(n_unit,'(A,I12,A)') 'POINTS ', num_drop,' float'                              !節点の数
             DO vn = 1, num_drop                                                            !節点の数だけループ
-                write(n_unit,'(3(f20.15,2X))') droplets(vn)%coordinate(:)   !節点の座標（左から順にx,y,z）
+                write(n_unit,'(3(f20.15,2X))') droplets(vn)%position(:)   !節点の座標（左から順にx,y,z）
             END DO
             write(n_unit,'()')                                                              !改行
             write(n_unit,'(A,I12,2X,I12)') 'CELLS ', num_drop, num_drop*2                          !セルの数、セルの数×2

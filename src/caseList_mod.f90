@@ -26,7 +26,7 @@ module case_list_m
         do i = 1, num_case
             inquire(file=trim(case_list(i))//'/'//conditionFName, exist=existance)
             if(.not.existance) then
-                print*, 'Case : ', trim(case_list(i)), ' is not found.'
+                print*, 'Case:[ ', trim(case_list(i)), ' ] is not found.'
                 stop
             end if
         end do

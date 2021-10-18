@@ -41,15 +41,24 @@ module vtkMesh_operator_m
             read(n_unit,'()')
             read(n_unit, *) AAA,IIMX
             
-            if(.not.allocated(cell_array)) allocate(cell_array(0 : IIMX-1))
+            if(.not.allocated(cell_array)) then
+                allocate(cell_array(0 : IIMX-1))
    
-            DO II = 0, IIMX-1
-                read(n_unit, '(A)') str !一旦1行丸ごと読む
-                read(str, *) IIH
-                allocate(cell_array(II)%nodeID(IIH))
-                read(str, *) IIH, cell_array(II)%nodeID(:)
-                cell_array(II)%nodeID(:) = cell_array(II)%nodeID(:)
-            END DO
+                DO II = 0, IIMX-1
+                    read(n_unit, '(A)') str !一旦1行丸ごと読む
+                    read(str, *) IIH
+                    allocate(cell_array(II)%nodeID(IIH))
+                    read(str, *) IIH, cell_array(II)%nodeID(:)
+                    cell_array(II)%nodeID(:) = cell_array(II)%nodeID(:)
+                END DO
+
+            else
+                DO II = 0, IIMX-1
+                    read(n_unit, '()')
+                END DO
+                
+            end if
+
             read(n_unit,'()')
 
             read(n_unit,'()')  !CELL_TYPES
