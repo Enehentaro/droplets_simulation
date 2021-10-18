@@ -47,9 +47,9 @@ PROGRAM MAIN
 
                   call survival_check           !生存率に関する処理
 
-                  call Calculation_Droplets     !飛沫の運動計算
-
                   call coalescence_check        !飛沫間の合体判定
+
+                  call Calculation_Droplets     !飛沫の運動計算
 
                   if ((mod(n,interval) == 0)) call output             !出力
 

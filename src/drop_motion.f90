@@ -24,7 +24,6 @@ module drop_motion_mod
     integer, target :: n_time  !時間ステップ
     integer, private :: num_restart
     integer n_start, n_end
-    integer, private :: LoopS, LoopF, OFFSET
     double precision, private :: Rdt    !飛沫計算と気流計算の時間間隔の比
 
     contains
@@ -167,6 +166,37 @@ module drop_motion_mod
             
     end subroutine set_initialDroplet
 
+    subroutine first_refCELLserch
+        integer i, j, num_drop
+
+        num_drop = size(droplets)
+
+        if(unstructuredGrid) then
+            do i = 1, size(leaderID) - 1
+                j = leaderID(i)
+                call search_refCELL(real(droplets(j)%position(:)), droplets(j)%refCELL%ID)
+                droplets(leaderID(i)+1 : leaderID(i+1)-1)%refCELL%ID = droplets(j)%refCELL%ID !時間短縮を図る
+
+                do j = leaderID(i) + 1, leaderID(i+1) - 1
+                    call search_refCELL(real(droplets(j)%position(:)), droplets(j)%refCELL%ID)
+                end do
+            end do
+
+        else
+            do i = 1, size(leaderID) - 1
+                j = leaderID(i)
+                call search_refCELL_onCUBE(real(droplets(j)%position(:)), droplets(j)%refCELL)
+                droplets(leaderID(i)+1 : leaderID(i+1)-1)%refCELL = droplets(j)%refCELL !時間短縮を図る
+
+                do j = leaderID(i) + 1, leaderID(i+1) - 1
+                    call search_refCELL_onCUBE(real(droplets(j)%position(:)), droplets(j)%refCELL)
+                end do
+            end do
+
+        end if
+
+    end subroutine first_refCELLserch
+
     subroutine survival_check
         integer vfloat, vn
         ! double precision rand
@@ -244,20 +274,7 @@ module drop_motion_mod
     
         X(:) = droplets(vn)%position(:)
 
-        call search_refCELL(real(X(:)), droplets(vn)%refCELL%ID, first)
-
         RefCellID = droplets(vn)%refCELL%ID
-        if(first) then
-            block
-                integer i
-
-                do i = 1, size(leaderID) - 1
-                    if(vn == leaderID(i)) &
-                        droplets(leaderID(i):leaderID(i+1)-1)%refCELL%ID = RefCellID !時間短縮を図る
-                end do
-            end block
-           
-        end if
 
         stopflag = adhesion_check(vn, RefCellID)
 
@@ -266,6 +283,8 @@ module drop_motion_mod
         velAir(:) = CELLs(RefCellID)%flowVelocity(:)
     
         call calc_motionResult(droplets(vn)%virusDroplet_t, velAir, stopflag)
+
+        call search_refCELL(real(X(:)), droplets(vn)%refCELL%ID)
         
     end subroutine motion_calc
 
@@ -278,10 +297,7 @@ module drop_motion_mod
     
         X(:) = droplets(vn)%position(:)
 
-        call search_refCELL_onCUBE(real(X(:)), droplets(vn)%refCELL, first)
-
         RefC = droplets(vn)%refCELL
-        if(first) droplets(:)%refCELL = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
 
         stopflag = adhesion_check_onSTL(real(droplets(vn)%position(:)))
 
@@ -290,6 +306,8 @@ module drop_motion_mod
         velAir(:) = get_velocity_f(RefC%nodeID, RefC%ID)
 
         call calc_motionResult(droplets(vn)%virusDroplet_t, velAir, stopflag)
+
+        call search_refCELL_onCUBE(real(X(:)), droplets(vn)%refCELL)
     
     end subroutine motion_calc_onCUBE
 
@@ -331,17 +349,16 @@ module drop_motion_mod
 
     end function adhesion_check
 
-    integer function get_num_air(n_virus)
-        integer, intent(in) :: n_virus
+    integer function get_flowStep()
         integer Lamda, Delta
 
-        get_num_air = int(dble(N_virus)*RDT) + OFFSET   !気流計算における経過ステップ数に相当
+        get_flowStep = int(dble(n_time)*RDT) + OFFSET   !気流計算における経過ステップ数に相当
 
         Lamda = LoopF - LoopS
         
-        if((Lamda > 0).and.(get_num_air > LoopF)) then
-            Delta = mod(get_num_air - LoopS, Lamda)
-            get_num_air = LoopS + Delta
+        if((Lamda > 0).and.(get_flowStep > LoopF)) then
+            Delta = mod(get_flowStep - LoopS, Lamda)
+            get_flowStep = LoopS + Delta
         end if
 
     end function
@@ -359,14 +376,24 @@ module drop_motion_mod
     end subroutine update_flow_check
 
     subroutine read_flow_field(first)
+        integer flowStep, FNUM
         logical, intent(in) :: first
-        integer FNUM
 
-        FNUM = get_num_air(n_time)
+        if(INTERVAL_FLOW <= 0) then
+            call read_steadyFlowData
+        else
+            flowStep = get_flowStep()
+            FNUM = get_FileNumber(flowStep)
+            call read_unsteadyFlowData(FNUM)
 
-        call read_flow_data(FNUM)
+        end if
 
-        if(first) call preprocess_onFlowField         !流れ場の前処理
+        call set_MinMaxCDN
+
+        if(first) then
+            call preprocess_onFlowField         !流れ場の前処理
+            if(n_start == 0) call first_refCELLserch
+        end if
 
         if(unstructuredGrid) then
             call boundary_setting(first)
