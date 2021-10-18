@@ -18,6 +18,10 @@ Simulation of Droplets Behavior in AFDET
   - ケースディレクトリ内の条件ファイルを編集
   - 「droplet」という実行ファイルを実行し、ケース名を入力して計算開始
 
+## 外部サブルーチン「management_droplet」
+  dropletManager.f90内で定義されているサブルーチン「management_droplet」は、毎ステップ呼び出される外部サブルーチンです。
+  自由に処理を追加することができます（例えば任意の範囲内にいる飛沫のカウントなど）。 ご利用ください。
+
 ## 方程式
 
   解くべき方程式は次の通り。  
