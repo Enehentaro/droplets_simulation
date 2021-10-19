@@ -308,7 +308,7 @@ module virusDroplet_m
         end if
         
             write(n_unit,*) dimensional_time(step), ',', count(droplets(:)%status==0), ',',&
-                count(droplets(:)%status==2), ',', count(droplets(:)%status==3)
+                count(droplets(:)%status==1), ',', count(droplets(:)%status==-1), ',', count(droplets(:)%status==-2)
         close(n_unit)
 
         ! if(count(adhesion==0) <= 0) then !浮遊粒子がなくなれば計算終了
