@@ -93,8 +93,8 @@ module vtkMesh_operator_m
             
     end subroutine read_VTK_mesh
 
-    subroutine output_VTK_mesh(FNAME)
-        character(*), intent(in) :: FNAME
+    subroutine output_VTK_mesh(FNAME, data)
+        character(*), intent(in) :: FNAME, data
         integer II,KK, n_unit, KKMX, IIMX, IITOTAL
 
         print*, 'OUTPUT_VTK:', FNAME
@@ -134,11 +134,20 @@ module vtkMesh_operator_m
             END DO
             write(n_unit,'()')
 
-            write(n_unit,'(A,I12)') 'CELL_DATA ', IIMX  
-            write(n_unit,'(A)') 'VECTORS Velocity float'    
-            DO II = 0, IIMX-1
-                write(n_unit,'(3(f20.15,2X))') cell_array(II)%vector(:)
-            END DO
+            write(n_unit,'(A,I12)') 'CELL_DATA ', IIMX
+            select case(data)
+                case('vector')
+                    write(n_unit,'(A)') 'VECTORS vector float'    
+                    DO II = 0, IIMX-1
+                        write(n_unit,'(3(f20.15,2X))') cell_array(II)%vector(:)
+                    END DO
+                case('scalar')
+                    write(n_unit, '(A)') 'SCALARS scalar float'
+                    write(n_unit, '(A)') 'LOOKUP_TABLE default'
+                    DO II = 0, IIMX-1
+                        write(n_unit,'(f20.10)') cell_array(II)%scalar
+                    END DO
+            end select
             
         close(n_unit)
             

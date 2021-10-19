@@ -33,6 +33,6 @@ program main
     end do
 
     i = len_trim(F_fname)
-    call output_VTK_mesh(F_fname(:i-2)//'.vtk')
+    call output_VTK_mesh(F_fname(:i-2)//'.vtk', data='vector')
     
 end program main
