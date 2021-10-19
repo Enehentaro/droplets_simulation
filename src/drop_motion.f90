@@ -328,6 +328,7 @@ module drop_motion_mod
     end subroutine calc_motionResult
                     
     logical function adhesion_check(vn, NCN)
+        use vector_m
         integer JJ, JB
         integer, intent(in) :: vn, NCN
         double precision :: r_vector(3), inner
@@ -339,7 +340,7 @@ module drop_motion_mod
 
             r_vector(:) = droplets(vn)%position(:) - BoundFACEs(JB)%center(:)
 
-            inner = sum(r_vector(:)*BoundFACEs(JB)%normalVector(:))
+            inner = dot_product(real(r_vector(:)), BoundFACEs(JB)%normalVector(:))
 
             if (inner > 0.0d0) then
                 adhesion_check = .true. !外向き法線ベクトルと位置ベクトルの内積が正なら付着判定

@@ -87,6 +87,7 @@ module adhesion_onSTL_m
     end subroutine set_faceShape
 
     logical function adhesion_check_onSTL(X)
+        use vector_m
         integer i, num_face
         real, intent(in) :: X(3)
         real r_vec(3), inner, AS(3), BS(3), CS(3), Across(3), Bcross(3), Ccross(3)
@@ -98,7 +99,7 @@ module adhesion_onSTL_m
         do i = 1, num_face
 
             r_vec(:) = X(:) - faceShape(i)%nodes(1)%coordinate(:)  !点Aから飛沫への位置ベクトル
-            inner = inner_product(r_vec, faceShape(i)%n_vector(:))    !位置ベクトルと法線ベクトルとの内積
+            inner = dot_product(r_vec, faceShape(i)%n_vector(:))    !位置ベクトルと法線ベクトルとの内積
             if (abs(inner) > 1.0d-2) cycle
             AS(:) = r_vec(:) - inner * faceShape(i)%n_vector(:)  !位置ベクトルを面へ投影
             BS(:) = - faceShape(i)%AB(:) + AS(:)
@@ -108,7 +109,7 @@ module adhesion_onSTL_m
             Ccross = cross_product(faceShape(i)%CA, CS)
 
             !三角形面の内部にあるか判定
-            if((inner_product(Across, Bcross) > 0.0).and.(inner_product(Across, Ccross) > 0.0)) then
+            if((dot_product(Across, Bcross) > 0.0).and.(dot_product(Across, Ccross) > 0.0)) then
                 adhesion_check_onSTL = .true.
             end if
 
@@ -116,23 +117,5 @@ module adhesion_onSTL_m
         !$OMP end parallel do
 
     end function adhesion_check_onSTL
-
-    function cross_product(a, b) result(cross)
-        real,intent(in) :: a(3), b(3)
-        real cross(3)
-
-        cross(1) = a(2)*b(3) - a(3)*b(2)
-        cross(2) = a(3)*b(1) - a(1)*b(3)
-        cross(3) = a(1)*b(2) - a(2)*b(1)
-
-    end function
-
-    function inner_product(a, b) result(inner)
-        real,intent(in) :: a(3), b(3)
-        real inner
-
-        inner = sum(a(:)*b(:))
-
-    end function
 
 end module adhesion_onSTL_m
