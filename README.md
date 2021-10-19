@@ -20,7 +20,7 @@ Simulation of Droplets Behavior in AFDET
 
 ## 外部サブルーチン「management_droplet」
   dropletManager.f90内で定義されているサブルーチン「management_droplet」は、毎ステップ呼び出される外部サブルーチンです。
-  自由に処理を追加することができます（例えば任意の範囲内にいる飛沫のカウントなど）。 ご利用ください。
+  自由に処理を追加することができます（例えば任意の範囲内にいる飛沫数のカウントなど）。 ご利用ください。
 
 ## 方程式
 
