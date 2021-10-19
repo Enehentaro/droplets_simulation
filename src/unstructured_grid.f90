@@ -590,6 +590,7 @@ module unstructuredGrid_mod
     end function nearcell_check
                      
     subroutine boundary_setting(first) !全境界面に対して外向き法線ベクトルと重心を算出
+        use vector_m
         logical, intent(in) :: first
         integer II, JJ, JB, IIMX, JBMX, nodeID(3)
         real :: a(3), b(3), r(3), norm, inner
@@ -624,7 +625,7 @@ module unstructuredGrid_mod
             
                 r(:) = CELLs(II)%center(:) - BoundFACEs(JB)%center(:)  !面重心からセル重心へのベクトル
             
-                inner = sum(BoundFACEs(JB)%normalVector(:)*r(:))
+                inner = dot_product(BoundFACEs(JB)%normalVector(:), r(:))
             
                 if(inner > 0.0) norm = norm * (-1.0) !内積が正なら内向きなので、外に向けるべくノルムを負に
             
