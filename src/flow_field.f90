@@ -21,7 +21,6 @@ module flow_field
     !***********************************************************************
     subroutine check_FILE_GRID
         integer i
-        character(3) type_name
 
         unstructuredGrid = .true.
 
@@ -78,7 +77,6 @@ module flow_field
 
     subroutine read_steadyFlowData
         character(99) FNAME
-        character(:),allocatable :: digits_fmt
 
         if(unstructuredGrid) then
             FNAME = trim(PATH_FlowDIR)//trim(FNAME_FMT)

@@ -19,7 +19,7 @@ OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o vector.o\
 SRCDIR    = src
 OBJDIR    = obj
 OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
-MODDIR = ${SRCDIR}
+MODDIR = ${OBJDIR}
 
 $(PROGRAM): $(OBJECTS)
 	$(FC) -o $@ $^
@@ -32,6 +32,6 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 # $(FCCOMPILE) -o $@ -c $<
 
 clean:
-	- rm -f -r $(OBJDIR) $(SRCDIR)/*.mod *.mod $(PROGRAM)
+	- rm -f $(PROGRAM) -r $(OBJDIR)
 # - del /Q ${OBJDIR}\*.o *.mod *.exe
 # - del *.o *.mod *.exe

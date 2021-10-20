@@ -13,11 +13,11 @@ module vector_m
 
     end function
 
-    function dot_product(a, b) result(inner)
-        real,intent(in) :: a(3), b(3)
-        real inner
+    ! function dot_product(a, b) result(inner)
+    !     real,intent(in) :: a(3), b(3)
+    !     real inner
 
-        inner = sum(a(:)*b(:))
+    !     inner = sum(a(:)*b(:))
 
-    end function
+    ! end function
 end module vector_m

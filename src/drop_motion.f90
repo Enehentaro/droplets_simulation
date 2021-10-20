@@ -197,6 +197,28 @@ module drop_motion_mod
 
     end subroutine first_refCELLserch
 
+    subroutine adhesion_check
+        use adhesion_onSTL_m
+        integer i
+        
+        if(unstructuredGrid) then
+            do i = 1, num_droplets
+                if(droplets(i)%status==0) then
+                    call adhesion_onBound(droplets(i))
+                    call area_check(droplets(i))
+                end if
+            end do
+        else
+            do i = 1, num_droplets
+                if(droplets(i)%status==0) then
+                    if(adhesion_onSTL(real(droplets(i)%position(:)))) call stop_droplet(droplets(i))
+                    call area_check(droplets(i))
+                end if
+            end do
+        end if
+
+    end subroutine adhesion_check
+
     subroutine survival_check
         integer vfloat, vn
         ! double precision rand
@@ -210,8 +232,7 @@ module drop_motion_mod
 
         do vn = 1, num_droplets
             if ((droplets(vn)%status == 0).and.(droplets(vn)%death_param > survival_rate(n_time))) then
-                droplets(vn)%status = -1
-                droplets(vn)%velocity(:) = 0.0d0
+                call stop_droplet(droplets(vn), status=-1)
             end if
         end do
 
@@ -268,87 +289,70 @@ module drop_motion_mod
 
     subroutine motion_calc(vn)
         integer, intent(in) :: vn
-        double precision  :: X(3), velAir(3)
-        integer RefCellID
-        logical stopflag, first
+        double precision velAir(3)
+
+        velAir(:) = CELLs(droplets(vn)%refCELL%ID)%flowVelocity(:)
     
-        X(:) = droplets(vn)%position(:)
+        call solve_motionEquation(droplets(vn)%position(:), droplets(vn)%velocity(:), velAir(:), droplets(vn)%radius)
 
-        RefCellID = droplets(vn)%refCELL%ID
-
-        stopflag = adhesion_check(vn, RefCellID)
-
-        call area_check(X(:), stopflag)
-
-        velAir(:) = CELLs(RefCellID)%flowVelocity(:)
-    
-        call calc_motionResult(droplets(vn)%virusDroplet_t, velAir, stopflag)
-
-        call search_refCELL(real(X(:)), droplets(vn)%refCELL%ID)
+        call search_refCELL(real(droplets(vn)%position(:)), droplets(vn)%refCELL%ID)
         
     end subroutine motion_calc
 
     subroutine motion_calc_onCUBE(vn)
-        use adhesion_onSTL_m
         integer, intent(in) :: vn
-        double precision  :: X(3), velAir(3)
+        double precision velAir(3)
         type(reference_cell_t) :: RefC
-        logical stopflag, first
-    
-        X(:) = droplets(vn)%position(:)
 
         RefC = droplets(vn)%refCELL
 
-        stopflag = adhesion_check_onSTL(real(droplets(vn)%position(:)))
-
-        call area_check(X(:), stopflag)
-
         velAir(:) = get_velocity_f(RefC%nodeID, RefC%ID)
 
-        call calc_motionResult(droplets(vn)%virusDroplet_t, velAir, stopflag)
+        call solve_motionEquation(droplets(vn)%position(:), droplets(vn)%velocity(:), velAir(:), droplets(vn)%radius)
 
-        call search_refCELL_onCUBE(real(X(:)), droplets(vn)%refCELL)
+        call search_refCELL_onCUBE(real(droplets(vn)%position(:)), droplets(vn)%refCELL)
     
     end subroutine motion_calc_onCUBE
-
-    subroutine calc_motionResult(droplet, Va, stopflag)
-        type(virusDroplet_t), intent(inout) :: droplet
-        double precision, intent(in) :: Va(3)
-        logical, intent(in) :: stopflag
-
-        if (stopflag) then
-            droplet%status = 1
-            droplet%velocity(:) = 0.0d0     !速度をゼロに
-    
-        else
-            call solve_motionEquation(droplet%position(:), droplet%velocity(:), Va(:), droplet%radius)
-            
-        end if
-
-    end subroutine calc_motionResult
                     
-    logical function adhesion_check(vn, NCN)
+    subroutine adhesion_onBound(droplet)
         use vector_m
-        integer JJ, JB
-        integer, intent(in) :: vn, NCN
+        type(Droplet_onFlow), intent(inout) :: droplet
+        integer JJ, JB, refCELL
+        logical adhesion
         double precision :: r_vector(3), inner
 
-        adhesion_check = .false.
+        refCELL = droplet%refCELL%ID
+        adhesion = .false.
 
-        do JJ = 1, size(CELLs(NCN)%boundFaceID)
-            JB = CELLs(NCN)%boundFaceID(JJ)
+        do JJ = 1, size(CELLs(refCELL)%boundFaceID)
+            JB = CELLs(refCELL)%boundFaceID(JJ)
 
-            r_vector(:) = droplets(vn)%position(:) - BoundFACEs(JB)%center(:)
+            r_vector(:) = droplet%position(:) - BoundFACEs(JB)%center(:)
 
             inner = dot_product(real(r_vector(:)), BoundFACEs(JB)%normalVector(:))
 
             if (inner > 0.0d0) then
-                adhesion_check = .true. !外向き法線ベクトルと位置ベクトルの内積が正なら付着判定
-                droplets(vn)%adhesBoundID = JB     !付着した境界面番号
+                adhesion = .true. !外向き法線ベクトルと位置ベクトルの内積が正なら付着判定
+                droplet%adhesBoundID = JB     !付着した境界面番号
             end if
         end do
 
-    end function adhesion_check
+        if (adhesion) call stop_droplet(droplet)
+
+    end subroutine adhesion_onBound
+
+    subroutine stop_droplet(droplet, status)
+        type(Droplet_onFlow), intent(inout) :: droplet
+        integer, optional :: status
+
+        droplet%velocity(:) = 0.0d0
+        if(present(status)) then
+            droplet%status = status
+        else
+            droplet%status = 1
+        end if
+
+    end subroutine stop_droplet
 
     integer function get_flowStep()
         integer Lamda, Delta
@@ -371,12 +375,12 @@ module drop_motion_mod
 
         Step_air = dble(n_time)*Rdt          !気流計算における経過ステップ数に相当
         if(mod(Step_air, dble(INTERVAL_FLOW)) == 0.d0) then
-            call read_flow_field(first=.false.)   !流れ場の更新
+            call update_FlowField(first=.false.)   !流れ場の更新
         end if
 
     end subroutine update_flow_check
 
-    subroutine read_flow_field(first)
+    subroutine update_FlowField(first)
         integer flowStep, FNUM
         logical, intent(in) :: first
 
@@ -401,7 +405,7 @@ module drop_motion_mod
             if(.not.first) call boundary_move
         end if
             
-    end subroutine read_flow_field
+    end subroutine update_FlowField
                       
     subroutine boundary_move !境界面の移動に合わせて付着飛沫も移動
         integer vn, JB
@@ -417,7 +421,7 @@ module drop_motion_mod
                 droplets(vn)%position(:) &
                     = droplets(vn)%position(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
             else
-                call area_check(droplets(vn)%position(:))
+                call area_check(droplets(vn))
     
             end if
         
@@ -427,22 +431,25 @@ module drop_motion_mod
 
     end subroutine boundary_move
 
-    subroutine area_check(x, check)
-        double precision, intent(inout) :: x(3)
-        logical,optional,intent(inout) :: check
+    subroutine area_check(droplet)
+        type(Droplet_onFlow), intent(inout) :: droplet
+        logical check
         integer L
 
+        check = .false.
         do L = 1, 3
     
-            if(x(L) < MIN_CDN(L)) then
-                x(L) = MIN_CDN(L)
-                if(present(check)) check = .true.
-            else if(x(L) > MAX_CDN(L)) then
-                x(L) = MAX_CDN(L)
-                if(present(check)) check = .true.
+            if(droplet%position(L) < MIN_CDN(L)) then
+                droplet%position(L) = MIN_CDN(L)
+                check = .true.
+            else if(droplet%position(L) > MAX_CDN(L)) then
+                droplet%position(L) = MAX_CDN(L)
+                check = .true.
             end if
 
         end do
+
+        if (check) call stop_droplet(droplet)
 
     end subroutine area_check
 
@@ -496,9 +503,9 @@ module drop_motion_mod
                 if((r1+r2) >= distance) then
                     print*, 'Coalescence', d1, d2
                     if(r1 >= r2) then
-                        call coalescence(droplets(d1)%virusDroplet_t, droplets(d2)%virusDroplet_t)
+                        call coalescence(droplets(d1), droplets(d2))
                     else
-                        call coalescence(droplets(d2)%virusDroplet_t, droplets(d1)%virusDroplet_t)
+                        call coalescence(droplets(d2), droplets(d1))
                     end if
                     last_coalescence = n_time
 
@@ -511,7 +518,7 @@ module drop_motion_mod
     end subroutine coalescence_check
 
     subroutine coalescence(droplet1, droplet2)
-        type(virusDroplet_t), intent(inout) :: droplet1, droplet2
+        type(Droplet_onFlow), intent(inout) :: droplet1, droplet2
         double precision :: radius_c, volume1, volume2, velocity_c(3)
 
         volume1 = droplet1%radius**3
@@ -521,9 +528,9 @@ module drop_motion_mod
         
         droplet1%radius = radius_c
         droplet1%velocity(:) = velocity_c(:)
+
         droplet2%radius = 0.d0
-        droplet2%velocity(:) = 0.d0
-        droplet2%status = -2
+        call stop_droplet(droplet2, status=-2)
         
     end subroutine coalescence
 

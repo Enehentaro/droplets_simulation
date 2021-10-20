@@ -37,7 +37,7 @@ PROGRAM MAIN
 
             call check_point                    !計算条件の確認および時刻計測のためのチェックポイント
 
-            call read_flow_field(first=.true.)                !流れ場の取得
+            call update_FlowField(first=.true.)                !流れ場の取得
 
             print*,'*******************************************'
             print*,'             START step_loop               '
@@ -46,6 +46,8 @@ PROGRAM MAIN
             DO n = n_start + 1, n_end           !ステップ数だけループ
 
                   call management_droplet       !外部サブルーチンによる管理
+
+                  call adhesion_check
 
                   call survival_check           !生存率に関する処理
 

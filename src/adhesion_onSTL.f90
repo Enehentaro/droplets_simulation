@@ -86,13 +86,13 @@ module adhesion_onSTL_m
 
     end subroutine set_faceShape
 
-    logical function adhesion_check_onSTL(X)
+    logical function adhesion_onSTL(X)
         use vector_m
         integer i, num_face
         real, intent(in) :: X(3)
         real r_vec(3), inner, AS(3), BS(3), CS(3), Across(3), Bcross(3), Ccross(3)
 
-        adhesion_check_onSTL = .false.
+        adhesion_onSTL = .false.
 
         num_face = size(faceShape)
         !$OMP parallel do private(r_vec, inner, AS, BS, CS, Across, Bcross, Ccross)
@@ -110,12 +110,12 @@ module adhesion_onSTL_m
 
             !三角形面の内部にあるか判定
             if((dot_product(Across, Bcross) > 0.0).and.(dot_product(Across, Ccross) > 0.0)) then
-                adhesion_check_onSTL = .true.
+                adhesion_onSTL = .true.
             end if
 
         end do
         !$OMP end parallel do
 
-    end function adhesion_check_onSTL
+    end function adhesion_onSTL
 
 end module adhesion_onSTL_m
