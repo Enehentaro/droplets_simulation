@@ -13,10 +13,10 @@ Simulation of Droplets Behavior in AFDET
 ## 使い方
   ※環境はIntel Fortran、Linuxを想定しています。その他の環境では適宜書き換えが必要です。
   コンパイルに`make`コマンドを使います（makeのインストールが必要）。
-  - Makefileのあるディレクトリで `make` コマンド（コンパイル）
-  - 「sample_case」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）
-  - ケースディレクトリ内の条件ファイルを編集
-  - 「droplet」という実行ファイルを実行し、ケース名を入力して計算開始
+  1. 「sample_case」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
+  1. ケースディレクトリ内の条件ファイル(condition.txt, initial_position.csv)を編集。
+  1. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
+  1. `./droplet`で実行。ケース名を入力して計算開始。
 
 ## 外部サブルーチン「management_droplet」
   dropletManager.f90内で定義されているサブルーチン「management_droplet」は、毎ステップ呼び出される外部サブルーチンです。
