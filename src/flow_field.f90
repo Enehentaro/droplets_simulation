@@ -182,7 +182,6 @@ module flow_field
         get_FileNumber = OFFSET
         do while(get_FileNumber + INTERVAL_FLOW < Step)
             get_FileNumber = get_FileNumber + INTERVAL_FLOW
-            print*, get_FileNumber
         end do
 
     end function get_FileNumber
