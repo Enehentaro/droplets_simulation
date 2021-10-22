@@ -20,14 +20,16 @@ module flow_field
     contains
     !***********************************************************************
     subroutine check_FILE_GRID
-        integer i
+        integer i, i_
 
         unstructuredGrid = .true.
 
         i = index(FNAME_FMT, '0')
+        i_ = index(FNAME_FMT, '_', back=.true.)
+        if(i_ > i) i = i_
         HEAD_AIR = FNAME_FMT(: i-1)             !ファイル名の接頭文字(最初のゼロの手前まで)
         FNAME_DIGITS = index(FNAME_FMT, '.') - i   !ファイル名の整数部桁数(最初のゼロの位置からドットまでの文字数)
-        
+
         i = len_trim(FNAME_FMT)
         if(FNAME_FMT(i-1 : i) == '.f') then
             unstructuredGrid = .false.
