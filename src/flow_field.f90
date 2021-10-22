@@ -26,7 +26,7 @@ module flow_field
 
         i = index(FNAME_FMT, '0')
         i_ = index(FNAME_FMT, '_', back=.true.)
-        if(i_ > i) i = i_
+        if(i_ > i) i = i_ + 1
         HEAD_AIR = FNAME_FMT(: i-1)             !ファイル名の接頭文字(最初のゼロの手前まで)
         FNAME_DIGITS = index(FNAME_FMT, '.') - i   !ファイル名の整数部桁数(最初のゼロの位置からドットまでの文字数)
 
