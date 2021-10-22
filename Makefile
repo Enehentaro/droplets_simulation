@@ -1,11 +1,11 @@
 PROGRAM = droplet
 
-FC = ifort
-FCFLAGS = -traceback -CB -g -O0
+# FC = ifort
+# FCFLAGS = -traceback -CB -g -O0
 # FCFLAGS = -qopenmp
 
-# FC = gfortran
-# FCFLAGS = -O -fbacktrace -g
+FC = gfortran
+FCFLAGS = -O -fbacktrace -g
 # FCFLAGS = -Wall -fbounds-check -O -Wuninitialized -fbacktrace -g
 
 FCCOMPILE = ${FC} ${FCFLAGS}
@@ -19,19 +19,20 @@ OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o vector.o\
 SRCDIR    = src
 OBJDIR    = obj
 OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
-MODDIR = ${OBJDIR}
+# MODDIR = ${OBJDIR}
 
 $(PROGRAM): $(OBJECTS)
 	$(FC) -o $@ $^
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
-	@if [ ! -d $(OBJDIR) ]; then \
-		mkdir -p $(OBJDIR); \
-	fi
-	$(FCCOMPILE) -o $@ -c $< -module $(MODDIR)
-# $(FCCOMPILE) -o $@ -c $<
+	$(FCCOMPILE) -o $@ -c $<
+# @if [ ! -d $(OBJDIR) ]; then \
+# 	mkdir -p $(OBJDIR); \
+# fi
+# $(FCCOMPILE) -o $@ -c $< -module $(MODDIR)
+
 
 clean:
-	- rm -f $(PROGRAM) -r $(OBJDIR)
-# - del /Q ${OBJDIR}\*.o *.mod *.exe
+	- del /Q ${OBJDIR}\*.o *.mod *.exe
+# - rm -f $(PROGRAM) -r $(OBJDIR)
 # - del *.o *.mod *.exe
