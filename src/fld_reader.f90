@@ -62,6 +62,7 @@ module mod_SctFldReader
 
     !> 流速各成分
     real(8),allocatable,public :: VEL_X(:), VEL_Y(:), VEL_Z(:)
+    integer(4) NDATA
 
     !> SctRegion用変数
     ! integer(4) NRGN, NLEN
@@ -167,35 +168,69 @@ subroutine get_data_int32(unit,retval)
 end subroutine get_data_int32
 
 !> 整数型配列の読み込み
-subroutine get_data_array_int32(unit, ret_array)
+subroutine get_data_array_int32(unit, ret_array, ret_array_size)
     implicit none
     integer(4),intent(in) :: unit
     integer(4),allocatable,intent(out) :: ret_array(:)
+    integer(4),intent(in) :: ret_array_size
     integer(4) ibyte, iretn, irecn
-    integer(4) irec, L
+    integer(4) irec, L, ios
+    integer(4) subrecn
 
-    read(unit) ibyte, iretn, irecn  ;print*, ibyte, iretn, irecn
-    allocate(ret_array(iretn*irecn))
-    do irec = 1, irecn
-        read(unit) (ret_array(L), L=1+(irec-1)*iretn, irec*iretn)
-    end do
+    read(unit) ibyte, iretn, irecn
+
+    subrecn = irecn - 1
+
+    if(.not. allocated(ret_array)) allocate(ret_array(iretn*irecn))
+
+    if(subrecn == 0) then
+        read(unit,iostat=ios) (ret_array(L), L=1, irecn*iretn)
+        return
+    else
+        do irec = 1, subrecn
+            read(unit,iostat=ios) (ret_array(L), L=1+(irec-1)*iretn, irec*iretn)
+            if ( ios /= 0 ) then
+                ! print*,'iostat: ', ios, 'at L=', L
+                exit
+            end if
+        end do
+    
+        read(unit) (ret_array(L), L=1+(irecn-1)*iretn, ret_array_size)
+    endif
+
 
 end subroutine get_data_array_int32
 
 !> 倍精度実数型配列の読み込み
-subroutine get_data_array_float64(unit, ret_array)
+subroutine get_data_array_float64(unit, ret_array, ret_array_size)
     implicit none
     integer(4),intent(in) :: unit
     real(8),allocatable,intent(out) :: ret_array(:)
+    integer(4),intent(in) :: ret_array_size
     integer(4) ibyte, iretn, irecn
-    integer(4) irec, L
+    integer(4) irec, L, ios
+    integer(4) subrecn
 
     read(unit) ibyte, iretn, irecn
-    allocate(ret_array(iretn*irecn))
-    do irec = 1, irecn
-        read(unit) (ret_array(L), L=1+(irec-1)*iretn, irec*iretn)
-    end do
 
+    subrecn = irecn - 1
+    
+    if(.not. allocated(ret_array)) allocate(ret_array(iretn*irecn))
+
+    if(subrecn == 0) then
+        read(unit,iostat=ios) (ret_array(L), L=1, irecn*iretn)
+        return
+    else
+        do irec = 1, subrecn
+            read(unit,iostat=ios) (ret_array(L), L=1+(irec-1)*iretn, irec*iretn)
+            if ( ios /= 0 ) then
+                ! print*,'iostat: ', ios, 'at L=', L
+                exit
+            end if
+        end do
+    
+        read(unit) (ret_array(L), L=1+(irecn-1)*iretn, ret_array_size)
+    endif
 end subroutine get_data_array_float64
 
 !> データを読み飛ばす処理
@@ -255,25 +290,25 @@ subroutine read_Main_data(unit)
             read(unit) !4, 1, 1
             read(unit) !LNX
             call get_data_int32(unit, NELEM) 
-            call get_data_array(unit, IETYP) 
+            call get_data_array(unit, IETYP, NELEM) 
             call get_data_int32(unit, NTTE)
-            call get_data_array(unit, NDNO)  
+            call get_data_array(unit, NDNO, NTTE)  
             read(unit) !0, 0, 0
 
         case('LS_MatOfElements')
             read(unit) !4, 1, 1
             read(unit) !LNX
             call get_data_int32(unit, NELEM)
-            call get_data_array(unit, MAT)
+            call get_data_array(unit, MAT, NELEM)
             read(unit)
 
         case('LS_Nodes')
             read(unit) !4, 1, 1
             read(unit) !LNX
             call get_data_int32(unit, NNODS)
-            call get_data_array(unit, CDN_X)
-            call get_data_array(unit, CDN_Y)
-            call get_data_array(unit, CDN_Z)
+            call get_data_array(unit, CDN_X, NNODS)
+            call get_data_array(unit, CDN_Y, NNODS)
+            call get_data_array(unit, CDN_Z, NNODS)
             read(unit)
 
         case('LS_VolumeGeometryArray')
@@ -361,10 +396,10 @@ subroutine read_Main_data(unit)
             call ignore_data(unit) !LNX
             call ignore_data(unit) !LVCT
             call ignore_data(unit) !LNAM
-            call ignore_data(unit) !NDATA
-            call get_data_array(unit, VEL_X)
-            call get_data_array(unit, VEL_Y)
-            call get_data_array(unit, VEL_Z)
+            call get_data_int32(unit, NDATA)
+            call get_data_array(unit, VEL_X, NDATA)
+            call get_data_array(unit, VEL_Y, NDATA)
+            call get_data_array(unit, VEL_Z, NDATA)
             read(unit)
 
         case('LS_Vector:HVEC')
