@@ -1,7 +1,7 @@
 PROGRAM = droplet
 
 FC = ifort
-FCFLAGS = -traceback -CB -g -O0
+FCFLAGS = -traceback -CB -g -O0 -fpe0
 # FCFLAGS = -qopenmp
 
 # FC = gfortran
