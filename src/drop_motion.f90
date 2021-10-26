@@ -480,11 +480,14 @@ module drop_motion_mod
     end function drop_counter
 
     subroutine coalescence_check
-        integer d1, d2
-        integer, save :: last_coalescence = 0
+        integer d1, d2, floatings
+        integer, save :: last_coalescence = 0, last_floatings = 0
         double precision :: distance, r1, r2
 
-        if(last_coalescence == 0) last_coalescence = n_time
+        floatings = drop_counter('floationg')
+        if(floatings > last_floatings) last_coalescence = n_time    !浮遊数が増加したら付着判定再起動のため更新
+        last_floatings = floatings
+
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
         if((n_time - last_coalescence) > 100) return
 
