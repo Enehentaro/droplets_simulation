@@ -68,7 +68,6 @@ PROGRAM MAIN
             call final_result       !最終結果出力
 
             call deallocation_flow  !流れ場配列解放
-            call deallocation_droplet  !飛沫配列解放
             
       end do
 

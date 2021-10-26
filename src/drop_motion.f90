@@ -153,6 +153,7 @@ module drop_motion_mod
 
         else
             droplets_ini = get_initialState_of_droplets()
+            if(allocated(droplets)) deallocate(droplets)
             allocate(droplets(size(droplets_ini)))
             droplets(:)%virusDroplet_t = droplets_ini(:)
             n_start = 0
@@ -602,11 +603,5 @@ module drop_motion_mod
         end select
 
     end function environment
-
-    subroutine deallocation_droplet
-
-        deallocate(droplets)
-        
-    end subroutine deallocation_droplet
 
 end module drop_motion_mod
