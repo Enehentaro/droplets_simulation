@@ -288,7 +288,7 @@ module unstructuredGrid_mod
             IIMX = size(ietyp)
   
             do II = 1, IIMX
-                if(mod(II, 10000) == 0) print*, II, '/', IIMX
+                ! if(mod(II, 10000) == 0) print*, II, '/', IIMX
   
                 num_node = ietyp(II)-30
                 select case(num_node)
@@ -584,7 +584,7 @@ module unstructuredGrid_mod
             nearcell_check = .True.
         else
             nearcell_check = .False.
-            print*, 'false', distance, CELLs(NCN)%width
+            print*, 'nearcell_check:False', distance, CELLs(NCN)%width
         end if
 
     end function nearcell_check

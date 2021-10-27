@@ -68,7 +68,6 @@ PROGRAM MAIN
             call final_result       !最終結果出力
 
             call deallocation_flow  !流れ場配列解放
-            call deallocation_droplet  !飛沫配列解放
             
       end do
 
@@ -155,8 +154,8 @@ PROGRAM MAIN
 
       subroutine output
             print*, start_date
-            print*, 'Now_Step_Time=', dimensional_time(n), '[sec]'
-            print*, 'Number of floating', drop_counter('floating')
+            print*, 'Now_Step_Time =', dimensional_time(n), '[sec]'
+            print*, 'Number of floating :', drop_counter('floating')
             call output_droplet
       end subroutine output
 
