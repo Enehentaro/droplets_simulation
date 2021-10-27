@@ -28,12 +28,13 @@ module equation_mod
     end subroutine set_basical_variables
 
     subroutine set_gravity_acceleration(direction_g)
+        use vector_m
         double precision, intent(in) :: direction_g(3)
         double precision, parameter :: G_dim = 9.806650d0                          ! 重力加速度[m/s2]
         double precision norm
 
-        norm = norm2(direction_g(:))
-        G(:) = G_dim * L_represent/(U_represent*U_represent) / norm * direction_g(:)    !無次元重力加速度
+        norm = G_dim * L_represent/(U_represent*U_represent)
+        G(:) = norm * normalize_vector(direction_g(:))    !無次元重力加速度
         print*, 'Dimensionless Acceleration of Gravity :'
         print*, G(:)
 
@@ -184,7 +185,7 @@ module equation_mod
                 representative_value = L_represent / U_represent
 
             case default
-                representative_value = 0.0d0
+                representative_value = -1.d20
 
         end select
 

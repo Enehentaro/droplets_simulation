@@ -296,20 +296,22 @@ module virusDroplet_m
         character(*), intent(in) :: fname
         type(virusDroplet_t), intent(in) :: droplets(:)
         integer, intent(in) :: step
-        integer n_unit
+        integer, save :: n_unit = 99
 
-        if(step==0) then !初期ステップならファイル新規作成
-            open(newunit=n_unit, file=fname, status='replace')
-            print*,'REPLACE:particle_data.csv'
+        if(n_unit == 99) then
+            if(step == 0) then !初期ステップならファイル新規作成
+                open(newunit=n_unit, file=fname, status='replace')
+                print*,'REPLACE:particle_data.csv'
 
-        else
-            open(newunit=n_unit, file=fname, action='write', status='old', position='append')
+            else
+                open(newunit=n_unit, file=fname, action='write', status='old', position='append')
 
+            end if
         end if
         
-            write(n_unit,*) dimensional_time(step), ',', count(droplets(:)%status==0), ',',&
-                count(droplets(:)%status==1), ',', count(droplets(:)%status==-1), ',', count(droplets(:)%status==-2)
-        close(n_unit)
+        write(n_unit,'(*(g0:,","))') real(dimensional_time(step)), count(droplets(:)%status==0), count(droplets(:)%status==1), &
+            count(droplets(:)%status==-1), count(droplets(:)%status==-2)
+        ! close(n_unit)
 
         ! if(count(adhesion==0) <= 0) then !浮遊粒子がなくなれば計算終了
         !   print*,'all viruses terminated',N

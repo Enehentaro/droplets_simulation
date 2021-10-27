@@ -565,7 +565,7 @@ module unstructuredGrid_mod
         use vector_m
         logical, intent(in) :: first
         integer II, JJ, JB, IIMX, JBMX, nodeID(3)
-        real :: a(3), b(3), r(3), norm, inner
+        real :: a(3), b(3), r(3), normalVector(3)
         type(boundFace_t), allocatable :: BoundFACEs_pre(:)
 
         if(.not.allocated(BoundFACEs)) return
@@ -588,21 +588,16 @@ module unstructuredGrid_mod
             
                 a(:) =  NODEs(nodeID(2))%coordinate(:) - NODEs(nodeID(1))%coordinate(:)
                 b(:) =  NODEs(nodeID(3))%coordinate(:) - NODEs(nodeID(1))%coordinate(:)
-            
-                BoundFACEs(JB)%normalVector(1) = a(2)*b(3) - a(3)*b(2)  !外積
-                BoundFACEs(JB)%normalVector(2) = a(3)*b(1) - a(1)*b(3)
-                BoundFACEs(JB)%normalVector(3) = a(1)*b(2) - a(2)*b(1)
-            
-                norm = norm2(BoundFACEs(JB)%normalVector(:))
+                normalVector(:) = cross_product(a, b)
+
+                normalVector(:) = normalize_vector(normalVector(:))
             
                 r(:) = CELLs(II)%center(:) - BoundFACEs(JB)%center(:)  !面重心からセル重心へのベクトル
-            
-                inner = dot_product(BoundFACEs(JB)%normalVector(:), r(:))
-            
-                if(inner > 0.0) norm = norm * (-1.0) !内積が正なら内向きなので、外に向けるべくノルムを負に
-            
-                BoundFACEs(JB)%normalVector(:) = BoundFACEs(JB)%normalVector(:) / norm !ノルムで割り算して単位ベクトルに
-        
+                if(dot_product(normalVector(:), r(:)) > 0.0) then
+                    normalVector(:) = normalVector(:) * (-1.0) !内積が正なら内向きなので、外に向ける
+                end if
+
+                BoundFACEs(JB)%normalVector(:) = normalVector(:)
                 ! print*,'center:',BoundFACEs(JB)%center(:)
                 ! print*,'n_vector:',BoundFACEs(JB)%normalVector(:)
             end do
