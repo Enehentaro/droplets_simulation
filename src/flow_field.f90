@@ -141,39 +141,20 @@ module flow_field
         real, intent(in) :: X(3)
         integer, intent(inout) :: reference_cell
 
-        if(reference_cell == 0) then   !参照セルが見つかっていない（＝初期ステップ）
-            reference_cell = nearest_cell(X)
-            print*, 'FirstNCN:', reference_cell
-    
-        else
-            reference_cell = nearer_cell(X, reference_cell)
-            if (reference_cell == 0) then
-                print*, 'NCN_ERROR:', X(:), reference_cell
-                stop
-            end if
+        reference_cell = nearer_cell(X, reference_cell)
 
-            if (.not.nearcell_check(X(:), reference_cell)) reference_cell = nearest_cell(X)
+        if (.not.nearcell_check(X(:), reference_cell)) reference_cell = nearest_cell(X)
     
-        end if
-
     end subroutine search_refCELL
 
     subroutine search_refCELL_onCUBE(X, reference_cell)
         real, intent(in) :: X(3)
         type(reference_cell_t), intent(inout) :: reference_cell
 
-        if(reference_cell%ID == 0) then   !参照セルが見つかっていない（＝初期ステップ）
+        reference_cell%nodeID(:) = nearer_node(X, reference_cell%nodeID, reference_cell%ID)
+        if (.not.nearNode_check(X, reference_cell%nodeID, reference_cell%ID)) then
             reference_cell%ID = get_cube_contains(X)    
             reference_cell%nodeID(:) = nearest_node(X, reference_cell%ID)
-            print*, 'FirstNCN:', reference_cell
-    
-        else
-            reference_cell%nodeID(:) = nearer_node(X, reference_cell%nodeID, reference_cell%ID)
-            if (.not.nearNode_check(X, reference_cell%nodeID, reference_cell%ID)) then
-                reference_cell%ID = get_cube_contains(X)    
-                reference_cell%nodeID(:) = nearest_node(X, reference_cell%ID)
-            end if
-    
         end if
 
     end subroutine search_refCELL_onCUBE
