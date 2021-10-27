@@ -1,4 +1,4 @@
-PROGRAM = droplet
+PROGRAM = droplet_Kishi
 
 # FC = ifort
 # FCFLAGS = -traceback -CB -g -O0
