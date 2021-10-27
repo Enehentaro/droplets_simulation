@@ -116,14 +116,14 @@ subroutine read_Header_data(unit)
     character(8)  header_text
     character(32) title_text
 
-    read(unit) header_text          ; print *, header_text
-    read(unit) header_num           ; print *, header_num
+    read(unit) header_text          !; print *, header_text
+    read(unit) header_num           !; print *, header_num
     ! 序文データの読み取り
     ! おそらくvtk化するためには不要なので
     ! 無限ループでHeaderDataEndを検出した時点でexit
     ! TITLEの画面出力は行う
     do 
-        read(unit) title_text ; print *, title_text
+        read(unit) title_text !; print *, title_text
         if(trim(title_text)=='HeaderDataEnd') then
             exit
         elseif((trim(title_text)=='Cycle').or.(trim(title_text)=='Unused')) then
@@ -240,7 +240,7 @@ subroutine ignore_data(unit)
     integer(4) ibyte, iretn, irecn
     integer(4) irec
 
-    read(unit) ibyte, iretn, irecn  ;print*, ibyte, iretn, irecn
+    read(unit) ibyte, iretn, irecn  !;print*, ibyte, iretn, irecn
     do irec = 1, irecn
         read(unit)
     end do
@@ -256,7 +256,7 @@ subroutine read_Main_data(unit)
 
     print*,'---- MAIN DATA START ----'
     !> OVerlapStart_nの読み取り
-    read(unit) main_data_title ; print *, main_data_title
+    read(unit) main_data_title !; print *, main_data_title
     !本文データの読み取り
     ! irecn == 1 なら タイトル内のサブレコードは1つ
     ! iretn == 1 なら サブレコード内のデータは1つ
@@ -265,7 +265,7 @@ subroutine read_Main_data(unit)
 
     do
 
-    read(unit) TITLE ; print *, TITLE
+    read(unit) TITLE !; print *, TITLE
     
     select case (trim(TITLE))
         case('LS_CoordinateSystem')

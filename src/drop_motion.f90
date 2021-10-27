@@ -167,7 +167,7 @@ module drop_motion_mod
             
     end subroutine set_initialDroplet
 
-    subroutine first_refCELLserch
+    subroutine first_refCELLsearch
         integer i, j, num_drop
 
         num_drop = size(droplets)
@@ -175,7 +175,8 @@ module drop_motion_mod
         if(unstructuredGrid) then
             do i = 1, size(leaderID) - 1
                 j = leaderID(i)
-                call search_refCELL(real(droplets(j)%position(:)), droplets(j)%refCELL%ID)
+                droplets(j)%refCELL%ID = nearest_cell(real(droplets(j)%position(:)))
+
                 droplets(leaderID(i)+1 : leaderID(i+1)-1)%refCELL%ID = droplets(j)%refCELL%ID !時間短縮を図る
 
                 do j = leaderID(i) + 1, leaderID(i+1) - 1
@@ -186,7 +187,9 @@ module drop_motion_mod
         else
             do i = 1, size(leaderID) - 1
                 j = leaderID(i)
-                call search_refCELL_onCUBE(real(droplets(j)%position(:)), droplets(j)%refCELL)
+                droplets(j)%refCELL%ID = get_cube_contains(real(droplets(j)%position(:)))    
+                droplets(j)%refCELL%nodeID(:) = nearest_node(real(droplets(j)%position(:)), droplets(j)%refCELL%ID)
+
                 droplets(leaderID(i)+1 : leaderID(i+1)-1)%refCELL = droplets(j)%refCELL !時間短縮を図る
 
                 do j = leaderID(i) + 1, leaderID(i+1) - 1
@@ -196,7 +199,7 @@ module drop_motion_mod
 
         end if
 
-    end subroutine first_refCELLserch
+    end subroutine first_refCELLsearch
 
     subroutine adhesion_check
         use adhesion_onSTL_m
@@ -227,7 +230,7 @@ module drop_motion_mod
             
         vfloat = count(droplets(:)%status == 0)
         if(vfloat == 0) then
-            print*, 'No Droplet is Floating', n_time
+            print*, '**No Droplet is Floating** [step:', n_time, ']'
             return  !浮遊数がゼロならリターン
         end if
 
@@ -398,7 +401,7 @@ module drop_motion_mod
 
         if(first) then
             call preprocess_onFlowField         !流れ場の前処理
-            if(n_start == 0) call first_refCELLserch
+            if(n_start == 0) call first_refCELLsearch
         end if
 
         if(unstructuredGrid) then
@@ -557,7 +560,7 @@ module drop_motion_mod
         type(Droplet_onFlow), allocatable :: droplets_read(:)
         integer i, n_unit, num_drop
     
-        print*, 'READ:', fname
+        print*, 'READ:', trim(fname)
         open(newunit=n_unit, form='unformatted', file=fname, status='old')
             read(n_unit) num_drop
 

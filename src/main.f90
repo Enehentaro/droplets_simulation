@@ -154,8 +154,8 @@ PROGRAM MAIN
 
       subroutine output
             print*, start_date
-            print*, 'Now_Step_Time=', dimensional_time(n), '[sec]'
-            print*, 'Number of floating', drop_counter('floating')
+            print*, 'Now_Step_Time =', dimensional_time(n), '[sec]'
+            print*, 'Number of floating :', drop_counter('floating')
             call output_droplet
       end subroutine output
 
