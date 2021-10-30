@@ -1,14 +1,9 @@
+# GNU Fortran on Windows
 PROGRAM = droplet_Kishi
 
-# FC = ifort
-# FCFLAGS = -traceback -CB -g -O0
-# FCFLAGS = -qopenmp
-
 FC = gfortran
-FCFLAGS = -O -fbacktrace -g
-# FCFLAGS = -Wall -fbounds-check -O -Wuninitialized -fbacktrace -g
-
-FCCOMPILE = ${FC} ${FCFLAGS}
+FCFLAGS = -O0 -fbacktrace -g
+# -Wall -fbounds-check -Wuninitialized
 
 OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o vector.o\
 	fld_reader.o  vtkMesh_operator.o unstructured_grid.o adjacency_solver.o \
@@ -19,20 +14,16 @@ OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o vector.o\
 SRCDIR    = src
 OBJDIR    = obj
 OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
-# MODDIR = ${OBJDIR}
+MODDIR = ${OBJDIR}
 
 $(PROGRAM): $(OBJECTS)
-	$(FC) -o $@ $^
+	$(FC) $^ -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
-	$(FCCOMPILE) -o $@ -c $<
-# @if [ ! -d $(OBJDIR) ]; then \
-# 	mkdir -p $(OBJDIR); \
-# fi
-# $(FCCOMPILE) -o $@ -c $< -module $(MODDIR)
-
+	@if not exist $(OBJDIR) ( \
+		md $(OBJDIR) \
+	)
+	$(FC) $< -o $@ -c -J$(MODDIR) ${FCFLAGS}
 
 clean:
-	- del /Q ${OBJDIR}\*.o *.mod *.exe
-# - rm -f $(PROGRAM) -r $(OBJDIR)
-# - del *.o *.mod *.exe
+	del /Q ${OBJDIR} $(PROGRAM).exe
