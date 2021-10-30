@@ -1,5 +1,5 @@
 !このサブルーチンは、毎ステップ呼ばれる。自由に編集してよい。
-! delta_timeが細かいときは,condition.txtの飛沫計算の時間間隔に注意
+!delta_timeが細かいときは,condition.txtの飛沫計算の時間間隔に注意
 subroutine management_droplet
     use drop_motion_mod
     implicit none
