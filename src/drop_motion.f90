@@ -333,7 +333,7 @@ module drop_motion_mod
 
             r_vector(:) = droplet%position(:) - BoundFACEs(JB)%center(:)
 
-            inner = dot_product(real(r_vector(:)), BoundFACEs(JB)%normalVector(:))
+            inner = dot_product(r_vector(:), BoundFACEs(JB)%normalVector(:))
 
             if (inner > 0.0d0) then
                 adhesion = .true. !外向き法線ベクトルと位置ベクトルの内積が正なら付着判定

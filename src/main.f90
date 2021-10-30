@@ -65,7 +65,7 @@ PROGRAM MAIN
             print*,'             END step_loop                 '
             print*,'*******************************************'
 
-            call final_result       !最終結果出力
+            call output_ResultSummary       !最終結果出力
 
             call deallocation_flow  !流れ場配列解放
             
@@ -100,10 +100,7 @@ PROGRAM MAIN
 
             call cpu_time(start_time)
             call date_and_time(date = d_start, time = t_start)
-            start_date = '[Start Date] ' &
-            //d_start(1:4)//'/'//d_start(5:6)//'/'//d_start(7:8)//' ' &
-            //t_start(1:2)//':'//t_start(3:4)//':'//t_start(5:)
-
+            start_date = '[Start Date] ' // DateAndTime_string(d_start, t_start)
       end subroutine
 
       subroutine make_directory
@@ -159,49 +156,67 @@ PROGRAM MAIN
             call output_droplet
       end subroutine output
 
-      subroutine final_result
-            integer n_unit
+      subroutine output_ResultSummary
+            integer n_unit, cnt
             real end_time
-            character(50) end_date
+            character(50) end_date, fname
             character(10) d_end, t_end
+            logical existance
             
             call cpu_time(end_time)
             call date_and_time(date = d_end, time = t_end)
 
-            end_date = '[ END  Date] ' &
-                        //d_end(1:4)//'/'//d_end(5:6)//'/'//d_end(7:8)//' ' &
-                        //t_end(1:2)//':'//t_end(3:4)//':'//t_end(5:)
+            end_date = '[ END  Date] ' // DateAndTime_string(d_end, t_end)
             print*, start_date
             print*, end_date
 
-            open(newunit=n_unit, FILE= case_name//'/final_result.txt',STATUS='REPLACE')
+            fname = path%DIR//'ResultSummary.txt'
+            inquire(file=fname, exist=existance)
+            cnt = 0
+            do while(existance)
+                  cnt = cnt + 1
+                  write(fname,'("'//path%DIR//'ResultSummary_", i0, ".txt")') cnt
+                  inquire(file=fname, exist=existance)
+            end do
+
+            open(newunit=n_unit, file=fname, status='new')
                   write(n_unit,*)'*******************************************'
                   write(n_unit,*)'*                                         *'
-                  write(n_unit,*)'*             Final Results               *'
+                  write(n_unit,*)'*             Result Summary              *'
                   write(n_unit,*)'*                                         *'
                   write(n_unit,*)'*******************************************'
-                  write(n_unit,'()')
+                  write(n_unit,'(A)') '======================================================='
                   write(n_unit,*) start_date
                   write(n_unit,*) end_date
-                  write(n_unit, *) 'Erapsed Time =', end_time - start_time, '[sec]'
-                  write(n_unit, *) 'Cost of Calc =', &
+                  write(n_unit, '(A18, F15.3, 2X, A)') 'Erapsed Time =', end_time - start_time, '[sec]'
+                  write(n_unit, '(A18, F15.3, 2X, A)') 'Cost of Calc =', &
                         (end_time - start_time) / (dimensional_time(n_end) - dimensional_time(n_start)), '[sec/sec]'
                   write(n_unit,'(A)') '======================================================='
-                  write(n_unit, '(A12, 2(F20.8,2x,A1))') 'Time[sec] =', dimensional_time(n_start), '-', dimensional_time(n_end)
-                  write(n_unit, '(A12, 2(I20,2x,A1))') 'Step =', n_start, '-', n_end !計算回数
+                  write(n_unit, '(A18, 2(F15.3,2x,A))') 'Time [sec] =', dimensional_time(n_start), '-', dimensional_time(n_end)
+                  write(n_unit, '(A18, 2(I15,2x,A))') 'Step =', n_start, '-', n_end !計算回数
+                  write(n_unit,'(A18, I15)') 'OutputInterval =', interval
                   write(n_unit,'(A)') '======================================================='
-                  write(n_unit,'(A15, I20)') 'num_droplets =', drop_counter('total')
-                  write(n_unit,'(A15, I20)') 'alive =', drop_counter('floating')
-                  write(n_unit,'(A15, I20)') 'death =', drop_counter('death') !生存率で消滅
-                  write(n_unit,'(A15, I20)') 'coalescence =', drop_counter('coalescence') !生存率で消滅
-                  write(n_unit,'(A15, I20)') 'adhesion =', drop_counter('adhesion') !付着したすべてのウイルス数
+                  write(n_unit,'(A18, I15)') '#Droplets =', drop_counter('total')
+                  write(n_unit,'(A18, I15)') 'floating =', drop_counter('floating')
+                  write(n_unit,'(A18, I15)') 'death =', drop_counter('death') !生存率で消滅
+                  write(n_unit,'(A18, I15)') 'coalescence =', drop_counter('coalescence') !生存率で消滅
+                  write(n_unit,'(A18, I15)') 'adhesion =', drop_counter('adhesion') !付着したすべてのウイルス数
                   write(n_unit,'(A)') '======================================================='
-                  write(n_unit,'(A15, F10.2)') 'Temp [degC] =', environment('Temperature')
-                  write(n_unit,'(A15, F10.2)') 'RH [%] =', environment('Relative Humidity')
-                  write(n_unit, *) 'Used FlowFile : ', trim(PATH_FlowDIR), trim(FNAME_FMT)
+                  write(n_unit,'(A18, F18.2)') 'Temp [degC] =', environment('Temperature')
+                  write(n_unit,'(A18, F18.2)') 'RH [%] =', environment('Relative Humidity')
+                  write(n_unit,'(A18, 2X, A)') 'Used FlowFile :', trim(PATH_FlowDIR)//trim(FNAME_FMT)
 
             close(n_unit)
             
-      end subroutine final_result
+      end subroutine output_ResultSummary
+
+      function DateAndTime_string(date, time) result(string)
+            character(*), intent(in) :: date, time
+            character(:), allocatable :: string
+
+            string = date(1:4)//'/'//date(5:6)//'/'//date(7:8)//' ' &
+                  //time(1:2)//':'//time(3:4)//':'//time(5:6)
+
+      end function
 
 END PROGRAM MAIN
