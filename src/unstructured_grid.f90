@@ -264,7 +264,7 @@ module unstructuredGrid_mod
             kkmx = grid%get_vertex_count()
 
             if(iihex>0) then
-                print*, 'Hexahedron is not yet supported.', iimx
+                print*, 'Hexahedron is not yet supported.', iihex
                 stop
             end if
 
