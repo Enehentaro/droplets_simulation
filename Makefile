@@ -27,4 +27,4 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	$(FC) $< -o $@ -c -module $(MODDIR) $(FCFLAGS)
 
 clean:
-	$(RM) -f $(PROGRAM) -r $(OBJDIR)
+	$(RM) $(PROGRAM) -r $(OBJDIR)
