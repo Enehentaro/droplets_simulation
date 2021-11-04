@@ -1,10 +1,10 @@
-# Intel Fortran on Linux
+# GNU Fortran on Windows
 
 PROGRAM = droplet
 
-FC = ifort
-FCFLAGS = -traceback -CB -g -O0 -fpe0
-# FCFLAGS = -qopenmp
+FC = gfortran
+FCFLAGS = -O0 -fbacktrace -g
+# -Wall -fbounds-check -Wuninitialized
 
 OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o vector.o\
 	fld_reader.o  vtkMesh_operator.o unstructured_grid.o adjacency_solver.o \
@@ -21,10 +21,10 @@ $(PROGRAM): $(OBJECTS)
 	$(FC) $^ -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
-	@if [ ! -d $(OBJDIR) ]; then \
-		mkdir -p $(OBJDIR); \
-	fi
-	$(FC) $< -o $@ -c -module $(MODDIR) $(FCFLAGS)
+	@if not exist $(OBJDIR) ( \
+		md $(OBJDIR) \
+	)
+	$(FC) $< -o $@ -c -J$(MODDIR) ${FCFLAGS}
 
 clean:
-	$(RM) $(PROGRAM) -r $(OBJDIR)
+	del /Q ${OBJDIR} $(PROGRAM).exe
