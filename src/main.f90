@@ -45,7 +45,7 @@ PROGRAM MAIN
 
             DO n = n_start + 1, n_end           !ステップ数だけループ
 
-                  call management_droplet       !外部サブルーチンによる管理
+                  call dropletManagement       !外部サブルーチンによる管理
 
                   call adhesion_check
 
