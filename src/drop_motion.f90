@@ -334,10 +334,11 @@ module drop_motion_mod
             r_vector(:) = droplet%position(:) - BoundFACEs(JB)%center(:)
 
             inner = dot_product(r_vector(:), BoundFACEs(JB)%normalVector(:))
+            !外向き法線ベクトルと位置ベクトルの内積は、平面からの飛び出し量に相当
 
-            if (inner > 0.0d0) then
-                adhesion = .true. !外向き法線ベクトルと位置ベクトルの内積が正なら付着判定
-                droplet%adhesBoundID = JB     !付着した境界面番号
+            if (inner + droplet%radius > 0.d0) then
+                adhesion = .true.               !(飛び出し量+飛沫半径)がゼロ以上なら付着判定
+                droplet%adhesBoundID = JB       !付着した境界面番号
             end if
         end do
 
@@ -361,7 +362,7 @@ module drop_motion_mod
     integer function get_flowStep()
         integer Lamda, Delta
 
-        get_flowStep = int(dble(n_time)*RDT) + OFFSET   !気流計算における経過ステップ数に相当
+        get_flowStep = int(dble(n_time)*RDT) + OFFSET   !気流計算における時刻ステップ数に相当
 
         Lamda = LoopF - LoopS
         
