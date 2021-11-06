@@ -297,6 +297,8 @@ module virusDroplet_m
         type(virusDroplet_t), intent(in) :: droplets(:)
         integer, intent(in) :: step
         integer, save :: n_unit = 99
+        integer L
+        integer, parameter :: statusCSV(4) = [0, 1, -1,-2]
 
         if(n_unit == 99) then
             if(step == 0) then !初期ステップならファイル新規作成
@@ -309,8 +311,8 @@ module virusDroplet_m
             end if
         end if
         
-        write(n_unit,'(*(g0:,","))') real(dimensional_time(step)), count(droplets(:)%status==0), count(droplets(:)%status==1), &
-            count(droplets(:)%status==-1), count(droplets(:)%status==-2)
+        write(n_unit,'(*(g0:,","))') real(dimensional_time(step)), &
+            (count(droplets(:)%status==statusCSV(L)), L = 1, size(statusCSV))
         ! close(n_unit)
 
         ! if(count(adhesion==0) <= 0) then !浮遊粒子がなくなれば計算終了
