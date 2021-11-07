@@ -3,7 +3,7 @@ module virusDroplet_m
 
     type virusDroplet_t
         double precision :: position(3), velocity(3)=0.d0
-        double precision radius, radius_min, death_param
+        double precision radius, radius_min, deathParam
         integer :: status=0
     end type virusDroplet_t
 
@@ -136,7 +136,7 @@ module virusDroplet_m
 
     end subroutine calc_initial_position
 
-    subroutine set_death_param
+    subroutine set_deathParam
         integer i, num_drop
         double precision randble
 
@@ -144,14 +144,16 @@ module virusDroplet_m
 
         do i = 1, num_drop
             call random_number(randble)
-            droplets_ini(i)%death_param = randble
+            droplets_ini(i)%deathParam = randble
         end do
 
-    end subroutine set_death_param
+    end subroutine set_deathParam
 
-    subroutine read_initialDistribution
+    subroutine read_initialDistribution(DIR)
+        character(*), intent(in) :: DIR
 
-        droplets_ini = read_droplet_VTK('initial_distribution.vtk') !自動割付
+        droplets_ini = read_droplet_VTK(DIR//'InitialDistribution.vtk') !自動割付
+        leaderID = [1, size(droplets_ini)+1]
 
     end subroutine read_initialDistribution
 
@@ -220,17 +222,27 @@ module virusDroplet_m
                 read(n_unit,'()')
             END DO
             read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            read(n_unit,'()')
-            DO vn = 1, num_drop
-                read(n_unit, *) diameter(vn)
-            END DO
+
+            read(n_unit,'()')   !CELL_DATA
+
             read(n_unit,'()')
             read(n_unit,'()')
             DO vn = 1, num_drop
                 read(n_unit,'(I12)') droplets_read(vn)%status
             END DO
+
+            read(n_unit,'()')
+            read(n_unit,'()')
+            DO vn = 1, num_drop
+                read(n_unit, *) diameter(vn)
+            END DO
+
+            read(n_unit,'()')
+            read(n_unit,'()')
+            DO vn = 1, num_drop
+                read(n_unit, *) droplets_read(vn)%deathParam
+            END DO
+
             read(n_unit,'()')
             DO vn = 1, num_drop
                 read(n_unit, *) droplets_read(vn)%velocity(:)
@@ -241,10 +253,11 @@ module virusDroplet_m
       
     end function read_droplet_VTK
 
-    subroutine output_droplet_VTK(fname, droplets)
+    subroutine output_droplet_VTK(fname, droplets, initial)
         implicit none
         character(*), intent(in) :: fname
         type(virusDroplet_t), intent(in) :: droplets(:)
+        logical, optional :: initial
         integer vn, n_unit, num_drop
 
         num_drop = size(droplets)
@@ -259,27 +272,43 @@ module virusDroplet_m
                 write(n_unit,'(3(f20.15,2X))') droplets(vn)%position(:)   !節点の座標（左から順にx,y,z）
             END DO
             write(n_unit,'()')                                                              !改行
+
             write(n_unit,'(A,I12,2X,I12)') 'CELLS ', num_drop, num_drop*2                          !セルの数、セルの数×2
             DO vn = 1, num_drop                                                            !セルの数だけループ
                 write(n_unit,'(2(I12,2X))')  1, vn-1                                          !まずセルを構成する点の数（セル形状が点なので1）、その点のID
             END DO
             write(n_unit,'()')                                                              !改行
+
             write(n_unit,'(A,I12)') 'CELL_TYPES', num_drop
             DO vn = 1, num_drop                                                           !セルの数だけループ
                 write(n_unit,'(I12)') 1                                                        !セルの形状（1は点であることを意味する）
             END DO
             write(n_unit,'()')                                                              !改行
+
             write(n_unit,'(A,I12)') 'CELL_DATA ', num_drop                                      !ここからセルのデータという合図、セルの数
-            write(n_unit,'(A)') 'SCALARS Diameter float'                                  !まずは飛沫の直径
+            
+            write(n_unit,'(A)') 'SCALARS Status int'                                   !飛沫の状態(0:浮遊、1:付着、2:回収)
+            write(n_unit,'(A)') 'LOOKUP_TABLE default'
+            DO vn = 1, num_drop                                                            !セルの数だけループ
+                write(n_unit,'(I12)') droplets(vn)%status                                            !飛沫の状態(0:浮遊、1:付着、2:回収)
+            END DO
+
+            write(n_unit,'(A)') 'SCALARS Diameter float'                                  !飛沫の直径
             write(n_unit,'(A)') 'LOOKUP_TABLE default'
             DO vn = 1, num_drop                                                            !セルの数だけループ
                 write(n_unit,'(f20.15)') droplets(vn)%radius*2.0d0                            !飛沫の直径
             END DO
-            write(n_unit,'(A)') 'SCALARS Status int'                                   !次は飛沫の状態(0:浮遊、1:付着、2:回収)
-            write(n_unit,'(A)') 'LOOKUP_TABLE default'
-            DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(I12)') droplets(vn)%status                                            !次は飛沫の状態(0:浮遊、1:付着、2:回収)
-            END DO
+
+            if(present(initial)) then
+                if(initial) then
+                    write(n_unit,'(A)') 'SCALARS DeathParam float'
+                    write(n_unit,'(A)') 'LOOKUP_TABLE default'
+                    DO vn = 1, num_drop                                                            !セルの数だけループ
+                        write(n_unit,'(f20.15)') droplets(vn)%deathParam
+                    END DO
+                end if
+            end if
+
             write(n_unit,'(A)') 'VECTORS Velocity float'                             !最後に飛沫の速度
             DO vn = 1, num_drop                                                             !セルの数だけループ
                 write(n_unit,'(3(f20.15,2X))') droplets(vn)%velocity(:)               !飛沫の速度
