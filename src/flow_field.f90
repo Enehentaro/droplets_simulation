@@ -163,7 +163,8 @@ module flow_field
         integer, intent(in) :: step
 
         get_FileNumber = OFFSET
-        do while(get_FileNumber + INTERVAL_FLOW <= Step)
+        ! do while(get_FileNumber + INTERVAL_FLOW <= Step)  !後退評価
+        do while(get_FileNumber <= Step)    !前進評価
             get_FileNumber = get_FileNumber + INTERVAL_FLOW
         end do
 
