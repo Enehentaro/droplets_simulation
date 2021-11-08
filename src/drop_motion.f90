@@ -38,10 +38,10 @@ module drop_motion_mod
             call random_set  !実行時刻に応じた乱数シード設定
             call calc_initial_position(path%DIR)
             call calc_initial_radius
-            call set_death_param
+            call set_deathParam
 
         else if(num_restart==-1) then
-            call read_initialDistribution
+            call read_initialDistribution(path%DIR)
 
         else
             return  !リスタートなら無視
@@ -170,6 +170,8 @@ module drop_motion_mod
     subroutine first_refCELLsearch
         integer i, j, num_drop
 
+        print*, 'first_refCELLsearch occured!'
+
         num_drop = size(droplets)
 
         if(unstructuredGrid) then
@@ -235,7 +237,7 @@ module drop_motion_mod
         end if
 
         do vn = 1, num_droplets
-            if ((droplets(vn)%status == 0).and.(droplets(vn)%death_param > survival_rate(n_time))) then
+            if ((droplets(vn)%status == 0).and.(droplets(vn)%deathParam > survival_rate(n_time))) then
                 call stop_droplet(droplets(vn), status=-1)
             end if
         end do
@@ -496,7 +498,7 @@ module drop_motion_mod
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
         if((n_time - last_coalescence) > 100) return
 
-        print*, 'Coalescence_check', n_time
+        print*, 'Coalescence_check [step:', n_time, ']'
 
         drop1 : do d1 = 1, num_droplets - 1
             if(droplets(d1)%status/=0) cycle drop1
@@ -509,7 +511,7 @@ module drop_motion_mod
                 r2 = droplets(d2)%radius
 
                 if((r1+r2) >= distance) then
-                    print*, 'Coalescence', d1, d2
+                    print*, d1, 'and', d2, 'coalesce!'
                     if(r1 >= r2) then
                         call coalescence(droplets(d1), droplets(d2))
                     else
@@ -547,7 +549,11 @@ module drop_motion_mod
         character(4) :: head_out = 'drop'
 
         write(fname,'("'//path%VTK//trim(head_out)//'",i8.8,".vtk")') n_time
-        call output_droplet_VTK(fname, droplets(:)%virusDroplet_t)
+        if(n_time == 0) then
+            call output_droplet_VTK(fname, droplets(:)%virusDroplet_t, initial=.true.)
+        else
+            call output_droplet_VTK(fname, droplets(:)%virusDroplet_t)
+        end if
 
         fname = path%DIR//'/particle.csv'
         call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, n_time)
