@@ -24,7 +24,6 @@ module drop_motion_mod
     integer, target :: n_time  !時間ステップ
     integer, private :: num_restart
     integer n_start, n_end
-    double precision, private :: Rdt    !飛沫計算と気流計算の時間間隔の比
 
     contains
 
@@ -62,7 +61,7 @@ module drop_motion_mod
     subroutine read_and_set_condition
         use filename_mod
         use path_operator_m
-        double precision DTa, dt, L, U
+        double precision dt, L, U
         double precision :: direction_g(3)
         character(99) path2FlowFile
         integer i, n_unit, num_drop
@@ -89,7 +88,7 @@ module drop_motion_mod
             read(n_unit,'()')
             read(n_unit,'(A)') path2FlowFile
             read(n_unit,'()')
-            read(n_unit,*) DTa
+            read(n_unit,*) DT_FLOW
             read(n_unit,'()')
             read(n_unit,*) OFFSET
             read(n_unit,'()')
@@ -102,8 +101,6 @@ module drop_motion_mod
             read(n_unit,*) U
 
         CLOSE(n_unit)
-
-        Rdt = dt/DTa                       !データ読み込み時に時間軸合わせるパラメータ
 
         if(num_restart == 0) call allocation_initialDroplets(num_drop) !通常実行なら割付
 
@@ -124,7 +121,7 @@ module drop_motion_mod
 
         if(loopf - loops > 0) print*, 'Loop is from', loops, 'to', loopf
         print*, 'Delta_Time =', dt
-        print*, 'Rdt', Rdt
+        print*, 'Delta_Time inFLOW =', DT_FLOW
 
         call set_dir_from_path(path2FlowFile, PATH_FlowDIR, FNAME_FMT)
 
@@ -168,35 +165,33 @@ module drop_motion_mod
     end subroutine set_initialDroplet
 
     subroutine first_refCELLsearch
-        integer i, j, num_drop
+        integer j, num_drop
+        logical success
 
         print*, 'first_refCELLsearch occured!'
 
         num_drop = size(droplets)
 
         if(unstructuredGrid) then
-            do i = 1, size(leaderID) - 1
-                j = leaderID(i)
-                droplets(j)%refCELL%ID = nearest_cell(real(droplets(j)%position(:)))
+            j = 1
+            droplets(j)%refCELL%ID = nearest_cell(real(droplets(j)%position(:)))
 
-                droplets(leaderID(i)+1 : leaderID(i+1)-1)%refCELL%ID = droplets(j)%refCELL%ID !時間短縮を図る
+            droplets(j+1:)%refCELL%ID = droplets(j)%refCELL%ID !時間短縮を図る
 
-                do j = leaderID(i) + 1, leaderID(i+1) - 1
-                    call search_refCELL(real(droplets(j)%position(:)), droplets(j)%refCELL%ID)
-                end do
+            do j = 2, num_drop
+                call search_refCELL(real(droplets(j)%position(:)), droplets(j)%refCELL%ID, stat=success)
+                if(.not.success) droplets(j+1:)%refCELL%ID = droplets(j)%refCELL%ID
             end do
 
         else
-            do i = 1, size(leaderID) - 1
-                j = leaderID(i)
-                droplets(j)%refCELL%ID = get_cube_contains(real(droplets(j)%position(:)))    
-                droplets(j)%refCELL%nodeID(:) = nearest_node(real(droplets(j)%position(:)), droplets(j)%refCELL%ID)
+            j = 1
+            droplets(j)%refCELL%ID = get_cube_contains(real(droplets(j)%position(:)))    
+            droplets(j)%refCELL%nodeID(:) = nearest_node(real(droplets(j)%position(:)), droplets(j)%refCELL%ID)
 
-                droplets(leaderID(i)+1 : leaderID(i+1)-1)%refCELL = droplets(j)%refCELL !時間短縮を図る
+            droplets(j+1:)%refCELL = droplets(j)%refCELL !時間短縮を図る
 
-                do j = leaderID(i) + 1, leaderID(i+1) - 1
-                    call search_refCELL_onCUBE(real(droplets(j)%position(:)), droplets(j)%refCELL)
-                end do
+            do j = 2, num_drop
+                call search_refCELL_onCUBE(real(droplets(j)%position(:)), droplets(j)%refCELL)
             end do
 
         end if
@@ -361,42 +356,23 @@ module drop_motion_mod
 
     end subroutine stop_droplet
 
-    integer function get_flowStep()
-        integer Lamda, Delta
-
-        get_flowStep = int(dble(n_time)*RDT) + OFFSET   !気流計算における時刻ステップ数に相当
-
-        Lamda = LoopF - LoopS
-        
-        if((Lamda > 0).and.(get_flowStep > LoopF)) then
-            Delta = mod(get_flowStep - LoopS, Lamda)
-            get_flowStep = LoopS + Delta
-        end if
-
-    end function
-
     subroutine update_flow_check
-        double precision Step_air
 
         if(INTERVAL_FLOW <= 0) return
 
-        Step_air = dble(n_time)*Rdt          !気流計算における経過ステップ数に相当
-        if(mod(Step_air, dble(INTERVAL_FLOW)) == 0.d0) then
-            call update_FlowField(first=.false.)   !流れ場の更新
-        end if
+        call set_STEPinFLOW(dimensional_time(n_time))
+
+        if(STEPinFLOW >= NextUpdate) call update_FlowField(first=.false.)   !流れ場の更新
 
     end subroutine update_flow_check
 
     subroutine update_FlowField(first)
-        integer flowStep, FNUM
         logical, intent(in) :: first
 
         if(INTERVAL_FLOW <= 0) then
             call read_steadyFlowData
         else
-            flowStep = get_flowStep()
-            FNUM = get_FileNumber(flowStep)
-            call read_unsteadyFlowData(FNUM)
+            call read_unsteadyFlowData
 
         end if
 
