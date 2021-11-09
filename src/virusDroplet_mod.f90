@@ -11,6 +11,8 @@ module virusDroplet_m
 
     integer, allocatable :: leaderID(:)
 
+    integer, allocatable :: statusCSV(:)
+
     contains
 
     subroutine allocation_initialDroplets(num_drop)
@@ -325,22 +327,23 @@ module virusDroplet_m
         character(*), intent(in) :: fname
         type(virusDroplet_t), intent(in) :: droplets(:)
         integer, intent(in) :: step
-        integer, save :: n_unit = 99
+        integer, save :: n_unitCSV = 99
         integer L
-        integer, parameter :: statusCSV(4) = [0, 1, -1,-2]
 
-        if(n_unit == 99) then
+        if(n_unitCSV == 99) then
             if(step == 0) then !初期ステップならファイル新規作成
-                open(newunit=n_unit, file=fname, status='replace')
+                open(newunit=n_unitCSV, file=fname, status='replace')
                 print*,'REPLACE:particle_data.csv'
 
             else
-                open(newunit=n_unit, file=fname, action='write', status='old', position='append')
+                open(newunit=n_unitCSV, file=fname, action='write', status='old', position='append')
 
             end if
         end if
+
+        if(.not.allocated(statusCSV)) statusCSV = [0, 1, -1,-2]
         
-        write(n_unit,'(*(g0:,","))') real(Time_onSimulation(step, dimension=.true.)), &
+        write(n_unitCSV,'(*(g0:,","))') real(Time_onSimulation(step, dimension=.true.)), &
             (count(droplets(:)%status==statusCSV(L)), L = 1, size(statusCSV))
         ! close(n_unit)
 
