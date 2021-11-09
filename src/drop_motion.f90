@@ -376,6 +376,7 @@ module drop_motion_mod
         if(INTERVAL_FLOW <= 0) then
             call read_steadyFlowData
         else
+            if(first) call set_STEPinFLOW(Time_onSimulation(n_time))
             call read_unsteadyFlowData
 
         end if
