@@ -168,7 +168,7 @@ module equation_mod
         !     survival_rate = 0.86d0*0.9240d0**(((L_represent/U_represent)*dt*dble(step-1))/3600.0d0)
         ! end if
 
-        time = dimensional_time(step)
+        time = Time_onSimulation(step, dimension=.true.)
         !新型コロナウイルス（1.1時間で半減）(論文によると、湿度30,60,90%のときのデータしかない)
         survival_rate = 0.999825d0**(time)
     end function survival_rate
@@ -191,11 +191,15 @@ module equation_mod
 
     end function representative_value
 
-    double precision function dimensional_time(step)
+    double precision function Time_onSimulation(step, dimension)
         integer, intent(in) :: step
+        logical, optional :: dimension
 
-        dimensional_time = step * delta_t * L_represent / U_represent
-
-    end function dimensional_time
+        Time_onSimulation = step * delta_t
+        if(present(dimension)) then
+            if(dimension) Time_onSimulation = Time_onSimulation * L_represent / U_represent
+        end if
+    
+    end function Time_onSimulation
 
 end module equation_mod

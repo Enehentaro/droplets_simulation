@@ -177,32 +177,36 @@ module flow_field
     end subroutine
 
     integer function get_FileNumber()
-        integer targetSTEP
-
-        targetSTEP = clamp_STEP(STEPinFLOW)
 
         get_FileNumber = OFFSET
-        ! do while(get_FileNumber + INTERVAL_FLOW <= targetSTEP)  !後退評価
-        do while(get_FileNumber <= targetSTEP)    !前進評価
+        ! do while(get_FileNumber + INTERVAL_FLOW <= STEPinFLOW)  !後退評価
+        do while(get_FileNumber <= STEPinFLOW)    !前進評価
             get_FileNumber = get_FileNumber + INTERVAL_FLOW
         end do
 
+        call clamp_STEP(get_FileNumber)
+
     end function get_FileNumber
 
-    integer function clamp_STEP(STEP)
-        integer, intent(in) :: STEP
+    subroutine clamp_STEP(STEP)
+        integer, intent(inout) :: STEP
         integer Lamda, Delta
-
-        clamp_STEP = STEP
 
         Lamda = LoopF - LoopS
         
-        if((Lamda > 0).and.(clamp_STEP > LoopF)) then
-            Delta = mod(clamp_STEP - LoopS, Lamda)
-            clamp_STEP = LoopS + Delta
+        if(STEP >= LoopF) then
+            if(Lamda > 0) then
+                Delta = mod(STEP - LoopS, Lamda)
+                STEP = LoopS + Delta
+
+            elseif(Lamda == 0) then
+                STEP = LoopF
+                INTERVAL_FLOW = -1
+                print*, 'Checkout SteadyFlow'
+            end if
         end if
 
-    end function clamp_STEP
+    end subroutine clamp_STEP
 
     subroutine deallocation_flow
         if(unstructuredGrid) then

@@ -340,7 +340,7 @@ module virusDroplet_m
             end if
         end if
         
-        write(n_unit,'(*(g0:,","))') real(dimensional_time(step)), &
+        write(n_unit,'(*(g0:,","))') real(Time_onSimulation(step, dimension=.true.)), &
             (count(droplets(:)%status==statusCSV(L)), L = 1, size(statusCSV))
         ! close(n_unit)
 

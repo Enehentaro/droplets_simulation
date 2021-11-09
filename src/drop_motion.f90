@@ -119,7 +119,11 @@ module drop_motion_mod
             print*, 'AirFlow is Steady'
         end if
 
-        if(loopf - loops > 0) print*, 'Loop is from', loops, 'to', loopf
+        if(loopf - loops > 0) then
+            print*, 'Loop is from', loops, 'to', loopf
+        elseif(loopf - loops == 0) then 
+            print*, 'After', loopf, ', Checkout SteadyFlow'
+        end if
         print*, 'Delta_Time =', dt
         print*, 'Delta_Time inFLOW =', DT_FLOW
 
@@ -360,7 +364,7 @@ module drop_motion_mod
 
         if(INTERVAL_FLOW <= 0) return
 
-        call set_STEPinFLOW(dimensional_time(n_time))
+        call set_STEPinFLOW(Time_onSimulation(n_time))
 
         if(STEPinFLOW >= NextUpdate) call update_FlowField(first=.false.)   !流れ場の更新
 
