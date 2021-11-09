@@ -151,7 +151,7 @@ PROGRAM MAIN
 
       subroutine output
             print*, start_date
-            print*, 'Now_Step_Time =', dimensional_time(n), '[sec]'
+            print*, 'Now_Step_Time =', Time_onSimulation(n, dimension=.true.), '[sec]'
             print*, '# floating :', drop_counter('floating')
             call output_droplet
       end subroutine output
@@ -162,6 +162,7 @@ PROGRAM MAIN
             character(50) end_date, fname
             character(10) d_end, t_end
             logical existance
+            double precision TimeStart, TimeEnd
             
             call cpu_time(end_time)
             call date_and_time(date = d_end, time = t_end)
@@ -179,6 +180,9 @@ PROGRAM MAIN
                   inquire(file=fname, exist=existance)
             end do
 
+            TimeStart = Time_onSimulation(n_start, dimension=.true.)
+            TimeEnd = Time_onSimulation(n_end, dimension=.true.)
+
             open(newunit=n_unit, file=fname, status='new')
                   write(n_unit,*)'*******************************************'
                   write(n_unit,*)'*                                         *'
@@ -190,9 +194,9 @@ PROGRAM MAIN
                   write(n_unit,*) end_date
                   write(n_unit, '(A18, F15.3, 2X, A)') 'Erapsed Time =', end_time - start_time, '[sec]'
                   write(n_unit, '(A18, F15.3, 2X, A)') 'Cost of Calc =', &
-                        (end_time - start_time) / (dimensional_time(n_end) - dimensional_time(n_start)), '[sec/sec]'
+                        (end_time - start_time) / (TimeEnd - TimeStart), '[sec/sec]'
                   write(n_unit,'(A)') '======================================================='
-                  write(n_unit, '(A18, 2(F15.3,2x,A))') 'Time [sec] =', dimensional_time(n_start), '-', dimensional_time(n_end)
+                  write(n_unit, '(A18, 2(F15.3,2x,A))') 'Time [sec] =', TimeStart, '-', TimeEnd
                   write(n_unit, '(A18, 2(I15,2x,A))') 'Step =', n_start, '-', n_end !計算回数
                   write(n_unit,'(A18, I15)') 'OutputInterval =', interval
                   write(n_unit,'(A)') '======================================================='
