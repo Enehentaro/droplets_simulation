@@ -45,7 +45,7 @@ module unstructuredGrid_mod
             stop
         end if
 
-        print*, 'FILE_TYPE:', FILE_TYPE
+        print*, 'FILE_TYPE : ', FILE_TYPE
 
     end subroutine check_FILE_TYPE
 
