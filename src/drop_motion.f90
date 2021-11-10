@@ -21,21 +21,21 @@ module drop_motion_mod
 
     contains
 
-    subroutine first_setting(dir)
-        character(*), intent(in) :: dir
+    subroutine first_setting(case_dir)
+        character(*), intent(in) :: case_dir
 
-        call read_and_set_condition(dir)
+        call read_and_set_condition(case_dir)
         call set_coeff_drdt(T, RH)          !温湿度依存の係数の設定
 
         if(num_restart==0) then
             
             call random_set  !実行時刻に応じた乱数シード設定
-            call calc_initial_position(dir)
+            call calc_initial_position(case_dir)
             call calc_initial_radius
             call set_deathParam
 
         else if(num_restart==-1) then
-            call read_initialDistribution(dir)
+            call read_initialDistribution(case_dir)
 
         else
             return  !リスタートなら無視
