@@ -322,16 +322,16 @@ module virusDroplet_m
         !=======飛沫データ（VTKファイル）の出力ここまで===========================
     end subroutine output_droplet_VTK
 
-    subroutine output_droplet_CSV(fname, droplets, step)
-        use equation_mod
+    subroutine output_droplet_CSV(fname, droplets, time, initial)
         character(*), intent(in) :: fname
         type(virusDroplet_t), intent(in) :: droplets(:)
-        integer, intent(in) :: step
+        real, intent(in) :: time
+        logical, intent(in) :: initial
         integer, save :: n_unitCSV = 99
         integer L
 
         if(n_unitCSV == 99) then
-            if(step == 0) then !初期ステップならファイル新規作成
+            if(initial) then !初回ならファイル新規作成
                 open(newunit=n_unitCSV, file=fname, status='replace')
                 print*,'REPLACE:particle_data.csv'
 
@@ -343,8 +343,7 @@ module virusDroplet_m
 
         if(.not.allocated(statusCSV)) statusCSV = [0, 1, -1,-2]
         
-        write(n_unitCSV,'(*(g0:,","))') real(Time_onSimulation(step, dimension=.true.)), &
-            (count(droplets(:)%status==statusCSV(L)), L = 1, size(statusCSV))
+        write(n_unitCSV,'(*(g0:,","))') time, (count(droplets(:)%status==statusCSV(L)), L = 1, size(statusCSV))
         ! close(n_unit)
 
         ! if(count(adhesion==0) <= 0) then !浮遊粒子がなくなれば計算終了

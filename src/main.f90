@@ -34,6 +34,10 @@ PROGRAM MAIN
 
             call set_initialDroplet(case_name)         !初期状態を代入
 
+            call dropletManagement       !外部サブルーチンによる管理
+
+            call output_initialDroplet(case_name)
+
             call check_point                    !計算条件の確認および時刻計測のためのチェックポイント
 
             call update_FlowField(first=.true.)                !流れ場の取得
@@ -44,8 +48,6 @@ PROGRAM MAIN
 
             DO n = n_start + 1, n_end           !ステップ数だけループ
 
-                  call dropletManagement       !外部サブルーチンによる管理
-
                   call adhesion_check
 
                   call survival_check           !生存率に関する処理
@@ -53,6 +55,8 @@ PROGRAM MAIN
                   call coalescence_check        !飛沫間の合体判定
 
                   call Calculation_Droplets     !飛沫の運動計算
+
+                  call dropletManagement       !外部サブルーチンによる管理
 
                   if ((mod(n,interval) == 0)) call output             !出力
 
@@ -138,7 +142,7 @@ PROGRAM MAIN
             print*, start_date
             print*, 'Now_Step_Time =', Time_onSimulation(n, dimension=.true.), '[sec]'
             print*, '# floating :', drop_counter('floating')
-            call output_droplet(case_name)
+            call output_droplet(case_name, initial=.false.)
       end subroutine output
 
       subroutine output_ResultSummary
