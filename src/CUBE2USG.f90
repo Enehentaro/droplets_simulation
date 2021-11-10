@@ -1,7 +1,3 @@
-include 'vtkMesh_operator.f90'
-include 'plot3d_operator.f90'
-include 'CUBE_mod.f90'
-
 program CUBE2USG
     use CUBE_mod
     use vtkMesh_operator_m

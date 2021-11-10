@@ -65,10 +65,10 @@ module virusDroplet_m
 
     end subroutine calc_initial_radius
 
-    subroutine calc_initial_position(DIR)
+    subroutine calc_initial_position(dir)
         use csv_reader
         use filename_mod
-        character(*), intent(in) :: DIR
+        character(*), intent(in) :: dir
         integer kx,ky,kz, num_per_edge, num_per_box, m, k, k_end, cnt
         integer i_box, num_box, num_drop
         double precision :: standard(3), delta(3), width(3), randble(3)
@@ -76,7 +76,7 @@ module virusDroplet_m
         
         num_drop = size(droplets_ini)
 
-        call read_CSV(trim(DIR)//IniPositionFName, position_mat)
+        call read_CSV(dir//'/'//IniPositionFName, position_mat)
 
         num_box = size(position_mat, dim=2)
 
@@ -151,10 +151,10 @@ module virusDroplet_m
 
     end subroutine set_deathParam
 
-    subroutine read_initialDistribution(DIR)
-        character(*), intent(in) :: DIR
+    subroutine read_initialDistribution(dir)
+        character(*), intent(in) :: dir
 
-        droplets_ini = read_droplet_VTK(DIR//'InitialDistribution.vtk') !自動割付
+        droplets_ini = read_droplet_VTK(dir//'/InitialDistribution.vtk') !自動割付
         leaderID = [1, size(droplets_ini)+1]
 
     end subroutine read_initialDistribution

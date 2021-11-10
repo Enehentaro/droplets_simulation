@@ -1,24 +1,35 @@
 # Intel Fortran on Linux
 
-PROGRAM = droplet
+TARGET = droplet
 
 FC = ifort
 FCFLAGS = -traceback -CB -g -O0 -fpe0
 # FCFLAGS = -qopenmp
 
-OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o vector.o\
+TARGET1 = CUBE2USG
+TARGET2 = droplet2CSV
+
+OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o vector.o \
 	SCTfile_reader.o  vtkMesh_operator.o unstructured_grid.o adjacency_solver.o \
 	stl_reader.o adhesion_onSTL.o plot3d_operator.o CUBE_mod.o \
-    flow_field.o equation_mod.o virusDroplet_mod.o drop_motion.o \
-	dropletManager.o main.o
+    flow_field.o equation_mod.o virusDroplet_mod.o drop_motion.o
+	
+MAINOBJS = dropletManager.o main.o
 
 SRCDIR    = src
 OBJDIR    = obj
 OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
+MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJS))
 MODDIR = ${OBJDIR}
 
-$(PROGRAM): $(OBJECTS)
+$(TARGET): $(OBJECTS) $(MAINOBJECTS)
 	$(FC) $^ -o $@
+
+$(TARGET1): $(OBJECTS) $(OBJDIR)/$(TARGET1).o
+	$(FC) $^ -o $@
+
+$(TARGET2): $(OBJECTS) $(OBJDIR)/$(TARGET2).o
+	$(FC) $^ -o $@		
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	@if [ ! -d $(OBJDIR) ]; then \
@@ -26,5 +37,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	fi
 	$(FC) $< -o $@ -c -module $(MODDIR) $(FCFLAGS)
 
+all: $(TARGET) $(TARGET1) $(TARGET2)
+
 clean:
-	$(RM) $(PROGRAM) -r $(OBJDIR)
+	$(RM) $(TARGET) $(TARGET1) $(TARGET2) -r $(OBJDIR)
