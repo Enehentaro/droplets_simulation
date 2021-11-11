@@ -1,8 +1,4 @@
-include 'vtkMesh_operator.f90'
-include 'plot3d_operator.f90'
-include 'CUBE_mod.f90'
-
-program main
+program CUBE2USG
     use CUBE_mod
     use vtkMesh_operator_m
     implicit none
@@ -35,4 +31,4 @@ program main
     i = len_trim(F_fname)
     call output_VTK_mesh(F_fname(:i-2)//'.vtk')
     
-end program main
+end program CUBE2USG

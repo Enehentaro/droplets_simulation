@@ -27,13 +27,12 @@ PROGRAM MAIN
 
       do nc = 1, nc_max                         !実行数だけループ（通常1回）
             case_name = get_case_name(nc)
-            call set_case_path(case_name)
             
             call make_directory                     !ディレクトリ作成
             
-            call first_setting                        !条件TXTの読み込み、飛沫初期分布の計算など
+            call first_setting(case_name)                        !条件TXTの読み込み、飛沫初期分布の計算など
 
-            call set_initialDroplet         !初期状態を代入
+            call set_initialDroplet(case_name)         !初期状態を代入
 
             call check_point                    !計算条件の確認および時刻計測のためのチェックポイント
 
@@ -109,22 +108,8 @@ PROGRAM MAIN
 
             print*, '#', nc
 
-            ! PATH_FlowDIR = path_list(nc)%path2FlowDIR
-            ! FNAME_FMT = path_list(nc)%FlowFileName
-
-            ! call check_FILE_GRID    !気流ファイルのタイプをチェック
-      
-            ! write(temperature,'(i3.3)') T
-            ! write(humidity,'(i3.3)') RH
-
-            ! i = len_trim(path_out_base)
-            ! if(path_out_base(i:i) == '\') path_out_base(i:i) = ' '      !末尾が区切り文字であればこれを除去
-            ! ! path_out = trim(path_out_base)//'_'//trim(temperature)//'_'//trim(humidity)//'\'
-
-            VTK_DIR = path%VTK
-            ! i = len_trim(path_out)
-            ! if(path_out(i:i) /= '\') path_out(i+1:i+1) = '\'
-            backup_DIR = path%backup
+            VTK_DIR = case_name//'/VTK'
+            backup_DIR = case_name//'/backup'
 
             select case(trim(OS))
                   case ('Linux')  !for_Linux
@@ -142,7 +127,7 @@ PROGRAM MAIN
                         ! call system('copy condition.txt '//path_out)
 
                   case default
-                        print*, 'OS ERROR', OS
+                        print*, 'OS ERROR : ', OS
                         stop
                         
             end select
@@ -153,7 +138,7 @@ PROGRAM MAIN
             print*, start_date
             print*, 'Now_Step_Time =', Time_onSimulation(n, dimension=.true.), '[sec]'
             print*, '# floating :', drop_counter('floating')
-            call output_droplet
+            call output_droplet(case_name)
       end subroutine output
 
       subroutine output_ResultSummary
@@ -171,12 +156,12 @@ PROGRAM MAIN
             print*, start_date
             print*, end_date
 
-            fname = path%DIR//'ResultSummary.txt'
+            fname = case_name//'/ResultSummary.txt'
             inquire(file=fname, exist=existance)
             cnt = 0
             do while(existance)
                   cnt = cnt + 1
-                  write(fname,'("'//path%DIR//'ResultSummary_", i0, ".txt")') cnt
+                  write(fname,'("'//case_name//'/ResultSummary_", i0, ".txt")') cnt
                   inquire(file=fname, exist=existance)
             end do
 

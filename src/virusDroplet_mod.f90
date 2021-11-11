@@ -11,6 +11,8 @@ module virusDroplet_m
 
     integer, allocatable :: leaderID(:)
 
+    integer, allocatable :: statusCSV(:)
+
     contains
 
     subroutine allocation_initialDroplets(num_drop)
@@ -63,10 +65,10 @@ module virusDroplet_m
 
     end subroutine calc_initial_radius
 
-    subroutine calc_initial_position(DIR)
+    subroutine calc_initial_position(dir)
         use csv_reader
         use filename_mod
-        character(*), intent(in) :: DIR
+        character(*), intent(in) :: dir
         integer kx,ky,kz, num_per_edge, num_per_box, m, k, k_end, cnt
         integer i_box, num_box, num_drop
         double precision :: standard(3), delta(3), width(3), randble(3)
@@ -74,7 +76,7 @@ module virusDroplet_m
         
         num_drop = size(droplets_ini)
 
-        call read_CSV(trim(DIR)//IniPositionFName, position_mat)
+        call read_CSV(dir//'/'//IniPositionFName, position_mat)
 
         num_box = size(position_mat, dim=2)
 
@@ -149,10 +151,10 @@ module virusDroplet_m
 
     end subroutine set_deathParam
 
-    subroutine read_initialDistribution(DIR)
-        character(*), intent(in) :: DIR
+    subroutine read_initialDistribution(dir)
+        character(*), intent(in) :: dir
 
-        droplets_ini = read_droplet_VTK(DIR//'InitialDistribution.vtk') !自動割付
+        droplets_ini = read_droplet_VTK(dir//'/InitialDistribution.vtk') !自動割付
         leaderID = [1, size(droplets_ini)+1]
 
     end subroutine read_initialDistribution
@@ -325,22 +327,23 @@ module virusDroplet_m
         character(*), intent(in) :: fname
         type(virusDroplet_t), intent(in) :: droplets(:)
         integer, intent(in) :: step
-        integer, save :: n_unit = 99
+        integer, save :: n_unitCSV = 99
         integer L
-        integer, parameter :: statusCSV(4) = [0, 1, -1,-2]
 
-        if(n_unit == 99) then
+        if(n_unitCSV == 99) then
             if(step == 0) then !初期ステップならファイル新規作成
-                open(newunit=n_unit, file=fname, status='replace')
+                open(newunit=n_unitCSV, file=fname, status='replace')
                 print*,'REPLACE:particle_data.csv'
 
             else
-                open(newunit=n_unit, file=fname, action='write', status='old', position='append')
+                open(newunit=n_unitCSV, file=fname, action='write', status='old', position='append')
 
             end if
         end if
+
+        if(.not.allocated(statusCSV)) statusCSV = [0, 1, -1,-2]
         
-        write(n_unit,'(*(g0:,","))') real(Time_onSimulation(step, dimension=.true.)), &
+        write(n_unitCSV,'(*(g0:,","))') real(Time_onSimulation(step, dimension=.true.)), &
             (count(droplets(:)%status==statusCSV(L)), L = 1, size(statusCSV))
         ! close(n_unit)
 

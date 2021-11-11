@@ -15,32 +15,27 @@ module drop_motion_mod
     integer interval
     real, private :: T, RH
 
-    type pathCase_t
-        character(:), allocatable :: DIR, VTK, backup
-    end type pathCase_t
-
-    type(pathCase_t) path
-
     integer, target :: n_time  !時間ステップ
     integer, private :: num_restart
     integer n_start, n_end
 
     contains
 
-    subroutine first_setting
+    subroutine first_setting(case_dir)
+        character(*), intent(in) :: case_dir
 
-        call read_and_set_condition
+        call read_and_set_condition(case_dir)
         call set_coeff_drdt(T, RH)          !温湿度依存の係数の設定
 
         if(num_restart==0) then
             
             call random_set  !実行時刻に応じた乱数シード設定
-            call calc_initial_position(path%DIR)
+            call calc_initial_position(case_dir)
             call calc_initial_radius
             call set_deathParam
 
         else if(num_restart==-1) then
-            call read_initialDistribution(path%DIR)
+            call read_initialDistribution(case_dir)
 
         else
             return  !リスタートなら無視
@@ -51,22 +46,16 @@ module drop_motion_mod
 
     end subroutine first_setting
 
-    subroutine set_case_path(case_name)
-        character(*), intent(in) :: case_name
-        path%DIR = trim(case_name)//'/'
-        path%VTK = trim(case_name)//'/VTK/'
-        path%backup = trim(case_name)//'/backup/'
-    end subroutine set_case_path
-
-    subroutine read_and_set_condition
+    subroutine read_and_set_condition(dir)
         use filename_mod
         use path_operator_m
+        character(*), intent(in) ::dir
         double precision dt, L, U
         double precision :: direction_g(3)
         character(99) path2FlowFile
         integer i, n_unit, num_drop
 
-        OPEN(newunit=n_unit, FILE=path%DIR//conditionFName, STATUS='OLD')
+        OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
             read(n_unit,'()')
             read(n_unit,*) num_restart
             read(n_unit,'()')
@@ -137,8 +126,8 @@ module drop_motion_mod
 
     end subroutine read_and_set_condition
 
-    subroutine set_initialDroplet
-        implicit none
+    subroutine set_initialDroplet(case_dir)
+        character(*), intent(in) :: case_dir
         character(99) fname
         type(virusDroplet_t), allocatable :: droplets_ini(:)
 
@@ -146,7 +135,7 @@ module drop_motion_mod
 
             print*, 'RESTRAT'
 
-            write(fname,'("'//trim(path%backup)//'backup", i8.8, ".bu")') num_restart
+            write(fname,'("'//case_dir//'/backup/backup", i8.8, ".bu")') num_restart
             droplets = read_backup(fname)   !ここで自動割り付け
 
             n_start = num_restart
@@ -159,7 +148,7 @@ module drop_motion_mod
             droplets(:)%virusDroplet_t = droplets_ini(:)
             n_start = 0
             n_time = n_start
-            call output_droplet  !リスタートでないなら初期配置出力
+            call output_droplet(case_dir)  !リスタートでないなら初期配置出力
 
         end if
 
@@ -525,23 +514,6 @@ module drop_motion_mod
         
     end subroutine coalescence
 
-    subroutine output_droplet
-        character(99) fname
-        character(4) :: head_out = 'drop'
-
-        write(fname,'("'//path%VTK//trim(head_out)//'",i8.8,".vtk")') n_time
-        if(n_time == 0) then
-            call output_droplet_VTK(fname, droplets(:)%virusDroplet_t, initial=.true.)
-        else
-            call output_droplet_VTK(fname, droplets(:)%virusDroplet_t)
-        end if
-
-        fname = path%DIR//'/particle.csv'
-        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, n_time)
-
-        call output_backup
-    end subroutine
-
     function read_backup(fname) result(droplets_read)
         implicit none
         character(*), intent(in) :: fname
@@ -562,13 +534,13 @@ module drop_motion_mod
       
     end function read_backup
 
-    subroutine output_backup
-        implicit none
+    subroutine output_backup(dir)
+        character(*), intent(in) :: dir
         integer i, n_unit, num_drop
         character(99) fname
 
         num_drop = size(droplets(:))
-        write(fname,'("'//path%backup//'backup", i8.8, ".bu")') n_time
+        write(fname,'("'//dir//'/backup", i8.8, ".bu")') n_time
 
         open(newunit=n_unit, form='unformatted', file=fname, status='replace')
             write(n_unit) num_drop
@@ -580,6 +552,23 @@ module drop_motion_mod
         print*, 'writeOUT:', trim(fname)
 
     end subroutine output_backup
+
+    subroutine output_droplet(case_dir)
+        character(*), intent(in) :: case_dir
+        character(99) fname
+
+        write(fname,'("'//case_dir//'/VTK/drop", i8.8,".vtk")') n_time
+        if(n_time == 0) then
+            call output_droplet_VTK(fname, droplets(:)%virusDroplet_t, initial=.true.)
+        else
+            call output_droplet_VTK(fname, droplets(:)%virusDroplet_t)
+        end if
+
+        fname = case_dir//'/particle.csv'
+        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, n_time)
+
+        call output_backup(case_dir//'/backup')
+    end subroutine
 
     real function environment(name)
         character(*), intent(in) :: name
