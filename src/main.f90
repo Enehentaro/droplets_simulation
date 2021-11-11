@@ -8,9 +8,6 @@ PROGRAM MAIN
       use drop_motion_mod
       use case_list_m
       implicit none
-
-      character(7), parameter :: OS = 'Linux'
-
       integer, pointer :: n => n_time
       integer nc, nc_max
       character(50) start_date
@@ -28,7 +25,7 @@ PROGRAM MAIN
       do nc = 1, nc_max                         !実行数だけループ（通常1回）
             case_name = get_case_name(nc)
             
-            call make_directory                     !ディレクトリ作成
+            call create_CaseDirectory                     !ディレクトリ作成
             
             call first_setting(case_name)                        !条件TXTの読み込み、飛沫初期分布の計算など
 
@@ -106,37 +103,15 @@ PROGRAM MAIN
             start_date = '[Start Date] ' // DateAndTime_string(d_start, t_start)
       end subroutine
 
-      subroutine make_directory
+      subroutine create_CaseDirectory
             use path_operator_m
-            character(:), allocatable :: VTK_DIR, backup_DIR
 
-            print*, '#', nc
+            print*, '#', nc, '[',case_name,']'
 
-            VTK_DIR = case_name//'/VTK'
-            backup_DIR = case_name//'/backup'
-
-            select case(trim(OS))
-                  case ('Linux')  !for_Linux
-                        VTK_DIR =  replace_str(VTK_DIR, '\', '/' )
-                        backup_DIR = replace_str(backup_DIR, '\', '/')
-                        call system('mkdir -p -v '//VTK_DIR)
-                        call system('mkdir -p -v '//backup_DIR)
-                        ! call system('cp condition.txt '//path_out)
-
-                  case ('Windows')  !for_Windows
-                        VTK_DIR =  replace_str(VTK_DIR, '/', '\' )
-                        backup_DIR = replace_str(backup_DIR, '/', '\')
-                        call system('md '//VTK_DIR)
-                        call system('md '//backup_DIR)
-                        ! call system('copy condition.txt '//path_out)
-
-                  case default
-                        print*, 'OS ERROR : ', OS
-                        stop
-                        
-            end select
-
-      end subroutine make_directory
+            call make_directory(case_name//'/VTK')
+            call make_directory(case_name//'/backup')
+            
+      end subroutine create_CaseDirectory
 
       subroutine output
             print*, start_date
