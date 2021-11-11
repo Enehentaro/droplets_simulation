@@ -1,10 +1,10 @@
-# Intel Fortran on Linux
+# GNU Fortran on Windows
 
 TARGET = droplet
 
-FC = ifort
-FCFLAGS = -traceback -CB -g -O0 -fpe0
-# FCFLAGS = -qopenmp
+FC = gfortran
+FCFLAGS = -O0 -fbacktrace -g
+# -Wall -fbounds-check -Wuninitialized
 
 TARGET1 = CUBE2USG
 TARGET2 = droplet2CSV
@@ -32,12 +32,12 @@ $(TARGET2): $(OBJECTS) $(OBJDIR)/$(TARGET2).o
 	$(FC) $^ -o $@		
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
-	@if [ ! -d $(OBJDIR) ]; then \
-		mkdir -p $(OBJDIR); \
-	fi
-	$(FC) $< -o $@ -c -module $(MODDIR) $(FCFLAGS)
+	@if not exist $(OBJDIR) ( \
+		md $(OBJDIR) \
+	)
+	$(FC) $< -o $@ -c -J$(MODDIR) ${FCFLAGS}
 
 all: $(TARGET) $(TARGET1) $(TARGET2)
 
 clean:
-	$(RM) $(TARGET) $(TARGET1) $(TARGET2) -r $(OBJDIR)
+	del /Q ${OBJDIR} $(TARGET).exe $(TARGET1).exe $(TARGET2).exe
