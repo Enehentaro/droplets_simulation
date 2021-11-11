@@ -133,7 +133,7 @@ module drop_motion_mod
 
         if(num_restart > 0) then
 
-            print*, 'RESTRAT'
+            print*, '**RESTRAT**'
 
             write(fname,'("'//case_dir//'/backup/backup", i8.8, ".bu")') num_restart
             droplets = read_backup(fname)   !ここで自動割り付け
@@ -148,14 +148,20 @@ module drop_motion_mod
             droplets(:)%virusDroplet_t = droplets_ini(:)
             n_start = 0
             n_time = n_start
-            call output_droplet(case_dir)  !リスタートでないなら初期配置出力
-
+            
         end if
 
         num_droplets = size(droplets)
         print*, 'num_droplets =', num_droplets
             
     end subroutine set_initialDroplet
+
+    subroutine output_initialDroplet(case_dir)
+        character(*), intent(in) :: case_dir
+
+        if(num_restart <= 0) call output_droplet(case_dir, initial=.true.)  !リスタートでないなら初期配置出力
+
+    end subroutine output_initialDroplet
 
     subroutine first_refCELLsearch
         integer j, num_drop
@@ -553,21 +559,19 @@ module drop_motion_mod
 
     end subroutine output_backup
 
-    subroutine output_droplet(case_dir)
+    subroutine output_droplet(case_dir, initial)
         character(*), intent(in) :: case_dir
+        logical, intent(in) ::initial
         character(99) fname
 
-        write(fname,'("'//case_dir//'/VTK/drop", i8.8,".vtk")') n_time
-        if(n_time == 0) then
-            call output_droplet_VTK(fname, droplets(:)%virusDroplet_t, initial=.true.)
-        else
-            call output_droplet_VTK(fname, droplets(:)%virusDroplet_t)
-        end if
+        write(fname,'("'//case_dir//'/VTK/drop", i8.8, ".vtk")') n_time
+        call output_droplet_VTK(fname, droplets(:)%virusDroplet_t, initial)
 
         fname = case_dir//'/particle.csv'
-        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, n_time)
+        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, real(Time_onSimulation(n_time, dimension=.true.)), initial)
 
         call output_backup(case_dir//'/backup')
+
     end subroutine
 
     real function environment(name)
