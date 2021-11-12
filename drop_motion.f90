@@ -19,7 +19,7 @@ module drop_motion_mod
 
     integer, private :: num_droplets   !全飛沫数
     integer interval, T, RH
- 
+
     character path_out_base*99, path_out*99, head_out*10, path_backup*7
 
     integer, target :: n_time  !時間ステップ
@@ -449,8 +449,8 @@ module drop_motion_mod
         double precision Step_air
 
         if(INTERVAL_FLOW > 0) then
-              Step_air = dble(n_time)*Rdt          !気流計算における経過ステップ数に相当
-              if(mod(Step_air, dble(INTERVAL_FLOW)) == 0.d0) call read_flow_field   !流れ場の更新
+            Step_air = dble(n_time)*Rdt          !気流計算における経過ステップ数に相当
+            if(mod(Step_air, dble(INTERVAL_FLOW)) == 0.d0) call read_flow_field   !流れ場の更新
         end if
 
     end subroutine update_flow_check
@@ -465,7 +465,7 @@ module drop_motion_mod
         if(unstructuredGrid) call boundary_move
             
     end subroutine read_flow_field
-                      
+
     subroutine boundary_move !境界面の移動に合わせて付着飛沫も移動
         integer vn, JB
 
@@ -550,7 +550,7 @@ module drop_motion_mod
         end do
     
         call random_seed(put=seed(:)) !新シードを指定
-          
+
     end subroutine random_set
 
     function get_floating_droplets(droplets_in) result(floating_droplets)
@@ -664,7 +664,7 @@ module drop_motion_mod
             end do
         close(n_unit)
     
-      
+
     end function read_backup
 
     subroutine output_backup
@@ -736,7 +736,7 @@ module drop_motion_mod
         close(n_unit)
     
         droplets_read(:)%radius = diameter(:) * 0.5d0
-      
+
     end function read_droplet_VTK
 
     subroutine output_droplet_VTK

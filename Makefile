@@ -1,21 +1,43 @@
-PROGRAM = droplet
+# GNU Fortran on Windows
+
+TARGET = droplet
 
 FC = gfortran
-FCFLAGS = -O -fbacktrace -g
-# FCFLAGS = -Wall -fbounds-check -O -Wuninitialized -fbacktrace -g
+FCFLAGS = -O0 -fbacktrace -g
+# -Wall -fbounds-check -Wuninitialized
 
-FCCOMPILE = ${FC} ${FCFLAGS}
+TARGET1 = CUBE2USG
+TARGET2 = droplet2CSV
 
-OBJS = csv_reader.o cases_reader.o stl_reader.o fld_reader.o plot3d_operator.o CUBE_mod.o \
-    unstructured_grid.o adjacency_solver.o flow_field.o equation_mod.o drop_motion.o \
-	management_droplets.o main.o
+OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o vector.o \
+	SCTfile_reader.o  vtkMesh_operator.o unstructured_grid.o adjacency_solver.o \
+	stl_reader.o adhesion_onSTL.o plot3d_operator.o CUBE_mod.o \
+    flow_field.o equation_mod.o virusDroplet_mod.o drop_motion.o
+	
+MAINOBJS = dropletManager.o main.o
 
-${PROGRAM}: ${OBJS}
-	${FCCOMPILE} -o ${PROGRAM} ${OBJS}
+SRCDIR    = src
+OBJDIR    = obj
+OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
+MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJS))
+MODDIR = ${OBJDIR}
 
-%.o:%.f90
-	${FCCOMPILE} -c $<
+$(TARGET): $(OBJECTS) $(MAINOBJECTS)
+	$(FC) $^ -o $@
+
+$(TARGET1): $(OBJECTS) $(OBJDIR)/$(TARGET1).o
+	$(FC) $^ -o $@
+
+$(TARGET2): $(OBJECTS) $(OBJDIR)/$(TARGET2).o
+	$(FC) $^ -o $@		
+
+$(OBJDIR)/%.o: $(SRCDIR)/%.f90
+	@if not exist $(OBJDIR) ( \
+		md $(OBJDIR) \
+	)
+	$(FC) $< -o $@ -c -J$(MODDIR) ${FCFLAGS}
+
+all: $(TARGET) $(TARGET1) $(TARGET2)
 
 clean:
-	- del *.o *.mod
-# - rm -f *.o *~ *.mod
+	del /Q ${OBJDIR} $(TARGET).exe $(TARGET1).exe $(TARGET2).exe
