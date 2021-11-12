@@ -5,6 +5,8 @@ module flow_field
 
     integer INTERVAL_FLOW                           !気流データ出力間隔
     integer LoopS, LoopF, OFFSET
+    double precision DT_FLOW
+    integer STEPinFLOW, NextUpdate
 
     character PATH_FlowDIR*99, HEAD_AIR*20, FNAME_FMT*30 !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
     integer, private :: FNAME_DIGITS !ファイル名の整数部桁数
@@ -93,11 +95,12 @@ module flow_field
             
     end subroutine read_steadyFlowData
 
-    subroutine read_unsteadyFlowData(FNUM)
-        integer, intent(in) :: FNUM
+    subroutine read_unsteadyFlowData
+        integer FNUM
         character(99) FNAME
         character(:),allocatable :: digits_fmt
 
+        FNUM = get_FileNumber()
         digits_fmt = get_digits_format()
 
         if(unstructuredGrid) then
@@ -110,6 +113,8 @@ module flow_field
             call read_CUBE_data(FNAME, trim(PATH_FlowDIR))
 
         end if
+
+        NextUpdate = STEPinFLOW + INTERVAL_FLOW
             
     end subroutine read_unsteadyFlowData
 
@@ -137,13 +142,18 @@ module flow_field
 
     end subroutine set_MinMaxCDN
 
-    subroutine search_refCELL(X, reference_cell)
+    subroutine search_refCELL(X, reference_cell, stat)
         real, intent(in) :: X(3)
         integer, intent(inout) :: reference_cell
+        logical, optional :: stat
 
         reference_cell = nearer_cell(X, reference_cell)
+        if(present(stat)) stat = .True.
 
-        if (.not.nearcell_check(X(:), reference_cell)) reference_cell = nearest_cell(X)
+        if (.not.nearcell_check(X(:), reference_cell)) then
+            reference_cell = nearest_cell(X)
+            if(present(stat)) stat = .false.
+        end if
     
     end subroutine search_refCELL
 
@@ -159,15 +169,44 @@ module flow_field
 
     end subroutine search_refCELL_onCUBE
 
-    integer function get_FileNumber(step)
-        integer, intent(in) :: step
+    subroutine set_STEPinFLOW(time)
+        DOUBLE PRECISION, intent(in) :: time
+
+        STEPinFLOW = int(time/DT_FLOW) + OFFSET   !気流計算における時刻ステップ数に相当
+
+    end subroutine
+
+    integer function get_FileNumber()
 
         get_FileNumber = OFFSET
-        do while(get_FileNumber + INTERVAL_FLOW < Step)
+        ! do while(get_FileNumber + INTERVAL_FLOW <= STEPinFLOW)  !後退評価
+        do while(get_FileNumber <= STEPinFLOW)    !前進評価
             get_FileNumber = get_FileNumber + INTERVAL_FLOW
         end do
 
+        call clamp_STEP(get_FileNumber)
+
     end function get_FileNumber
+
+    subroutine clamp_STEP(STEP)
+        integer, intent(inout) :: STEP
+        integer Lamda, Delta
+
+        Lamda = LoopF - LoopS
+        
+        if(STEP >= LoopF) then
+            if(Lamda > 0) then
+                Delta = mod(STEP - LoopS, Lamda)
+                STEP = LoopS + Delta
+
+            elseif(Lamda == 0) then
+                STEP = LoopF
+                INTERVAL_FLOW = -1
+                print*, 'Checkout SteadyFlow'
+            end if
+        end if
+
+    end subroutine clamp_STEP
 
     subroutine deallocation_flow
         if(unstructuredGrid) then

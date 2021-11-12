@@ -15,33 +15,27 @@ module drop_motion_mod
     integer interval
     real, private :: T, RH
 
-    type pathCase_t
-        character(:), allocatable :: DIR, VTK, backup
-    end type pathCase_t
-
-    type(pathCase_t) path
-
     integer, target :: n_time  !時間ステップ
     integer, private :: num_restart
     integer n_start, n_end
-    double precision, private :: Rdt    !飛沫計算と気流計算の時間間隔の比
 
     contains
 
-    subroutine first_setting
+    subroutine first_setting(case_dir)
+        character(*), intent(in) :: case_dir
 
-        call read_and_set_condition
+        call read_and_set_condition(case_dir)
         call set_coeff_drdt(T, RH)          !温湿度依存の係数の設定
 
         if(num_restart==0) then
             
             call random_set  !実行時刻に応じた乱数シード設定
-            call calc_initial_position(path%DIR)
+            call calc_initial_position(case_dir)
             call calc_initial_radius
-            call set_death_param
+            call set_deathParam
 
         else if(num_restart==-1) then
-            call read_initialDistribution
+            call read_initialDistribution(case_dir)
 
         else
             return  !リスタートなら無視
@@ -52,22 +46,16 @@ module drop_motion_mod
 
     end subroutine first_setting
 
-    subroutine set_case_path(case_name)
-        character(*), intent(in) :: case_name
-        path%DIR = trim(case_name)//'/'
-        path%VTK = trim(case_name)//'/VTK/'
-        path%backup = trim(case_name)//'/backup/'
-    end subroutine set_case_path
-
-    subroutine read_and_set_condition
+    subroutine read_and_set_condition(dir)
         use filename_mod
         use path_operator_m
-        double precision DTa, dt, L, U
+        character(*), intent(in) ::dir
+        double precision dt, L, U
         double precision :: direction_g(3)
         character(99) path2FlowFile
         integer i, n_unit, num_drop
 
-        OPEN(newunit=n_unit, FILE=path%DIR//conditionFName, STATUS='OLD')
+        OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
             read(n_unit,'()')
             read(n_unit,*) num_restart
             read(n_unit,'()')
@@ -89,7 +77,7 @@ module drop_motion_mod
             read(n_unit,'()')
             read(n_unit,'(A)') path2FlowFile
             read(n_unit,'()')
-            read(n_unit,*) DTa
+            read(n_unit,*) DT_FLOW
             read(n_unit,'()')
             read(n_unit,*) OFFSET
             read(n_unit,'()')
@@ -102,8 +90,6 @@ module drop_motion_mod
             read(n_unit,*) U
 
         CLOSE(n_unit)
-
-        Rdt = dt/DTa                       !データ読み込み時に時間軸合わせるパラメータ
 
         if(num_restart == 0) call allocation_initialDroplets(num_drop) !通常実行なら割付
 
@@ -122,9 +108,13 @@ module drop_motion_mod
             print*, 'AirFlow is Steady'
         end if
 
-        if(loopf - loops > 0) print*, 'Loop is from', loops, 'to', loopf
+        if(loopf - loops > 0) then
+            print*, 'Loop is from', loops, 'to', loopf
+        elseif(loopf - loops == 0) then 
+            print*, 'After', loopf, ', Checkout SteadyFlow'
+        end if
         print*, 'Delta_Time =', dt
-        print*, 'Rdt', Rdt
+        print*, 'Delta_Time inFLOW =', DT_FLOW
 
         call set_dir_from_path(path2FlowFile, PATH_FlowDIR, FNAME_FMT)
 
@@ -136,16 +126,16 @@ module drop_motion_mod
 
     end subroutine read_and_set_condition
 
-    subroutine set_initialDroplet
-        implicit none
+    subroutine set_initialDroplet(case_dir)
+        character(*), intent(in) :: case_dir
         character(99) fname
         type(virusDroplet_t), allocatable :: droplets_ini(:)
 
         if(num_restart > 0) then
 
-            print*, 'RESTRAT'
+            print*, '**RESTRAT**'
 
-            write(fname,'("'//trim(path%backup)//'backup", i8.8, ".bu")') num_restart
+            write(fname,'("'//case_dir//'/backup/backup", i8.8, ".bu")') num_restart
             droplets = read_backup(fname)   !ここで自動割り付け
 
             n_start = num_restart
@@ -158,8 +148,7 @@ module drop_motion_mod
             droplets(:)%virusDroplet_t = droplets_ini(:)
             n_start = 0
             n_time = n_start
-            call output_droplet  !リスタートでないなら初期配置出力
-
+            
         end if
 
         num_droplets = size(droplets)
@@ -167,34 +156,41 @@ module drop_motion_mod
             
     end subroutine set_initialDroplet
 
+    subroutine output_initialDroplet(case_dir)
+        character(*), intent(in) :: case_dir
+
+        if(num_restart <= 0) call output_droplet(case_dir, initial=.true.)  !リスタートでないなら初期配置出力
+
+    end subroutine output_initialDroplet
+
     subroutine first_refCELLsearch
-        integer i, j, num_drop
+        integer j, num_drop
+        logical success
+
+        print*, 'first_refCELLsearch occured!'
 
         num_drop = size(droplets)
 
         if(unstructuredGrid) then
-            do i = 1, size(leaderID) - 1
-                j = leaderID(i)
-                droplets(j)%refCELL%ID = nearest_cell(real(droplets(j)%position(:)))
+            j = 1
+            droplets(j)%refCELL%ID = nearest_cell(real(droplets(j)%position(:)))
 
-                droplets(leaderID(i)+1 : leaderID(i+1)-1)%refCELL%ID = droplets(j)%refCELL%ID !時間短縮を図る
+            droplets(j+1:)%refCELL%ID = droplets(j)%refCELL%ID !時間短縮を図る
 
-                do j = leaderID(i) + 1, leaderID(i+1) - 1
-                    call search_refCELL(real(droplets(j)%position(:)), droplets(j)%refCELL%ID)
-                end do
+            do j = 2, num_drop
+                call search_refCELL(real(droplets(j)%position(:)), droplets(j)%refCELL%ID, stat=success)
+                if(.not.success) droplets(j+1:)%refCELL%ID = droplets(j)%refCELL%ID
             end do
 
         else
-            do i = 1, size(leaderID) - 1
-                j = leaderID(i)
-                droplets(j)%refCELL%ID = get_cube_contains(real(droplets(j)%position(:)))    
-                droplets(j)%refCELL%nodeID(:) = nearest_node(real(droplets(j)%position(:)), droplets(j)%refCELL%ID)
+            j = 1
+            droplets(j)%refCELL%ID = get_cube_contains(real(droplets(j)%position(:)))    
+            droplets(j)%refCELL%nodeID(:) = nearest_node(real(droplets(j)%position(:)), droplets(j)%refCELL%ID)
 
-                droplets(leaderID(i)+1 : leaderID(i+1)-1)%refCELL = droplets(j)%refCELL !時間短縮を図る
+            droplets(j+1:)%refCELL = droplets(j)%refCELL !時間短縮を図る
 
-                do j = leaderID(i) + 1, leaderID(i+1) - 1
-                    call search_refCELL_onCUBE(real(droplets(j)%position(:)), droplets(j)%refCELL)
-                end do
+            do j = 2, num_drop
+                call search_refCELL_onCUBE(real(droplets(j)%position(:)), droplets(j)%refCELL)
             end do
 
         end if
@@ -235,7 +231,7 @@ module drop_motion_mod
         end if
 
         do vn = 1, num_droplets
-            if ((droplets(vn)%status == 0).and.(droplets(vn)%death_param > survival_rate(n_time))) then
+            if ((droplets(vn)%status == 0).and.(droplets(vn)%deathParam > survival_rate(n_time))) then
                 call stop_droplet(droplets(vn), status=-1)
             end if
         end do
@@ -334,10 +330,11 @@ module drop_motion_mod
             r_vector(:) = droplet%position(:) - BoundFACEs(JB)%center(:)
 
             inner = dot_product(r_vector(:), BoundFACEs(JB)%normalVector(:))
+            !外向き法線ベクトルと位置ベクトルの内積は、平面からの飛び出し量に相当
 
-            if (inner > 0.0d0) then
-                adhesion = .true. !外向き法線ベクトルと位置ベクトルの内積が正なら付着判定
-                droplet%adhesBoundID = JB     !付着した境界面番号
+            if (inner + droplet%radius > 0.d0) then
+                adhesion = .true.               !(飛び出し量+飛沫半径)がゼロ以上なら付着判定
+                droplet%adhesBoundID = JB       !付着した境界面番号
             end if
         end do
 
@@ -358,42 +355,24 @@ module drop_motion_mod
 
     end subroutine stop_droplet
 
-    integer function get_flowStep()
-        integer Lamda, Delta
-
-        get_flowStep = int(dble(n_time)*RDT) + OFFSET   !気流計算における経過ステップ数に相当
-
-        Lamda = LoopF - LoopS
-        
-        if((Lamda > 0).and.(get_flowStep > LoopF)) then
-            Delta = mod(get_flowStep - LoopS, Lamda)
-            get_flowStep = LoopS + Delta
-        end if
-
-    end function
-
     subroutine update_flow_check
-        double precision Step_air
 
         if(INTERVAL_FLOW <= 0) return
 
-        Step_air = dble(n_time)*Rdt          !気流計算における経過ステップ数に相当
-        if(mod(Step_air, dble(INTERVAL_FLOW)) == 0.d0) then
-            call update_FlowField(first=.false.)   !流れ場の更新
-        end if
+        call set_STEPinFLOW(Time_onSimulation(n_time))
+
+        if(STEPinFLOW >= NextUpdate) call update_FlowField(first=.false.)   !流れ場の更新
 
     end subroutine update_flow_check
 
     subroutine update_FlowField(first)
-        integer flowStep, FNUM
         logical, intent(in) :: first
 
         if(INTERVAL_FLOW <= 0) then
             call read_steadyFlowData
         else
-            flowStep = get_flowStep()
-            FNUM = get_FileNumber(flowStep)
-            call read_unsteadyFlowData(FNUM)
+            if(first) call set_STEPinFLOW(Time_onSimulation(n_time))
+            call read_unsteadyFlowData
 
         end if
 
@@ -495,7 +474,7 @@ module drop_motion_mod
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
         if((n_time - last_coalescence) > 100) return
 
-        print*, 'Coalescence_check', n_time
+        print*, 'Coalescence_check [step:', n_time, ']'
 
         drop1 : do d1 = 1, num_droplets - 1
             if(droplets(d1)%status/=0) cycle drop1
@@ -508,7 +487,7 @@ module drop_motion_mod
                 r2 = droplets(d2)%radius
 
                 if((r1+r2) >= distance) then
-                    print*, 'Coalescence', d1, d2
+                    print*, d1, 'and', d2, 'coalesce!'
                     if(r1 >= r2) then
                         call coalescence(droplets(d1), droplets(d2))
                     else
@@ -541,19 +520,6 @@ module drop_motion_mod
         
     end subroutine coalescence
 
-    subroutine output_droplet
-        character(99) fname
-        character(4) :: head_out = 'drop'
-
-        write(fname,'("'//path%VTK//trim(head_out)//'",i8.8,".vtk")') n_time
-        call output_droplet_VTK(fname, droplets(:)%virusDroplet_t)
-
-        fname = path%DIR//'/particle.csv'
-        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, n_time)
-
-        call output_backup
-    end subroutine
-
     function read_backup(fname) result(droplets_read)
         implicit none
         character(*), intent(in) :: fname
@@ -574,13 +540,13 @@ module drop_motion_mod
       
     end function read_backup
 
-    subroutine output_backup
-        implicit none
+    subroutine output_backup(dir)
+        character(*), intent(in) :: dir
         integer i, n_unit, num_drop
         character(99) fname
 
         num_drop = size(droplets(:))
-        write(fname,'("'//path%backup//'backup", i8.8, ".bu")') n_time
+        write(fname,'("'//dir//'/backup", i8.8, ".bu")') n_time
 
         open(newunit=n_unit, form='unformatted', file=fname, status='replace')
             write(n_unit) num_drop
@@ -592,6 +558,21 @@ module drop_motion_mod
         print*, 'writeOUT:', trim(fname)
 
     end subroutine output_backup
+
+    subroutine output_droplet(case_dir, initial)
+        character(*), intent(in) :: case_dir
+        logical, intent(in) ::initial
+        character(99) fname
+
+        write(fname,'("'//case_dir//'/VTK/drop", i8.8, ".vtk")') n_time
+        call output_droplet_VTK(fname, droplets(:)%virusDroplet_t, initial)
+
+        fname = case_dir//'/particle.csv'
+        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, real(Time_onSimulation(n_time, dimension=.true.)), initial)
+
+        call output_backup(case_dir//'/backup')
+
+    end subroutine
 
     real function environment(name)
         character(*), intent(in) :: name

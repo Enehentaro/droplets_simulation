@@ -1,5 +1,5 @@
 !このサブルーチンは、毎ステップ呼ばれる。自由に編集してよい。
-subroutine management_droplet
+subroutine dropletManagement
     use drop_motion_mod
     implicit none
 
@@ -247,4 +247,4 @@ subroutine management_droplet
 
     end if
 
-end subroutine management_droplet
+end subroutine dropletManagement

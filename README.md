@@ -13,13 +13,13 @@ Simulation of Droplets Behavior in AFDET
 ## 使い方
   ※この branch は GNUFortran Windows 用です。間違っても master branch に`merge`しないでください。
   コンパイルに`make`コマンドを使います（makeのインストールが必要）。
-  1. 「sample_case」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
+  1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
   1. ケースディレクトリ内の条件ファイル(condition.txt, initial_position.csv)を編集。
   1. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
   1. `.\droplet.exe`で実行。ケース名を入力して計算開始。
 
-## 外部サブルーチン「management_droplet」
-  dropletManager.f90内で定義されているサブルーチン「management_droplet」は、毎ステップ呼び出される外部サブルーチンです。
+## 外部サブルーチン「dropletManagement」
+  dropletManager.f90内で定義されているサブルーチン「dropletManagement」は、毎ステップ呼び出される外部サブルーチンです。
   自由に処理を追加することができます（例えば任意の範囲内にいる飛沫数のカウントなど）。 ご利用ください。
 
 ## 方程式
