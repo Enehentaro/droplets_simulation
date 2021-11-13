@@ -64,6 +64,7 @@ MODULE adjacent_information
                 case('pyrmd')
                     n_type = 3
                 case default
+                    n_type = -1
             end select
 
             do j = 1, num_halfFace_perCELL(n_type)

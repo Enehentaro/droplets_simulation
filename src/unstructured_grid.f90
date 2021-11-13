@@ -673,7 +673,7 @@ module unstructuredGrid_mod
                 get_mesh_info = count(CELLs(:)%typeName == 'pyrmd')
 
             case default
-                get_mesh_info = 0
+                get_mesh_info = -1
 
         end select
 

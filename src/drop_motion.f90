@@ -456,7 +456,7 @@ module drop_motion_mod
                 drop_counter = count(droplets(:)%status == -2)
 
             case default
-                drop_counter = 0
+                drop_counter = -1
 
         end select
 
@@ -580,10 +580,10 @@ module drop_motion_mod
         select case(name)
             case('Temperature')
                 environment = T
-            case('Relative Humidity')
+            case('RelativeHumidity')
                 environment = RH
             case default
-                environment = 0.0
+                environment = -1.e20
         end select
 
     end function environment
