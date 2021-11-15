@@ -478,8 +478,7 @@ module drop_motion_mod
 
         print*, 'Coalescence_check [step:', n_time, ']'
 
-        !$OMP parallel private(distance, r1, r2)
-        !$OMP do collapse(2)
+        !$OMP parallel do private(distance, r1, r2)
         drop1 : do d1 = 1, num_droplets - 1
             if(droplets(d1)%status/=0) cycle drop1
 
@@ -504,8 +503,7 @@ module drop_motion_mod
             end do drop2
 
         end do drop1
-        !$OMP end do
-        !$OMP end parallel
+        !$OMP end parallel do
 
     end subroutine coalescence_check
 
