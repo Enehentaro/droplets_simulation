@@ -482,12 +482,14 @@ module drop_motion_mod
         drop1 : do d1 = 1, num_droplets - 1
             if(droplets(d1)%status/=0) cycle drop1
 
+            r1 = droplets(d1)%radius
+
             drop2 : do d2 = d1 + 1, num_droplets
                 if(droplets(d2)%status/=0) cycle drop2
 
-                distance = norm2(droplets(d2)%position(:) - droplets(d1)%position(:))
-                r1 = droplets(d1)%radius
                 r2 = droplets(d2)%radius
+
+                distance = norm2(droplets(d2)%position(:) - droplets(d1)%position(:))
 
                 if((r1+r2) >= distance) then
                     print*, d1, 'and', d2, 'coalesce!'
