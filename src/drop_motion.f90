@@ -258,17 +258,19 @@ module drop_motion_mod
         integer vn
 
         if(unstructuredGrid) then
+            !$omp parallel do
             do vn = 1, num_droplets
                 if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
                 call evaporation(vn)    !蒸発方程式関連の処理
-                call motion_calc(vn)     !運動方程式関連の処理
+                call motionCalculation(vn)     !運動方程式関連の処理
             end do
+            !$omp end parallel do
 
         else
             do vn = 1, num_droplets
                 if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
                 call evaporation(vn)    !蒸発方程式関連の処理
-                call motion_calc_onCUBE(vn)     !運動方程式関連の処理
+                call motionCalculation_onCUBE(vn)     !運動方程式関連の処理
             end do
 
         end if
@@ -287,7 +289,7 @@ module drop_motion_mod
       
     end subroutine evaporation
 
-    subroutine motion_calc(vn)
+    subroutine motionCalculation(vn)
         integer, intent(in) :: vn
         double precision velAir(3)
 
@@ -297,9 +299,9 @@ module drop_motion_mod
 
         call search_refCELL(real(droplets(vn)%position(:)), droplets(vn)%refCELL%ID)
         
-    end subroutine motion_calc
+    end subroutine motionCalculation
 
-    subroutine motion_calc_onCUBE(vn)
+    subroutine motionCalculation_onCUBE(vn)
         integer, intent(in) :: vn
         double precision velAir(3)
         type(reference_cell_t) :: RefC
@@ -312,7 +314,7 @@ module drop_motion_mod
 
         call search_refCELL_onCUBE(real(droplets(vn)%position(:)), droplets(vn)%refCELL)
     
-    end subroutine motion_calc_onCUBE
+    end subroutine motionCalculation_onCUBE
                     
     subroutine adhesion_onBound(droplet)
         use vector_m
@@ -476,6 +478,8 @@ module drop_motion_mod
 
         print*, 'Coalescence_check [step:', n_time, ']'
 
+        !$OMP parallel private(distance, r1, r2)
+        !$OMP do collapse(2)
         drop1 : do d1 = 1, num_droplets - 1
             if(droplets(d1)%status/=0) cycle drop1
 
@@ -500,6 +504,8 @@ module drop_motion_mod
             end do drop2
 
         end do drop1
+        !$OMP end do
+        !$OMP end parallel
 
     end subroutine coalescence_check
 
