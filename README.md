@@ -2,12 +2,12 @@
 Simulation of Droplets Behavior in AFDET
 
 ## 使い方
-  ※環境は **Intel Fortran, Linux** を想定しています。その他の環境では適宜書き換えが必要です。
+  ※この branch は **GNU Fortran, Windows** 用です。間違っても master branch に`merge`しないでください。
   コンパイルに`make`コマンドを使います（makeのインストールが必要）。
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
   1. ケースディレクトリ内の条件ファイル(condition.txt, initial_position.csv)を編集。
   1. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
-  1. `./droplet`で実行。ケース名を入力して計算開始。
+  1. `.\droplet.exe`で実行。ケース名を入力して計算開始。
 
 ## 条件ファイル(condition.txt)解説
   - **リスタート位置**：通常は`0`を指定。`1以上`にすると、その値に対応するbackupファイルが読み込まれ、そこからリスタートが始まる。`-1`にすると、InitialDistribution.vtkという名前のファイルが読み込まれ、それを飛沫初期分布とする。全く同じ初期分布から計算を始めたいときに使う。なお、InitialDistribution.vtkは、通常実行時に最初に出力されるVTKファイルの名前を変えることで作成可能。
