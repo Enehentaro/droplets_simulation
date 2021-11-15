@@ -546,7 +546,7 @@ module drop_motion_mod
         character(99) fname
 
         num_drop = size(droplets(:))
-        write(fname,'("'//dir//'/backup", i8.8, ".bu")') n_time
+        write(fname,'("'//dir//'/backup_", i0, ".bu")') n_time
 
         open(newunit=n_unit, form='unformatted', file=fname, status='replace')
             write(n_unit) num_drop
@@ -561,16 +561,16 @@ module drop_motion_mod
 
     subroutine output_droplet(case_dir, initial)
         character(*), intent(in) :: case_dir
-        logical, intent(in) ::initial
+        logical, intent(in) :: initial
         character(99) fname
 
-        write(fname,'("'//case_dir//'/VTK/drop", i8.8, ".vtk")') n_time
+        write(fname,'("'//case_dir//'/VTK/drop_", i0, ".vtk")') n_time
         call output_droplet_VTK(fname, droplets(:)%virusDroplet_t, initial)
 
         fname = case_dir//'/particle.csv'
-        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, real(Time_onSimulation(n_time, dimension=.true.)), initial)
+        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, Time_onSimulation(n_time, dimension=.true.), initial)
 
-        call output_backup(case_dir//'/backup')
+        if(.not.initial) call output_backup(case_dir//'/backup')
 
     end subroutine
 

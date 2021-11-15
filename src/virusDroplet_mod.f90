@@ -325,31 +325,23 @@ module virusDroplet_m
     subroutine output_droplet_CSV(fname, droplets, time, initial)
         character(*), intent(in) :: fname
         type(virusDroplet_t), intent(in) :: droplets(:)
-        real, intent(in) :: time
+        double precision, intent(in) :: time
         logical, intent(in) :: initial
-        integer, save :: n_unitCSV = 99
-        integer L
+        integer n_unit, L
 
-        if(n_unitCSV == 99) then
-            if(initial) then !初回ならファイル新規作成
-                open(newunit=n_unitCSV, file=fname, status='replace')
-                print*,'REPLACE:particle_data.csv'
+        if(initial) then !初回ならファイル新規作成
+            open(newunit=n_unit, file=fname, status='replace')
 
-            else
-                open(newunit=n_unitCSV, file=fname, action='write', status='old', position='append')
+        else
+            open(newunit=n_unit, file=fname, action='write', status='old', position='append')
 
-            end if
         end if
 
         if(.not.allocated(statusCSV)) statusCSV = [0, 1, -1,-2]
         
-        write(n_unitCSV,'(*(g0:,","))') time, (count(droplets(:)%status==statusCSV(L)), L = 1, size(statusCSV))
-        ! close(n_unit)
+        write(n_unit,'(*(g0:,","))') real(time), (count(droplets(:)%status==statusCSV(L)), L = 1, size(statusCSV))
 
-        ! if(count(adhesion==0) <= 0) then !浮遊粒子がなくなれば計算終了
-        !   print*,'all viruses terminated',N
-        !   STOP
-        ! end if
+        close(n_unit)
 
     end subroutine output_droplet_CSV
 
