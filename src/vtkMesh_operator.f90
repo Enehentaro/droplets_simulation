@@ -43,7 +43,7 @@ module vtkMesh_operator_m
             
             if(.not.allocated(cell_array)) then
                 allocate(cell_array(0 : IIMX-1))
-   
+
                 DO II = 0, IIMX-1
                     read(n_unit, '(A)') str !一旦1行丸ごと読む
                     read(str, *) IIH
@@ -143,7 +143,7 @@ module vtkMesh_operator_m
         close(n_unit)
             
     end subroutine output_VTK_mesh
-      
+    
     subroutine deallocation_VTK
         deallocate(node_array)
         deallocate(cell_array)

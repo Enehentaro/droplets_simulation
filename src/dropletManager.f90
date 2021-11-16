@@ -3,5 +3,4 @@ subroutine dropletManagement
     use drop_motion_mod
     implicit none
 
-
 end subroutine dropletManagement

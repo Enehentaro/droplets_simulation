@@ -55,6 +55,8 @@ PROGRAM MAIN
 
                   call dropletManagement       !外部サブルーチンによる管理
 
+                  call drop_LoopAppearance
+
                   if ((mod(n,interval) == 0)) call output             !出力
 
                   call update_flow_check        !流れ場の更新チェック
