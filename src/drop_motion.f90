@@ -133,7 +133,7 @@ module drop_motion_mod
 
         if(num_restart > 0) then
 
-            print*, '**RESTRAT**'
+            print*, '**RESTART**'
 
             write(fname,'("'//case_dir//'/backup/backup", i8.8, ".bu")') num_restart
             droplets = read_backup(fname)   !ここで自動割り付け
@@ -458,7 +458,8 @@ module drop_motion_mod
                 drop_counter = count(droplets(:)%status == -2)
 
             case default
-                drop_counter = -1
+                print*, '**ERROR [drop_counter] : ', name, ' is not found.**'
+                stop
 
         end select
 
@@ -469,7 +470,7 @@ module drop_motion_mod
         integer, save :: last_coalescence = 0, last_floatings = 0
         double precision :: distance, r1, r2
 
-        floatings = drop_counter('floationg')
+        floatings = drop_counter('floating')
         if(floatings > last_floatings) last_coalescence = n_time    !浮遊数が増加したら付着判定再起動のため更新
         last_floatings = floatings
 
