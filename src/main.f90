@@ -173,7 +173,7 @@ PROGRAM MAIN
                   write(n_unit,'(A18, I15)') 'adhesion =', drop_counter('adhesion') !付着したすべてのウイルス数
                   write(n_unit,'(A)') '======================================================='
                   write(n_unit,'(A18, F18.2)') 'Temp [degC] =', environment('Temperature')
-                  write(n_unit,'(A18, F18.2)') 'RH [%] =', environment('Relative Humidity')
+                  write(n_unit,'(A18, F18.2)') 'RH [%] =', environment('RelativeHumidity')
                   write(n_unit,'(A18, 2X, A)') 'Used FlowFile :', trim(PATH_FlowDIR)//trim(FNAME_FMT)
 
             close(n_unit)

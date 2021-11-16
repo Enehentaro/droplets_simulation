@@ -191,18 +191,18 @@ module flow_field
     subroutine clamp_STEP(STEP)
         integer, intent(inout) :: STEP
         integer Lamda, Delta
-
-        Lamda = LoopF - LoopS
         
         if(STEP >= LoopF) then
+            Lamda = LoopF - LoopS
+
             if(Lamda > 0) then
                 Delta = mod(STEP - LoopS, Lamda)
                 STEP = LoopS + Delta
 
-            elseif(Lamda == 0) then
+            else if(Lamda == 0) then
                 STEP = LoopF
                 INTERVAL_FLOW = -1
-                print*, 'Checkout SteadyFlow'
+                print*, '**Checkout SteadyFlow**'
             end if
         end if
 
