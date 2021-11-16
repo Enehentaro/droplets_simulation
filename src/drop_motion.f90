@@ -133,7 +133,7 @@ module drop_motion_mod
 
         if(num_restart > 0) then
 
-            print*, '**RESTRAT**'
+            print*, '**RESTART**'
 
             write(fname,'("'//case_dir//'/backup/backup", i8.8, ".bu")') num_restart
             droplets = read_backup(fname)   !ここで自動割り付け
@@ -258,17 +258,19 @@ module drop_motion_mod
         integer vn
 
         if(unstructuredGrid) then
+            !$omp parallel do
             do vn = 1, num_droplets
                 if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
                 call evaporation(vn)    !蒸発方程式関連の処理
-                call motion_calc(vn)     !運動方程式関連の処理
+                call motionCalculation(vn)     !運動方程式関連の処理
             end do
+            !$omp end parallel do
 
         else
             do vn = 1, num_droplets
                 if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
                 call evaporation(vn)    !蒸発方程式関連の処理
-                call motion_calc_onCUBE(vn)     !運動方程式関連の処理
+                call motionCalculation_onCUBE(vn)     !運動方程式関連の処理
             end do
 
         end if
@@ -287,7 +289,7 @@ module drop_motion_mod
       
     end subroutine evaporation
 
-    subroutine motion_calc(vn)
+    subroutine motionCalculation(vn)
         integer, intent(in) :: vn
         double precision velAir(3)
 
@@ -297,9 +299,9 @@ module drop_motion_mod
 
         call search_refCELL(real(droplets(vn)%position(:)), droplets(vn)%refCELL%ID)
         
-    end subroutine motion_calc
+    end subroutine motionCalculation
 
-    subroutine motion_calc_onCUBE(vn)
+    subroutine motionCalculation_onCUBE(vn)
         integer, intent(in) :: vn
         double precision velAir(3)
         type(reference_cell_t) :: RefC
@@ -312,7 +314,7 @@ module drop_motion_mod
 
         call search_refCELL_onCUBE(real(droplets(vn)%position(:)), droplets(vn)%refCELL)
     
-    end subroutine motion_calc_onCUBE
+    end subroutine motionCalculation_onCUBE
                     
     subroutine adhesion_onBound(droplet)
         use vector_m
@@ -456,7 +458,8 @@ module drop_motion_mod
                 drop_counter = count(droplets(:)%status == -2)
 
             case default
-                drop_counter = -1
+                print*, '**ERROR [drop_counter] : ', name, ' is not found.**'
+                stop
 
         end select
 
@@ -467,7 +470,7 @@ module drop_motion_mod
         integer, save :: last_coalescence = 0, last_floatings = 0
         double precision :: distance, r1, r2
 
-        floatings = drop_counter('floationg')
+        floatings = drop_counter('floating')
         if(floatings > last_floatings) last_coalescence = n_time    !浮遊数が増加したら付着判定再起動のため更新
         last_floatings = floatings
 
@@ -476,15 +479,18 @@ module drop_motion_mod
 
         print*, 'Coalescence_check [step:', n_time, ']'
 
+        !$OMP parallel do private(distance, r1, r2)
         drop1 : do d1 = 1, num_droplets - 1
             if(droplets(d1)%status/=0) cycle drop1
+
+            r1 = droplets(d1)%radius
 
             drop2 : do d2 = d1 + 1, num_droplets
                 if(droplets(d2)%status/=0) cycle drop2
 
-                distance = norm2(droplets(d2)%position(:) - droplets(d1)%position(:))
-                r1 = droplets(d1)%radius
                 r2 = droplets(d2)%radius
+
+                distance = norm2(droplets(d2)%position(:) - droplets(d1)%position(:))
 
                 if((r1+r2) >= distance) then
                     print*, d1, 'and', d2, 'coalesce!'
@@ -500,6 +506,7 @@ module drop_motion_mod
             end do drop2
 
         end do drop1
+        !$OMP end parallel do
 
     end subroutine coalescence_check
 
