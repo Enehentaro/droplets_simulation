@@ -220,15 +220,13 @@ module drop_motion_mod
     end subroutine adhesion_check
 
     subroutine survival_check
+        use terminalControler_m
         integer vfloat, vn
         ! double precision rand
         ! double precision, save :: death_rate = 0.d0
             
         vfloat = count(droplets(:)%status == 0)
-        if(vfloat == 0) then
-            print*, '**No Droplet is Floating** [step:', n_time, ']'
-            return  !浮遊数がゼロならリターン
-        end if
+        if(vfloat == 0) return  !浮遊数がゼロならリターン
 
         do vn = 1, num_droplets
             if ((droplets(vn)%status == 0).and.(droplets(vn)%deathParam > survival_rate(n_time))) then
@@ -466,6 +464,7 @@ module drop_motion_mod
     end function drop_counter
 
     subroutine coalescence_check
+        use terminalControler_m
         integer d1, d2, floatings
         integer, save :: last_coalescence = 0, last_floatings = 0
         double precision :: distance, r1, r2
@@ -476,7 +475,9 @@ module drop_motion_mod
 
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
         if((n_time - last_coalescence) > 100) return
-        print*, 'Coalescence_check [step:', n_time, '/', last_coalescence + 100, ']'
+
+        call set_formatTC('(" Coalescence_check [step:", i10, "/", i10, "]")')
+        call print_sameLine([n_time, last_coalescence+100])
 
         !$OMP parallel do private(distance, r1, r2)
         drop1 : do d1 = 1, num_droplets - 1

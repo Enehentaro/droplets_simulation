@@ -39,9 +39,9 @@ PROGRAM MAIN
 
             call update_FlowField(first=.true.)                !流れ場の取得
 
-            print*,'*******************************************'
-            print*,'             START step_loop               '
-            print*,'*******************************************'
+            print '("*******************************************")'
+            print '("            START step_loop                ")'
+            print '("*******************************************")'
 
             DO n = n_start + 1, n_end           !ステップ数だけループ
 
@@ -61,9 +61,9 @@ PROGRAM MAIN
 
             END DO
 
-            print*,'*******************************************'
-            print*,'             END step_loop                 '
-            print*,'*******************************************'
+            print '("*******************************************")'
+            print '("             END step_loop                 ")'
+            print '("*******************************************")'
 
             call output_ResultSummary       !最終結果出力
 
@@ -114,11 +114,11 @@ PROGRAM MAIN
       end subroutine create_CaseDirectory
 
       subroutine output
-            print*, '======================================================='
             print*, start_date
             print*, 'Now_Step_Time =', Time_onSimulation(n, dimension=.true.), '[sec]'
             print*, '# floating :', drop_counter('floating')
             call output_droplet(case_name, initial=.false.)
+            print '("=======================================================")'
       end subroutine output
 
       subroutine output_ResultSummary
