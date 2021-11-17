@@ -84,6 +84,7 @@ MODULE adjacent_information
     end subroutine  set_halfFACEs
     
     subroutine check_FACEs
+        use terminalControler_m
         INTEGER match, width, numNode, faceID, groupID,num_group, maxID_sum
         integer checkCounter, faceCounter, i,j, faceID1,faceID2, num_face, k,l
         integer, allocatable :: faceID_array(:)
@@ -97,18 +98,18 @@ MODULE adjacent_information
 
         print*,'START-FACE CHECK!' !同一面の探索
             
-        num_group = num_halfFace/5000 + 1   !グループ数（1グループ数に約5000枚面が入るようにする）（この値は経験則）
-        maxID_sum = maxval(halfFACEs(:)%ID_sum)
-        print*, '# gropup =', maxID_sum
+        num_group = num_halfFace/5000 + 1   !面グループ数（1グループ数に約5000枚面が入るようにする）（この値は経験則）
     
         allocate(faceGroup(num_group))
         allocate(faceID_array(num_halfFace), source=0)
-          
+
+        maxID_sum = maxval(halfFACEs(:)%ID_sum)
         width = maxID_sum/num_group + 1   !1グループの幅（最大節点番号和を面グループ数で割る）
           
         checkCounter = 0
+        call set_formatTC('("DIVIDE halfFace [ #group : ",i6," / ",i6," ]")')
         do groupID = 1, num_group  !面をグループに分ける
-            print*, 'DIVIDE halfFace [ #group :', groupID, '/', num_group, ']'
+            call print_sameLine([groupID, num_group])
             faceID_array(:) = 0
             faceCounter = 1
             do faceID = 1, num_halfFace
@@ -127,10 +128,10 @@ MODULE adjacent_information
         end if
           
         num_BoundFaces = 0
-        !$omp parallel do private(faceID1,faceID2, flag, k,l, num_face,numNode) reduction(+:num_BoundFaces)
+        call set_formatTC('("CHECK halfFace [ #group : ",i6," / ",i6," ]")')
+        !$omp parallel do private(faceID1,faceID2, match, k,l, num_face,numNode) reduction(+:num_BoundFaces)
         do groupID = 1, num_group
-            print*, 'CHECK halfFace [ #group :', groupID, '/', num_group, ']'
-
+            call print_sameLine([groupID, num_group])
             num_face = size(faceGroup(groupID)%faceID)
 
             face1 : do i = 1, num_face

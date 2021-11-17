@@ -80,7 +80,7 @@ module flow_field
     end subroutine preprocess_onFlowField
 
     subroutine read_steadyFlowData
-        character(99) FNAME
+        character(:), allocatable :: FNAME
 
         if(unstructuredGrid) then
             FNAME = trim(PATH_FlowDIR)//trim(FNAME_FMT)
