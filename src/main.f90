@@ -114,6 +114,7 @@ PROGRAM MAIN
       end subroutine create_CaseDirectory
 
       subroutine output
+            print*, '======================================================='
             print*, start_date
             print*, 'Now_Step_Time =', Time_onSimulation(n, dimension=.true.), '[sec]'
             print*, '# floating :', drop_counter('floating')

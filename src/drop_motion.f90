@@ -476,8 +476,7 @@ module drop_motion_mod
 
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
         if((n_time - last_coalescence) > 100) return
-
-        print*, 'Coalescence_check [step:', n_time, ']'
+        print*, 'Coalescence_check [step:', n_time, '/', last_coalescence + 100, ']'
 
         !$OMP parallel do private(distance, r1, r2)
         drop1 : do d1 = 1, num_droplets - 1
@@ -493,7 +492,7 @@ module drop_motion_mod
                 distance = norm2(droplets(d2)%position(:) - droplets(d1)%position(:))
 
                 if((r1+r2) >= distance) then
-                    print*, d1, 'and', d2, 'coalesce!'
+                    ! print*, d1, 'and', d2, 'coalesce!'
                     if(r1 >= r2) then
                         call coalescence(droplets(d1), droplets(d2))
                     else
