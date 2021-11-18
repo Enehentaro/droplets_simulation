@@ -19,6 +19,8 @@ module flow_field
         integer :: ID = 0, nodeID(3) = 0
     end type reference_cell_t
 
+    integer, private :: num_refCellSearchFalse, num_refCellSearch
+
     contains
     !***********************************************************************
     subroutine check_FILE_GRID
@@ -76,6 +78,9 @@ module flow_field
             call read_faceShape(PATH_FlowDIR)
             call set_faceShape
         end if
+
+        num_refCellSearchFalse = 0
+        num_refCellSearch = 0
 
     end subroutine preprocess_onFlowField
 
@@ -147,12 +152,15 @@ module flow_field
         integer, intent(inout) :: reference_cell
         logical, optional :: stat
 
+        num_refCellSearch = num_refCellSearch + 1
+
         reference_cell = nearer_cell(X, reference_cell)
         if(present(stat)) stat = .True.
 
         if (.not.nearcell_check(X(:), reference_cell)) then
             reference_cell = nearest_cell(X)
             if(present(stat)) stat = .false.
+            num_refCellSearchFalse = num_refCellSearchFalse + 1
         end if
     
     end subroutine search_refCELL
@@ -161,10 +169,13 @@ module flow_field
         real, intent(in) :: X(3)
         type(reference_cell_t), intent(inout) :: reference_cell
 
+        num_refCellSearch = num_refCellSearch + 1
+
         reference_cell%nodeID(:) = nearer_node(X, reference_cell%nodeID, reference_cell%ID)
         if (.not.nearNode_check(X, reference_cell%nodeID, reference_cell%ID)) then
             reference_cell%ID = get_cube_contains(X)    
             reference_cell%nodeID(:) = nearest_node(X, reference_cell%ID)
+            num_refCellSearchFalse = num_refCellSearchFalse + 1
         end if
 
     end subroutine search_refCELL_onCUBE
@@ -207,6 +218,21 @@ module flow_field
         end if
 
     end subroutine clamp_STEP
+
+    integer function refCellSearchInfo(name)
+        character(*), intent(in) :: name
+
+        select case(name)
+            case('NumFalse')
+                refCellSearchInfo = num_refCellSearchFalse
+            case('FalseRate')
+                refCellSearchInfo = 100 * num_refCellSearchFalse / (num_refCellSearch + 1)
+            case default
+                print*, 'ERROR refCellSearchInfo : ', name
+                stop
+        end select
+
+    end function
 
     subroutine deallocation_flow
         if(unstructuredGrid) then
