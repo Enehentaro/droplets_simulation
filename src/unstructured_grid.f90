@@ -558,7 +558,7 @@ module unstructuredGrid_mod
             nearcell_check = .True.
         else
             nearcell_check = .False.
-            print*, 'nearcell_check:False', distance, CELLs(NCN)%width
+            ! print*, 'nearcell_check:False', distance, CELLs(NCN)%width
         end if
 
     end function nearcell_check
