@@ -117,7 +117,7 @@ PROGRAM MAIN
             print*, start_date
             print*, 'Now_Step_Time =', Time_onSimulation(n, dimension=.true.), '[sec]'
             print*, '# floating :', drop_counter('floating')
-            if(refCellSearchInfo('FalseRate') > 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
+            if(refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
             call output_droplet(case_name, initial=.false.)
             print '("=======================================================")'
       end subroutine output
