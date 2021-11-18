@@ -117,6 +117,7 @@ PROGRAM MAIN
             print*, start_date
             print*, 'Now_Step_Time =', Time_onSimulation(n, dimension=.true.), '[sec]'
             print*, '# floating :', drop_counter('floating')
+            if(refCellSearchInfo('FalseRate') > 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
             call output_droplet(case_name, initial=.false.)
             print '("=======================================================")'
       end subroutine output
@@ -174,6 +175,8 @@ PROGRAM MAIN
                   write(n_unit,'(A18, F18.2)') 'Temp [degC] =', environment('Temperature')
                   write(n_unit,'(A18, F18.2)') 'RH [%] =', environment('RelativeHumidity')
                   write(n_unit,'(A18, 2X, A)') 'Used FlowFile :', trim(PATH_FlowDIR)//trim(FNAME_FMT)
+                  write(n_unit, '(A18, 2(I15,2x,A))') 'SerchFalseInfo :', refCellSearchInfo('NumFalse'), &
+                        ' (', refCellSearchInfo('FalseRate'), '%)'
 
             close(n_unit)
             
