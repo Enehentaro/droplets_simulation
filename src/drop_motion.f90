@@ -133,7 +133,7 @@ module drop_motion_mod
 
         if(num_restart > 0) then
 
-            print*, '**RESTRAT**'
+            print*, '**RESTART**'
 
             write(fname,'("'//case_dir//'/backup/backup", i8.8, ".bu")') num_restart
             droplets = read_backup(fname)   !ここで自動割り付け
@@ -220,15 +220,13 @@ module drop_motion_mod
     end subroutine adhesion_check
 
     subroutine survival_check
+        use terminalControler_m
         integer vfloat, vn
         ! double precision rand
         ! double precision, save :: death_rate = 0.d0
             
         vfloat = count(droplets(:)%status == 0)
-        if(vfloat == 0) then
-            print*, '**No Droplet is Floating** [step:', n_time, ']'
-            return  !浮遊数がゼロならリターン
-        end if
+        if(vfloat == 0) return  !浮遊数がゼロならリターン
 
         do vn = 1, num_droplets
             if ((droplets(vn)%status == 0).and.(droplets(vn)%deathParam > survival_rate(n_time))) then
@@ -258,17 +256,19 @@ module drop_motion_mod
         integer vn
 
         if(unstructuredGrid) then
+            !$omp parallel do
             do vn = 1, num_droplets
                 if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
                 call evaporation(vn)    !蒸発方程式関連の処理
-                call motion_calc(vn)     !運動方程式関連の処理
+                call motionCalculation(vn)     !運動方程式関連の処理
             end do
+            !$omp end parallel do
 
         else
             do vn = 1, num_droplets
                 if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
                 call evaporation(vn)    !蒸発方程式関連の処理
-                call motion_calc_onCUBE(vn)     !運動方程式関連の処理
+                call motionCalculation_onCUBE(vn)     !運動方程式関連の処理
             end do
 
         end if
@@ -287,7 +287,7 @@ module drop_motion_mod
       
     end subroutine evaporation
 
-    subroutine motion_calc(vn)
+    subroutine motionCalculation(vn)
         integer, intent(in) :: vn
         double precision velAir(3)
 
@@ -297,9 +297,9 @@ module drop_motion_mod
 
         call search_refCELL(real(droplets(vn)%position(:)), droplets(vn)%refCELL%ID)
         
-    end subroutine motion_calc
+    end subroutine motionCalculation
 
-    subroutine motion_calc_onCUBE(vn)
+    subroutine motionCalculation_onCUBE(vn)
         integer, intent(in) :: vn
         double precision velAir(3)
         type(reference_cell_t) :: RefC
@@ -312,7 +312,7 @@ module drop_motion_mod
 
         call search_refCELL_onCUBE(real(droplets(vn)%position(:)), droplets(vn)%refCELL)
     
-    end subroutine motion_calc_onCUBE
+    end subroutine motionCalculation_onCUBE
                     
     subroutine adhesion_onBound(droplet)
         use vector_m
@@ -456,38 +456,44 @@ module drop_motion_mod
                 drop_counter = count(droplets(:)%status == -2)
 
             case default
-                drop_counter = 0
+                print*, '**ERROR [drop_counter] : ', name, ' is not found.**'
+                stop
 
         end select
 
     end function drop_counter
 
     subroutine coalescence_check
+        use terminalControler_m
         integer d1, d2, floatings
         integer, save :: last_coalescence = 0, last_floatings = 0
         double precision :: distance, r1, r2
 
-        floatings = drop_counter('floationg')
+        floatings = drop_counter('floating')
         if(floatings > last_floatings) last_coalescence = n_time    !浮遊数が増加したら付着判定再起動のため更新
         last_floatings = floatings
 
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
         if((n_time - last_coalescence) > 100) return
 
-        print*, 'Coalescence_check [step:', n_time, ']'
+        call set_formatTC('(" Coalescence_check [step:", i10, "/", i10, "]")')
+        call print_sameLine([n_time, last_coalescence+100])
 
+        !$OMP parallel do private(distance, r1, r2)
         drop1 : do d1 = 1, num_droplets - 1
             if(droplets(d1)%status/=0) cycle drop1
+
+            r1 = droplets(d1)%radius
 
             drop2 : do d2 = d1 + 1, num_droplets
                 if(droplets(d2)%status/=0) cycle drop2
 
-                distance = norm2(droplets(d2)%position(:) - droplets(d1)%position(:))
-                r1 = droplets(d1)%radius
                 r2 = droplets(d2)%radius
 
+                distance = norm2(droplets(d2)%position(:) - droplets(d1)%position(:))
+
                 if((r1+r2) >= distance) then
-                    print*, d1, 'and', d2, 'coalesce!'
+                    ! print*, d1, 'and', d2, 'coalesce!'
                     if(r1 >= r2) then
                         call coalescence(droplets(d1), droplets(d2))
                     else
@@ -500,6 +506,7 @@ module drop_motion_mod
             end do drop2
 
         end do drop1
+        !$OMP end parallel do
 
     end subroutine coalescence_check
 
@@ -546,7 +553,7 @@ module drop_motion_mod
         character(99) fname
 
         num_drop = size(droplets(:))
-        write(fname,'("'//dir//'/backup", i8.8, ".bu")') n_time
+        write(fname,'("'//dir//'/backup_", i0, ".bu")') n_time
 
         open(newunit=n_unit, form='unformatted', file=fname, status='replace')
             write(n_unit) num_drop
@@ -561,16 +568,16 @@ module drop_motion_mod
 
     subroutine output_droplet(case_dir, initial)
         character(*), intent(in) :: case_dir
-        logical, intent(in) ::initial
+        logical, intent(in) :: initial
         character(99) fname
 
-        write(fname,'("'//case_dir//'/VTK/drop", i8.8, ".vtk")') n_time
+        write(fname,'("'//case_dir//'/VTK/drop_", i0, ".vtk")') n_time
         call output_droplet_VTK(fname, droplets(:)%virusDroplet_t, initial)
 
         fname = case_dir//'/particle.csv'
-        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, real(Time_onSimulation(n_time, dimension=.true.)), initial)
+        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, Time_onSimulation(n_time, dimension=.true.), initial)
 
-        call output_backup(case_dir//'/backup')
+        if(.not.initial) call output_backup(case_dir//'/backup')
 
     end subroutine
 
@@ -580,10 +587,10 @@ module drop_motion_mod
         select case(name)
             case('Temperature')
                 environment = T
-            case('Relative Humidity')
+            case('RelativeHumidity')
                 environment = RH
             case default
-                environment = 0.0
+                environment = -1.e20
         end select
 
     end function environment

@@ -6,10 +6,10 @@ module unstructuredGrid_mod
         real coordinate(3)
     end type node_t
 
-    type boundFace_t
+    type boundaryTriangle_t
         integer nodeID(3)
         real center(3), normalVector(3), moveVector(3)
-    end type boundFace_t
+    end type boundaryTriangle_t
 
     type cell_t
         character(5) typeName
@@ -18,7 +18,7 @@ module unstructuredGrid_mod
     end type cell_t
 
     type(node_t), allocatable :: NODEs(:)
-    type(boundFace_t), allocatable :: BoundFACEs(:)
+    type(boundaryTriangle_t), allocatable :: BoundFACEs(:)
     type(cell_t), allocatable :: CELLs(:)
 
     interface read_unstructuredGrid
@@ -558,7 +558,7 @@ module unstructuredGrid_mod
             nearcell_check = .True.
         else
             nearcell_check = .False.
-            print*, 'nearcell_check:False', distance, CELLs(NCN)%width
+            ! print*, 'nearcell_check:False', distance, CELLs(NCN)%width
         end if
 
     end function nearcell_check
@@ -568,7 +568,7 @@ module unstructuredGrid_mod
         logical, intent(in) :: first
         integer II, JJ, JB, IIMX, JBMX, nodeID(3)
         real :: a(3), b(3), r(3), normalVector(3)
-        type(boundFace_t), allocatable :: BoundFACEs_pre(:)
+        type(boundaryTriangle_t), allocatable :: BoundFACEs_pre(:)
 
         if(.not.allocated(BoundFACEs)) return
 
@@ -673,7 +673,7 @@ module unstructuredGrid_mod
                 get_mesh_info = count(CELLs(:)%typeName == 'pyrmd')
 
             case default
-                get_mesh_info = 0
+                get_mesh_info = -1
 
         end select
 
