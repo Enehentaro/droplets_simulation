@@ -119,7 +119,7 @@ PROGRAM MAIN
             print*, '# floating :', drop_counter('floating')
             if(refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
             call output_droplet(case_name, initial=.false.)
-            print '("=======================================================")'
+            print '()'
       end subroutine output
 
       subroutine output_ResultSummary
