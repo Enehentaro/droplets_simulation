@@ -20,12 +20,12 @@ program CUBE2USG
     print *, 'UnstructuredGRID_FileName ?'
     read(5,*) USG_fname
 
+    call read_VTK_mesh(USG_fname, meshONLY=.true.)
+
     do j = 1, num_file
         F_fname = fname(j)
 
         call read_CUBE_data(F_fname, '')
-
-        call read_VTK_mesh(USG_fname, meshONLY=.true.)
     
         do i = 0, size(cell_array)-1
             X(:) = 0.0
