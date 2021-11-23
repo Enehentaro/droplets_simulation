@@ -15,34 +15,27 @@ module drop_motion_mod
     integer interval
     real, private :: T, RH
 
-    type path_drop_t
-        character(:), allocatable :: DIR, VTK, backup
-    end type path_drop_t
-
-    type(path_drop_t) path
-
     integer, target :: n_time  !時間ステップ
     integer, private :: num_restart
     integer n_start, n_end
-    integer, private :: LoopS, LoopF, OFFSET
-    double precision, private :: Rdt    !飛沫計算と気流計算の時間間隔の比
 
     contains
 
-    subroutine first_setting
+    subroutine first_setting(case_dir)
+        character(*), intent(in) :: case_dir
 
-        call read_and_set_condition
+        call read_and_set_condition(case_dir)
         call set_coeff_drdt(T, RH)          !温湿度依存の係数の設定
 
         if(num_restart==0) then
             
             call random_set  !実行時刻に応じた乱数シード設定
-            call calc_initial_position(path%DIR)
+            call calc_initial_position(case_dir)
             call calc_initial_radius
-            call set_death_param
+            call set_deathParam
 
         else if(num_restart==-1) then
-            call read_initialDistribution
+            call read_initialDistribution(case_dir)
 
         else
             return  !リスタートなら無視
@@ -53,22 +46,16 @@ module drop_motion_mod
 
     end subroutine first_setting
 
-    subroutine set_case_path(case_name)
-        character(*), intent(in) :: case_name
-        path%DIR = trim(case_name)//'/'
-        path%VTK = trim(case_name)//'/VTK/'
-        path%backup = trim(case_name)//'/backup/'
-    end subroutine set_case_path
-
-    subroutine read_and_set_condition
+    subroutine read_and_set_condition(dir)
         use filename_mod
         use path_operator_m
-        double precision DTa, dt, L, U
+        character(*), intent(in) ::dir
+        double precision dt, L, U
         double precision :: direction_g(3)
         character(99) path2FlowFile
         integer i, n_unit, num_drop
 
-        OPEN(newunit=n_unit, FILE=path%DIR//conditionFName, STATUS='OLD')
+        OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
             read(n_unit,'()')
             read(n_unit,*) num_restart
             read(n_unit,'()')
@@ -90,7 +77,7 @@ module drop_motion_mod
             read(n_unit,'()')
             read(n_unit,'(A)') path2FlowFile
             read(n_unit,'()')
-            read(n_unit,*) DTa
+            read(n_unit,*) DT_FLOW
             read(n_unit,'()')
             read(n_unit,*) OFFSET
             read(n_unit,'()')
@@ -103,8 +90,6 @@ module drop_motion_mod
             read(n_unit,*) U
 
         CLOSE(n_unit)
-
-        Rdt = dt/DTa                       !データ読み込み時に時間軸合わせるパラメータ
 
         if(num_restart == 0) call allocation_initialDroplets(num_drop) !通常実行なら割付
 
@@ -123,9 +108,13 @@ module drop_motion_mod
             print*, 'AirFlow is Steady'
         end if
 
-        if(loopf - loops > 0) print*, 'Loop is from', loops, 'to', loopf
+        if(loopf - loops > 0) then
+            print*, 'Loop is from', loops, 'to', loopf
+        elseif(loopf - loops == 0) then 
+            print*, 'After', loopf, ', Checkout SteadyFlow'
+        end if
         print*, 'Delta_Time =', dt
-        print*, 'Rdt', Rdt
+        print*, 'Delta_Time inFLOW =', DT_FLOW
 
         call set_dir_from_path(path2FlowFile, PATH_FlowDIR, FNAME_FMT)
 
@@ -137,16 +126,16 @@ module drop_motion_mod
 
     end subroutine read_and_set_condition
 
-    subroutine set_initialDroplet
-        implicit none
+    subroutine set_initialDroplet(case_dir)
+        character(*), intent(in) :: case_dir
         character(99) fname
         type(virusDroplet_t), allocatable :: droplets_ini(:)
 
         if(num_restart > 0) then
 
-            print*, 'RESTRAT'
+            print*, '**RESTART**'
 
-            write(fname,'("'//trim(path%backup)//'backup", i8.8, ".bu")') num_restart
+            write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') num_restart
             droplets = read_backup(fname)   !ここで自動割り付け
 
             n_start = num_restart
@@ -154,12 +143,12 @@ module drop_motion_mod
 
         else
             droplets_ini = get_initialState_of_droplets()
+            if(allocated(droplets)) deallocate(droplets)
             allocate(droplets(size(droplets_ini)))
             droplets(:)%virusDroplet_t = droplets_ini(:)
             n_start = 0
             n_time = n_start
-            call output_droplet  !リスタートでないなら初期配置出力
-
+            
         end if
 
         num_droplets = size(droplets)
@@ -167,21 +156,81 @@ module drop_motion_mod
             
     end subroutine set_initialDroplet
 
+    subroutine output_initialDroplet(case_dir)
+        character(*), intent(in) :: case_dir
+
+        if(num_restart <= 0) call output_droplet(case_dir, initial=.true.)  !リスタートでないなら初期配置出力
+
+    end subroutine output_initialDroplet
+
+    subroutine first_refCELLsearch
+        integer j, num_drop
+        logical success
+
+        print*, 'first_refCELLsearch occured!'
+
+        num_drop = size(droplets)
+
+        if(unstructuredGrid) then
+            j = 1
+            droplets(j)%refCELL%ID = nearest_cell(real(droplets(j)%position(:)))
+
+            droplets(j+1:)%refCELL%ID = droplets(j)%refCELL%ID !時間短縮を図る
+
+            do j = 2, num_drop
+                call search_refCELL(real(droplets(j)%position(:)), droplets(j)%refCELL%ID, stat=success)
+                if(.not.success) droplets(j+1:)%refCELL%ID = droplets(j)%refCELL%ID
+            end do
+
+        else
+            j = 1
+            droplets(j)%refCELL%ID = get_cube_contains(real(droplets(j)%position(:)))    
+            droplets(j)%refCELL%nodeID(:) = nearest_node(real(droplets(j)%position(:)), droplets(j)%refCELL%ID)
+
+            droplets(j+1:)%refCELL = droplets(j)%refCELL !時間短縮を図る
+
+            do j = 2, num_drop
+                call search_refCELL_onCUBE(real(droplets(j)%position(:)), droplets(j)%refCELL)
+            end do
+
+        end if
+
+    end subroutine first_refCELLsearch
+
+    subroutine adhesion_check
+        use adhesion_onSTL_m
+        integer i
+        
+        if(unstructuredGrid) then
+            do i = 1, num_droplets
+                if(droplets(i)%status==0) then
+                    call adhesion_onBound(droplets(i))
+                    call area_check(droplets(i))
+                end if
+            end do
+        else
+            do i = 1, num_droplets
+                if(droplets(i)%status==0) then
+                    if(adhesion_onSTL(real(droplets(i)%position(:)))) call stop_droplet(droplets(i))
+                    call area_check(droplets(i))
+                end if
+            end do
+        end if
+
+    end subroutine adhesion_check
+
     subroutine survival_check
+        use terminalControler_m
         integer vfloat, vn
         ! double precision rand
         ! double precision, save :: death_rate = 0.d0
             
         vfloat = count(droplets(:)%status == 0)
-        if(vfloat == 0) then
-            print*, 'No Droplet is Floating', n_time
-            return  !浮遊数がゼロならリターン
-        end if
+        if(vfloat == 0) return  !浮遊数がゼロならリターン
 
         do vn = 1, num_droplets
-            if ((droplets(vn)%status == 0).and.(droplets(vn)%death_param > survival_rate(n_time))) then
-                droplets(vn)%status = -1
-                droplets(vn)%velocity(:) = 0.0d0
+            if ((droplets(vn)%status == 0).and.(droplets(vn)%deathParam > survival_rate(n_time))) then
+                call stop_droplet(droplets(vn), status=-1)
             end if
         end do
 
@@ -207,17 +256,19 @@ module drop_motion_mod
         integer vn
 
         if(unstructuredGrid) then
+            !$omp parallel do
             do vn = 1, num_droplets
                 if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
                 call evaporation(vn)    !蒸発方程式関連の処理
-                call motion_calc(vn)     !運動方程式関連の処理
+                call motionCalculation(vn)     !運動方程式関連の処理
             end do
+            !$omp end parallel do
 
         else
             do vn = 1, num_droplets
                 if(droplets(vn)%status /= 0) cycle !浮遊状態でないなら無視
                 call evaporation(vn)    !蒸発方程式関連の処理
-                call motion_calc_onCUBE(vn)     !運動方程式関連の処理
+                call motionCalculation_onCUBE(vn)     !運動方程式関連の処理
             end do
 
         end if
@@ -236,144 +287,108 @@ module drop_motion_mod
       
     end subroutine evaporation
 
-    subroutine motion_calc(vn)
+    subroutine motionCalculation(vn)
         integer, intent(in) :: vn
-        double precision  :: X(3), velAir(3)
-        integer RefCellID
-        logical stopflag, first
+        double precision velAir(3)
+
+        velAir(:) = CELLs(droplets(vn)%refCELL%ID)%flowVelocity(:)
     
-        X(:) = droplets(vn)%position(:)
+        call solve_motionEquation(droplets(vn)%position(:), droplets(vn)%velocity(:), velAir(:), droplets(vn)%radius)
 
-        call search_refCELL(real(X(:)), droplets(vn)%refCELL%ID, first)
-
-        RefCellID = droplets(vn)%refCELL%ID
-        if(first) then
-            block
-                integer i
-
-                do i = 1, size(leaderID) - 1
-                    if(vn == leaderID(i)) &
-                        droplets(leaderID(i):leaderID(i+1)-1)%refCELL%ID = RefCellID !時間短縮を図る
-                end do
-            end block
-           
-        end if
-
-        stopflag = adhesion_check(vn, RefCellID)
-
-        call area_check(X(:), stopflag)
-
-        velAir(:) = CELLs(RefCellID)%flowVelocity(:)
-    
-        call calc_motionResult(droplets(vn)%virusDroplet_t, velAir, stopflag)
+        call search_refCELL(real(droplets(vn)%position(:)), droplets(vn)%refCELL%ID)
         
-    end subroutine motion_calc
+    end subroutine motionCalculation
 
-    subroutine motion_calc_onCUBE(vn)
-        use adhesion_onSTL_m
+    subroutine motionCalculation_onCUBE(vn)
         integer, intent(in) :: vn
-        double precision  :: X(3), velAir(3)
+        double precision velAir(3)
         type(reference_cell_t) :: RefC
-        logical stopflag, first
-    
-        X(:) = droplets(vn)%position(:)
-
-        call search_refCELL_onCUBE(real(X(:)), droplets(vn)%refCELL, first)
 
         RefC = droplets(vn)%refCELL
-        if(first) droplets(:)%refCELL = RefC !全粒子が同一セル参照と仮定して時間短縮を図る
-
-        stopflag = adhesion_check_onSTL(real(droplets(vn)%position(:)))
-
-        call area_check(X(:), stopflag)
 
         velAir(:) = get_velocity_f(RefC%nodeID, RefC%ID)
 
-        call calc_motionResult(droplets(vn)%virusDroplet_t, velAir, stopflag)
+        call solve_motionEquation(droplets(vn)%position(:), droplets(vn)%velocity(:), velAir(:), droplets(vn)%radius)
+
+        call search_refCELL_onCUBE(real(droplets(vn)%position(:)), droplets(vn)%refCELL)
     
-    end subroutine motion_calc_onCUBE
-
-    subroutine calc_motionResult(droplet, Va, stopflag)
-        type(virusDroplet_t), intent(inout) :: droplet
-        double precision, intent(in) :: Va(3)
-        logical, intent(in) :: stopflag
-
-        if (stopflag) then
-            droplet%status = 1
-            droplet%velocity(:) = 0.0d0     !速度をゼロに
-    
-        else
-            call solve_motionEquation(droplet%position(:), droplet%velocity(:), Va(:), droplet%radius)
-            
-        end if
-
-    end subroutine calc_motionResult
+    end subroutine motionCalculation_onCUBE
                     
-    logical function adhesion_check(vn, NCN)
-        integer JJ, JB
-        integer, intent(in) :: vn, NCN
+    subroutine adhesion_onBound(droplet)
+        use vector_m
+        type(Droplet_onFlow), intent(inout) :: droplet
+        integer JJ, JB, refCELL
+        logical adhesion
         double precision :: r_vector(3), inner
 
-        adhesion_check = .false.
+        refCELL = droplet%refCELL%ID
+        adhesion = .false.
 
-        do JJ = 1, size(CELLs(NCN)%boundFaceID)
-            JB = CELLs(NCN)%boundFaceID(JJ)
+        do JJ = 1, size(CELLs(refCELL)%boundFaceID)
+            JB = CELLs(refCELL)%boundFaceID(JJ)
 
-            r_vector(:) = droplets(vn)%position(:) - BoundFACEs(JB)%center(:)
+            r_vector(:) = droplet%position(:) - BoundFACEs(JB)%center(:)
 
-            inner = sum(r_vector(:)*BoundFACEs(JB)%normalVector(:))
+            inner = dot_product(r_vector(:), BoundFACEs(JB)%normalVector(:))
+            !外向き法線ベクトルと位置ベクトルの内積は、平面からの飛び出し量に相当
 
-            if (inner > 0.0d0) then
-                adhesion_check = .true. !外向き法線ベクトルと位置ベクトルの内積が正なら付着判定
-                droplets(vn)%adhesBoundID = JB     !付着した境界面番号
+            if (inner + droplet%radius > 0.d0) then
+                adhesion = .true.               !(飛び出し量+飛沫半径)がゼロ以上なら付着判定
+                droplet%adhesBoundID = JB       !付着した境界面番号
             end if
         end do
 
-    end function adhesion_check
+        if (adhesion) call stop_droplet(droplet)
 
-    integer function get_num_air(n_virus)
-        integer, intent(in) :: n_virus
-        integer Lamda, Delta
+    end subroutine adhesion_onBound
 
-        get_num_air = int(dble(N_virus)*RDT) + OFFSET   !気流計算における経過ステップ数に相当
+    subroutine stop_droplet(droplet, status)
+        type(Droplet_onFlow), intent(inout) :: droplet
+        integer, optional :: status
 
-        Lamda = LoopF - LoopS
-        
-        if((Lamda > 0).and.(get_num_air > LoopF)) then
-            Delta = mod(get_num_air - LoopS, Lamda)
-            get_num_air = LoopS + Delta
+        droplet%velocity(:) = 0.0d0
+        if(present(status)) then
+            droplet%status = status
+        else
+            droplet%status = 1
         end if
 
-    end function
+    end subroutine stop_droplet
 
     subroutine update_flow_check
-        double precision Step_air
 
         if(INTERVAL_FLOW <= 0) return
 
-        Step_air = dble(n_time)*Rdt          !気流計算における経過ステップ数に相当
-        if(mod(Step_air, dble(INTERVAL_FLOW)) == 0.d0) then
-            call read_flow_field(first=.false.)   !流れ場の更新
-        end if
+        call set_STEPinFLOW(Time_onSimulation(n_time))
+
+        if(STEPinFLOW >= NextUpdate) call update_FlowField(first=.false.)   !流れ場の更新
 
     end subroutine update_flow_check
 
-    subroutine read_flow_field(first)
+    subroutine update_FlowField(first)
         logical, intent(in) :: first
-        integer FNUM
 
-        FNUM = get_num_air(n_time)
+        if(INTERVAL_FLOW <= 0) then
+            call read_steadyFlowData
+        else
+            if(first) call set_STEPinFLOW(Time_onSimulation(n_time))
+            call read_unsteadyFlowData
 
-        call read_flow_data(FNUM)
+        end if
 
-        if(first) call preprocess_onFlowField         !流れ場の前処理
+        call set_MinMaxCDN
+
+        if(first) then
+            call preprocess_onFlowField         !流れ場の前処理
+            if(n_start == 0) call first_refCELLsearch
+        end if
 
         if(unstructuredGrid) then
             call boundary_setting(first)
             if(.not.first) call boundary_move
         end if
             
-    end subroutine read_flow_field
+    end subroutine update_FlowField
                       
     subroutine boundary_move !境界面の移動に合わせて付着飛沫も移動
         integer vn, JB
@@ -389,7 +404,7 @@ module drop_motion_mod
                 droplets(vn)%position(:) &
                     = droplets(vn)%position(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
             else
-                call area_check(droplets(vn)%position(:))
+                call area_check(droplets(vn))
     
             end if
         
@@ -399,22 +414,25 @@ module drop_motion_mod
 
     end subroutine boundary_move
 
-    subroutine area_check(x, check)
-        double precision, intent(inout) :: x(3)
-        logical,optional,intent(inout) :: check
+    subroutine area_check(droplet)
+        type(Droplet_onFlow), intent(inout) :: droplet
+        logical check
         integer L
 
+        check = .false.
         do L = 1, 3
     
-            if(x(L) < MIN_CDN(L)) then
-                x(L) = MIN_CDN(L)
-                if(present(check)) check = .true.
-            else if(x(L) > MAX_CDN(L)) then
-                x(L) = MAX_CDN(L)
-                if(present(check)) check = .true.
+            if(droplet%position(L) < MIN_CDN(L)) then
+                droplet%position(L) = MIN_CDN(L)
+                check = .true.
+            else if(droplet%position(L) > MAX_CDN(L)) then
+                droplet%position(L) = MAX_CDN(L)
+                check = .true.
             end if
 
         end do
+
+        if (check) call stop_droplet(droplet)
 
     end subroutine area_check
 
@@ -438,39 +456,48 @@ module drop_motion_mod
                 drop_counter = count(droplets(:)%status == -2)
 
             case default
-                drop_counter = 0
+                print*, '**ERROR [drop_counter] : ', name, ' is not found.**'
+                stop
 
         end select
 
     end function drop_counter
 
     subroutine coalescence_check
-        integer d1, d2
-        integer, save :: last_coalescence = 0
+        use terminalControler_m
+        integer d1, d2, floatings
+        integer, save :: last_coalescence = 0, last_floatings = 0
         double precision :: distance, r1, r2
 
-        if(last_coalescence == 0) last_coalescence = n_time
+        floatings = drop_counter('floating')
+        if(floatings > last_floatings) last_coalescence = n_time    !浮遊数が増加したら付着判定再起動のため更新
+        last_floatings = floatings
+
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
         if((n_time - last_coalescence) > 100) return
 
-        print*, 'Coalescence_check', n_time
+        call set_formatTC('(" Coalescence_check [step:", i10, "/", i10, "]")')
+        call print_sameLine([n_time, last_coalescence+100])
 
+        !$OMP parallel do private(distance, r1, r2)
         drop1 : do d1 = 1, num_droplets - 1
             if(droplets(d1)%status/=0) cycle drop1
+
+            r1 = droplets(d1)%radius
 
             drop2 : do d2 = d1 + 1, num_droplets
                 if(droplets(d2)%status/=0) cycle drop2
 
-                distance = norm2(droplets(d2)%position(:) - droplets(d1)%position(:))
-                r1 = droplets(d1)%radius
                 r2 = droplets(d2)%radius
 
+                distance = norm2(droplets(d2)%position(:) - droplets(d1)%position(:))
+
                 if((r1+r2) >= distance) then
-                    print*, 'Coalescence', d1, d2
+                    ! print*, d1, 'and', d2, 'coalesce!'
                     if(r1 >= r2) then
-                        call coalescence(droplets(d1)%virusDroplet_t, droplets(d2)%virusDroplet_t)
+                        call coalescence(droplets(d1), droplets(d2))
                     else
-                        call coalescence(droplets(d2)%virusDroplet_t, droplets(d1)%virusDroplet_t)
+                        call coalescence(droplets(d2), droplets(d1))
                     end if
                     last_coalescence = n_time
 
@@ -479,11 +506,12 @@ module drop_motion_mod
             end do drop2
 
         end do drop1
+        !$OMP end parallel do
 
     end subroutine coalescence_check
 
     subroutine coalescence(droplet1, droplet2)
-        type(virusDroplet_t), intent(inout) :: droplet1, droplet2
+        type(Droplet_onFlow), intent(inout) :: droplet1, droplet2
         double precision :: radius_c, volume1, volume2, velocity_c(3)
 
         volume1 = droplet1%radius**3
@@ -493,24 +521,11 @@ module drop_motion_mod
         
         droplet1%radius = radius_c
         droplet1%velocity(:) = velocity_c(:)
+
         droplet2%radius = 0.d0
-        droplet2%velocity(:) = 0.d0
-        droplet2%status = -2
+        call stop_droplet(droplet2, status=-2)
         
     end subroutine coalescence
-
-    subroutine output_droplet
-        character(99) fname
-        character(4) :: head_out = 'drop'
-
-        write(fname,'("'//path%VTK//trim(head_out)//'",i8.8,".vtk")') n_time
-        call output_droplet_VTK(fname, droplets(:)%virusDroplet_t)
-
-        fname = path%DIR//'/particle.csv'
-        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, n_time)
-
-        call output_backup
-    end subroutine
 
     function read_backup(fname) result(droplets_read)
         implicit none
@@ -518,7 +533,7 @@ module drop_motion_mod
         type(Droplet_onFlow), allocatable :: droplets_read(:)
         integer i, n_unit, num_drop
     
-        print*, 'READ:', fname
+        print*, 'READ:', trim(fname)
         open(newunit=n_unit, form='unformatted', file=fname, status='old')
             read(n_unit) num_drop
 
@@ -532,13 +547,13 @@ module drop_motion_mod
       
     end function read_backup
 
-    subroutine output_backup
-        implicit none
+    subroutine output_backup(dir)
+        character(*), intent(in) :: dir
         integer i, n_unit, num_drop
         character(99) fname
 
         num_drop = size(droplets(:))
-        write(fname,'("'//path%backup//'backup", i8.8, ".bu")') n_time
+        write(fname,'("'//dir//'/backup_", i0, ".bu")') n_time
 
         open(newunit=n_unit, form='unformatted', file=fname, status='replace')
             write(n_unit) num_drop
@@ -551,24 +566,33 @@ module drop_motion_mod
 
     end subroutine output_backup
 
+    subroutine output_droplet(case_dir, initial)
+        character(*), intent(in) :: case_dir
+        logical, intent(in) :: initial
+        character(99) fname
+
+        write(fname,'("'//case_dir//'/VTK/drop_", i0, ".vtk")') n_time
+        call output_droplet_VTK(fname, droplets(:)%virusDroplet_t, initial)
+
+        fname = case_dir//'/particle.csv'
+        call output_droplet_CSV(fname, droplets(:)%virusDroplet_t, Time_onSimulation(n_time, dimension=.true.), initial)
+
+        if(.not.initial) call output_backup(case_dir//'/backup')
+
+    end subroutine
+
     real function environment(name)
         character(*), intent(in) :: name
 
         select case(name)
             case('Temperature')
                 environment = T
-            case('Relative Humidity')
+            case('RelativeHumidity')
                 environment = RH
             case default
-                environment = 0.0
+                environment = -1.e20
         end select
 
     end function environment
-
-    subroutine deallocation_droplet
-
-        deallocate(droplets)
-        
-    end subroutine deallocation_droplet
 
 end module drop_motion_mod

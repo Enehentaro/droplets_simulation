@@ -6,7 +6,7 @@ module equation_mod
 
     double precision, parameter :: Rho_represent = 1.205d0          ! 空気の密度[kg/m3]
     double precision, parameter :: Mu_represent = 1.822d-5          ! 空気の粘性係数[kg/m3]
-    double precision, parameter :: Rho_d = 0.99822d0*1.0d3          ! 飛沫（水）の密度[kg/m3]
+    double precision, parameter :: Rho_d = 0.99822d3          ! 飛沫（水）の密度[kg/m3]
 
     double precision, private :: coeff_drdt !半径変化率の無次元係数
     double precision, private :: gumma      !密度比（空気密度 / 飛沫(水)密度）
@@ -28,12 +28,13 @@ module equation_mod
     end subroutine set_basical_variables
 
     subroutine set_gravity_acceleration(direction_g)
+        use vector_m
         double precision, intent(in) :: direction_g(3)
         double precision, parameter :: G_dim = 9.806650d0                          ! 重力加速度[m/s2]
         double precision norm
 
-        norm = norm2(direction_g(:))
-        G(:) = G_dim * L_represent/(U_represent*U_represent) / norm * direction_g(:)    !無次元重力加速度
+        norm = G_dim * L_represent/(U_represent*U_represent)
+        G(:) = norm * normalize_vector(direction_g(:))    !無次元重力加速度
         print*, 'Dimensionless Acceleration of Gravity :'
         print*, G(:)
 
@@ -167,7 +168,7 @@ module equation_mod
         !     survival_rate = 0.86d0*0.9240d0**(((L_represent/U_represent)*dt*dble(step-1))/3600.0d0)
         ! end if
 
-        time = dimensional_time(step)
+        time = Time_onSimulation(step, dimension=.true.)
         !新型コロナウイルス（1.1時間で半減）(論文によると、湿度30,60,90%のときのデータしかない)
         survival_rate = 0.999825d0**(time)
     end function survival_rate
@@ -184,17 +185,21 @@ module equation_mod
                 representative_value = L_represent / U_represent
 
             case default
-                representative_value = 0.0d0
+                representative_value = -1.d20
 
         end select
 
     end function representative_value
 
-    double precision function dimensional_time(step)
+    double precision function Time_onSimulation(step, dimension)
         integer, intent(in) :: step
+        logical, optional :: dimension
 
-        dimensional_time = step * delta_t * L_represent / U_represent
-
-    end function dimensional_time
+        Time_onSimulation = step * delta_t
+        if(present(dimension)) then
+            if(dimension) Time_onSimulation = Time_onSimulation * L_represent / U_represent
+        end if
+    
+    end function Time_onSimulation
 
 end module equation_mod

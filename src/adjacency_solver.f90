@@ -11,9 +11,6 @@ MODULE adjacent_information
 
     type(halfFace_t), allocatable :: halfFACEs(:)
 
-    ! INTEGER, allocatable :: NFN(:,:),NFC(:,:),NCF(:), NFNSUM(:)
-    ! INTEGER, allocatable :: ICF(:,:)
-
     contains
 
     subroutine set_GRID_INFO
@@ -30,7 +27,7 @@ MODULE adjacent_information
 
     end subroutine set_GRID_INFO
 
-    subroutine FACESET
+    subroutine set_halfFACEs
         INTEGER II,JJJ, j, n, n_type, JJJMX
         integer, parameter :: num_halfFace_perCELL(3) = [4,5,5]
         integer, parameter :: IDtrans(4,5,3) = reshape([ &
@@ -39,21 +36,11 @@ MODULE adjacent_information
                                 5,1,2,0, 5,2,3,0, 5,3,4,0, 5,4,1,0, 1,2,3,4 ], shape(IDtrans))
                                                         
 
-        num_halfFace = num_tetras*4 + num_prisms*5 + num_pyramids*5
-        ! if(count(CELL_TYPE == 2) == 0)then
-        !     JJTOTAL = 4*num_cells    !JJTOTAL:想定最大面数
-        ! else
-        !     JJTOTAL = 5*num_cells
-        ! end if
+        num_halfFace = num_tetras*4 + num_prisms*5 + num_pyramids*5   !半面数：テトラ数×4 (+プリズム数×5 +ピラミッド数×5)
     
         allocate(halfFACEs(num_halfFace))
-        ! allocate(NFN(4,JJTOTAL), source = 0)
-        ! allocate(NFC(2,JJTOTAL), source = -1)
-        ! allocate(ICF(2,num_cells+1), source = 0)
-        ! allocate(NFNSUM(JJTOTAL), source = 0)
             
-            !     FACESET
-        JJJ = 0   !単純面JJJ：テトラ数×4 (+プリズム数×5 +ピラミッド数×5)
+        JJJ = 0
         
         DO II = 1, num_cells
             select case(CELLs(II)%typeName)
@@ -64,6 +51,7 @@ MODULE adjacent_information
                 case('pyrmd')
                     n_type = 3
                 case default
+                    n_type = -1
             end select
 
             do j = 1, num_halfFace_perCELL(n_type)
@@ -92,105 +80,103 @@ MODULE adjacent_information
             print*, 'JJJMX_ERROR:', JJJMX, num_tetras, num_prisms, num_pyramids
             stop
         end if
-
-        print*, 'ID_sum =', maxval(halfFACEs(:)%ID_sum)
             
-    end subroutine  faceset
-            !**************************************************************************************
-        !**************************************************************************************
-    subroutine facecheck
-        INTEGER AA,BB,flag, DN,LL,LLX,FDN, JJJ,JJJ2,JJJa,JJJa2, numnode
-        integer,allocatable :: JFS(:),JFL(:)!, sameface(:)
-        !=======================================================================
-        print*,'START-FACE CHECK!'
-            !同一面の探索、真の面数算出
+    end subroutine  set_halfFACEs
     
-        FDN = num_halfFace/10000 + 1   !分割数目安（単純面数が多いほど分割数も多くなる）
+    subroutine check_FACEs
+        use terminalControler_m
+        INTEGER match, width, numNode, faceID, groupID,num_group, maxID_sum
+        integer checkCounter, faceCounter, i,j, faceID1,faceID2, num_face, k,l
+        integer, allocatable :: faceID_array(:)
+        type faceGroup_t
+            integer, allocatable :: faceID(:)
+        end type faceGroup_t
+        type(faceGroup_t), allocatable :: faceGroup(:)
+        ! real time1, time2
+
+        ! call cpu_time(time1)
+
+        print*,'START-FACE CHECK!' !同一面の探索
+            
+        num_group = num_halfFace/5000 + 1   !面グループ数（1グループ数に約5000枚面が入るようにする）（この値は経験則）
     
-        allocate(JFS(num_halfFace))
-        allocate(JFL(2*FDN), source=0)
+        allocate(faceGroup(num_group))
+        allocate(faceID_array(num_halfFace), source=0)
+
+        maxID_sum = maxval(halfFACEs(:)%ID_sum)
+        width = maxID_sum/num_group + 1   !1グループの幅（最大節点番号和を面グループ数で割る）
           
-        DN = 3*num_nodes/FDN + 1   !分割幅（予想される最大節点番号和を分割数だけ分割）
-        if(DN <= 0) then
-            print*, 'ERROR_DN', DN
-        end if
-          
-        JJJa = 1
-        LL = 0
-        do while(JJJa <= num_halfFace)  !面をグループに分けるループ（目的：JJJMXの2重ループを避けること）
-            LL = LL +1
-            JFL(LL) = JJJa
-            do JJJ = 1, num_halfFace
-                if((halfFACEs(JJJ)%ID_sum >= (LL-1)*DN).and.(halfFACEs(JJJ)%ID_sum < LL*DN)) then
-                JFS(JJJa) = JJJ
-                JJJa = JJJa + 1
+        checkCounter = 0
+        call set_formatTC('("DIVIDE halfFace [ #group : ",i6," / ",i6," ]")')
+        do groupID = 1, num_group  !面をグループに分ける
+            call print_sameLine([groupID, num_group])
+            faceID_array(:) = 0
+            faceCounter = 1
+            do faceID = 1, num_halfFace
+                if((halfFACEs(faceID)%ID_sum > (groupID-1)*width).and.(halfFACEs(faceID)%ID_sum <= groupID*width)) then
+                    faceID_array(faceCounter) = faceID
+                    faceCounter = faceCounter + 1
+                    checkCounter = checkCounter + 1
                 end if
             end do
-        !print*,'LL,JFL=', LL, JFL(LL)
+            faceGroup(groupID)%faceID = faceID_array(1 : faceCounter-1)
         end do
-        LLX = LL
-        print*, 'LLX=', LLX
-        JFL(LLX+1) = JJJa
-    
-        if((JJJa-1) /= num_halfFace) then
-            print*, 'JJJa_ERROR:', JJJa-1, num_halfFace
+
+        if(checkCounter /= num_halfFace) then
+            print*, 'faceCounter_ERROR:', checkCounter, num_halfFace
             stop
         end if
           
-        ! allocate(sameface(JJJMX), source=0)
         num_BoundFaces = 0
-        !$omp parallel do private(JJJ, JJJ2, flag, AA, BB, numnode) reduction(+:num_BoundFaces)
-          
-        LLloop : do LL = 1, LLX
-        print*, 'CHECK_LL:', LL, '/', LLX
-            face1 : do JJJa = JFL(LL), JFL(LL+1) -1
-                JJJ = JFS(JJJa)
-                if(halfFACEs(JJJ)%ownerID(2) >= 0) cycle face1 !面共有セル探索が済んでいる場合スキップ
-                if(halfFACEs(JJJ)%nodeID(4) == 0) then
-                    numnode = 3   !三角形面
+        call set_formatTC('("CHECK halfFace [ #group : ",i6," / ",i6," ]")')
+        !$omp parallel do private(faceID1,faceID2, match, k,l, num_face,numNode) reduction(+:num_BoundFaces)
+        do groupID = 1, num_group
+            call print_sameLine([groupID, num_group])
+            num_face = size(faceGroup(groupID)%faceID)
+
+            face1 : do i = 1, num_face
+                faceID1 = faceGroup(groupID)%faceID(i)
+                if(halfFACEs(faceID1)%ownerID(2) >= 0) cycle face1 !面共有セル探索が済んでいる場合スキップ
+                if(halfFACEs(faceID1)%nodeID(4) <= 0) then
+                    numNode = 3   !三角形面
                 else
-                    numnode = 4   !四角形面
+                    numNode = 4   !四角形面
                 end if
         
-                face2 :do JJJa2 = JJJa +1, JFL(LL+1) -1
-                    JJJ2 = JFS(JJJa2)
-                    if(halfFACEs(JJJ2)%ownerID(2) >= 0) cycle face2 !面共有セル探索が済んでいる場合スキップ
-                    if((halfFACEs(JJJ2)%nodeID(4) > 0).and.(numnode==3)) cycle face2 !三角形面を注目中に四角形面が現れればスキップ
+                face2 :do j = i+1, num_face
+                    faceID2 = faceGroup(groupID)%faceID(j)
+                    if(halfFACEs(faceID2)%ownerID(2) >= 0) cycle face2 !面共有セル探索が済んでいる場合スキップ
+                    if((numNode==3).and.(halfFACEs(faceID2)%nodeID(4) > 0)) cycle face2 !三角形面を注目中に四角形面が現れればスキップ
             
-                    flag = 0
-                    do AA = 1, numnode
-                        do BB = 1, numnode
-                            if(halfFACEs(JJJ)%nodeID(AA) == halfFACEs(JJJ2)%nodeID(BB)) flag = flag + 1  !点が一致すればカウント
+                    match = 0
+                    do k = 1, numNode
+                        do l = 1, numNode
+                            if(halfFACEs(faceID1)%nodeID(k) == halfFACEs(faceID2)%nodeID(l)) match = match + 1  !点IDが一致すればカウント
                         end do
                     end do
             
-                    if(flag < numnode) cycle face2 !節点数と同じ回数一致しなければスキップ（必要十分条件）
+                    if(match < numNode) cycle face2 !節点数と同じ回数一致しなければスキップ（必要十分条件）
             
                     !ここまでくれば同一の2面発見
             
-                    halfFACEs(JJJ)%ownerID(2) = halfFACEs(JJJ2)%ownerID(1)
-                    halfFACEs(JJJ2)%ownerID(2) = halfFACEs(JJJ)%ownerID(1)
-                    ! NFC(2,JJJ) = NFC(1,JJJ2)
-                    ! NFC(2,JJJ2) = NFC(1,JJJ)
-                    ! sameface(JJJ) = JJJ2
-                    ! sameface(JJJ2) = JJJ 
+                    halfFACEs(faceID1)%ownerID(2) = halfFACEs(faceID2)%ownerID(1)
+                    halfFACEs(faceID2)%ownerID(2) = halfFACEs(faceID1)%ownerID(1)
             
                     cycle face1 !共有セルが見つかったので次の面へ
         
                 end do face2
         
-                halfFACEs(JJJ)%ownerID(2) = 0 !共有セルが見つからなかった（境界面）
+                halfFACEs(faceID1)%ownerID(2) = 0 !共有セルが見つからなかった:境界面
                 num_BoundFaces = num_BoundFaces + 1  !境界面カウント
         
             end do face1
     
-        end do LLloop
-          
+        end do
         !$omp end parallel do
         
         ! allocate(NCF(JJJMX), source = 0)
         
-        ! JJ = 0
+        ! JJ = 0    !真の面数算出
         ! DO JJJ = 1, JJJMX
         !     if ((NFC(1,JJJ) > num_cells).or.(NFC(2,JJJ) > num_cells).or.(NFC(1,JJJ) <= -1).or.(NFC(2,JJJ) <= -1)) then  !エラー条件
         !         print*, 'NFC_ERROR:', JJJ, NFC(1,JJJ), NFC(2,JJJ), '/', num_cells
@@ -214,10 +200,14 @@ MODULE adjacent_information
         ! JJMX = JJ  !これが真の面数
           
         ! print*,'true_FACES',JJMX
-        print*,'BC FACES',num_BoundFaces  
+        print*,'# Boundary Face =', num_BoundFaces
         print*,'END-FACE CHECK!'
 
-    END subroutine facecheck
+        ! call cpu_time(time2)
+        ! print*, time2 - time1
+        ! stop
+
+    END subroutine check_FACEs
 
     subroutine find_nodeID_onBoundFace
         INTEGER II,JJJ,JB
@@ -327,8 +317,8 @@ MODULE adjacent_information
             stop
         end if
 
-        call faceset    !面情報のセッティング
-        call facecheck  !同一面のチェック
+        call set_halfFACEs    !面情報のセッティング
+        call check_FACEs  !同一面のチェック
 
         call find_nodeID_onBoundFace   !境界面情報
 

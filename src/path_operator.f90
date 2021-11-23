@@ -1,51 +1,30 @@
 module path_operator_m
     implicit none
 
-    ! type path_set_t
-    !     character(99) case_name
-    !     character(99) path2FlowDIR
-    !     character(30) FlowFileName
-    ! end type path_set_t
-
-    ! type(path_set_t), allocatable :: path_list(:)
+    character(7), parameter, private :: OS = 'Linux'
 
     contains
 
-    ! subroutine check_path_list(num_case)
-    !     use csv_reader
-    !     use filename_mod
-    !     character(99), allocatable :: path_mat(:,:)
-    !     character(:), allocatable :: case_name
-    !     character DIR*99, FNAME*30
-    !     integer, intent(out) :: num_case
-    !     integer i, n_unit
+    subroutine make_directory(path)
+        character(*), intent(in) :: path
+        character(:), allocatable :: directory
+    
+        select case(trim(OS))
+            case ('Linux')  !for_Linux
+                directory =  replace_str(path, from='\', to='/' )
+                call system('mkdir -p -v '//directory)
 
-    !     print*, 'Case Name ?'
-    !     read(5,*) case_name
+            case ('Windows')  !for_Windows
+                directory =  replace_str(path, from='/', to='\' )
+                call system('md '//directory)
 
-    !     ! call read_CSV('path_list.csv', matrix=path_mat)
-    !     ! num_case = size(path_mat, dim=2)
-    !     num_case = 1
+            case default
+                print*, 'OS ERROR : ', OS
+                stop
+                
+        end select
 
-    !     allocate(path_list(num_case))
-
-    !     ! do i = 1, num_case
-    !     !     open(newunit=n_unit, file=path_mat(1,i), status='old')  !確認用open
-    !     !     close(n_unit)
-    !     !     call set_dir_from_path(path_mat(1,i), DIR, FNAME)
-    !     !     open(newunit=n_unit, file=trim(DIR)//conditionFName, status='old')  !確認用open
-    !     !     close(n_unit)
-    !     !     open(newunit=n_unit, file=trim(DIR)//IniPositionFName, status='old')  !確認用open
-    !     !     close(n_unit)
-    !     !     path_list(i)%path2FlowDIR = DIR
-    !     !     path_list(i)%FlowFileName = FNAME
-    !     !     path_list(i)%path2outputDIR = path_mat(2,i)
-    !     ! end do
-
-    !     print*,'The Number of Cases =', num_case
-
-    ! end subroutine check_path_list
-
+    end subroutine make_directory
     
     subroutine set_dir_from_path(path, directory, filename)
         character(*), intent(in) :: path

@@ -6,10 +6,10 @@ module unstructuredGrid_mod
         real coordinate(3)
     end type node_t
 
-    type boundFace_t
+    type boundaryTriangle_t
         integer nodeID(3)
         real center(3), normalVector(3), moveVector(3)
-    end type boundFace_t
+    end type boundaryTriangle_t
 
     type cell_t
         character(5) typeName
@@ -18,25 +18,8 @@ module unstructuredGrid_mod
     end type cell_t
 
     type(node_t), allocatable :: NODEs(:)
-    type(boundFace_t), allocatable :: BoundFACEs(:)
+    type(boundaryTriangle_t), allocatable :: BoundFACEs(:)
     type(cell_t), allocatable :: CELLs(:)
-
-    ! integer, allocatable :: ICN(:,:)                !要素所有節点ID
-    ! integer, allocatable :: NoB(:)                  !要素所有境界面の数
-    ! integer, allocatable :: ICB(:,:)                !要素所有境界面ID
-    ! integer, allocatable :: NBN(:,:)                !境界面所有節点ID
-    
-    ! integer, allocatable :: CELL_TYPE(:)   !要素タイプ（テトラ0、プリズム1、ピラミッド2）
-    ! integer, allocatable, private :: NUM_NC(:)               !隣接要素数
-    ! integer, allocatable, private :: NEXT_CELL(:,:)          !隣接要素ID
-
-    ! double precision, allocatable :: CDN(:,:)       !節点座標
-    ! double precision, allocatable :: VELC(:,:)      !要素流速
-    ! double precision, allocatable :: CENC(:,:)      !要素重心
-    ! double precision, allocatable, private :: WIDC(:)        !要素の1辺長さ
-    ! double precision, allocatable :: CENF(:,:)    !面重心
-    ! double precision, allocatable :: MOVF(:,:)    !面重心移動量
-    ! double precision, allocatable :: NVECF(:,:)     !面法線ベクトル
 
     interface read_unstructuredGrid
         module procedure read_unstructuredGrid_byNAME
@@ -62,7 +45,7 @@ module unstructuredGrid_mod
             stop
         end if
 
-        print*, 'FILE_TYPE:', FILE_TYPE
+        print*, 'FILE_TYPE : ', FILE_TYPE
 
     end subroutine check_FILE_TYPE
 
@@ -88,10 +71,9 @@ module unstructuredGrid_mod
     end subroutine read_unstructuredGrid_byNAME
 
     subroutine read_unstructuredGrid_byNumber(path_and_head, digits_fmt, FNUM)
-        character(*), intent(in) :: path_and_head
+        character(*), intent(in) :: path_and_head, digits_fmt
         integer, intent(in) :: FNUM
         character(99) :: FNAME
-        character(4) digits_fmt
 
         select case(FILE_TYPE)
             case('VTK')
@@ -126,12 +108,10 @@ module unstructuredGrid_mod
             
     end subroutine read_unstructuredGrid_byNumber
 
-    subroutine read_VTK(FNAME, pointdata)
+    subroutine read_VTK(FNAME)
         use vtkMesh_operator_m
         character(*), intent(in) :: FNAME
-        logical, optional :: pointdata
         integer II,KK,IIH, KKMX, IIMX
-        real, allocatable :: UVWK(:,:)
 
         call read_VTK_mesh(FNAME)
 
@@ -159,16 +139,6 @@ module unstructuredGrid_mod
 
         ! print*, NODEs(KKMX)%coordinate(:)
         ! print*, CELLs(IIMX)%flowVelocity(:)
-
-        if(present(pointdata)) then
-            if(pointdata) then
-                allocate(UVWK(3,KKMX))
-
-                call point2cellVelocity(UVWK)
-
-                return
-            end if
-        end if
             
     end subroutine read_VTK
 
@@ -246,84 +216,88 @@ module unstructuredGrid_mod
                 
         close(n_unit)
 
-        if(.not.allocated(CELLs)) allocate(CELLs(IIMX))
-        do II = 1, IIMX
-            select case(CELL_TYPE2(II))
-                case(0)
-                    CELLs(II)%nodeID = ICN2(1:4, II)
-                    CELLs(II)%typeName = 'tetra'
-                case(1)
-                    CELLs(II)%nodeID = ICN2(1:6, II)
-                    CELLs(II)%typeName = 'prism'
-                case(2)
-                    CELLs(II)%nodeID = ICN2(1:5, II)
-                    CELLs(II)%typeName = 'pyrmd'
-            end select
-        end do
+        if(.not.allocated(CELLs)) then
+            allocate(CELLs(IIMX))
+            do II = 1, IIMX
+                select case(CELL_TYPE2(II))
+                    case(0)
+                        CELLs(II)%nodeID = ICN2(1:4, II)
+                        CELLs(II)%typeName = 'tetra'
+                    case(1)
+                        CELLs(II)%nodeID = ICN2(1:6, II)
+                        CELLs(II)%typeName = 'prism'
+                    case(2)
+                        CELLs(II)%nodeID = ICN2(1:5, II)
+                        CELLs(II)%typeName = 'pyrmd'
+                end select
+            end do
+        end if
             
         call point2cellVelocity(UVWK)
             
     end subroutine read_INP
 
     subroutine read_FLD(FNAME)
-        use mod_SctFldReader
+        use SCT_file_reader_m
         implicit none
+        type(sct_grid_t) grid
+        integer ii, iitet, iiwed, iipyr, iihex, iimx, iicnt
+        integer kk, kkmx
+        integer,allocatable :: tetras(:,:), wedges(:,:), pyramids(:,:), hexas(:,:)
+        real(8),allocatable :: points(:,:)
+        real(8),allocatable :: velocity(:,:)!, pressure(:)
         character(*), intent(in) :: FNAME
-        integer unit, II,KK,KK_beg,KK_end, num_node, IIMX
-        real, allocatable :: UVWK(:,:)
 
         print*, 'readFLD : ', trim(FNAME)
 
-  
-        call open_readFLD(unit, FNAME)
-            call read_Header_data(unit)
-            call read_Main_data(unit)
-        call close_fld(unit)
-  
-        if(.not.allocated(CELLs)) then
-            allocate(CELLs(size(ietyp)))
-            allocate(NODEs(NNODS))
-  
-            KK_beg = 1
-            IIMX = size(ietyp)
-  
-            do II = 1, IIMX
-                if(mod(II, 1000) == 0) print*, II, '/', IIMX
-  
-                num_node = ietyp(II)-30
-                select case(num_node)
-                    case(4)
-                        CELLs(II)%typeName = 'tetra'
-                    case(6)
-                        CELLs(II)%typeName = 'prism'
-                    case(5)
-                        CELLs(II)%typeName = 'pyrmd'
-                end select
-
-                allocate(CELLs(II)%nodeID(num_node))
-    
-                KK_end = KK_beg + num_node - 1
-    
-                do KK = KK_beg, KK_end
-                    CELLs(II)%nodeID(KK-KK_beg+1) = ndno(KK) + 1
-                    ! ICN(KK-KK_beg+1, II) = ndno(KK) + 1
-                end do
-            
-                KK_beg = KK_beg + num_node
+        call grid%read_SCT_file(FNAME)
         
+        if(.not.allocated(CELLs)) then
+            !!ファイルが存在し, かつトポロジー情報が存在する場合以下の処理が行われる.  
+            call grid%extract_cell_vertices(tetras, pyramids, wedges, hexas)
+            call grid%get_2d_array_of_point_coords(points)
+            iitet = grid%get_tetrahedron_count()
+            iipyr = grid%get_pyramid_count()
+            iiwed = grid%get_wedge_count()
+            iihex = grid%get_hexahedron_count()
+            iimx = grid%get_element_count()
+            kkmx = grid%get_vertex_count()
+
+            if(iihex>0) then
+                print*, 'Hexahedron is not yet supported.', iihex
+                stop
+            end if
+
+            allocate(CELLs(iimx))
+            allocate(NODEs(kkmx))
+
+            do kk = 1, kkmx
+                NODEs(kk)%coordinate(:) = real(points(:,kk))
             end do
+
+            iicnt = 1
+            do ii = 1, iitet
+                CELLs(iicnt)%nodeID = tetras(:,ii)
+                CELLs(iicnt)%typeName = 'tetra'
+                iicnt = iicnt + 1
+            end do
+            do ii = 1, iiwed
+                CELLs(iicnt)%nodeID = wedges(:,ii)
+                CELLs(iicnt)%typeName = 'prism'
+                iicnt = iicnt + 1
+            end do
+            do ii = 1, iipyr
+                CELLs(iicnt)%nodeID = pyramids(:,ii)
+                CELLs(iicnt)%typeName = 'pyrmd'
+                iicnt = iicnt + 1
+            end do
+
         end if
-  
-        NODEs(:)%coordinate(1) = real(CDN_X(:))
-        NODEs(:)%coordinate(2) = real(CDN_Y(:))
-        NODEs(:)%coordinate(3) = real(CDN_Z(:))
+        
+        ! call grid%search_scalar_data("PRES",pressure)
+        call grid%search_vector_data("VEL",velocity)
 
-        allocate(UVWK(3, size(CDN_X)))
-        UVWK(1,:) = real(VEL_X(:))
-        UVWK(2,:) = real(VEL_Y(:))
-        UVWK(3,:) = real(VEL_Z(:))
-
-        call point2cellVelocity(UVWK)
+        call point2cellVelocity(real(velocity))
           
     end subroutine read_FLD
             
@@ -584,16 +558,17 @@ module unstructuredGrid_mod
             nearcell_check = .True.
         else
             nearcell_check = .False.
-            print*, 'false', distance, CELLs(NCN)%width
+            ! print*, 'nearcell_check:False', distance, CELLs(NCN)%width
         end if
 
     end function nearcell_check
                      
     subroutine boundary_setting(first) !全境界面に対して外向き法線ベクトルと重心を算出
+        use vector_m
         logical, intent(in) :: first
         integer II, JJ, JB, IIMX, JBMX, nodeID(3)
-        real :: a(3), b(3), r(3), norm, inner
-        type(boundFace_t), allocatable :: BoundFACEs_pre(:)
+        real :: a(3), b(3), r(3), normalVector(3)
+        type(boundaryTriangle_t), allocatable :: BoundFACEs_pre(:)
 
         if(.not.allocated(BoundFACEs)) return
 
@@ -615,21 +590,16 @@ module unstructuredGrid_mod
             
                 a(:) =  NODEs(nodeID(2))%coordinate(:) - NODEs(nodeID(1))%coordinate(:)
                 b(:) =  NODEs(nodeID(3))%coordinate(:) - NODEs(nodeID(1))%coordinate(:)
-            
-                BoundFACEs(JB)%normalVector(1) = a(2)*b(3) - a(3)*b(2)  !外積
-                BoundFACEs(JB)%normalVector(2) = a(3)*b(1) - a(1)*b(3)
-                BoundFACEs(JB)%normalVector(3) = a(1)*b(2) - a(2)*b(1)
-            
-                norm = norm2(BoundFACEs(JB)%normalVector(:))
+                normalVector(:) = cross_product(a, b)
+
+                normalVector(:) = normalize_vector(normalVector(:))
             
                 r(:) = CELLs(II)%center(:) - BoundFACEs(JB)%center(:)  !面重心からセル重心へのベクトル
-            
-                inner = sum(BoundFACEs(JB)%normalVector(:)*r(:))
-            
-                if(inner > 0.0) norm = norm * (-1.0) !内積が正なら内向きなので、外に向けるべくノルムを負に
-            
-                BoundFACEs(JB)%normalVector(:) = BoundFACEs(JB)%normalVector(:) / norm !ノルムで割り算して単位ベクトルに
-        
+                if(dot_product(normalVector(:), r(:)) > 0.0) then
+                    normalVector(:) = normalVector(:) * (-1.0) !内積が正なら内向きなので、外に向ける
+                end if
+
+                BoundFACEs(JB)%normalVector(:) = normalVector(:)
                 ! print*,'center:',BoundFACEs(JB)%center(:)
                 ! print*,'n_vector:',BoundFACEs(JB)%normalVector(:)
             end do
@@ -703,7 +673,7 @@ module unstructuredGrid_mod
                 get_mesh_info = count(CELLs(:)%typeName == 'pyrmd')
 
             case default
-                get_mesh_info = 0
+                get_mesh_info = -1
 
         end select
 
