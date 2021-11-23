@@ -171,7 +171,7 @@ PROGRAM MAIN
             print*, start_date
             print*, end_date
 
-            open(newunit=n_unit, FILE= case_name//'/final_result.txt',STATUS='REPLACE')
+            open(newunit=n_unit, FILE= case_name//'/final_',STATUS='REPLACE')
                   write(n_unit,*)'*******************************************'
                   write(n_unit,*)'*                                         *'
                   write(n_unit,*)'*             Final Results               *'
