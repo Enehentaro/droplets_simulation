@@ -114,12 +114,16 @@ PROGRAM MAIN
       end subroutine create_CaseDirectory
 
       subroutine output
+            use terminalControler_m
+
             print*, start_date
             print*, 'Now_Step_Time =', Time_onSimulation(n, dimension=.true.), '[sec]'
             print*, '# floating :', drop_counter('floating')
             if(refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
             call output_droplet(case_name, initial=.false.)
-            print '()'
+            print '("====================================================")'
+            call reset_formatTC
+            
       end subroutine output
 
       subroutine output_ResultSummary
