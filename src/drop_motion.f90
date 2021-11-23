@@ -135,7 +135,7 @@ module drop_motion_mod
 
             print*, '**RESTART**'
 
-            write(fname,'("'//case_dir//'/backup/backup", i8.8, ".bu")') num_restart
+            write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') num_restart
             droplets = read_backup(fname)   !ここで自動割り付け
 
             n_start = num_restart
