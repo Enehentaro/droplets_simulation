@@ -142,7 +142,7 @@ module drop_motion_mod
             n_time = n_start
 
         else
-            droplets_ini = get_initialState_of_droplets()
+            droplets_ini = get_initialDroplets()
             if(allocated(droplets)) deallocate(droplets)
             allocate(droplets(size(droplets_ini)))
             droplets(:)%virusDroplet_t = droplets_ini(:)

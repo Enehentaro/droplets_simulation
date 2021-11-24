@@ -9,8 +9,6 @@ module virusDroplet_m
 
     type(virusDroplet_t), allocatable, private :: droplets_ini(:)
 
-    integer, allocatable :: leaderID(:)
-
     integer, allocatable :: statusCSV(:)
 
     contains
@@ -90,13 +88,9 @@ module virusDroplet_m
         end do
         num_per_edge = m - 1    !配置帯一辺当たりの飛沫数
 
-        if(allocated(leaderID)) deallocate(leaderID)
-        allocate(leaderID(num_box + 1))
-
         k = 1
         cnt = 1
         do i_box = 1, num_box
-            leaderID(i_box) = k
   
             width(:) = position_mat(4:6, i_box)
             standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
@@ -128,13 +122,11 @@ module virusDroplet_m
                 k = k + 1
             end do
 
-            print*, 'BOX', i_box, 'has', k - cnt, 'droplets. LeaderID:', leaderID(i_box)
+            print*, 'BOX', i_box, 'has', k - cnt, 'droplets.'
 
             cnt = k
 
         end do
-
-        leaderID(num_box + 1) = num_drop + 1
 
     end subroutine calc_initial_position
 
@@ -155,7 +147,6 @@ module virusDroplet_m
         character(*), intent(in) :: dir
 
         droplets_ini = read_droplet_VTK(dir//'/InitialDistribution.vtk') !自動割付
-        leaderID = [1, size(droplets_ini)+1]
 
     end subroutine read_initialDistribution
 
@@ -167,12 +158,20 @@ module virusDroplet_m
 
     end subroutine calc_minimumRadius
 
-    function get_initialState_of_droplets() result(initialDroplets)
+    function get_initialDroplets() result(initialDroplets)
         type(virusDroplet_t), allocatable :: initialDroplets(:)
 
         initialDroplets = droplets_ini
             
-    end function get_initialState_of_droplets
+    end function get_initialDroplets
+
+    function get_initialState_of_Droplet(dropID) result(initialState)
+        type(virusDroplet_t) initialState
+        integer, intent(in) :: dropID
+
+        initialState = droplets_ini(dropID)
+            
+    end function
 
     subroutine random_set    !実行時刻に依存した乱数シードを指定する
         implicit none
