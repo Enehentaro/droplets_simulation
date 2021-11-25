@@ -19,9 +19,6 @@ module drop_motion_mod
     integer, private :: num_restart
     integer n_start, n_end
 
-    integer          :: num_loopdrop
-    double precision :: interval_appearance
-
     contains
 
     subroutine first_setting(case_dir)
@@ -72,9 +69,6 @@ module drop_motion_mod
             read(n_unit,*) RH
             read(n_unit,'()')
             read(n_unit,*) num_drop
-            read(n_unit,'()')
-            read(n_unit,*) num_loopdrop
-            read(n_unit,*) interval_appearance
             read(n_unit,'()')
             read(n_unit,*) (direction_g(i), i=1,3)
             
