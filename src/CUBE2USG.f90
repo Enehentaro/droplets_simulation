@@ -11,7 +11,7 @@ program CUBE2USG
         integer cubeID, nodeID(3)
     end type
 
-    type(nodeInfo), allocatable :: nodeInfos(:)
+    type(nodeInfo), allocatable :: vtkCell2cubeNode(:)
 
     print *, 'num_file ?'
     read(5,*) num_file
@@ -35,8 +35,8 @@ program CUBE2USG
 
         call read_CUBE_data(F_fname, '')
     
-        if (.not.allocated(nodeInfos)) then
-            allocate(nodeInfos(0 : num_cell - 1))
+        if (.not.allocated(vtkCell2cubeNode)) then
+            allocate(vtkCell2cubeNode(0 : num_cell - 1))
 
             do i = 0, num_cell-1
                 X(:) = 0.0
@@ -45,14 +45,14 @@ program CUBE2USG
                     X(:) = X(:) + node_array(cell_array(i)%nodeID(n))%coordinate(:)
                 end do
                 X(:) = X(:) / real(num_node)
-                nodeInfos(i)%cubeID = get_cube_contains(X)    
-                nodeInfos(i)%nodeID(:) = nearest_node(X, nodeInfos(i)%cubeID)
+                vtkCell2cubeNode(i)%cubeID = get_cube_contains(X)    
+                vtkCell2cubeNode(i)%nodeID(:) = nearest_node(X, vtkCell2cubeNode(i)%cubeID)
             end do
 
         end if
 
         do i = 0, num_cell-1
-            cell_array(i)%vector(:) = get_velocity_f(nodeInfos(i)%nodeID(:), nodeInfos(i)%cubeID)
+            cell_array(i)%vector(:) = get_velocity_f(vtkCell2cubeNode(i)%nodeID(:), vtkCell2cubeNode(i)%cubeID)
         end do
     
         i = len_trim(F_fname)
