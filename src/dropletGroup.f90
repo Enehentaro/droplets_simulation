@@ -488,7 +488,7 @@ module dropletGroup_m
         integer vn, n_unit, num_drop
 
         num_drop = size(self%droplet)
-        !=======ここから飛沫データ（VTKファイル）の出力===========================
+        
         open(newunit=n_unit, file=fname, status='replace')                                             !ここで出力ファイルを指定
             write(n_unit,'(A)') '# vtk DataFile Version 2.0'                                !ファイルの始め4行は文字列（決まり文句）
             write(n_unit,'(A)') 'FOR TEST'
@@ -544,7 +544,6 @@ module dropletGroup_m
 
         print*, 'writeOUT:', trim(fname)
 
-        !=======飛沫データ（VTKファイル）の出力ここまで===========================
     end subroutine output_droplet_VTK
 
     subroutine output_droplet_CSV(self, fname, time, initial)

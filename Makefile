@@ -23,13 +23,13 @@ MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJS))
 MODDIR = ${OBJDIR}
 
 $(TARGET): $(OBJECTS) $(MAINOBJECTS)
-	$(FC) $^ -o $@
+	$(FC) $^ $(FCFLAGS) -o $@
 
 $(TARGET1): $(OBJECTS) $(OBJDIR)/$(TARGET1).o
-	$(FC) $^ -o $@
+	$(FC) $^ $(FCFLAGS) -o $@
 
 $(TARGET2): $(OBJECTS) $(OBJDIR)/$(TARGET2).o
-	$(FC) $^ -o $@  $(FCFLAGS)
+	$(FC) $^ $(FCFLAGS) -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	@if [ ! -d $(OBJDIR) ]; then \
