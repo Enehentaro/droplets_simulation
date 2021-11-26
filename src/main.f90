@@ -5,13 +5,12 @@
 !---------------------------------------------------------------------------------
 PROGRAM MAIN
       !$ use omp_lib
-      use drop_motion_mod
-      use case_list_m
+      use dropletGroup_m
+      use caseNameList_m
       implicit none
-      integer, pointer :: n => n_time
-      integer nc, nc_max
+      integer, pointer :: n => n_time, nc => nowCase
+      integer nc_max
       character(50) start_date
-      character(:), allocatable :: case_name
       real start_time
       !===========================================================================================
       !$OMP parallel
@@ -23,21 +22,16 @@ PROGRAM MAIN
       call case_check(num_case=nc_max) 
 
       do nc = 1, nc_max                         !実行数だけループ（通常1回）
-            case_name = get_case_name(nc)
             
             call create_CaseDirectory                     !ディレクトリ作成
             
-            call first_setting(case_name)                        !条件TXTの読み込み、飛沫初期分布の計算など
-
-            call set_initialDroplet(case_name)         !初期状態を代入
+            call firstSet_mainDroplet          !条件TXTの読み込み、飛沫初期分布の計算など
 
             call dropletManagement       !外部サブルーチンによる管理
 
-            call output_initialDroplet(case_name)
+            call output_initialDroplet
 
             call check_point                    !計算条件の確認および時刻計測のためのチェックポイント
-
-            call update_FlowField(first=.true.)                !流れ場の取得
 
             print '("*******************************************")'
             print '("            START step_loop                ")'
@@ -45,13 +39,13 @@ PROGRAM MAIN
 
             DO n = n_start + 1, n_end           !ステップ数だけループ
 
-                  call adhesion_check
+                  call mainDroplet%adhesion_check()
 
-                  call survival_check           !生存率に関する処理
+                  call mainDroplet%survival_check()           !生存率に関する処理
 
-                  call coalescence_check        !飛沫間の合体判定
+                  call mainDroplet%coalescence_check()        !飛沫間の合体判定
 
-                  call Calculation_Droplets     !飛沫の運動計算
+                  call mainDroplet%Calculation_Droplets()     !飛沫の運動計算
 
                   call dropletManagement       !外部サブルーチンによる管理
 
@@ -105,11 +99,14 @@ PROGRAM MAIN
 
       subroutine create_CaseDirectory
             use path_operator_m
+            character(:), allocatable :: caseName
 
-            print*, '#', nc, '[',case_name,']'
+            caseName = get_caseName()
 
-            call make_directory(case_name//'/VTK')
-            call make_directory(case_name//'/backup')
+            print*, '#', nc, '[',caseName,']'
+
+            call make_directory(caseName//'/VTK')
+            call make_directory(caseName//'/backup')
             
       end subroutine create_CaseDirectory
 
@@ -118,9 +115,9 @@ PROGRAM MAIN
 
             print*, start_date
             print*, 'Now_Step_Time =', Time_onSimulation(n, dimension=.true.), '[sec]'
-            print*, '# floating :', drop_counter('floating')
+            print*, '# floating :', mainDroplet%dropletCounter('floating')
             if(refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
-            call output_droplet(case_name, initial=.false.)
+            call output_mainDroplet(initial=.false.)
             print '("====================================================")'
             call reset_formatTC
 
@@ -133,6 +130,7 @@ PROGRAM MAIN
             character(10) d_end, t_end
             logical existance
             double precision TimeStart, TimeEnd
+            character(:), allocatable :: caseName
             
             call cpu_time(end_time)
             call date_and_time(date = d_end, time = t_end)
@@ -141,12 +139,14 @@ PROGRAM MAIN
             print*, start_date
             print*, end_date
 
-            fname = case_name//'/ResultSummary.txt'
+            caseName = get_caseName()
+
+            fname = caseName//'/ResultSummary.txt'
             inquire(file=fname, exist=existance)
             cnt = 0
             do while(existance)
                   cnt = cnt + 1
-                  write(fname,'("'//case_name//'/ResultSummary_", i0, ".txt")') cnt
+                  write(fname,'("'//caseName//'/ResultSummary_", i0, ".txt")') cnt
                   inquire(file=fname, exist=existance)
             end do
 
@@ -170,11 +170,11 @@ PROGRAM MAIN
                   write(n_unit, '(A18, 2(I15,2x,A))') 'Step =', n_start, '-', n_end !計算回数
                   write(n_unit,'(A18, I15)') 'OutputInterval =', interval
                   write(n_unit,'(A)') '======================================================='
-                  write(n_unit,'(A18, I15)') '#Droplets =', drop_counter('total')
-                  write(n_unit,'(A18, I15)') 'floating =', drop_counter('floating')
-                  write(n_unit,'(A18, I15)') 'death =', drop_counter('death') !生存率で消滅
-                  write(n_unit,'(A18, I15)') 'coalescence =', drop_counter('coalescence') !生存率で消滅
-                  write(n_unit,'(A18, I15)') 'adhesion =', drop_counter('adhesion') !付着したすべてのウイルス数
+                  write(n_unit,'(A18, I15)') '#Droplets =', mainDroplet%dropletCounter('total')
+                  write(n_unit,'(A18, I15)') 'floating =', mainDroplet%dropletCounter('floating')
+                  write(n_unit,'(A18, I15)') 'death =', mainDroplet%dropletCounter('death') !生存率で消滅
+                  write(n_unit,'(A18, I15)') 'coalescence =', mainDroplet%dropletCounter('coalescence') !生存率で消滅
+                  write(n_unit,'(A18, I15)') 'adhesion =', mainDroplet%dropletCounter('adhesion') !付着したすべてのウイルス数
                   write(n_unit,'(A)') '======================================================='
                   write(n_unit,'(A18, F18.2)') 'Temp [degC] =', environment('Temperature')
                   write(n_unit,'(A18, F18.2)') 'RH [%] =', environment('RelativeHumidity')

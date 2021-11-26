@@ -25,7 +25,7 @@ module equation_mod
 
         Re = U_represent*L_represent*Rho_represent / Mu_represent
 
-    end subroutine set_basical_variables
+    end subroutine
 
     subroutine set_gravity_acceleration(direction_g)
         use vector_m
@@ -38,7 +38,7 @@ module equation_mod
         print*, 'Dimensionless Acceleration of Gravity :'
         print*, G(:)
 
-    end subroutine set_gravity_acceleration
+    end subroutine
 
     subroutine set_coeff_drdt(T, RH)
         !=====================================================================================
@@ -56,9 +56,9 @@ module equation_mod
         coeff_drdt = -D/(U_represent*L_represent) * (1.0d0 - dble(RH)/100.d0)*Es / (Rho_d*Rv*TK) ! dr/dt の無次元係数
         print*, 'coeff_drdt=', coeff_drdt
 
-    end subroutine set_coeff_drdt
+    end subroutine
 
-    function get_minimum_radius(initial_radius, RH) result(minimum_radius)
+    function get_minimumRadius(initial_radius, RH) result(minimum_radius)
         use csv_reader
         implicit none
         double precision, intent(in) :: initial_radius(:)
@@ -89,7 +89,7 @@ module equation_mod
         print*, 'Dmin/D0 =', rad_mat(2,i), RH
         minimum_radius(:) = initial_radius(:) * rad_mat(2,i)
 
-    end function get_minimum_radius
+    end function
 
     double precision function evaporatin_eq(radius)
         double precision, intent(in) :: radius
@@ -106,7 +106,7 @@ module equation_mod
 
         evaporatin_eq = radius + (R1+R2)*0.5d0
 
-    end function evaporatin_eq
+    end function
 
     subroutine solve_motionEquation(X, V, Va, R)
         double precision, intent(inout) :: X(3), V(3)
@@ -119,7 +119,7 @@ module equation_mod
 
         X(:) = next_position(X(:), V_now(:), V(:))
     
-    end subroutine solve_motionEquation
+    end subroutine
 
     function next_velocity(vel_d, vel_a, radius_d) result(vel_d_next)
         double precision, intent(in) :: vel_d(3), vel_a(3), radius_d
@@ -135,7 +135,7 @@ module equation_mod
         vel_d_next(:) = ( vel_d(:) + ( G(:) + C*vel_a(:) )* delta_t ) &
                             / ( 1.0d0 + C*delta_t )
 
-    end function next_velocity
+    end function
 
     function next_position(x1, v1, v2) result(x2)
         double precision, intent(in) :: x1(3), v1(3), v2(3)
@@ -143,7 +143,7 @@ module equation_mod
 
         x2(:) = x1(:) + (v1(:) + v2(:))* 0.5d0 * delta_t
 
-    end function next_position
+    end function
 
     double precision function DragCoefficient(Re_d)
         double precision, intent(in) :: Re_d
@@ -153,7 +153,7 @@ module equation_mod
 
         DragCoefficient = (24.0d0/Re_d_)*(1.0d0 + 0.15d0*(Re_d_**0.687d0))
 
-    end function DragCoefficient
+    end function
     
     double precision function survival_rate(step)
         integer, intent(in) :: step
@@ -171,7 +171,7 @@ module equation_mod
         time = Time_onSimulation(step, dimension=.true.)
         !新型コロナウイルス（1.1時間で半減）(論文によると、湿度30,60,90%のときのデータしかない)
         survival_rate = 0.999825d0**(time)
-    end function survival_rate
+    end function
 
     double precision function representative_value(name)
         character(*), intent(in) :: name
@@ -189,7 +189,7 @@ module equation_mod
 
         end select
 
-    end function representative_value
+    end function
 
     double precision function Time_onSimulation(step, dimension)
         integer, intent(in) :: step
@@ -200,6 +200,6 @@ module equation_mod
             if(dimension) Time_onSimulation = Time_onSimulation * L_represent / U_represent
         end if
     
-    end function Time_onSimulation
+    end function
 
 end module equation_mod
