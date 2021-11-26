@@ -3,7 +3,7 @@ program droplet2CSV
     implicit none
     integer n, stepEnd, stepInterval
     character case_name*99, fname*99
-    real time
+    double precision time
 
     print*, 'case_name = ?'
     read(5,'(A)') case_name
