@@ -5,10 +5,10 @@
 !---------------------------------------------------------------------------------
 PROGRAM MAIN
       !$ use omp_lib
-      use dropletGroup_m
+      use dropletMotionSimulation
       use caseNameList_m
       implicit none
-      integer, pointer :: n => n_time, nc => nowCase
+      integer, pointer :: n => timeStep, nc => nowCase
       integer nc_max
       character(:), allocatable :: start_date
       real start_time
@@ -49,7 +49,7 @@ PROGRAM MAIN
 
                   call dropletManagement       !外部サブルーチンによる管理
 
-                  if ((mod(n,interval) == 0)) call output             !出力
+                  if ((mod(n, outputInterval) == 0)) call output             !出力
 
                   call update_flow_check        !流れ場の更新チェック
 
@@ -168,7 +168,7 @@ PROGRAM MAIN
                   write(n_unit,'(A)') '======================================================='
                   write(n_unit, '(A18, 2(F15.3,2x,A))') 'Time [sec] =', TimeStart, '-', TimeEnd
                   write(n_unit, '(A18, 2(I15,2x,A))') 'Step =', n_start, '-', n_end !計算回数
-                  write(n_unit,'(A18, I15)') 'OutputInterval =', interval
+                  write(n_unit,'(A18, I15)') 'OutputInterval =', outputInterval
                   write(n_unit,'(A)') '======================================================='
                   write(n_unit,'(A18, I15)') '#Droplets =', mainDroplet%counter('total')
                   write(n_unit,'(A18, I15)') 'floating =', mainDroplet%counter('floating')

@@ -2,12 +2,9 @@ module dropletGroup_m
     use virusDroplet_m
     implicit none
 
-    integer interval
     real, private :: T, RH
 
-    integer, target :: n_time  !時間ステップ
-    integer, private :: num_restart
-    integer n_start, n_end
+    integer, target :: timeStep = 0  !時間ステップ
 
     integer, allocatable :: statusCSV(:)
 
@@ -39,8 +36,6 @@ module dropletGroup_m
         procedure :: append => append_dropletGroup
 
     end type
-
-    type(dropletGroup) mainDroplet
 
     contains
 
@@ -186,7 +181,7 @@ module dropletGroup_m
 
         call random_number(randble)
 
-        self%droplet(:)%deadline = virusDeadline(randble(:)) + Time_onSimulation(n_time)
+        self%droplet(:)%deadline = virusDeadline(randble(:)) + Time_onSimulation(timeStep)
 
     end subroutine set_virusDeadline
 
@@ -272,14 +267,14 @@ module dropletGroup_m
 
         do vn = 1, num_droplets
             if ((self%droplet(vn)%status == 0).and.&
-                (Time_onSimulation(n_time, dimension=.true.) > self%droplet(vn)%deadline)) then
+                (Time_onSimulation(timeStep, dimension=.true.) > self%droplet(vn)%deadline)) then
 
                 call stop_droplet(self%droplet(vn), status=-1)
 
             end if
         end do
 
-        ! death_rate = death_rate + dble(vfloat)*(survival_rate(n_time) - survival_rate(n_time+1))    !このステップで死滅すべき飛沫数
+        ! death_rate = death_rate + dble(vfloat)*(survival_rate(timeStep) - survival_rate(timeStep+1))    !このステップで死滅すべき飛沫数
         
         ! do while(death_rate >= 1.0d0)
         !     call random_number(rand)    !死滅IDは乱数で決まる
@@ -384,14 +379,14 @@ module dropletGroup_m
         double precision :: distance, r1, r2
 
         floatings = self%counter('floating')
-        if(floatings > last_floatings) last_coalescence = n_time    !浮遊数が増加したら付着判定再起動のため更新
+        if(floatings > last_floatings) last_coalescence = timeStep    !浮遊数が増加したら付着判定再起動のため更新
         last_floatings = floatings
 
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
-        if((n_time - last_coalescence) > 100) return
+        if((timeStep - last_coalescence) > 100) return
 
         call set_formatTC('(" Coalescence_check [step:", i10, "/", i10, "]")')
-        call print_sameLine([n_time, last_coalescence+100])
+        call print_sameLine([timeStep, last_coalescence+100])
 
         num_droplets = size(self%droplet)
 
@@ -415,7 +410,7 @@ module dropletGroup_m
                     else
                         call coalescence(self%droplet(d2), self%droplet(d1))
                     end if
-                    last_coalescence = n_time
+                    last_coalescence = timeStep
 
                 end if
 
@@ -443,26 +438,6 @@ module dropletGroup_m
         
     end subroutine coalescence
 
-    subroutine output_initialDroplet
-
-        if(num_restart <= 0) call output_mainDroplet(initial=.true.)  !リスタートでないなら初期配置出力
-
-    end subroutine output_initialDroplet
-
-    subroutine output_mainDroplet(initial)
-        logical, intent(in) :: initial
-        character(99) fname
-
-        write(fname,'("'//case_dir//'/VTK/drop_", i0, ".vtk")') n_time
-        call mainDroplet%output_VTK(fname, initial)
-
-        fname = case_dir//'/particle.csv'
-        call mainDroplet%output_CSV(fname, Time_onSimulation(n_time, dimension=.true.), initial)
-
-        if(.not.initial) call mainDroplet%output_backup(case_dir//'/backup')
-
-    end subroutine
-
     subroutine output_backup(self, dir)
         class(dropletGroup) self
         character(*), intent(in) :: dir
@@ -470,7 +445,7 @@ module dropletGroup_m
         character(99) fname
 
         num_drop = size(self%droplet(:))
-        write(fname,'("'//dir//'/backup_", i0, ".bu")') n_time
+        write(fname,'("'//dir//'/backup_", i0, ".bu")') timeStep
 
         open(newunit=n_unit, form='unformatted', file=fname, status='replace')
             write(n_unit) num_drop
@@ -482,7 +457,6 @@ module dropletGroup_m
         print*, 'writeOUT:', trim(fname)
 
     end subroutine output_backup
-
 
     subroutine output_droplet_VTK(self, fname, initial)
         class(dropletGroup) self
@@ -582,129 +556,13 @@ module dropletGroup_m
 
     !====================メソッドここまで====================
 
-    subroutine firstSet_mainDroplet
-        use caseNameList_m
-        integer num_initialDroplet
-        character(99) fname
+    subroutine set_environment(Temperature, RelativeHumidity)
+        real, intent(in) :: Temperature, RelativeHumidity
 
-        case_dir = get_caseName()
-
-        call read_and_set_condition(case_dir, num_droplet=num_initialDroplet)
-
-        call update_FlowField(first=.true.)                !流れ場の取得
+        T = Temperature
+        RH = RelativeHumidity
 
         call set_coeff_drdt(T, RH)          !温湿度依存の係数の設定
-
-        if(num_restart <= 0) then
-
-            if(num_restart==0) then
-                call random_set  !実行時刻に応じた乱数シード設定
-                mainDroplet = generate_dropletGroup(num_initialDroplet)
-
-            else if(num_restart==-1) then
-                mainDroplet = read_InitialDistribution(case_dir)
-
-            end if
-
-            n_start = 0
-            n_time = n_start
-
-        else
-
-            print*, '**RESTART**'
-
-            write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') num_restart
-            mainDroplet = read_backup(fname)   !ここで自動割り付け
-
-            n_start = num_restart
-            n_time = n_start
-            
-        end if
-
-        print*, 'num_droplets =', size(mainDroplet%droplet)
-
-    end subroutine
-
-    subroutine read_and_set_condition(dir, num_droplet)
-        use filename_mod
-        use path_operator_m
-        character(*), intent(in) ::dir
-        double precision dt, L, U
-        double precision :: direction_g(3)
-        character(99) path2FlowFile
-        integer i, n_unit
-        integer, optional, intent(out) :: num_droplet
-
-        OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
-            read(n_unit,'()')
-            read(n_unit,*) num_restart
-            read(n_unit,'()')
-            read(n_unit,*) n_end
-            read(n_unit,'()')
-            read(n_unit,*) dt
-            read(n_unit,'()')
-            read(n_unit,*) interval
-            read(n_unit,'()')
-            read(n_unit,*) T
-            read(n_unit,*) RH
-            read(n_unit,'()')
-            if(present(num_droplet)) then
-                read(n_unit,*) num_droplet
-            else
-                read(n_unit, '()')
-            end if
-            read(n_unit,'()')
-            read(n_unit,*) (direction_g(i), i=1,3)
-            
-            read(n_unit,'()')
-
-            read(n_unit,'()')
-            read(n_unit,'(A)') path2FlowFile
-            read(n_unit,'()')
-            read(n_unit,*) DT_FLOW
-            read(n_unit,'()')
-            read(n_unit,*) OFFSET
-            read(n_unit,'()')
-            read(n_unit,*) INTERVAL_FLOW
-            read(n_unit,'()')
-            read(n_unit,*) LoopS
-            read(n_unit,*) LoopF
-            read(n_unit,'()')
-            read(n_unit,*) L
-            read(n_unit,*) U
-
-        CLOSE(n_unit)
-
-        if(num_restart > 0) then
-            print*, 'Restart from', num_restart
-        else if(num_restart == -1) then
-            print*, 'InitialDistributon is Specified.'
-        end if
-
-        print*, 'n_end =',n_end
-        print*, 'interval =',interval
-
-        if(INTERVAL_FLOW > 0) then
-            print*, 'Interval of AirFlow =', INTERVAL_FLOW
-        else
-            print*, 'AirFlow is Steady'
-        end if
-
-        if(loopf - loops > 0) then
-            print*, 'Loop is from', loops, 'to', loopf
-        elseif(loopf - loops == 0) then 
-            print*, 'After', loopf, ', Checkout SteadyFlow'
-        end if
-        print*, 'Delta_Time =', dt
-        print*, 'Delta_Time inFLOW =', DT_FLOW
-
-        call set_dir_from_path(path2FlowFile, PATH_FlowDIR, FNAME_FMT)
-
-        call check_FILE_GRID    !気流ファイルのタイプをチェック
-
-        call set_basical_variables(dt, L, U)
-
-        call set_gravity_acceleration(direction_g)
 
     end subroutine
 
@@ -721,38 +579,6 @@ module dropletGroup_m
         end select
 
     end function
-
-    subroutine update_flow_check
-
-        if(INTERVAL_FLOW <= 0) return
-
-        call set_STEPinFLOW(Time_onSimulation(n_time))
-
-        if(STEPinFLOW >= NextUpdate) call update_FlowField(first=.false.)   !流れ場の更新
-
-    end subroutine
-
-    subroutine update_FlowField(first)
-        logical, intent(in) :: first
-
-        if(INTERVAL_FLOW <= 0) then
-            call read_steadyFlowData
-        else
-            if(first) call set_STEPinFLOW(Time_onSimulation(n_time))
-            call read_unsteadyFlowData
-
-        end if
-
-        call set_MinMaxCDN
-
-        if(first) call preprocess_onFlowField         !流れ場の前処理
-
-        if(unstructuredGrid) then
-            call boundary_setting(first)
-            if(.not.first) call mainDroplet%boundary_move()
-        end if
-            
-    end
 
     function read_backup(fname) result(dGroup_read)
         character(*), intent(in) :: fname
@@ -834,23 +660,5 @@ module dropletGroup_m
         dGroup_read%droplet(:)%radius = diameter(:) * 0.5d0
       
     end function
-
-    subroutine random_set    !実行時刻に依存した乱数シードを指定する
-        implicit none
-        integer :: seedsize, i
-        integer, allocatable :: seed(:)
-
-        print*, 'call:random_set'
-    
-        call random_seed(size=seedsize) !シードのサイズを取得。（コンパイラごとに異なるらしい）
-        allocate(seed(seedsize)) !新シード配列サイズの割り当て
-    
-        do i = 1, seedsize
-            call system_clock(count=seed(i)) !時間を新シード配列に取得
-        end do
-    
-        call random_seed(put=seed(:)) !新シードを指定
-          
-    end subroutine random_set
 
 end module dropletGroup_m

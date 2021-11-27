@@ -4,7 +4,7 @@ subroutine dropletManagement
     implicit none
     ! type(dropletGroup) dGroup
 
-    ! if(mod(n_time, 100) == 0) then    !100ステップおきに飛沫を10個発生させるサンプルコード
+    ! if(mod(timeStep, 100) == 0) then    !100ステップおきに飛沫を10個発生させるサンプルコード
     !     dGroup = generate_dropletGroup(10)
     !     call mainDroplet%append(dGroup)
     ! end if
