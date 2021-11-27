@@ -20,20 +20,20 @@ module dropletGroup_m
 
         procedure calc_initialPosition
         procedure calc_initialRadius
-        procedure set_deathParam
+        procedure set_virusDeadline
         procedure calc_minimumRadius
         procedure first_refCellSearch
 
         procedure output_backup
-        procedure output_droplet_VTK
-        procedure output_droplet_CSV
+        procedure :: output_VTK => output_droplet_VTK
+        procedure :: output_CSV => output_droplet_CSV
 
-        procedure dropletCounter
+        procedure :: counter => dropletCounter
 
         procedure adhesion_check
-        procedure survival_check           !生存率に関する処理
-        procedure coalescence_check        !飛沫間の合体判定
-        procedure Calculation_Droplets     !飛沫の運動計算
+        procedure survival_check
+        procedure coalescence_check
+        procedure :: calculation => Calculation_Droplets
         procedure boundary_move
 
         procedure :: append => append_dropletGroup
@@ -51,7 +51,7 @@ module dropletGroup_m
 
         call generate_dropletGroup%calc_initialPosition()
         call generate_dropletGroup%calc_initialRadius()
-        call generate_dropletGroup%set_deathParam()
+        call generate_dropletGroup%set_virusDeadline()
         generate_dropletGroup%droplet(:)%radius = generate_dropletGroup%droplet(:)%initialRadius
         call generate_dropletGroup%calc_minimumRadius(RH) !最小半径の計算
 
@@ -180,15 +180,15 @@ module dropletGroup_m
 
     end subroutine
 
-    subroutine set_deathParam(self)
+    subroutine set_virusDeadline(self)
         class(dropletGroup) self
         double precision randble(size(self%droplet))
 
         call random_number(randble)
 
-        self%droplet(:)%deathParam = randble(:)
+        self%droplet(:)%deadline = virusDeadline(randble(:)) + Time_onSimulation(n_time)
 
-    end subroutine set_deathParam
+    end subroutine set_virusDeadline
 
     subroutine calc_minimumRadius(self, RelativeHumidity)
         class(dropletGroup) self
@@ -271,8 +271,11 @@ module dropletGroup_m
         num_droplets = size(self%droplet)
 
         do vn = 1, num_droplets
-            if ((self%droplet(vn)%status == 0).and.(self%droplet(vn)%deathParam > survival_rate(n_time))) then
+            if ((self%droplet(vn)%status == 0).and.&
+                (Time_onSimulation(n_time, dimension=.true.) > self%droplet(vn)%deadline)) then
+
                 call stop_droplet(self%droplet(vn), status=-1)
+
             end if
         end do
 
@@ -380,7 +383,7 @@ module dropletGroup_m
         integer, save :: last_coalescence = 0, last_floatings = 0
         double precision :: distance, r1, r2
 
-        floatings = self%dropletCounter('floating')
+        floatings = self%counter('floating')
         if(floatings > last_floatings) last_coalescence = n_time    !浮遊数が増加したら付着判定再起動のため更新
         last_floatings = floatings
 
@@ -451,10 +454,10 @@ module dropletGroup_m
         character(99) fname
 
         write(fname,'("'//case_dir//'/VTK/drop_", i0, ".vtk")') n_time
-        call mainDroplet%output_droplet_VTK(fname, initial)
+        call mainDroplet%output_VTK(fname, initial)
 
         fname = case_dir//'/particle.csv'
-        call mainDroplet%output_droplet_CSV(fname, Time_onSimulation(n_time, dimension=.true.), initial)
+        call mainDroplet%output_CSV(fname, Time_onSimulation(n_time, dimension=.true.), initial)
 
         if(.not.initial) call mainDroplet%output_backup(case_dir//'/backup')
 
@@ -502,13 +505,13 @@ module dropletGroup_m
 
             write(n_unit,'(A,I12,2X,I12)') 'CELLS ', num_drop, num_drop*2                          !セルの数、セルの数×2
             DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(2(I12,2X))')  1, vn-1                                          !まずセルを構成する点の数（セル形状が点なので1）、その点のID
+                write(n_unit,'(I4,2X,I12)') 1, vn-1                                          !セルを構成する点の数（セル形状が点なので1）、その点のID
             END DO
             write(n_unit,'()')                                                              !改行
 
             write(n_unit,'(A,I12)') 'CELL_TYPES', num_drop
             DO vn = 1, num_drop                                                           !セルの数だけループ
-                write(n_unit,'(I12)') 1                                                        !セルの形状（1は点であることを意味する）
+                write(n_unit,'(I4)') 1                                                        !セルの形状（1は点であることを意味する）
             END DO
             write(n_unit,'()')                                                              !改行
 
@@ -517,7 +520,7 @@ module dropletGroup_m
             write(n_unit,'(A)') 'SCALARS Status int'                                   !飛沫の状態(0:浮遊、1:付着、2:回収)
             write(n_unit,'(A)') 'LOOKUP_TABLE default'
             DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(I12)') self%droplet(vn)%status                                            !飛沫の状態(0:浮遊、1:付着、2:回収)
+                write(n_unit,'(I4)') self%droplet(vn)%status                                            !飛沫の状態(0:浮遊、1:付着、2:回収)
             END DO
 
             write(n_unit,'(A)') 'SCALARS Diameter float'                                  !飛沫の直径
@@ -528,10 +531,10 @@ module dropletGroup_m
 
             if(present(initial)) then
                 if(initial) then
-                    write(n_unit,'(A)') 'SCALARS DeathParam float'
+                    write(n_unit,'(A)') 'SCALARS Deadline float'
                     write(n_unit,'(A)') 'LOOKUP_TABLE default'
                     DO vn = 1, num_drop                                                            !セルの数だけループ
-                        write(n_unit,'(f20.15)') self%droplet(vn)%deathParam
+                        write(n_unit,'(e20.12)') self%droplet(vn)%deadline
                     END DO
                 end if
             end if
@@ -807,7 +810,7 @@ module dropletGroup_m
             read(n_unit,'()')
             read(n_unit,'()')
             DO vn = 1, num_drop
-                read(n_unit,'(I12)') dGroup_read%droplet(vn)%status
+                read(n_unit, *) dGroup_read%droplet(vn)%status
             END DO
 
             read(n_unit,'()')
@@ -819,7 +822,7 @@ module dropletGroup_m
             read(n_unit,'()')
             read(n_unit,'()')
             DO vn = 1, num_drop
-                read(n_unit, *) dGroup_read%droplet(vn)%deathParam
+                read(n_unit, *) dGroup_read%droplet(vn)%deadline
             END DO
 
             read(n_unit,'()')

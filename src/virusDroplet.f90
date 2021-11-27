@@ -5,7 +5,7 @@ module virusDroplet_m
 
     type virusDroplet_t
         double precision :: position(3), velocity(3)=0.d0
-        double precision radius, radius_min, initialRadius, deathParam
+        double precision radius, radius_min, initialRadius, deadline
         integer :: status=0, adhesBoundID = 0
         type(reference_cell_t) refCELL
 

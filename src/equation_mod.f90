@@ -169,8 +169,18 @@ module equation_mod
         ! end if
 
         time = Time_onSimulation(step, dimension=.true.)
-        !新型コロナウイルス（1.1時間で半減）(論文によると、湿度30,60,90%のときのデータしかない)
+        !新型コロナウイルス（1.1時間で半減）
         survival_rate = 0.999825d0**(time)
+    end function
+
+    elemental double precision function virusDeadline(deathParameter)
+        double precision, intent(in) :: deathParameter
+        double precision, parameter :: halfLife = 3960.d0   !半減期 1.1 h ( = 3960 sec)
+        double precision, parameter :: alpha = log(2.d0) / halfLife
+
+        virusDeadline = - log(deathParameter) / alpha
+        virusDeadline = virusDeadline * U_represent/L_represent !無次元化
+
     end function
 
     double precision function representative_value(name)

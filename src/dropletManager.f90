@@ -3,10 +3,8 @@ subroutine dropletManagement
     use dropletGroup_m
     implicit none
     ! type(dropletGroup) dGroup
-    ! integer, save :: cnt = 0
 
-    ! cnt = cnt + 1
-    ! if(mod(cnt,100) == 0) then    !100ステップおきに飛沫を10個配置
+    ! if(mod(n_time, 100) == 0) then    !100ステップおきに飛沫を10個発生させるサンプルコード
     !     dGroup = generate_dropletGroup(10)
     !     call mainDroplet%append(dGroup)
     ! end if

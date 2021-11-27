@@ -10,7 +10,7 @@ PROGRAM MAIN
       implicit none
       integer, pointer :: n => n_time, nc => nowCase
       integer nc_max
-      character(50) start_date
+      character(:), allocatable :: start_date
       real start_time
       !===========================================================================================
       !$OMP parallel
@@ -45,7 +45,7 @@ PROGRAM MAIN
 
                   call mainDroplet%coalescence_check()        !飛沫間の合体判定
 
-                  call mainDroplet%Calculation_Droplets()     !飛沫の運動計算
+                  call mainDroplet%calculation()     !飛沫の運動計算
 
                   call dropletManagement       !外部サブルーチンによる管理
 
@@ -73,7 +73,7 @@ PROGRAM MAIN
 
       subroutine check_point
             character(1) input
-            character(10) d_start, t_start
+            character d_start*8, t_start*10
 
             if(nc == 1) then
                   do
@@ -115,7 +115,7 @@ PROGRAM MAIN
 
             print*, start_date
             print*, 'Now_Step_Time =', Time_onSimulation(n, dimension=.true.), '[sec]'
-            print*, '# floating :', mainDroplet%dropletCounter('floating')
+            print*, '# floating :', mainDroplet%Counter('floating')
             if(refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
             call output_mainDroplet(initial=.false.)
             print '("====================================================")'
@@ -126,11 +126,11 @@ PROGRAM MAIN
       subroutine output_ResultSummary
             integer n_unit, cnt
             real end_time
-            character(50) end_date, fname
-            character(10) d_end, t_end
+            character(50) fname
+            character d_end*8, t_end*10
             logical existance
             double precision TimeStart, TimeEnd
-            character(:), allocatable :: caseName
+            character(:), allocatable :: caseName, end_date
             
             call cpu_time(end_time)
             call date_and_time(date = d_end, time = t_end)
@@ -170,11 +170,11 @@ PROGRAM MAIN
                   write(n_unit, '(A18, 2(I15,2x,A))') 'Step =', n_start, '-', n_end !計算回数
                   write(n_unit,'(A18, I15)') 'OutputInterval =', interval
                   write(n_unit,'(A)') '======================================================='
-                  write(n_unit,'(A18, I15)') '#Droplets =', mainDroplet%dropletCounter('total')
-                  write(n_unit,'(A18, I15)') 'floating =', mainDroplet%dropletCounter('floating')
-                  write(n_unit,'(A18, I15)') 'death =', mainDroplet%dropletCounter('death') !生存率で消滅
-                  write(n_unit,'(A18, I15)') 'coalescence =', mainDroplet%dropletCounter('coalescence') !生存率で消滅
-                  write(n_unit,'(A18, I15)') 'adhesion =', mainDroplet%dropletCounter('adhesion') !付着したすべてのウイルス数
+                  write(n_unit,'(A18, I15)') '#Droplets =', mainDroplet%counter('total')
+                  write(n_unit,'(A18, I15)') 'floating =', mainDroplet%counter('floating')
+                  write(n_unit,'(A18, I15)') 'death =', mainDroplet%counter('death') !生存率で消滅
+                  write(n_unit,'(A18, I15)') 'coalescence =', mainDroplet%counter('coalescence') !生存率で消滅
+                  write(n_unit,'(A18, I15)') 'adhesion =', mainDroplet%counter('adhesion') !付着したすべてのウイルス数
                   write(n_unit,'(A)') '======================================================='
                   write(n_unit,'(A18, F18.2)') 'Temp [degC] =', environment('Temperature')
                   write(n_unit,'(A18, F18.2)') 'RH [%] =', environment('RelativeHumidity')
