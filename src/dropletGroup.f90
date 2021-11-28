@@ -8,8 +8,6 @@ module dropletGroup_m
 
     integer, allocatable :: statusCSV(:)
 
-    character(:), allocatable, private :: case_dir
-
     type dropletGroup
         type(virusDroplet_t), allocatable :: droplet(:)
 
@@ -112,6 +110,7 @@ module dropletGroup_m
     subroutine calc_initialPosition(self)
         use csv_reader
         use filename_mod
+        use caseNameList_m
         class(dropletGroup) self
         integer kx,ky,kz, num_perEdge, num_per_box, k, k_end, cnt
         integer i_box, num_box, num_drop
@@ -120,7 +119,7 @@ module dropletGroup_m
         
         num_drop = size(self%droplet)
 
-        call read_CSV(case_dir//'/'//IniPositionFName, position_mat)
+        call read_CSV(get_caseName()//'/'//IniPositionFName, position_mat)
 
         num_box = size(position_mat, dim=2)
 
@@ -364,22 +363,13 @@ module dropletGroup_m
 
     end function
 
-    subroutine coalescence_check(self)
-        use terminalControler_m
+    subroutine coalescence_check(self, stat)
         class(dropletGroup) self
-        integer d1, d2, floatings, num_droplets
-        integer, save :: last_coalescence = 0, last_floatings = 0
+        integer, intent(out) :: stat
+        integer d1, d2, num_droplets
         double precision :: distance, r1, r2
 
-        floatings = self%counter('floating')
-        if(floatings > last_floatings) last_coalescence = timeStep    !浮遊数が増加したら付着判定再起動のため更新
-        last_floatings = floatings
-
-        !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
-        if((timeStep - last_coalescence) > 100) return
-
-        call set_formatTC('(" Coalescence_check [step:", i10, "/", i10, "]")')
-        call print_sameLine([timeStep, last_coalescence+100])
+        stat = 0
 
         num_droplets = size(self%droplet)
 
@@ -403,7 +393,7 @@ module dropletGroup_m
                     else
                         call coalescence(self%droplet(d2), self%droplet(d1))
                     end if
-                    last_coalescence = timeStep
+                    stat = stat + 1
 
                 end if
 

@@ -7,6 +7,9 @@ module dropletMotionSimulation
     integer, private :: num_restart
     integer n_start, n_end
 
+    character(:), allocatable :: start_date
+    real start_time
+
     character(:), allocatable, private :: case_dir
 
     type(dropletGroup) mainDroplet
@@ -14,11 +17,8 @@ module dropletMotionSimulation
     contains
 
     subroutine firstSet_mainDroplet
-        use caseNameList_m
         integer num_initialDroplet
         character(99) fname
-
-        case_dir = get_caseName()
 
         call read_and_set_condition(case_dir, num_droplet=num_initialDroplet)
 
@@ -140,7 +140,7 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine update_flow_check
+    subroutine check_FlowFieldUpdate
 
         if(INTERVAL_FLOW <= 0) return
 
@@ -172,10 +172,16 @@ module dropletMotionSimulation
             
     end subroutine
 
-    subroutine output_initialDroplet
+    subroutine mainDroplet_process
 
-        if(num_restart <= 0) call output_mainDroplet(initial = .true.)
-        
+        call mainDroplet%adhesion_check()
+
+        call mainDroplet%survival_check()           !生存率に関する処理
+
+        call coalescence_process        !飛沫間の合体判定
+
+        call mainDroplet%calculation()     !飛沫の運動計算
+
     end subroutine
 
     subroutine output_mainDroplet(initial)
@@ -191,6 +197,150 @@ module dropletMotionSimulation
         if(.not.initial) call mainDroplet%output_backup(case_dir//'/backup')
 
     end subroutine
+
+    subroutine coalescence_process
+        use terminalControler_m
+        integer floatings, num_coalescence
+        integer, save :: last_coalescence = 0, last_floatings = 0
+
+        floatings = mainDroplet%counter('floating')
+        if(floatings > last_floatings) last_coalescence = timeStep    !浮遊数が増加したら付着判定再起動のため更新
+        last_floatings = floatings
+
+        !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
+        if((timeStep - last_coalescence) > 100) return
+
+        call set_formatTC('(" Coalescence_check [step:", i10, "/", i10, "]")')
+        call print_sameLine([timeStep, last_coalescence+100])
+
+        call mainDroplet%coalescence_check(stat = num_coalescence)
+
+        if(num_coalescence >= 1) last_coalescence = timeStep
+
+    end subroutine
+
+    subroutine checkpoint
+        character(1) input
+        character d_start*8, t_start*10
+
+        if(num_restart <= 0) call output_mainDroplet(initial = .true.)
+
+        do
+            print*, 'Do you want to start the calculation? (y/n)'
+            read(5,*) input
+
+            select case(input)
+                case('y')
+                    exit
+
+                case('n')
+                    stop
+
+            end select
+
+        end do
+
+        call cpu_time(start_time)
+        call date_and_time(date = d_start, time = t_start)
+        start_date = '[Start Date] ' // DateAndTime_string(d_start, t_start)
+
+    end subroutine
+
+    subroutine create_CaseDirectory
+        use caseNameList_m
+        use path_operator_m
+
+        case_dir = get_caseName()
+
+        print*, '#', nowCase, '[',case_dir,']'
+
+        call make_directory(case_dir//'/VTK')
+        call make_directory(case_dir//'/backup')
+        
+    end subroutine
+
+    subroutine periodicOutput
+        use terminalControler_m
+
+        print*, start_date
+        print*, 'Now_Step_Time =', Time_onSimulation(timeStep, dimension=.true.), '[sec]'
+        print*, '# floating :', mainDroplet%Counter('floating'), '/', mainDroplet%Counter('total')
+        if(refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
+        call output_mainDroplet(initial=.false.)
+        print '("====================================================")'
+        call reset_formatTC
+
+    end subroutine
+
+    subroutine output_ResultSummary()
+        integer n_unit, cnt
+        real end_time
+        character(50) fname
+        character d_end*8, t_end*10
+        logical existance
+        double precision TimeStart, TimeEnd
+        character(:), allocatable :: end_date
+        
+        call cpu_time(end_time)
+        call date_and_time(date = d_end, time = t_end)
+
+        end_date = '[ END  Date] ' // DateAndTime_string(d_end, t_end)
+        print*, start_date
+        print*, end_date
+
+        fname = case_dir//'/ResultSummary.txt'
+        inquire(file=fname, exist=existance)
+        cnt = 0
+        do while(existance)
+            cnt = cnt + 1
+            write(fname,'("'//case_dir//'/ResultSummary_", i0, ".txt")') cnt
+            inquire(file=fname, exist=existance)
+        end do
+
+        TimeStart = Time_onSimulation(n_start, dimension=.true.)
+        TimeEnd = Time_onSimulation(n_end, dimension=.true.)
+
+        open(newunit=n_unit, file=fname, status='new')
+            write(n_unit,*)'*******************************************'
+            write(n_unit,*)'*                                         *'
+            write(n_unit,*)'*             Result Summary              *'
+            write(n_unit,*)'*                                         *'
+            write(n_unit,*)'*******************************************'
+            write(n_unit,'(A)') '======================================================='
+            write(n_unit,*) start_date
+            write(n_unit,*) end_date
+            write(n_unit, '(A18, F15.3, 2X, A)') 'Erapsed Time =', end_time - start_time, '[sec]'
+            write(n_unit, '(A18, F15.3, 2X, A)') 'Cost of Calc =', &
+                    (end_time - start_time) / (TimeEnd - TimeStart), '[sec/sec]'
+            write(n_unit,'(A)') '======================================================='
+            write(n_unit, '(A18, 2(F15.3,2x,A))') 'Time [sec] =', TimeStart, '-', TimeEnd
+            write(n_unit, '(A18, 2(I15,2x,A))') 'Step =', n_start, '-', n_end !計算回数
+            write(n_unit,'(A18, I15)') 'OutputInterval =', outputInterval
+            write(n_unit,'(A)') '======================================================='
+            write(n_unit,'(A18, I15)') '#Droplets =', mainDroplet%counter('total')
+            write(n_unit,'(A18, I15)') 'floating =', mainDroplet%counter('floating')
+            write(n_unit,'(A18, I15)') 'death =', mainDroplet%counter('death') !生存率で消滅
+            write(n_unit,'(A18, I15)') 'coalescence =', mainDroplet%counter('coalescence') !生存率で消滅
+            write(n_unit,'(A18, I15)') 'adhesion =', mainDroplet%counter('adhesion') !付着したすべてのウイルス数
+            write(n_unit,'(A)') '======================================================='
+            write(n_unit,'(A18, F18.2)') 'Temp [degC] =', environment('Temperature')
+            write(n_unit,'(A18, F18.2)') 'RH [%] =', environment('RelativeHumidity')
+            write(n_unit,'(A18, 2X, A)') 'Used FlowFile :', trim(PATH_FlowDIR)//trim(FNAME_FMT)
+            write(n_unit, '(A18, 2(I15,2x,A))') 'SearchFalseInfo :', refCellSearchInfo('NumFalse'), &
+                    ' (', refCellSearchInfo('FalseRate'), '%)'
+
+        close(n_unit)
+        
+    end subroutine
+
+    function DateAndTime_string(date, time) result(string)
+        character(*), intent(in) :: date, time
+        character(:), allocatable :: string
+
+        string = date(1:4)//'/'//date(5:6)//'/'//date(7:8)//' ' &
+              //time(1:2)//':'//time(3:4)//':'//time(5:6)
+
+    end function
 
     subroutine random_set    !実行時刻に依存した乱数シードを指定する
         implicit none
