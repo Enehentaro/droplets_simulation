@@ -115,7 +115,7 @@ PROGRAM MAIN
 
             print*, start_date
             print*, 'Now_Step_Time =', Time_onSimulation(n, dimension=.true.), '[sec]'
-            print*, '# floating :', mainDroplet%Counter('floating')
+            print*, '# floating :', mainDroplet%Counter('floating'), '/', mainDroplet%Counter('total')
             if(refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
             call output_mainDroplet(initial=.false.)
             print '("====================================================")'

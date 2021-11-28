@@ -231,19 +231,17 @@ module dropletGroup_m
     subroutine adhesion_check(self)
         use adhesion_onSTL_m
         class(dropletGroup) self
-        integer i, num_droplets
-
-        num_droplets = size(self%droplet)
+        integer i
         
         if(unstructuredGrid) then
-            do i = 1, num_droplets
+            do i = 1, size(self%droplet)
                 if(self%droplet(i)%status==0) then
                     call self%droplet(i)%adhesion_onBound()
                     call self%droplet(i)%area_check()
                 end if
             end do
         else
-            do i = 1, num_droplets
+            do i = 1, size(self%droplet)
                 if(self%droplet(i)%status==0) then
                     if(adhesion_onSTL(real(self%droplet(i)%position(:)))) call stop_droplet(self%droplet(i))
                     call self%droplet(i)%area_check()
@@ -256,18 +254,16 @@ module dropletGroup_m
     subroutine survival_check(self)
         use terminalControler_m
         class(dropletGroup) self
-        integer vfloat, vn, num_droplets
+        integer vfloat, vn
         ! double precision rand
         ! double precision, save :: death_rate = 0.d0
             
         vfloat = count(self%droplet(:)%status == 0)
         if(vfloat == 0) return  !浮遊数がゼロならリターン
 
-        num_droplets = size(self%droplet)
-
-        do vn = 1, num_droplets
+        do vn = 1, size(self%droplet)
             if ((self%droplet(vn)%status == 0).and.&
-                (Time_onSimulation(timeStep, dimension=.true.) > self%droplet(vn)%deadline)) then
+                (Time_onSimulation(timeStep) > self%droplet(vn)%deadline)) then
 
                 call stop_droplet(self%droplet(vn), status=-1)
 
@@ -293,13 +289,11 @@ module dropletGroup_m
 
     subroutine Calculation_Droplets(self)
         class(dropletGroup) self
-        integer vn, num_droplets
-
-        num_droplets = size(self%droplet)
+        integer vn
 
         if(unstructuredGrid) then
             !$omp parallel do
-            do vn = 1, num_droplets
+            do vn = 1, size(self%droplet)
                 if(self%droplet(vn)%status /= 0) cycle !浮遊状態でないなら無視
                 call self%droplet(vn)%evaporation()    !蒸発方程式関連の処理
                 call self%droplet(vn)%motionCalculation()     !運動方程式関連の処理
@@ -307,7 +301,7 @@ module dropletGroup_m
             !$omp end parallel do
 
         else
-            do vn = 1, num_droplets
+            do vn = 1, size(self%droplet)
                 if(self%droplet(vn)%status /= 0) cycle !浮遊状態でないなら無視
                 call self%droplet(vn)%evaporation()    !蒸発方程式関連の処理
                 call self%droplet(vn)%motionCalculation_onCUBE()     !運動方程式関連の処理
@@ -319,12 +313,11 @@ module dropletGroup_m
                       
     subroutine boundary_move(self) !境界面の移動に合わせて付着飛沫も移動
         class(dropletGroup) self
-        integer vn, JB, num_droplets
+        integer vn, JB
 
         ! print*, 'CALL:boundary_move'
-        num_droplets = size(self%droplet)
 
-        do vn = 1, num_droplets
+        do vn = 1, size(self%droplet)
         
             if (self%droplet(vn)%status <= 0) cycle !付着していないならスルー
     
