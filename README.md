@@ -43,3 +43,9 @@ Simulation of Virus Droplets Behavior in AFDET
 
   プログラム内では、上式を無次元化・離散化した次式を解いている。  
 <img src="https://latex.codecogs.com/gif.latex?\bar{\mathbf{v}}^{n&plus;1}&space;=&space;\frac{\bar{\mathbf{v}}^{n}&space;&plus;&space;(\bar{\mathbf{g}}&space;&plus;&space;C\bar{\mathbf{u}}_a)\Delta&space;\bar{t}}{1&plus;C\Delta&space;\bar{t}}" />
+
+## おまけ機能(optionディレクトリ内のTXTファイル)
+  - **case_list.txt**
+    - ここにケース名を複数列挙し、実行時に`option/case_list.txt`と入力すると、複数ケースを連続実行できる
+  - **stl_list.txt**
+    - CUBE格子用。ここにCUBE格子作成時に用いたSTLファイル名を列挙し、このファイルとSTLファイル一式をCUBE格子のあるディレクトリに置くことで、CUBE格子に対して飛沫計算ができる。
