@@ -144,7 +144,7 @@ module dropletMotionSimulation
 
         if(INTERVAL_FLOW <= 0) return
 
-        call set_STEPinFLOW(Time_onSimulation(timeStep))
+        call set_STEPinFLOW(TimeOnSimu())
 
         if(STEPinFLOW >= NextUpdate) call update_FlowField(first=.false.)   !流れ場の更新
 
@@ -156,7 +156,7 @@ module dropletMotionSimulation
         if(INTERVAL_FLOW <= 0) then
             call read_steadyFlowData
         else
-            if(first) call set_STEPinFLOW(Time_onSimulation(timeStep))
+            if(first) call set_STEPinFLOW(TimeOnSimu())
             call read_unsteadyFlowData
 
         end if
@@ -192,7 +192,7 @@ module dropletMotionSimulation
         call mainDroplet%output_VTK(fname, initial)
 
         fname = case_dir//'/particle.csv'
-        call mainDroplet%output_CSV(fname, Time_onSimulation(timeStep, dimension=.true.), initial)
+        call mainDroplet%output_CSV(fname, TimeOnSimu(dimension=.true.), initial)
 
         if(.not.initial) call mainDroplet%output_backup(case_dir//'/backup')
 
@@ -263,7 +263,7 @@ module dropletMotionSimulation
         use terminalControler_m
 
         print*, start_date
-        print*, 'Now_Step_Time =', Time_onSimulation(timeStep, dimension=.true.), '[sec]'
+        print*, 'Now_Step_Time =', TimeOnSimu(dimension=.true.), '[sec]'
         print*, '# floating :', mainDroplet%Counter('floating'), '/', mainDroplet%Counter('total')
         if(refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
         call output_mainDroplet(initial=.false.)
@@ -297,8 +297,8 @@ module dropletMotionSimulation
             inquire(file=fname, exist=existance)
         end do
 
-        TimeStart = Time_onSimulation(n_start, dimension=.true.)
-        TimeEnd = Time_onSimulation(n_end, dimension=.true.)
+        TimeStart = TimeOnSimu(step=n_start, dimension=.true.)
+        TimeEnd = TimeOnSimu(step=n_end, dimension=.true.)
 
         open(newunit=n_unit, file=fname, status='new')
             write(n_unit,*)'*******************************************'

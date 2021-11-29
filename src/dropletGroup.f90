@@ -40,6 +40,8 @@ module dropletGroup_m
     type(dropletGroup) function generate_dropletGroup(num_droplet)   !コンストラクタ
         integer, intent(in) :: num_droplet
 
+        if(num_droplet <= 0) return 
+
         allocate(generate_dropletGroup%droplet(num_droplet))
 
         call generate_dropletGroup%calc_initialPosition()
@@ -94,7 +96,7 @@ module dropletGroup_m
 
         end do
 
-        self%droplet%initialRadius = radius_dim(:) / representative_value('Length') !初期飛沫半径のセットおよび無次元化
+        self%droplet(:)%initialRadius = radius_dim(:) / representativeValue('length') !初期飛沫半径のセットおよび無次元化
 
         if (sum(rad_cnt) /= num_drop) then
             print*, 'random_rad_ERROR', sum(rad_cnt), num_drop
@@ -180,7 +182,7 @@ module dropletGroup_m
 
         call random_number(randble)
 
-        self%droplet(:)%deadline = virusDeadline(randble(:)) + Time_onSimulation(timeStep)
+        self%droplet(:)%deadline = virusDeadline(randble(:)) + TimeOnSimu()
 
     end subroutine set_virusDeadline
 
@@ -262,7 +264,7 @@ module dropletGroup_m
 
         do vn = 1, size(self%droplet)
             if ((self%droplet(vn)%status == 0).and.&
-                (Time_onSimulation(timeStep) > self%droplet(vn)%deadline)) then
+                (TimeOnSimu() > self%droplet(vn)%deadline)) then
 
                 call stop_droplet(self%droplet(vn), status=-1)
 
@@ -642,6 +644,22 @@ module dropletGroup_m
     
         dGroup_read%droplet(:)%radius = diameter(:) * 0.5d0
       
+    end function
+
+    double precision function TimeOnSimu(step, dimension)
+        integer, intent(in), optional :: step
+        logical, intent(in), optional :: dimension
+
+        if(present(step)) then
+            TimeOnSimu = step * deltaTime()
+        else
+            TimeOnSimu = timeStep * deltaTime()
+        end if
+        
+        if(present(dimension)) then
+            if(dimension) TimeOnSimu = TimeOnSimu * representativeValue('time')
+        end if
+
     end function
 
 end module dropletGroup_m
