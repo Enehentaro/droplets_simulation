@@ -2,7 +2,7 @@
 subroutine dropletManagement
     use dropletMotionSimulation
     implicit none
-    ! type(dropletGroup) dGroup
+    type(dropletGroup) dGroup
     ! double precision, save :: next_time = 0.d0
 
     ! if(mod(timeStep, 100) == 0) then    !100ステップおきに飛沫を10個発生させるサンプルコード
@@ -15,5 +15,8 @@ subroutine dropletManagement
     !     call mainDroplet%append(dGroup)
     !     next_time = next_time + 0.5d0
     ! end if
+
+    dGroup = mainDroplet%inBox([-1.d0,-1.d0,-1.d0], [1.d0,1.d0,1.d0])  !ボックス内の飛沫を取得
+    print*, size(dGroup%droplet)
     
 end subroutine dropletManagement

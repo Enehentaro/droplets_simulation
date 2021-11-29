@@ -24,6 +24,7 @@ module dropletGroup_m
         procedure :: output_CSV => output_droplet_CSV
 
         procedure :: counter => dropletCounter
+        procedure :: inBox => dropletInBox
 
         procedure adhesion_check
         procedure survival_check
@@ -114,7 +115,7 @@ module dropletGroup_m
         use filename_mod
         use caseNameList_m
         class(dropletGroup) self
-        integer kx,ky,kz, num_perEdge, num_per_box, k, k_end, cnt
+        integer kx,ky,kz, num_perEdge, num_perBox, k, k_end, cnt
         integer i_box, num_box, num_drop
         double precision :: standard(3), delta(3), width(3), randble(3)
         double precision, allocatable :: position_mat(:,:)
@@ -125,7 +126,7 @@ module dropletGroup_m
 
         num_box = size(position_mat, dim=2)
 
-        num_per_box = num_drop / num_box
+        num_perBox = num_drop / num_box
         
         print*, 'calc_initialPosition'
 
@@ -138,28 +139,31 @@ module dropletGroup_m
         cnt = 1
         do i_box = 1, num_box
   
-            width(:) = position_mat(4:6, i_box)
-            standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
-            delta(:) = width(:) / dble(num_perEdge - 1)
+            if(num_perEdge >= 2) then
+                width(:) = position_mat(4:6, i_box)
+                standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
+                delta(:) = width(:) / dble(num_perEdge - 1)
 
-            do kx = 1, num_perEdge
+                do kx = 1, num_perEdge
 
-                do ky = 1, num_perEdge
+                    do ky = 1, num_perEdge
 
-                    do kz = 1, num_perEdge
+                        do kz = 1, num_perEdge
 
-                        self%droplet(k)%position(1) = standard(1) + delta(1)*dble(kx - 1)
-                        self%droplet(k)%position(2) = standard(2) + delta(2)*dble(ky - 1)
-                        self%droplet(k)%position(3) = standard(3) + delta(3)*dble(kz - 1)
-                        k = k + 1
-                        
+                            self%droplet(k)%position(1) = standard(1) + delta(1)*dble(kx - 1)
+                            self%droplet(k)%position(2) = standard(2) + delta(2)*dble(ky - 1)
+                            self%droplet(k)%position(3) = standard(3) + delta(3)*dble(kz - 1)
+                            k = k + 1
+                            
+                        end do
+
                     end do
 
                 end do
 
-            end do
+            end if
 
-            k_end = i_box * num_per_box
+            k_end = i_box * num_perBox
             if(i_box == num_box) k_end = num_drop
 
             do while(k <= k_end)
@@ -363,6 +367,33 @@ module dropletGroup_m
 
         end select
 
+    end function
+
+    type(dropletGroup) function dropletInBox(self, min_cdn, max_cdn)
+        class(dropletGroup) self
+        double precision, intent(in) :: min_cdn(3), max_cdn(3)
+        double precision position(3)
+        integer i, id_array(size(self%droplet)), cnt
+
+        cnt = 0
+        do i = 1, size(self%droplet)
+            position(:) = self%droplet(i)%position(:)
+
+            if      (((min_cdn(1) <= position(1)) .and. (position(1) <= max_cdn(1))) &
+                .and.((min_cdn(2) <= position(2)) .and. (position(2) <= max_cdn(2))) &
+                .and.((min_cdn(3) <= position(3)) .and. (position(3) <= max_cdn(3)))) then
+
+                cnt = cnt + 1
+                id_array(cnt) = i
+
+                ! dropletInBox%droplet = [dropletInBox%droplet, self%droplet(i)]    !このやり方だと遅い
+
+            end if
+
+        end do
+
+        dropletInBox%droplet = self%droplet(id_array(:cnt))
+        
     end function
 
     subroutine coalescence_check(self, stat)

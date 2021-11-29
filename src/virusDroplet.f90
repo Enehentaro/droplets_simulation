@@ -92,16 +92,19 @@ module virusDroplet_m
     subroutine area_check(self)
         class(virusDroplet_t) self
         logical check
+        real areaMinMax(3,2)
         integer L
+
+        areaMinMax = get_areaMinMax()
 
         check = .false.
         do L = 1, 3
     
-            if(self%position(L) < MIN_CDN(L)) then
-                self%position(L) = MIN_CDN(L)
+            if(self%position(L) < areaMinMax(L,1)) then
+                self%position(L) = areaMinMax(L,1)
                 check = .true.
-            else if(self%position(L) > MAX_CDN(L)) then
-                self%position(L) = MAX_CDN(L)
+            else if(self%position(L) > areaMinMax(L,2)) then
+                self%position(L) = areaMinMax(L,2)
                 check = .true.
             end if
 
