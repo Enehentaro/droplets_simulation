@@ -3,7 +3,7 @@
 TARGET = droplet
 
 FC = ifort
-FCFLAGS = -traceback -CB -g -O0 -fpe0
+FCFLAGS = #-traceback -CB -g -O0 -fpe0
 # FCFLAGS = -qopenmp
 
 TARGET1 = CUBE2USG
