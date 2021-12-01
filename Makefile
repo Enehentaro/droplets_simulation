@@ -4,7 +4,7 @@ TARGET = droplet
 
 FC = ifort
 FCFLAGS = -traceback -CB -g -O0 -fpe0
-# FCFLAGS = -qopenmp
+#FCFLAGS = -qopenmp
 
 TARGET1 = CUBE2USG
 TARGET2 = droplet2CSV
@@ -12,21 +12,25 @@ TARGET2 = droplet2CSV
 OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o vector.o terminalControler.o\
 	SCTfile_reader.o  vtkMesh_operator.o unstructured_grid.o adjacency_solver.o \
 	stl_reader.o adhesion_onSTL.o plot3d_operator.o CUBE_mod.o \
-    flow_field.o equation_mod.o virusDroplet_mod.o drop_motion.o
+    flow_field.o equation_mod.o virusDroplet_mod.o drop_motion.o 
+	
 	
 MAINOBJS = dropletManager.o main.o
+
+TESTOBJS = counter.o CUBE2USG.o
 
 SRCDIR    = src
 OBJDIR    = obj
 OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
 MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJS))
+TESTOBJECTS   = $(addprefix $(OBJDIR)/, $(TESTOBJS))
 MODDIR = ${OBJDIR}
 
 $(TARGET): $(OBJECTS) $(MAINOBJECTS)
 	$(FC) $^ -o $@
 
-$(TARGET1): $(OBJECTS) $(OBJDIR)/$(TARGET1).o
-	$(FC) $^ -o $@
+$(TARGET1): $(OBJECTS) $(TESTOBJECTS)
+	$(FC) $^ -o $@ $(FCFLAGS)
 
 $(TARGET2): $(OBJECTS) $(OBJDIR)/$(TARGET2).o
 	$(FC) $^ -o $@		
