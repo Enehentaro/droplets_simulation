@@ -57,6 +57,8 @@ program CUBE2USG
                     vtkCell2cubeNode(i)%nodeID(:) = nearest_node(X, vtkCell2cubeNode(i)%cubeID)
                 end do
 
+                call output_nodeInfo
+
             end if
 
         end if
