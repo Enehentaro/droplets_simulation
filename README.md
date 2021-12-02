@@ -5,9 +5,9 @@ Simulation of Virus Droplets Behavior in AFDET
   ※環境は **Intel Fortran, Linux** を想定しています。その他の環境では適宜書き換えが必要です。
   コンパイルに`make`コマンドを使います（makeのインストールが必要）。
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
-  1. ケースディレクトリ内の条件ファイル(condition.txt, initial_position.csv)を編集。
-  1. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
-  1. `./droplet`で実行。ケース名を入力して計算開始。
+  2. ケースディレクトリ内の条件ファイル(condition.txt, initial_position.csv)を編集。
+  3. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
+  4. `./droplet`で実行。ケース名を入力して計算開始。
 
 ## 条件ファイル(condition.txt)解説
   - **リスタート位置**
@@ -16,6 +16,11 @@ Simulation of Virus Droplets Behavior in AFDET
     - `-1`にすると、InitialDistribution.vtkという名前のファイルが読み込まれ、それを飛沫初期分布とする。全く同じ初期分布から計算を始めたいときに使う。なお、InitialDistribution.vtkは、通常実行時に最初に出力されるVTKファイルの名前を変えることで作成可能。
   - **気流データファイル名**
     - 実行ディレクトリからのパスを指定（ケースディレクトリ基準ではないので注意）（改善の余地あり）
+    - 現在可能な流れ場ファイル：
+      - VTK
+      - INP
+      - FLD
+      - PLOT3D
   - **ステップ数オフセット**
     - 飛沫計算を、流体連番ファイルの途中の番号から始めたいときに指定
   - **気流データを周期的に用いる場合の先頭と末尾**
@@ -25,12 +30,6 @@ Simulation of Virus Droplets Behavior in AFDET
 
 ## main.f90
   飛沫計算メインプログラム。前処理プログラムは取り込まれました。実行時にファイルの有無から判断して、必要であれば前処理が勝手に行われます。
-  
-  現在可能な流れ場ファイル：
-  - VTK
-  - INP
-  - FLD
-  - PLOT3D
 
 ## 外部サブルーチン「dropletManagement」
   dropletManager.f90内で定義されているサブルーチン「dropletManagement」は、毎ステップ呼び出される外部サブルーチンです。
