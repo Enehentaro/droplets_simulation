@@ -189,12 +189,12 @@ module dropletMotionSimulation
         character(99) fname
 
         write(fname,'("'//case_dir//'/VTK/drop_", i0, ".vtk")') timeStep
-        call mainDroplet%output_VTK(fname, initial)
+        call mainDroplet%output_VTK(fname, deadline=initial)
 
         fname = case_dir//'/particle.csv'
         call mainDroplet%output_CSV(fname, TimeOnSimu(dimension=.true.), initial)
 
-        if(.not.initial) call mainDroplet%output_backup(case_dir//'/backup')
+        call mainDroplet%output_backup(case_dir//'/backup', initial)
 
     end subroutine
 
