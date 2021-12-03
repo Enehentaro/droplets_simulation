@@ -12,6 +12,10 @@ module dropletMotionSimulation
 
     character(:), allocatable, private :: case_dir
 
+    logical, private :: startFlag = .false.
+
+    integer last_coalescenceStep, last_numFloating
+
     type(dropletGroup) mainDroplet
 
     contains
@@ -21,6 +25,8 @@ module dropletMotionSimulation
         character(99) fname
 
         call read_and_set_condition(case_dir, num_droplet=num_initialDroplet)
+
+        timeStep = max(num_restart, 0)                !流れ場の取得の前に必ず時刻セット
 
         call update_FlowField(first=.true.)                !流れ場の取得
 
@@ -36,7 +42,6 @@ module dropletMotionSimulation
             end if
 
             n_start = 0
-            timeStep = n_start
 
         else
 
@@ -46,11 +51,12 @@ module dropletMotionSimulation
             mainDroplet = read_backup(fname)   !ここで自動割り付け
 
             n_start = num_restart
-            timeStep = n_start
-            
+
         end if
 
         print*, 'num_droplets =', size(mainDroplet%droplet)
+        last_coalescenceStep = 0
+        last_numFloating = 0
 
     end subroutine
 
@@ -200,22 +206,22 @@ module dropletMotionSimulation
 
     subroutine coalescence_process
         use terminalControler_m
-        integer floatings, num_coalescence
-        integer, save :: last_coalescence = 0, last_floatings = 0
-
-        floatings = mainDroplet%counter('floating')
-        if(floatings > last_floatings) last_coalescence = timeStep    !浮遊数が増加したら付着判定再起動のため更新
-        last_floatings = floatings
+        integer numFloating, num_coalescence
+        integer, parameter :: limit = 100
+        
+        numFloating = mainDroplet%counter('floating')
+        if(numFloating > last_numFloating) last_coalescenceStep = timeStep    !浮遊数が増加したら付着判定再起動のため更新
+        last_numFloating = numFloating
 
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
-        if((timeStep - last_coalescence) > 100) return
+        if((timeStep - last_coalescenceStep) > limit) return
 
         call set_formatTC('(" Coalescence_check [step:", i10, "/", i10, "]")')
-        call print_sameLine([timeStep, last_coalescence+100])
+        call print_sameLine([timeStep, last_coalescenceStep + limit])
 
         call mainDroplet%coalescence_check(stat = num_coalescence)
 
-        if(num_coalescence >= 1) last_coalescence = timeStep
+        if(num_coalescence >= 1) last_coalescenceStep = timeStep
 
     end subroutine
 
@@ -225,20 +231,23 @@ module dropletMotionSimulation
 
         if(num_restart <= 0) call output_mainDroplet(initial = .true.)
 
-        do
-            print*, 'Do you want to start the calculation? (y/n)'
-            read(5,*) input
+        if(.not.startFlag) then
+            do
+                print*, 'Do you want to start the calculation? (y/n)'
+                read(5,*) input
 
-            select case(input)
-                case('y')
-                    exit
+                select case(input)
+                    case('y')
+                        startFlag = .true.
+                        exit
 
-                case('n')
-                    stop
+                    case('n')
+                        stop
 
-            end select
+                end select
 
-        end do
+            end do
+        end if
 
         call cpu_time(start_time)
         call date_and_time(date = d_start, time = t_start)
