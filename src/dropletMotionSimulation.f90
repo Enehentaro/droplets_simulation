@@ -14,7 +14,7 @@ module dropletMotionSimulation
 
     logical, private :: startFlag = .false.
 
-    integer last_coalescenceStep, last_numFloating
+    integer, private :: last_coalescenceStep, last_numFloating
 
     type(dropletGroup) mainDroplet
 
