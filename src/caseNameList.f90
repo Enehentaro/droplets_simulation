@@ -2,7 +2,7 @@ module caseNameList_m
     implicit none
     integer, target :: nowCase
     character(30), allocatable, private :: case_list(:)
-    character(13), parameter, private :: caseList_Fname = 'case_list.txt'
+    ! character(13), parameter, private :: caseList_Fname = 'case_list.txt'
 
     contains
 
@@ -14,9 +14,10 @@ module caseNameList_m
         logical existance
 
         print*, 'Case Name ?'
-        read(5, *) caseName
-        if(trim(caseName)==caseList_Fname) then
-            call read_case_list
+        read(5, '(A)') caseName
+        inquire(file=trim(caseName), exist=existance)
+        if(existance) then
+            call read_case_list(trim(caseName))
             num_case = size(case_list)
         else
             num_case = 1
@@ -34,11 +35,13 @@ module caseNameList_m
 
     end subroutine
 
-    subroutine read_case_list
+    subroutine read_case_list(fname)
         integer n_unit, num_rec, ios, i
+        character(*), intent(in) :: fname
         character(10) A
 
-        open(newunit=n_unit, file=caseList_Fname, status='old')
+        print*, 'READ: ', fname
+        open(newunit=n_unit, file=fname, status='old')
             num_rec = 0
             do        !レコード数を調べるループ
                 read(n_unit, '(A)', iostat=ios) A !ファイル終端であればiosに-1が返る

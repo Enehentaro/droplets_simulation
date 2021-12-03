@@ -17,7 +17,7 @@ module flow_field
 
     type reference_cell_t
         integer :: ID = 0, nodeID(3) = 0
-    end type reference_cell_t
+    end type
 
     integer, private :: num_refCellSearchFalse, num_refCellSearch
 
