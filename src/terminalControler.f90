@@ -6,6 +6,12 @@ module terminalControler_m
             
     contains
 
+    subroutine reset_formatTC
+        
+        format_str = ''
+
+    end subroutine 
+
     subroutine set_formatTC(fmt_str)
         character(*), intent(in) :: fmt_str
 
