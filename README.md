@@ -46,5 +46,3 @@ Simulation of Virus Droplets Behavior in AFDET
 ## おまけ機能(optionディレクトリ内のTXTファイル)
   - **case_list.txt**
     - ここにケース名を複数列挙し、実行時に`option/case_list.txt`と入力すると、複数ケースを連続実行できる
-  - **stl_list.txt**
-    - CUBE格子用。ここにCUBE格子作成時に用いたSTLファイル名を列挙し、このファイルとSTLファイル一式をCUBE格子のあるディレクトリに置くことで、CUBE格子に対して飛沫計算ができる。
