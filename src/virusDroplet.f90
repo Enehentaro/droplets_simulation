@@ -6,14 +6,14 @@ module virusDroplet_m
     type virusDroplet_t
         double precision :: position(3), velocity(3)=0.d0
         double precision radius, radius_min, initialRadius, deadline
-        integer :: status=0, adhesBoundID = 0
-        type(reference_cell_t) refCELL
+        integer :: status=0, refCellID=0, adhesBoundID=0
+        ! type(reference_cell_t) refCELL
 
         contains
 
         procedure evaporation
         procedure motionCalculation
-        procedure motionCalculation_onCUBE
+        ! procedure motionCalculation_onCUBE
         procedure adhesion_onBound
         procedure area_check
         procedure stop_droplet
@@ -38,41 +38,41 @@ module virusDroplet_m
         class(virusDroplet_t) self
         double precision velAir(3)
 
-        velAir(:) = CELLs(self%refCELL%ID)%flowVelocity(:)
+        velAir(:) = CELLs(self%refCellID)%flowVelocity(:)
     
         call solve_motionEquation(self%position(:), self%velocity(:), velAir(:), self%radius)
 
-        call search_refCELL(real(self%position(:)), self%refCELL%ID)
+        call search_refCELL(real(self%position(:)), self%refCellID)
         
     end subroutine
 
-    subroutine motionCalculation_onCUBE(self)
-        class(virusDroplet_t) self
-        double precision velAir(3)
-        type(reference_cell_t) :: RefC
+    ! subroutine motionCalculation_onCUBE(self)
+    !     class(virusDroplet_t) self
+    !     double precision velAir(3)
+    !     type(reference_cell_t) :: RefC
 
-        RefC = self%refCELL
+    !     RefC = self%refCELL
 
-        velAir(:) = get_velocity_f(RefC%nodeID, RefC%ID)
+    !     velAir(:) = get_velocity_f(RefC%nodeID, RefC%ID)
 
-        call solve_motionEquation(self%position(:), self%velocity(:), velAir(:), self%radius)
+    !     call solve_motionEquation(self%position(:), self%velocity(:), velAir(:), self%radius)
 
-        call search_refCELL_onCUBE(real(self%position(:)), self%refCELL)
+    !     call search_refCELL_onCUBE(real(self%position(:)), self%refCELL)
     
-    end subroutine
+    ! end subroutine
                     
     subroutine adhesion_onBound(self)
         use vector_m
         class(virusDroplet_t) self
-        integer JJ, JB, refCELL
+        integer JJ, JB, CellID
         logical adhesion
         double precision :: r_vector(3), inner
 
-        refCELL = self%refCELL%ID
+        CellID = self%refCellID
         adhesion = .false.
 
-        do JJ = 1, size(CELLs(refCELL)%boundFaceID)
-            JB = CELLs(refCELL)%boundFaceID(JJ)
+        do JJ = 1, size(CELLs(CellID)%boundFaceID)
+            JB = CELLs(CellID)%boundFaceID(JJ)
 
             r_vector(:) = self%position(:) - BoundFACEs(JB)%center(:)
 

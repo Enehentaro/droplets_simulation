@@ -211,29 +211,29 @@ module dropletGroup_m
 
         num_drop = size(self%droplet)
 
-        if(unstructuredGrid) then
+        ! if(unstructuredGrid) then
             j = 1
-            self%droplet(j)%refCELL%ID = nearest_cell(real(self%droplet(j)%position(:)))
+            self%droplet(j)%refCellID = nearest_cell(real(self%droplet(j)%position(:)))
 
-            self%droplet(j+1:)%refCELL%ID = self%droplet(j)%refCELL%ID !時間短縮を図る
+            self%droplet(j+1:)%refCellID = self%droplet(j)%refCellID !時間短縮を図る
 
             do j = 2, num_drop
-                call search_refCELL(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL%ID, stat=success)
-                if(.not.success) self%droplet(j+1:)%refCELL%ID = self%droplet(j)%refCELL%ID
+                call search_refCELL(real(self%droplet(j)%position(:)), self%droplet(j)%refCellID, stat=success)
+                if(.not.success) self%droplet(j+1:)%refCellID = self%droplet(j)%refCellID
             end do
 
-        else
-            j = 1
-            self%droplet(j)%refCELL%ID = get_cube_contains(real(self%droplet(j)%position(:)))    
-            self%droplet(j)%refCELL%nodeID(:) = nearest_node(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL%ID)
+        ! else
+        !     j = 1
+        !     self%droplet(j)%refCELL%ID = get_cube_contains(real(self%droplet(j)%position(:)))    
+        !     self%droplet(j)%refCELL%nodeID(:) = nearest_node(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL%ID)
 
-            self%droplet(j+1:)%refCELL = self%droplet(j)%refCELL !時間短縮を図る
+        !     self%droplet(j+1:)%refCELL = self%droplet(j)%refCELL !時間短縮を図る
 
-            do j = 2, num_drop
-                call search_refCELL_onCUBE(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL)
-            end do
+        !     do j = 2, num_drop
+        !         call search_refCELL_onCUBE(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL)
+        !     end do
 
-        end if
+        ! end if
 
     end subroutine first_refCellSearch
 
@@ -300,7 +300,7 @@ module dropletGroup_m
         class(dropletGroup) self
         integer vn
 
-        if(unstructuredGrid) then
+        ! if(unstructuredGrid) then
             !$omp parallel do
             do vn = 1, size(self%droplet)
                 if(self%droplet(vn)%status /= 0) cycle !浮遊状態でないなら無視
@@ -309,14 +309,14 @@ module dropletGroup_m
             end do
             !$omp end parallel do
 
-        else
-            do vn = 1, size(self%droplet)
-                if(self%droplet(vn)%status /= 0) cycle !浮遊状態でないなら無視
-                call self%droplet(vn)%evaporation()    !蒸発方程式関連の処理
-                call self%droplet(vn)%motionCalculation_onCUBE()     !運動方程式関連の処理
-            end do
+        ! else
+        !     do vn = 1, size(self%droplet)
+        !         if(self%droplet(vn)%status /= 0) cycle !浮遊状態でないなら無視
+        !         call self%droplet(vn)%evaporation()    !蒸発方程式関連の処理
+        !         call self%droplet(vn)%motionCalculation_onCUBE()     !運動方程式関連の処理
+        !     end do
 
-        end if
+        ! end if
 
     end subroutine Calculation_Droplets
                       

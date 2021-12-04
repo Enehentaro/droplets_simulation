@@ -15,9 +15,9 @@ module flow_field
 
     real, private :: MAX_CDN(3), MIN_CDN(3)         !節点座標の上限および下限
 
-    type reference_cell_t
-        integer :: ID = 0, nodeID(3) = 0
-    end type
+    ! type reference_cell_t
+    !     integer :: ID = 0, nodeID(3) = 0
+    ! end type
 
     integer, private :: num_refCellSearchFalse, num_refCellSearch
 
@@ -173,20 +173,20 @@ module flow_field
     
     end subroutine search_refCELL
 
-    subroutine search_refCELL_onCUBE(X, reference_cell)
-        real, intent(in) :: X(3)
-        type(reference_cell_t), intent(inout) :: reference_cell
+    ! subroutine search_refCELL_onCUBE(X, reference_cell)
+    !     real, intent(in) :: X(3)
+    !     type(reference_cell_t), intent(inout) :: reference_cell
 
-        num_refCellSearch = num_refCellSearch + 1
+    !     num_refCellSearch = num_refCellSearch + 1
 
-        reference_cell%nodeID(:) = nearer_node(X, reference_cell%nodeID, reference_cell%ID)
-        if (.not.nearNode_check(X, reference_cell%nodeID, reference_cell%ID)) then
-            reference_cell%ID = get_cube_contains(X)    
-            reference_cell%nodeID(:) = nearest_node(X, reference_cell%ID)
-            num_refCellSearchFalse = num_refCellSearchFalse + 1
-        end if
+    !     reference_cell%nodeID(:) = nearer_node(X, reference_cell%nodeID, reference_cell%ID)
+    !     if (.not.nearNode_check(X, reference_cell%nodeID, reference_cell%ID)) then
+    !         reference_cell%ID = get_cube_contains(X)    
+    !         reference_cell%nodeID(:) = nearest_node(X, reference_cell%ID)
+    !         num_refCellSearchFalse = num_refCellSearchFalse + 1
+    !     end if
 
-    end subroutine search_refCELL_onCUBE
+    ! end subroutine search_refCELL_onCUBE
 
     subroutine set_STEPinFLOW(time)
         DOUBLE PRECISION, intent(in) :: time
