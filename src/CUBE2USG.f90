@@ -77,8 +77,10 @@ program CUBE2USG
     subroutine output_nodeInfo
         integer n_unit, k
 
+        print*, 'output: ', CorrespondenceFName
+
         open(newunit=n_unit, file=CorrespondenceFName, form='unformatted', status='new')
-            write(n_unit) num_cell, num_node
+            write(n_unit) num_cell, get_numCube()
 
             do k = 0, num_cell-1
                 write(n_unit) vtkCell2cubeNode(k)
@@ -89,13 +91,15 @@ program CUBE2USG
     end subroutine
 
     subroutine read_nodeInfo
-        integer n_unit, k, num_cell_, num_node_
+        integer n_unit, k, num_cell_, num_cube
+
+        print*, 'read: ', CorrespondenceFName
 
         open(newunit=n_unit, file=CorrespondenceFName, form='unformatted', status='old')
-            read(n_unit) num_cell_, num_node_
+            read(n_unit) num_cell_, num_cube
 
-            if((num_cell_/=num_cell).or.(num_node_/=num_node)) then
-                print*, 'SizeERROR:', num_cell_, num_cell, num_node_, num_node
+            if((num_cell_/=num_cell).or.(num_cube/=get_numCube())) then
+                print*, 'SizeERROR:', num_cell_, num_cell, num_cube, get_numCube()
                 stop
             end if
 
