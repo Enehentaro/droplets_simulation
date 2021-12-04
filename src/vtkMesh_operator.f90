@@ -106,38 +106,38 @@ module vtkMesh_operator_m
             write(n_unit, '(A)') 'DATASET UNSTRUCTURED_GRID'
 
             KKMX = size(node_array)
-            write(n_unit, '(A,1x,I12,1x,A)') 'POINTS', KKMX, 'float'   
+            write(n_unit, '(A,1x,I0,1x,A)') 'POINTS', KKMX, 'float'   
             DO KK = 0, KKMX-1
-                write(n_unit,'(3(f20.15,2X))') node_array(KK)%coordinate(:)
+                write(n_unit,'(3(e12.5,2X))') node_array(KK)%coordinate(:)
             END DO
             write(n_unit,'()')
 
             IIMX = size(cell_array)
             IITOTAL = 5*count(cell_array(:)%n_TYPE==10) + 7*count(cell_array(:)%n_TYPE==13) &
                     + 6*count(cell_array(:)%n_TYPE==14)
-            write(n_unit,'(A,I12,2X,I12)') 'CELLS ', IIMX, IITOTAL
+            write(n_unit,'(A,I0,2X,I0)') 'CELLS ', IIMX, IITOTAL
             DO II = 0, IIMX-1
                 select case(cell_array(II)%n_TYPE)
                     case(10)
-                        write(n_unit, '(5(I12,2X))') 4, cell_array(II)%nodeID(1:4)
+                        write(n_unit, '(5(I0,2X))') 4, cell_array(II)%nodeID(1:4)
                     case(13)
-                        write(n_unit, '(7(I12,2X))') 6, cell_array(II)%nodeID(1:6)
+                        write(n_unit, '(7(I0,2X))') 6, cell_array(II)%nodeID(1:6)
                     case(14)
-                        write(n_unit, '(6(I12,2X))') 5, cell_array(II)%nodeID(1:5)
+                        write(n_unit, '(6(I0,2X))') 5, cell_array(II)%nodeID(1:5)
                 end select
             END DO
             write(n_unit,'()')
 
-            write(n_unit,'(A,I12)') 'CELL_TYPES', IIMX
+            write(n_unit,'(A,I0)') 'CELL_TYPES ', IIMX
             DO II = 0, IIMX-1
-                write(n_unit, *) cell_array(II)%n_TYPE
+                write(n_unit, '(I0)') cell_array(II)%n_TYPE
             END DO
             write(n_unit,'()')
 
-            write(n_unit,'(A,I12)') 'CELL_DATA ', IIMX  
+            write(n_unit,'(A,I0)') 'CELL_DATA ', IIMX  
             write(n_unit,'(A)') 'VECTORS Velocity float'    
             DO II = 0, IIMX-1
-                write(n_unit,'(3(f20.15,2X))') cell_array(II)%vector(:)
+                write(n_unit,'(3(e12.5,2X))') cell_array(II)%vector(:)
             END DO
             
         close(n_unit)
