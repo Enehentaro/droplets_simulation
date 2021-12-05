@@ -20,7 +20,7 @@ Simulation of Virus Droplets Behavior in AFDET
       - VTK
       - INP
       - FLD
-      - PLOT3D
+    - CUBE格子(PLOT3D)は、予め非構造格子に変換してから計算してください。
   - **ステップ数オフセット**
     - 飛沫計算を、流体連番ファイルの途中の番号から始めたいときに指定
   - **気流データを周期的に用いる場合の先頭と末尾**
@@ -46,5 +46,3 @@ Simulation of Virus Droplets Behavior in AFDET
 ## おまけ機能(optionディレクトリ内のTXTファイル)
   - **case_list.txt**
     - ここにケース名を複数列挙し、実行時に`option/case_list.txt`と入力すると、複数ケースを連続実行できる
-  - **stl_list.txt**
-    - CUBE格子用。ここにCUBE格子作成時に用いたSTLファイル名を列挙し、このファイルとSTLファイル一式をCUBE格子のあるディレクトリに置くことで、CUBE格子に対して飛沫計算ができる。
