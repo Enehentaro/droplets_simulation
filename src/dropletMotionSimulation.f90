@@ -61,6 +61,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine read_and_set_condition(dir, num_droplet)
+        use flow_field
         use filename_mod
         use path_operator_m
         character(*), intent(in) ::dir
@@ -147,6 +148,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine check_FlowFieldUpdate
+        use flow_field
 
         if((INTERVAL_FLOW <= 0).or.(timeStep==n_end)) return
 
@@ -157,6 +159,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine update_FlowField(first)
+        use flow_field
         logical, intent(in) :: first
 
         if(INTERVAL_FLOW <= 0) then
@@ -171,10 +174,10 @@ module dropletMotionSimulation
 
         if(first) call preprocess_onFlowField         !流れ場の前処理
 
-        if(unstructuredGrid) then
+        ! if(unstructuredGrid) then
             call boundary_setting(first)
             if(.not.first) call mainDroplet%boundary_move()
-        end if
+        ! end if
             
     end subroutine
 
@@ -269,6 +272,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine periodicOutput
+        use flow_field
         use terminalControler_m
 
         print*, start_date
@@ -282,6 +286,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine output_ResultSummary()
+        use flow_field
         integer n_unit, cnt
         real end_time
         character(50) fname

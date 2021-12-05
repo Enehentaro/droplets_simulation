@@ -31,6 +31,8 @@ module unstructuredGrid_mod
     subroutine check_FILE_TYPE(FNAME)
         character(*), intent(in) :: FNAME
 
+        if(allocated(CELLs)) call deallocation_unstructuredGRID
+
         if(index(FNAME, '.vtk') > 0) then
             FILE_TYPE = 'VTK'
 
@@ -47,7 +49,7 @@ module unstructuredGrid_mod
 
         print*, 'FILE_TYPE : ', FILE_TYPE
 
-    end subroutine check_FILE_TYPE
+    end subroutine
 
     subroutine read_unstructuredGrid_byNAME(FNAME)
         character(*), intent(in) :: FNAME
@@ -68,7 +70,7 @@ module unstructuredGrid_mod
                     
         end select
             
-    end subroutine read_unstructuredGrid_byNAME
+    end subroutine
 
     subroutine read_unstructuredGrid_byNumber(path_and_head, digits_fmt, FNUM)
         character(*), intent(in) :: path_and_head, digits_fmt
@@ -106,7 +108,7 @@ module unstructuredGrid_mod
                 
         end select
             
-    end subroutine read_unstructuredGrid_byNumber
+    end subroutine
 
     subroutine read_VTK(FNAME)
         use vtkMesh_operator_m
@@ -140,7 +142,7 @@ module unstructuredGrid_mod
         ! print*, NODEs(KKMX)%coordinate(:)
         ! print*, CELLs(IIMX)%flowVelocity(:)
             
-    end subroutine read_VTK
+    end subroutine
 
     subroutine read_INP(FNAME)
         !  INPファイルを読み込み、節点データを要素データに変換する
@@ -235,7 +237,7 @@ module unstructuredGrid_mod
             
         call point2cellVelocity(UVWK)
             
-    end subroutine read_INP
+    end subroutine
 
     subroutine read_FLD(FNAME)
         use SCT_file_reader_m
@@ -299,11 +301,8 @@ module unstructuredGrid_mod
 
         call point2cellVelocity(real(velocity))
           
-    end subroutine read_FLD
-            
-    !**************************************************************************************
-    
-    !***********************************************************************
+    end subroutine
+
     subroutine set_gravity_center !セル重心の算出
         integer II,IIMX, n, num_node, ID
 
@@ -324,7 +323,7 @@ module unstructuredGrid_mod
         
         END DO
         !$omp end parallel do 
-    end subroutine set_gravity_center
+    end subroutine
 
     subroutine read_adjacency(path, success)
         use filename_mod
@@ -368,7 +367,7 @@ module unstructuredGrid_mod
 
         close(n_unit)
 
-    end subroutine read_adjacency
+    end subroutine
 
     subroutine output_adjacency(path)
         use filename_mod
@@ -406,7 +405,7 @@ module unstructuredGrid_mod
 
         close(n_unit)
 
-    end subroutine output_adjacency
+    end subroutine
 
     subroutine read_boundaries(path)
         use filename_mod
@@ -425,7 +424,7 @@ module unstructuredGrid_mod
             end do
         close(n_unit)
         
-    end subroutine read_boundaries
+    end subroutine
 
     subroutine output_boundaries(path)
         use filename_mod
@@ -444,7 +443,7 @@ module unstructuredGrid_mod
             end do
         close(n_unit)
         
-    end subroutine output_boundaries
+    end subroutine
 
     ! subroutine set_nodeID_onBoundFace(nodeID_onBoundFace)
     !     integer, intent(in) :: nodeID_onBoundFace(:,:)
@@ -485,7 +484,7 @@ module unstructuredGrid_mod
         
         nearest_cell = minloc(distance, dim=1)   !最小値インデックス
         
-    end function nearest_cell
+    end function
 
     integer function nearer_cell(X, NCN)  !近セルの探索（隣接セルから）
         integer, intent(in) :: NCN
@@ -545,7 +544,7 @@ module unstructuredGrid_mod
         
         ! END DO check
         
-    end function nearer_cell
+    end function
 
     logical function nearcell_check(X, NCN)
         real, intent(in) :: X(3)
@@ -561,7 +560,7 @@ module unstructuredGrid_mod
             ! print*, 'nearcell_check:False', distance, CELLs(NCN)%width
         end if
 
-    end function nearcell_check
+    end function
                      
     subroutine boundary_setting(first) !全境界面に対して外向き法線ベクトルと重心を算出
         use vector_m
@@ -613,7 +612,7 @@ module unstructuredGrid_mod
             end do
         end if
 
-    end subroutine boundary_setting
+    end subroutine
 
     subroutine point2cellVelocity(pointVector)
         real, intent(in) :: pointVector(:,:)
@@ -651,7 +650,7 @@ module unstructuredGrid_mod
   
         ! end do
   
-    end subroutine point2cellVelocity
+    end subroutine
 
     integer function get_mesh_info(name)
         character(*), intent(in) :: name
@@ -677,15 +676,18 @@ module unstructuredGrid_mod
 
         end select
 
-    end function get_mesh_info
+    end function
       
     subroutine deallocation_unstructuredGRID
         use vtkMesh_operator_m
+
+        print*,  '**Deallocation** : unstructuredGRID'
 
         deallocate(CELLs)
         deallocate(NODEs)
         deallocate(BoundFACEs)
         if(FILE_TYPE=='VTK') call deallocation_VTK
-    end subroutine deallocation_unstructuredGRID
+
+    end subroutine
     
 end module unstructuredGrid_mod

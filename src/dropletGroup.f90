@@ -203,6 +203,7 @@ module dropletGroup_m
     end subroutine
 
     subroutine first_refCellSearch(self)
+        use flow_field
         class(dropletGroup) self
         integer j, num_drop
         logical success
@@ -235,28 +236,28 @@ module dropletGroup_m
 
         ! end if
 
-    end subroutine first_refCellSearch
+    end subroutine
 
     subroutine adhesion_check(self)
-        use adhesion_onSTL_m
+        ! use adhesion_onSTL_m
         class(dropletGroup) self
         integer i
         
-        if(unstructuredGrid) then
+        ! if(unstructuredGrid) then
             do i = 1, size(self%droplet)
                 if(self%droplet(i)%status==0) then
                     call self%droplet(i)%adhesion_onBound()
                     call self%droplet(i)%area_check()
                 end if
             end do
-        else
-            do i = 1, size(self%droplet)
-                if(self%droplet(i)%status==0) then
-                    if(adhesion_onSTL(real(self%droplet(i)%position(:)))) call stop_droplet(self%droplet(i))
-                    call self%droplet(i)%area_check()
-                end if
-            end do
-        end if
+        ! else
+        !     do i = 1, size(self%droplet)
+        !         if(self%droplet(i)%status==0) then
+        !             if(adhesion_onSTL(real(self%droplet(i)%position(:)))) call stop_droplet(self%droplet(i))
+        !             call self%droplet(i)%area_check()
+        !         end if
+        !     end do
+        ! end if
 
     end subroutine adhesion_check
 
@@ -321,6 +322,7 @@ module dropletGroup_m
     end subroutine Calculation_Droplets
                       
     subroutine boundary_move(self) !境界面の移動に合わせて付着飛沫も移動
+        use unstructuredGrid_mod
         class(dropletGroup) self
         integer vn, JB
 

@@ -11,21 +11,23 @@ TARGET2 = droplet2CSV
 
 OBJS = filename_mod.o csv_reader.o caseNameList.o path_operator.o vector.o terminalControler.o\
 	SCTfile_reader.o  vtkMesh_operator.o unstructured_grid.o adjacency_solver.o \
-	stl_reader.o adhesion_onSTL.o plot3d_operator.o CUBE_mod.o \
     flow_field.o equation_mod.o virusDroplet.o dropletGroup.o dropletMotionSimulation.o
 	
 MAINOBJS = dropletManager.o main.o
+
+TARGET1OBJS = vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
 
 SRCDIR    = src
 OBJDIR    = obj
 OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
 MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJS))
+TARGET1OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET1OBJS))
 MODDIR = ${OBJDIR}
 
 $(TARGET): $(OBJECTS) $(MAINOBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
-$(TARGET1): $(OBJECTS) $(OBJDIR)/$(TARGET1).o
+$(TARGET1): $(TARGET1OBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
 $(TARGET2): $(OBJECTS) $(OBJDIR)/$(TARGET2).o

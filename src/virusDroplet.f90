@@ -1,5 +1,4 @@
 module virusDroplet_m
-    use flow_field
     use equation_mod
     implicit none
 
@@ -35,6 +34,7 @@ module virusDroplet_m
     end subroutine
 
     subroutine motionCalculation(self)
+        use flow_field
         class(virusDroplet_t) self
         double precision velAir(3)
 
@@ -62,6 +62,7 @@ module virusDroplet_m
     ! end subroutine
                     
     subroutine adhesion_onBound(self)
+        use unstructuredGrid_mod
         use vector_m
         class(virusDroplet_t) self
         integer JJ, JB, CellID
@@ -90,6 +91,7 @@ module virusDroplet_m
     end subroutine
 
     subroutine area_check(self)
+        use flow_field
         class(virusDroplet_t) self
         logical check
         real areaMinMax(3,2)

@@ -50,8 +50,6 @@ PROGRAM MAIN
             print '("*******************************************")'
 
             call output_ResultSummary       !最終結果出力
-
-            call deallocation_flow  !流れ場配列解放
             
       END DO
 
