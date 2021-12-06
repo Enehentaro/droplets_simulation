@@ -26,6 +26,7 @@ module dropletGroup_m
         procedure :: counter => dropletCounter
         procedure :: IDinBox => dropletIDinBox
         procedure :: inBox => dropletInBox
+        procedure :: totalVolume => dropletTotalVolume
 
         procedure adhesion_check
         procedure survival_check
@@ -409,6 +410,30 @@ module dropletGroup_m
         IDinBox = self%IDinBox(min_cdn, max_cdn)
         dropletInBox%droplet = self%droplet(IDinBox)
         
+    end function
+
+    double precision function dropletTotalVolume(self, dim)
+        class(dropletGroup) self
+        character(*), intent(in), optional :: dim
+        integer i
+        double precision, parameter :: PI = acos(-1.d0) 
+
+        dropletTotalVolume = 0.d0
+
+        do i = 1, size(self%droplet)
+            dropletTotalVolume = dropletTotalVolume + self%droplet(i)%initialRadius**3
+        end do
+
+        dropletTotalVolume = dropletTotalVolume * 4.d0/3.d0*PI
+
+        if(present(dim)) then
+            dropletTotalVolume = dropletTotalVolume * representativeValue('length')**3
+            select case(dim)
+                case('ml')
+                    dropletTotalVolume = dropletTotalVolume * 1.d9
+            end select
+        end if
+
     end function
 
     subroutine coalescence_check(self, stat)
