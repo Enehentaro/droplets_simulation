@@ -2,7 +2,7 @@ module boxCounter_m
     implicit none
 
     type boxCounter
-        double precision :: center(3), width(3), min_cdn(3), max_cdn(3)
+        real center(3), width(3), min_cdn(3), max_cdn(3)
         logical, allocatable :: dropletFlag(:)
 
         contains
@@ -28,10 +28,10 @@ module boxCounter_m
         allocate(new_box_array(num_box))
 
         do i = 1, num_box
-            new_box_array(i)%center(:) = boxSize_mat(1:3, i)
-            new_box_array(i)%width(:) = boxSize_mat(4:6, i)
-            new_box_array(i)%min_cdn(:) = new_box_array(i)%center(:) - new_box_array(i)%width(:)*0.5d0
-            new_box_array(i)%max_cdn(:) = new_box_array(i)%center(:) + new_box_array(i)%width(:)*0.5d0
+            new_box_array(i)%center(:) = real(boxSize_mat(1:3, i))
+            new_box_array(i)%width(:) = real(boxSize_mat(4:6, i))
+            new_box_array(i)%min_cdn(:) = new_box_array(i)%center(:) - new_box_array(i)%width(:)*0.5
+            new_box_array(i)%max_cdn(:) = new_box_array(i)%center(:) + new_box_array(i)%width(:)*0.5
 
             if((new_box_array(i)%width(1) <= 0.d0)&
                 .or.(new_box_array(i)%width(2) <= 0.d0).or.(new_box_array(i)%width(3) <= 0.d0)) then

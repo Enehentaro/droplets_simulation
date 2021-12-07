@@ -5,9 +5,11 @@ program CUBE2USG
     character(50) F_fname, USG_fname
     character(50), allocatable :: fname(:)
     character(20), parameter :: CorrespondenceFName = 'vtkCell2cubeNode.bin'
-    integer i, j, n, num_node, num_file, num_cell
+    integer i, j, i_node, n, num_node, num_file, num_cell
     real X(3)
+    real, allocatable :: velocity(:,:)
     logical existance
+    type(vtkMesh) USG
 
     type nodeInfo
         integer cubeID, nodeID(3)
@@ -28,9 +30,9 @@ program CUBE2USG
     print *, 'UnstructuredGRID_FileName ?'
     read(5,*) USG_fname
 
-    call read_VTK_mesh(USG_fname, meshONLY=.true.)
+    call USG%read(USG_fname)
 
-    num_cell = size(cell_array)
+    num_cell = size(USG%cell_array)
 
     do j = 1, num_file
         F_fname = fname(j)
@@ -48,9 +50,10 @@ program CUBE2USG
 
                 do i = 0, num_cell-1
                     X(:) = 0.0
-                    num_node = size(cell_array(i)%nodeID)
+                    num_node = size(USG%cell_array(i)%nodeID)
                     do n = 1, num_node
-                        X(:) = X(:) + node_array(cell_array(i)%nodeID(n))%coordinate(:)
+                        i_node = USG%cell_array(i)%nodeID(n)
+                        X(:) = X(:) + USG%node_array(i_node)%coordinate(:)
                     end do
                     X(:) = X(:) / real(num_node)
                     vtkCell2cubeNode(i)%cubeID = get_cube_contains(X)    
@@ -63,12 +66,13 @@ program CUBE2USG
 
         end if
 
+        allocate(velocity(3, num_cell))
         do i = 0, num_cell-1
-            cell_array(i)%vector(:) = get_velocity_f(vtkCell2cubeNode(i)%nodeID(:), vtkCell2cubeNode(i)%cubeID)
+            velocity(:,i+1) = get_velocity_f(vtkCell2cubeNode(i)%nodeID(:), vtkCell2cubeNode(i)%cubeID)
         end do
     
         i = len_trim(F_fname)
-        call output_VTK_mesh(F_fname(:i-2)//'.vtk')
+        call USG%output(F_fname(:i-2)//'.vtk', cellVector=velocity)
     
     end do
 
