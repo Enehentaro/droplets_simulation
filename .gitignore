@@ -2,7 +2,5 @@
 *.mod
 .vscode
 
-C@*
-
 /droplet*
 

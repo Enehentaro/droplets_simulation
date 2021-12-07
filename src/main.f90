@@ -39,7 +39,7 @@ PROGRAM MAIN
 
                   call dropletManagement       !外部サブルーチンによる管理
 
-                  if ((mod(n, outputInterval) == 0)) call periodicOutput             !出力
+                  if (mod(n, outputInterval) == 0) call periodicOutput             !出力
 
                   call check_FlowFieldUpdate        !流れ場の更新チェック
 

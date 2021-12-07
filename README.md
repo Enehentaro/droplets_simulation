@@ -5,17 +5,22 @@ Simulation of Virus Droplets Behavior in AFDET
   ※この branch は **GNU Fortran, Windows** 用です。間違っても master branch に`merge`しないでください。
   コンパイルに`make`コマンドを使います（makeのインストールが必要）。
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
-  1. ケースディレクトリ内の条件ファイル(condition.txt, initial_position.csv)を編集。
-  1. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
-  1. `.\droplet.exe`で実行。ケース名を入力して計算開始。
+  2. ケースディレクトリ内の条件ファイル(condition.txt, initial_position.csv)を編集。
+  3. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
+  4. `.\droplet.exe`で実行。ケース名を入力して計算開始。
 
 ## 条件ファイル(condition.txt)解説
   - **リスタート位置**
     - 通常は`0`を指定
     - `1以上`にすると、その値に対応するbackupファイルが読み込まれ、そこからリスタートが始まる
-    - `-1`にすると、InitialDistribution.vtkという名前のファイルが読み込まれ、それを飛沫初期分布とする。全く同じ初期分布から計算を始めたいときに使う。なお、InitialDistribution.vtkは、通常実行時に最初に出力されるVTKファイルの名前を変えることで作成可能。
+    - `-1`にすると、InitialDistribution.buという名前のファイルが読み込まれ、それを飛沫初期分布とする。全く同じ初期分布から計算を始めたいときに使う。なお、InitialDistribution.buは、通常実行時にbackupディレクトリに最初に出力されるので、それをケースディレクトリに配置する必要がある。
   - **気流データファイル名**
     - 実行ディレクトリからのパスを指定（ケースディレクトリ基準ではないので注意）（改善の余地あり）
+    - 現在可能な流れ場ファイル：
+      - VTK
+      - INP
+      - FLD
+      - PLOT3D
   - **ステップ数オフセット**
     - 飛沫計算を、流体連番ファイルの途中の番号から始めたいときに指定
   - **気流データを周期的に用いる場合の先頭と末尾**
@@ -25,12 +30,6 @@ Simulation of Virus Droplets Behavior in AFDET
 
 ## main.f90
   飛沫計算メインプログラム。前処理プログラムは取り込まれました。実行時にファイルの有無から判断して、必要であれば前処理が勝手に行われます。
-  
-  現在可能な流れ場ファイル：
-  - VTK
-  - INP
-  - FLD
-  - PLOT3D
 
 ## 外部サブルーチン「dropletManagement」
   dropletManager.f90内で定義されているサブルーチン「dropletManagement」は、毎ステップ呼び出される外部サブルーチンです。

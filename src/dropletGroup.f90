@@ -24,6 +24,7 @@ module dropletGroup_m
         procedure :: output_CSV => output_droplet_CSV
 
         procedure :: counter => dropletCounter
+        procedure :: IDinBox => dropletIDinBox
         procedure :: inBox => dropletInBox
 
         procedure adhesion_check
@@ -58,11 +59,13 @@ module dropletGroup_m
     type(dropletGroup) function read_InitialDistribution(dir)
         character(*), intent(in) :: dir
 
-        read_InitialDistribution = read_droplet_VTK(dir//'/InitialDistribution.vtk')
-        read_InitialDistribution%droplet(:)%initialRadius = read_InitialDistribution%droplet(:)%radius
-        call read_InitialDistribution%calc_minimumRadius(RH)
+        ! read_InitialDistribution = read_droplet_VTK(dir//'/InitialDistribution.vtk')
+        ! read_InitialDistribution%droplet(:)%initialRadius = read_InitialDistribution%droplet(:)%radius
+        ! call read_InitialDistribution%calc_minimumRadius(RH)
 
-        call read_InitialDistribution%first_refCellSearch()
+        ! call read_InitialDistribution%first_refCellSearch()
+
+        read_initialDistribution = read_backup(dir//'/InitialDistribution.bu')
 
     end function
 
@@ -140,7 +143,7 @@ module dropletGroup_m
         do i_box = 1, num_box
             width(:) = position_mat(4:6, i_box)
             standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
-            
+
             if(num_perEdge >= 2) then
 
                 delta(:) = width(:) / dble(num_perEdge - 1)
@@ -370,11 +373,12 @@ module dropletGroup_m
 
     end function
 
-    type(dropletGroup) function dropletInBox(self, min_cdn, max_cdn)
+    function dropletIDinBox(self, min_cdn, max_cdn) result(ID_array)
         class(dropletGroup) self
         double precision, intent(in) :: min_cdn(3), max_cdn(3)
         double precision position(3)
-        integer i, id_array(size(self%droplet)), cnt
+        integer, allocatable :: ID_array(:)
+        integer i, id_array_(size(self%droplet)), cnt
 
         cnt = 0
         do i = 1, size(self%droplet)
@@ -385,15 +389,23 @@ module dropletGroup_m
                 .and.((min_cdn(3) <= position(3)) .and. (position(3) <= max_cdn(3)))) then
 
                 cnt = cnt + 1
-                id_array(cnt) = i
-
-                ! dropletInBox%droplet = [dropletInBox%droplet, self%droplet(i)]    !このやり方だと遅い
+                id_array_(cnt) = i
 
             end if
 
         end do
 
-        dropletInBox%droplet = self%droplet(id_array(:cnt))
+        ID_array = id_array_(:cnt)
+        
+    end function
+
+    type(dropletGroup) function dropletInBox(self, min_cdn, max_cdn)
+        class(dropletGroup) self
+        double precision, intent(in) :: min_cdn(3), max_cdn(3)
+        integer, allocatable :: IDinBox(:)
+
+        IDinBox = self%IDinBox(min_cdn, max_cdn)
+        dropletInBox%droplet = self%droplet(IDinBox)
         
     end function
 
@@ -455,14 +467,19 @@ module dropletGroup_m
         
     end subroutine coalescence
 
-    subroutine output_backup(self, dir)
+    subroutine output_backup(self, dir, initial)
         class(dropletGroup) self
         character(*), intent(in) :: dir
+        logical, intent(in) :: initial
         integer i, n_unit, num_drop
         character(99) fname
 
         num_drop = size(self%droplet(:))
-        write(fname,'("'//dir//'/backup_", i0, ".bu")') timeStep
+        if(initial) then
+            fname = dir//'/InitialDistribution.bu'
+        else
+            write(fname,'("'//dir//'/backup_", i0, ".bu")') timeStep
+        end if
 
         open(newunit=n_unit, form='unformatted', file=fname, status='replace')
             write(n_unit) num_drop
@@ -475,10 +492,10 @@ module dropletGroup_m
 
     end subroutine output_backup
 
-    subroutine output_droplet_VTK(self, fname, initial)
+    subroutine output_droplet_VTK(self, fname, deadline)
         class(dropletGroup) self
         character(*), intent(in) :: fname
-        logical, optional :: initial
+        logical, optional :: deadline
         integer vn, n_unit, num_drop
 
         num_drop = size(self%droplet)
@@ -488,51 +505,51 @@ module dropletGroup_m
             write(n_unit,'(A)') 'FOR TEST'
             write(n_unit,'(A)') 'ASCII'
             write(n_unit,'(A)') 'DATASET UNSTRUCTURED_GRID'
-            write(n_unit,'(A,I12,A)') 'POINTS ', num_drop,' float'                              !節点の数
+            write(n_unit,'(A,I0,A)') 'POINTS ', num_drop,' float'                              !節点の数
             DO vn = 1, num_drop                                                            !節点の数だけループ
-                write(n_unit,'(3(f20.15,2X))') self%droplet(vn)%position(:)   !節点の座標（左から順にx,y,z）
+                write(n_unit,'(3(f10.5,2X))') self%droplet(vn)%position(:)   !節点の座標（左から順にx,y,z）
             END DO
             write(n_unit,'()')                                                              !改行
 
-            write(n_unit,'(A,I12,2X,I12)') 'CELLS ', num_drop, num_drop*2                          !セルの数、セルの数×2
+            write(n_unit,'(A,I0,2X,I0)') 'CELLS ', num_drop, num_drop*2                          !セルの数、セルの数×2
             DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(I4,2X,I12)') 1, vn-1                                          !セルを構成する点の数（セル形状が点なので1）、その点のID
+                write(n_unit,'(I0,2X,I0)') 1, vn-1                                          !セルを構成する点の数（セル形状が点なので1）、その点のID
             END DO
             write(n_unit,'()')                                                              !改行
 
-            write(n_unit,'(A,I12)') 'CELL_TYPES', num_drop
+            write(n_unit,'(A,I0)') 'CELL_TYPES ', num_drop
             DO vn = 1, num_drop                                                           !セルの数だけループ
-                write(n_unit,'(I4)') 1                                                        !セルの形状（1は点であることを意味する）
+                write(n_unit,'(I0)') 1                                                        !セルの形状（1は点であることを意味する）
             END DO
             write(n_unit,'()')                                                              !改行
 
-            write(n_unit,'(A,I12)') 'CELL_DATA ', num_drop                                      !ここからセルのデータという合図、セルの数
+            write(n_unit,'(A,I0)') 'CELL_DATA ', num_drop                                      !ここからセルのデータという合図、セルの数
             
             write(n_unit,'(A)') 'SCALARS Status int'                                   !飛沫の状態(0:浮遊、1:付着、2:回収)
             write(n_unit,'(A)') 'LOOKUP_TABLE default'
             DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(I4)') self%droplet(vn)%status                                            !飛沫の状態(0:浮遊、1:付着、2:回収)
+                write(n_unit,'(I0)') self%droplet(vn)%status                                            !飛沫の状態(0:浮遊、1:付着、2:回収)
             END DO
 
             write(n_unit,'(A)') 'SCALARS Diameter float'                                  !飛沫の直径
             write(n_unit,'(A)') 'LOOKUP_TABLE default'
             DO vn = 1, num_drop                                                            !セルの数だけループ
-                write(n_unit,'(f20.15)') self%droplet(vn)%radius*2.0d0                            !飛沫の直径
+                write(n_unit,'(e10.3)') self%droplet(vn)%radius*2.0d0                            !飛沫の直径
             END DO
 
-            if(present(initial)) then
-                if(initial) then
+            if(present(deadline)) then
+                if(deadline) then
                     write(n_unit,'(A)') 'SCALARS Deadline float'
                     write(n_unit,'(A)') 'LOOKUP_TABLE default'
                     DO vn = 1, num_drop                                                            !セルの数だけループ
-                        write(n_unit,'(e20.12)') self%droplet(vn)%deadline
+                        write(n_unit,'(e10.3)') self%droplet(vn)%deadline
                     END DO
                 end if
             end if
 
             write(n_unit,'(A)') 'VECTORS Velocity float'                             !最後に飛沫の速度
             DO vn = 1, num_drop                                                             !セルの数だけループ
-                write(n_unit,'(3(f20.15,2X))') self%droplet(vn)%velocity(:)               !飛沫の速度
+                write(n_unit,'(3(f10.5,2X))') self%droplet(vn)%velocity(:)               !飛沫の速度
             END DO
         close(n_unit)
 
