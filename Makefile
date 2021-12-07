@@ -47,4 +47,4 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 all: $(TARGET) $(TARGET1) $(TARGET2) $(TARGET3)
 
 clean:
-	del /Q ${OBJDIR} $(TARGET).exe $(TARGET1).exe $(TARGET2).exe
+	del /Q ${OBJDIR} *.exe
