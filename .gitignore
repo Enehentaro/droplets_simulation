@@ -1,4 +1,6 @@
 *.o
 *.mod
 .vscode
-C@*
+
+/droplet*
+

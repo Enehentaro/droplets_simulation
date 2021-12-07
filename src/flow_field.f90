@@ -13,11 +13,11 @@ module flow_field
     
     logical unstructuredGrid
 
-    real MAX_CDN(3), MIN_CDN(3)         !節点座標の上限および下限
+    real, private :: MAX_CDN(3), MIN_CDN(3)         !節点座標の上限および下限
 
     type reference_cell_t
         integer :: ID = 0, nodeID(3) = 0
-    end type reference_cell_t
+    end type
 
     integer, private :: num_refCellSearchFalse, num_refCellSearch
 
@@ -146,6 +146,14 @@ module flow_field
             
 
     end subroutine set_MinMaxCDN
+
+    function get_areaMinMax() result(MinMax)
+        real MinMax(3,2)
+
+        MinMax(:,1) = MIN_CDN
+        MinMax(:,2) = MAX_CDN
+
+    end function
 
     subroutine search_refCELL(X, reference_cell, stat)
         real, intent(in) :: X(3)
