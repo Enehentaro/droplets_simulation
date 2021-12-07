@@ -13,14 +13,14 @@ Simulation of Virus Droplets Behavior in AFDET
   - **リスタート位置**
     - 通常は`0`を指定
     - `1以上`にすると、その値に対応するbackupファイルが読み込まれ、そこからリスタートが始まる
-    - `-1`にすると、InitialDistribution.buという名前のファイルが読み込まれ、それを飛沫初期分布とする。全く同じ初期分布から計算を始めたいときに使う。なお、InitialDistribution.buは、通常実行時にbackupディレクトリに最初に出力されるので、それをケースディレクトリに配置する必要がある。
+    - `-1`にすると、"InitialDistribution.bu"という名前のファイルが読み込まれ、それを飛沫初期分布とする。全く同じ初期分布から計算を始めたいときに使う。なお、"InitialDistribution.bu"は、通常実行時にbackupディレクトリに最初に出力されるので、それをケースディレクトリに配置する必要がある。
   - **気流データファイル名**
     - 実行ディレクトリからのパスを指定（ケースディレクトリ基準ではないので注意）（改善の余地あり）
     - 現在可能な流れ場ファイル：
       - VTK
       - INP
       - FLD
-      - PLOT3D
+    - CUBE格子(PLOT3D)は、予め非構造格子に変換してから計算してください。
   - **ステップ数オフセット**
     - 飛沫計算を、流体連番ファイルの途中の番号から始めたいときに指定
   - **気流データを周期的に用いる場合の先頭と末尾**
@@ -43,8 +43,15 @@ Simulation of Virus Droplets Behavior in AFDET
   プログラム内では、上式を無次元化・離散化した次式を解いている。  
 <img src="https://latex.codecogs.com/gif.latex?\bar{\mathbf{v}}^{n&plus;1}&space;=&space;\frac{\bar{\mathbf{v}}^{n}&space;&plus;&space;(\bar{\mathbf{g}}&space;&plus;&space;C\bar{\mathbf{u}}_a)\Delta&space;\bar{t}}{1&plus;C\Delta&space;\bar{t}}" />
 
-## おまけ機能(optionディレクトリ内のTXTファイル)
-  - **case_list.txt**
-    - ここにケース名を複数列挙し、実行時に`option/case_list.txt`と入力すると、複数ケースを連続実行できる
-  - **stl_list.txt**
-    - CUBE格子用。ここにCUBE格子作成時に用いたSTLファイル名を列挙し、このファイルとSTLファイル一式をCUBE格子のあるディレクトリに置くことで、CUBE格子に対して飛沫計算ができる。
+## サブプログラム
+  `make [subProgramName]`で実行ファイルを作成できる。
+  - CUBE2USG
+    - CUBE格子を、非構造格子に変換できる
+  - droplet2CSV
+    - 飛沫計算結果を再度読み込み、統計データ（浮遊数推移など）をCSVファイルに書き出す
+  - dropletCount
+    - 飛沫計算結果を再度読み込み、カウントボックスを通過した飛沫数を調べる。optionディレクトリ内の"boxList.csv"を、ケースディレクトリに配置する必要がある。
+
+## おまけ機能
+  - **複数ケース連続実行**
+    - optionディレクトリ内の"case_list.txt"にケース名を複数列挙し、実行時に`option/case_list.txt`と入力すると、複数ケースを連続実行できる

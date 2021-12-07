@@ -1,6 +1,6 @@
 module flow_field
     use unstructuredGrid_mod
-    use CUBE_mod
+    ! use CUBE_mod
     implicit none
 
     integer INTERVAL_FLOW                           !気流データ出力間隔
@@ -11,13 +11,13 @@ module flow_field
     character PATH_FlowDIR*99, HEAD_AIR*20, FNAME_FMT*30 !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
     integer, private :: FNAME_DIGITS !ファイル名の整数部桁数
     
-    logical unstructuredGrid
+    logical, private :: unstructuredGrid
 
     real, private :: MAX_CDN(3), MIN_CDN(3)         !節点座標の上限および下限
 
-    type reference_cell_t
-        integer :: ID = 0, nodeID(3) = 0
-    end type
+    ! type reference_cell_t
+    !     integer :: ID = 0, nodeID(3) = 0
+    ! end type
 
     integer, private :: num_refCellSearchFalse, num_refCellSearch
 
@@ -38,6 +38,8 @@ module flow_field
         if(FNAME_FMT(i-1 : i) == '.f') then
             unstructuredGrid = .false.
             print*, 'FILE_GRID : [CUBE] ', trim(FNAME_FMT)
+            print*, 'DO NOT USE CUBEGRID'
+            stop
 
         else
             call check_FILE_TYPE(FNAME_FMT)
@@ -58,11 +60,11 @@ module flow_field
     end function get_digits_format
 
     subroutine preprocess_onFlowField
-        use adhesion_onSTL_m
+        ! use adhesion_onSTL_m
         use adjacent_information
         logical success
 
-        if(unstructuredGrid) then
+        ! if(unstructuredGrid) then
             call read_adjacency(PATH_FlowDIR, success)
             if(success) then
                 call read_boundaries(PATH_FlowDIR)
@@ -74,10 +76,10 @@ module flow_field
 
             end if
 
-        else
-            call read_faceShape(PATH_FlowDIR)
-            call set_faceShape
-        end if
+        ! else
+        !     call read_faceShape(PATH_FlowDIR)
+        !     call set_faceShape
+        ! end if
 
         num_refCellSearchFalse = 0
         num_refCellSearch = 0
@@ -87,16 +89,16 @@ module flow_field
     subroutine read_steadyFlowData
         character(:), allocatable :: FNAME
 
-        if(unstructuredGrid) then
+        ! if(unstructuredGrid) then
             FNAME = trim(PATH_FlowDIR)//trim(FNAME_FMT)
             call read_unstructuredGrid(FNAME)
             call set_gravity_center
 
-        else
-            FNAME = trim(PATH_FlowDIR)//trim(FNAME_FMT)
-            call read_CUBE_data(FNAME, trim(PATH_FlowDIR))
+        ! else
+        !     FNAME = trim(PATH_FlowDIR)//trim(FNAME_FMT)
+        !     call read_CUBE_data(FNAME, trim(PATH_FlowDIR))
 
-        end if
+        ! end if
             
     end subroutine read_steadyFlowData
 
@@ -108,25 +110,25 @@ module flow_field
         FNUM = get_FileNumber()
         digits_fmt = get_digits_format()
 
-        if(unstructuredGrid) then
+        ! if(unstructuredGrid) then
             FNAME = trim(PATH_FlowDIR)//trim(HEAD_AIR)
             call read_unstructuredGrid(FNAME, digits_fmt, FNUM)
             call set_gravity_center
 
-        else
-            write(FNAME,'("'//trim(PATH_FlowDIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".f")') FNUM
-            call read_CUBE_data(FNAME, trim(PATH_FlowDIR))
+        ! else
+        !     write(FNAME,'("'//trim(PATH_FlowDIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".f")') FNUM
+        !     call read_CUBE_data(FNAME, trim(PATH_FlowDIR))
 
-        end if
+        ! end if
 
         NextUpdate = STEPinFLOW + INTERVAL_FLOW
             
     end subroutine read_unsteadyFlowData
 
     subroutine set_MinMaxCDN
-        real min_max(6)
+        ! real min_max(6)
 
-        if(unstructuredGrid) then
+        ! if(unstructuredGrid) then
             MAX_CDN(1) = maxval(NODEs(:)%coordinate(1))
             MAX_CDN(2) = maxval(NODEs(:)%coordinate(2))
             MAX_CDN(3) = maxval(NODEs(:)%coordinate(3))
@@ -137,13 +139,12 @@ module flow_field
             MIN_CDN(3) = minval(NODEs(:)%coordinate(3))
             print*, 'MIN_coordinates=', MIN_CDN(:)
 
-        else
-            min_max = get_minMax_CUBE()
+        ! else
+            ! min_max = get_minMax_CUBE()
 
-            MIN_CDN(:) = min_max(1:3)
-            MAX_CDN(:) = min_max(4:6)
-        end if
-            
+            ! MIN_CDN(:) = min_max(1:3)
+            ! MAX_CDN(:) = min_max(4:6)
+        ! end if      
 
     end subroutine set_MinMaxCDN
 
@@ -173,20 +174,20 @@ module flow_field
     
     end subroutine search_refCELL
 
-    subroutine search_refCELL_onCUBE(X, reference_cell)
-        real, intent(in) :: X(3)
-        type(reference_cell_t), intent(inout) :: reference_cell
+    ! subroutine search_refCELL_onCUBE(X, reference_cell)
+    !     real, intent(in) :: X(3)
+    !     type(reference_cell_t), intent(inout) :: reference_cell
 
-        num_refCellSearch = num_refCellSearch + 1
+    !     num_refCellSearch = num_refCellSearch + 1
 
-        reference_cell%nodeID(:) = nearer_node(X, reference_cell%nodeID, reference_cell%ID)
-        if (.not.nearNode_check(X, reference_cell%nodeID, reference_cell%ID)) then
-            reference_cell%ID = get_cube_contains(X)    
-            reference_cell%nodeID(:) = nearest_node(X, reference_cell%ID)
-            num_refCellSearchFalse = num_refCellSearchFalse + 1
-        end if
+    !     reference_cell%nodeID(:) = nearer_node(X, reference_cell%nodeID, reference_cell%ID)
+    !     if (.not.nearNode_check(X, reference_cell%nodeID, reference_cell%ID)) then
+    !         reference_cell%ID = get_cube_contains(X)    
+    !         reference_cell%nodeID(:) = nearest_node(X, reference_cell%ID)
+    !         num_refCellSearchFalse = num_refCellSearchFalse + 1
+    !     end if
 
-    end subroutine search_refCELL_onCUBE
+    ! end subroutine search_refCELL_onCUBE
 
     subroutine set_STEPinFLOW(time)
         DOUBLE PRECISION, intent(in) :: time
@@ -241,13 +242,5 @@ module flow_field
         end select
 
     end function
-
-    subroutine deallocation_flow
-        if(unstructuredGrid) then
-            call deallocation_unstructuredGRID
-        else
-            call deallocation_CUBE
-        end if
-    end subroutine deallocation_flow
     
 end module flow_field

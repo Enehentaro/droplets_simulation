@@ -26,6 +26,7 @@ module dropletGroup_m
         procedure :: counter => dropletCounter
         procedure :: IDinBox => dropletIDinBox
         procedure :: inBox => dropletInBox
+        procedure :: totalVolume => dropletTotalVolume
 
         procedure adhesion_check
         procedure survival_check
@@ -203,6 +204,7 @@ module dropletGroup_m
     end subroutine
 
     subroutine first_refCellSearch(self)
+        use flow_field
         class(dropletGroup) self
         integer j, num_drop
         logical success
@@ -211,52 +213,52 @@ module dropletGroup_m
 
         num_drop = size(self%droplet)
 
-        if(unstructuredGrid) then
+        ! if(unstructuredGrid) then
             j = 1
-            self%droplet(j)%refCELL%ID = nearest_cell(real(self%droplet(j)%position(:)))
+            self%droplet(j)%refCellID = nearest_cell(real(self%droplet(j)%position(:)))
 
-            self%droplet(j+1:)%refCELL%ID = self%droplet(j)%refCELL%ID !時間短縮を図る
+            self%droplet(j+1:)%refCellID = self%droplet(j)%refCellID !時間短縮を図る
 
             do j = 2, num_drop
-                call search_refCELL(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL%ID, stat=success)
-                if(.not.success) self%droplet(j+1:)%refCELL%ID = self%droplet(j)%refCELL%ID
+                call search_refCELL(real(self%droplet(j)%position(:)), self%droplet(j)%refCellID, stat=success)
+                if(.not.success) self%droplet(j+1:)%refCellID = self%droplet(j)%refCellID
             end do
 
-        else
-            j = 1
-            self%droplet(j)%refCELL%ID = get_cube_contains(real(self%droplet(j)%position(:)))    
-            self%droplet(j)%refCELL%nodeID(:) = nearest_node(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL%ID)
+        ! else
+        !     j = 1
+        !     self%droplet(j)%refCELL%ID = get_cube_contains(real(self%droplet(j)%position(:)))    
+        !     self%droplet(j)%refCELL%nodeID(:) = nearest_node(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL%ID)
 
-            self%droplet(j+1:)%refCELL = self%droplet(j)%refCELL !時間短縮を図る
+        !     self%droplet(j+1:)%refCELL = self%droplet(j)%refCELL !時間短縮を図る
 
-            do j = 2, num_drop
-                call search_refCELL_onCUBE(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL)
-            end do
+        !     do j = 2, num_drop
+        !         call search_refCELL_onCUBE(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL)
+        !     end do
 
-        end if
+        ! end if
 
-    end subroutine first_refCellSearch
+    end subroutine
 
     subroutine adhesion_check(self)
-        use adhesion_onSTL_m
+        ! use adhesion_onSTL_m
         class(dropletGroup) self
         integer i
         
-        if(unstructuredGrid) then
+        ! if(unstructuredGrid) then
             do i = 1, size(self%droplet)
                 if(self%droplet(i)%status==0) then
                     call self%droplet(i)%adhesion_onBound()
                     call self%droplet(i)%area_check()
                 end if
             end do
-        else
-            do i = 1, size(self%droplet)
-                if(self%droplet(i)%status==0) then
-                    if(adhesion_onSTL(real(self%droplet(i)%position(:)))) call stop_droplet(self%droplet(i))
-                    call self%droplet(i)%area_check()
-                end if
-            end do
-        end if
+        ! else
+        !     do i = 1, size(self%droplet)
+        !         if(self%droplet(i)%status==0) then
+        !             if(adhesion_onSTL(real(self%droplet(i)%position(:)))) call stop_droplet(self%droplet(i))
+        !             call self%droplet(i)%area_check()
+        !         end if
+        !     end do
+        ! end if
 
     end subroutine adhesion_check
 
@@ -300,7 +302,7 @@ module dropletGroup_m
         class(dropletGroup) self
         integer vn
 
-        if(unstructuredGrid) then
+        ! if(unstructuredGrid) then
             !$omp parallel do
             do vn = 1, size(self%droplet)
                 if(self%droplet(vn)%status /= 0) cycle !浮遊状態でないなら無視
@@ -309,18 +311,19 @@ module dropletGroup_m
             end do
             !$omp end parallel do
 
-        else
-            do vn = 1, size(self%droplet)
-                if(self%droplet(vn)%status /= 0) cycle !浮遊状態でないなら無視
-                call self%droplet(vn)%evaporation()    !蒸発方程式関連の処理
-                call self%droplet(vn)%motionCalculation_onCUBE()     !運動方程式関連の処理
-            end do
+        ! else
+        !     do vn = 1, size(self%droplet)
+        !         if(self%droplet(vn)%status /= 0) cycle !浮遊状態でないなら無視
+        !         call self%droplet(vn)%evaporation()    !蒸発方程式関連の処理
+        !         call self%droplet(vn)%motionCalculation_onCUBE()     !運動方程式関連の処理
+        !     end do
 
-        end if
+        ! end if
 
     end subroutine Calculation_Droplets
                       
     subroutine boundary_move(self) !境界面の移動に合わせて付着飛沫も移動
+        use unstructuredGrid_mod
         class(dropletGroup) self
         integer vn, JB
 
@@ -407,6 +410,30 @@ module dropletGroup_m
         IDinBox = self%IDinBox(min_cdn, max_cdn)
         dropletInBox%droplet = self%droplet(IDinBox)
         
+    end function
+
+    double precision function dropletTotalVolume(self, dim)
+        class(dropletGroup) self
+        character(*), intent(in), optional :: dim
+        integer i
+        double precision, parameter :: PI = acos(-1.d0) 
+
+        dropletTotalVolume = 0.d0
+
+        do i = 1, size(self%droplet)
+            dropletTotalVolume = dropletTotalVolume + self%droplet(i)%initialRadius**3
+        end do
+
+        dropletTotalVolume = dropletTotalVolume * 4.d0/3.d0*PI
+
+        if(present(dim)) then
+            dropletTotalVolume = dropletTotalVolume * representativeValue('length')**3
+            select case(dim)
+                case('ml')
+                    dropletTotalVolume = dropletTotalVolume * 1.d9
+            end select
+        end if
+
     end function
 
     subroutine coalescence_check(self, stat)
