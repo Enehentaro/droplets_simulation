@@ -138,10 +138,11 @@ module dropletGroup_m
         k = 1
         cnt = 1
         do i_box = 1, num_box
-  
+            width(:) = position_mat(4:6, i_box)
+            standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
+            
             if(num_perEdge >= 2) then
-                width(:) = position_mat(4:6, i_box)
-                standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
+
                 delta(:) = width(:) / dble(num_perEdge - 1)
 
                 do kx = 1, num_perEdge
