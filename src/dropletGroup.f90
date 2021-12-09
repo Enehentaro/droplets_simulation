@@ -8,6 +8,8 @@ module dropletGroup_m
 
     integer, allocatable :: statusCSV(:)
 
+    character(:), allocatable :: case_dir
+
     type dropletGroup
         type(virusDroplet_t), allocatable :: droplet(:)
 
@@ -116,7 +118,6 @@ module dropletGroup_m
     subroutine calc_initialPosition(self)
         use csv_reader
         use filename_mod
-        use caseNameList_m
         class(dropletGroup) self
         integer kx,ky,kz, num_perEdge, num_perBox, k, k_end, cnt
         integer i_box, num_box, num_drop
@@ -125,7 +126,7 @@ module dropletGroup_m
         
         num_drop = size(self%droplet)
 
-        call read_CSV(get_caseName()//'/'//IniPositionFName, position_mat)
+        call read_CSV(case_dir//'/'//IniPositionFName, position_mat)
 
         num_box = size(position_mat, dim=2)
 
