@@ -48,4 +48,4 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 all: $(TARGET) $(TARGET1) $(TARGET2) $(TARGET3)
 
 clean:
-	$(RM) $(TARGET) $(TARGET1) $(TARGET2) -r $(OBJDIR)
+	$(RM) $(TARGET) $(TARGET1) $(TARGET2) $(TARGET3) -r $(OBJDIR)

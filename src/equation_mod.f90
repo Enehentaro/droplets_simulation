@@ -183,6 +183,13 @@ module equation_mod
 
     end function
 
+    double precision function radius_afterCoalesence(r1, r2)
+        double precision r1, r2
+
+        radius_afterCoalesence = (r1**3 + r2**3)**(1.d0/3.d0)
+        
+    end function
+
     double precision function representativeValue(name)
         character(*), intent(in) :: name
 

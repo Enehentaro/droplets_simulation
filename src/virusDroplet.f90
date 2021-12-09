@@ -1,8 +1,9 @@
 module virusDroplet_m
     use equation_mod
     implicit none
+    private
 
-    type virusDroplet_t
+    type, public :: virusDroplet_t
         double precision :: position(3), velocity(3)=0.d0
         double precision radius, radius_min, initialRadius, deadline
         integer :: status=0, refCellID=0, adhesBoundID=0

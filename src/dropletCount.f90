@@ -10,7 +10,7 @@ program dropletCount
 
     type boxResult_t
         integer num_droplet
-        real volume
+        real volume, RoI
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
@@ -40,13 +40,15 @@ program dropletCount
 
     end do
 
-    allocate(bResult(num_drop))
+    allocate(bResult(num_box))
     do i_box = 1, num_box
         id_array = box_array(i_box)%get_id_array()
         dGroup%droplet = mainDroplet%droplet(id_array)
         bResult(i_box)%num_droplet = size(dGroup%droplet)
         bResult(i_box)%volume = real(dGroup%totalVolume(dim='ml'))
     end do
+
+    bResult(:)%RoI = RateOfInfection(bResult(:)%volume)
 
     call output_countCSV
     call output_boxVTK
@@ -62,10 +64,10 @@ program dropletCount
 
         open(newunit=n_unit, file=csvFName, status='replace')
         
-            write(n_unit, '("x,y,z,num_drop,volume[ml]")')
+            write(n_unit, '("x,y,z,num_drop,volume[ml],RoI")')
             
             do i = 1, size(box_array)
-                write(n_unit,'(*(g0:,","))') box_array(i)%center, bResult(i)%num_droplet, bResult(i)%volume
+                write(n_unit,'(*(g0:,","))') box_array(i)%center, bResult(i)%num_droplet, bResult(i)%volume, bResult(i)%RoI
             end do
 
         close(n_unit)
@@ -76,13 +78,10 @@ program dropletCount
         use vtkMesh_operator_m
         type(vtkMesh) mesh
         integer i, j, k
-        real, allocatable :: volume_array(:)
         real, parameter :: trans(3,8) = reshape([ &
                                             0.0,0.0,0.0, 1.0,0.0,0.0, 0.0,1.0,0.0, 1.0,1.0,0.0, &
                                             0.0,0.0,1.0, 1.0,0.0,1.0, 0.0,1.0,1.0, 1.0,1.0,1.0], shape(trans))
                                         
-
-
         call mesh%allocation_node(num_box*8)
         call mesh%allocation_cell(num_box)
 
@@ -98,10 +97,15 @@ program dropletCount
 
         end do
 
-        volume_array = bResult(:)%volume
-
-        call mesh%output(trim(caseName)//'/box.vtk', cellScalar=volume_array)
+        call mesh%output(trim(caseName)//'/box.vtk', cellScalar=bResult(:)%RoI)
 
     end subroutine
+
+    elemental real function RateOfInfection(volume)
+        real, intent(in) :: volume
+
+        RateOfInfection = 1. - exp(-volume*1.e7 / 900.)
+
+    end function
 
 end program dropletCount

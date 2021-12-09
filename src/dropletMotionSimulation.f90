@@ -26,6 +26,8 @@ module dropletMotionSimulation
 
         call read_and_set_condition(case_dir, num_droplet=num_initialDroplet)
 
+        call set_dropletPlacementInfo
+
         timeStep = max(num_restart, 0)                !流れ場の取得の前に必ず時刻セット
 
         call update_FlowField(first=.true.)                !流れ場の取得
@@ -60,7 +62,20 @@ module dropletMotionSimulation
 
     end subroutine
 
+    subroutine set_dropletPlacementInfo
+        use csv_reader
+        use filename_mod
+        use caseNameList_m
+        double precision, allocatable :: position_mat(:,:)
+
+        call read_CSV(case_dir//'/'//IniPositionFName, position_mat)
+
+        call set_placementBox(position_mat)
+
+    end subroutine
+
     subroutine read_and_set_condition(dir, num_droplet)
+        use equation_mod
         use flow_field
         use filename_mod
         use path_operator_m

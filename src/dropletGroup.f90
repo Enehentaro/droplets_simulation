@@ -1,14 +1,22 @@
 module dropletGroup_m
     use virusDroplet_m
+    use equation_mod
     implicit none
+    private
 
-    real, private :: T, RH
+    real T, RH
 
-    integer, target :: timeStep = 0  !時間ステップ
+    integer, public, target :: timeStep = 0  !時間ステップ
 
-    integer, allocatable :: statusCSV(:)
+    integer, public, allocatable :: statusCSV(:)
 
-    type dropletGroup
+    type placementBox
+        double precision standardPoint(3), width(3)
+    end type
+
+    type(placementBox), allocatable :: pBox_array(:)
+
+    type, public :: dropletGroup
         type(virusDroplet_t), allocatable :: droplet(:)
 
         contains
@@ -37,6 +45,9 @@ module dropletGroup_m
         procedure :: append => append_dropletGroup
 
     end type
+
+    public generate_dropletGroup, read_InitialDistribution, read_backup
+    public TimeOnSimu, environment, set_environment, set_placementBox
 
     contains
 
@@ -115,20 +126,14 @@ module dropletGroup_m
     end subroutine
 
     subroutine calc_initialPosition(self)
-        use csv_reader
-        use filename_mod
-        use caseNameList_m
         class(dropletGroup) self
         integer kx,ky,kz, num_perEdge, num_perBox, k, k_end, cnt
         integer i_box, num_box, num_drop
         double precision :: standard(3), delta(3), width(3), randble(3)
-        double precision, allocatable :: position_mat(:,:)
         
         num_drop = size(self%droplet)
 
-        call read_CSV(get_caseName()//'/'//IniPositionFName, position_mat)
-
-        num_box = size(position_mat, dim=2)
+        num_box = size(pBox_array)
 
         num_perBox = num_drop / num_box
         
@@ -142,8 +147,8 @@ module dropletGroup_m
         k = 1
         cnt = 1
         do i_box = 1, num_box
-            width(:) = position_mat(4:6, i_box)
-            standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
+            width(:) = pBox_array(i_box)%width(:)
+            standard(:) = pBox_array(i_box)%standardPoint(:)
   
             if(num_perEdge >= 2) then
 
@@ -276,7 +281,7 @@ module dropletGroup_m
             if ((self%droplet(vn)%status == 0).and.&
                 (TimeOnSimu() > self%droplet(vn)%deadline)) then
 
-                call stop_droplet(self%droplet(vn), status=-1)
+                call self%droplet(vn)%stop_droplet(status=-1)
 
             end if
         end do
@@ -338,7 +343,7 @@ module dropletGroup_m
                 self%droplet(vn)%position(:) &
                     = self%droplet(vn)%position(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
             else
-                call area_check(self%droplet(vn))
+                call self%droplet(vn)%area_check()
     
             end if
         
@@ -479,15 +484,17 @@ module dropletGroup_m
 
     subroutine coalescence(droplet1, droplet2)
         type(virusDroplet_t), intent(inout) :: droplet1, droplet2
-        double precision :: radius_c, volume1, volume2, velocity_c(3)
+        double precision volume1, volume2, velocity_c(3)
 
         volume1 = droplet1%radius**3
         volume2 = droplet2%radius**3
-        radius_c = (volume1 + volume2)**(1.d0/3.d0) !結合後の飛沫半径
         velocity_c(:) = (volume1*droplet1%velocity(:) + volume2*droplet2%velocity(:)) / (volume1 + volume2)
         
-        droplet1%radius = radius_c
+        droplet1%radius = radius_afterCoalesence(droplet1%radius, droplet2%radius)
         droplet1%velocity(:) = velocity_c(:)
+
+        droplet1%radius_min = radius_afterCoalesence(droplet1%radius_min, droplet2%radius_min)
+        droplet1%initialRadius = radius_afterCoalesence(droplet1%initialRadius, droplet2%initialRadius)
 
         droplet2%radius = 0.d0
         call droplet2%stop_droplet(status=-2)
@@ -721,6 +728,22 @@ module dropletGroup_m
         dGroup_read%droplet(:)%radius = diameter(:) * 0.5d0
       
     end function
+
+    subroutine set_placementBox(position_mat)
+        integer i_box, num_box
+        double precision, intent(in) :: position_mat(:,:)
+
+        num_box = size(position_mat, dim=2)
+
+        if(allocated(pBox_array)) deallocate(pBox_array)
+        allocate(pBox_array(num_box))
+
+        do i_box = 1, num_box
+            pBox_array(i_box)%width(:) = position_mat(4:6, i_box)
+            pBox_array(i_box)%standardPoint(:) = position_mat(1:3, i_box) - 0.5d0*pBox_array(i_box)%width(:)
+        end do
+
+    end subroutine
 
     double precision function TimeOnSimu(step, dimension)
         integer, intent(in), optional :: step
