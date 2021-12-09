@@ -10,8 +10,6 @@ module dropletMotionSimulation
     character(:), allocatable :: start_date
     real start_time
 
-    character(:), allocatable, private :: case_dir
-
     logical, private :: startFlag = .false.
 
     integer, private :: last_coalescenceStep, last_numFloating
@@ -24,7 +22,7 @@ module dropletMotionSimulation
         integer num_initialDroplet
         character(99) fname
 
-        call read_and_set_condition(case_dir, num_droplet=num_initialDroplet)
+        call read_and_set_condition(num_droplet=num_initialDroplet)
 
         timeStep = max(num_restart, 0)                !流れ場の取得の前に必ず時刻セット
 
@@ -60,10 +58,9 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine read_and_set_condition(dir, num_droplet)
+    subroutine read_and_set_condition(num_droplet)
         use filename_mod
         use path_operator_m
-        character(*), intent(in) ::dir
         double precision dt, L, U
         double precision :: direction_g(3)
         character(99) path2FlowFile
@@ -71,7 +68,7 @@ module dropletMotionSimulation
         integer, optional, intent(out) :: num_droplet
         real T, RH
 
-        OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
+        OPEN(newunit=n_unit, FILE=case_dir//'/'//conditionFName, STATUS='OLD')
             read(n_unit,'()')
             read(n_unit,*) num_restart
             read(n_unit,'()')
@@ -255,13 +252,11 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine create_CaseDirectory
-        use caseNameList_m
+    subroutine create_CaseDirectory(dir)
         use path_operator_m
+        character(*), intent(in) :: dir
 
-        case_dir = get_caseName()
-
-        print*, '#', nowCase, '[',case_dir,']'
+        case_dir = dir
 
         call make_directory(case_dir//'/VTK')
         call make_directory(case_dir//'/backup')

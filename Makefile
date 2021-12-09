@@ -3,7 +3,7 @@
 TARGET = droplet_Kishi
 
 FC = gfortran
-FCFLAGS = #-O0 -fbacktrace -g
+FCFLAGS = -O0 -fbacktrace -g
 
 TARGET1 = CUBE2USG
 TARGET2 = droplet2CSV

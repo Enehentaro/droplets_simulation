@@ -21,7 +21,7 @@ PROGRAM MAIN
 
       DO nc = 1, nc_max                         !実行数だけループ（通常1回）
 
-            call create_CaseDirectory                     !ディレクトリ作成
+            call create_CaseDirectory(get_caseName())                     !ディレクトリ作成
             
             call firstSet_mainDroplet          !条件TXTの読み込み、飛沫初期分布の計算など
 
