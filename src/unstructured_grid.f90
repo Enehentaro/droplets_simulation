@@ -112,23 +112,25 @@ module unstructuredGrid_mod
 
     subroutine read_VTK(FNAME)
         use vtkMesh_operator_m
+        type(vtkMesh) mesh
         character(*), intent(in) :: FNAME
+        real, allocatable :: velocity(:,:)
         integer II,KK,IIH, KKMX, IIMX
 
-        call read_VTK_mesh(FNAME)
+        call mesh%read(FNAME, cellVector=velocity)
 
-        KKMX = size(node_array)
+        KKMX = size(mesh%node_array)
         if(.not.allocated(NODEs)) allocate(NODEs(KKMX))
         do KK = 1, KKMX
-            NODEs(KK)%coordinate(:) = node_array(KK-1)%coordinate(:)
+            NODEs(KK)%coordinate(:) = mesh%node_array(KK-1)%coordinate(:)
         end do
         
-        IIMX = size(cell_array)
+        IIMX = size(mesh%cell_array)
         if(.not.allocated(CELLs)) allocate(CELLs(IIMX))
         do II = 1, IIMX
-            IIH = size(cell_array(II-1)%nodeID)
-            CELLs(II)%nodeID = cell_array(II-1)%nodeID(1:IIH) + 1
-            select case(cell_array(II-1)%n_TYPE)
+            IIH = size(mesh%cell_array(II-1)%nodeID)
+            CELLs(II)%nodeID = mesh%cell_array(II-1)%nodeID(1:IIH) + 1
+            select case(mesh%cell_array(II-1)%n_TYPE)
                 case(10)
                     CELLs(II)%typeName = 'tetra'
                 case(13)
@@ -136,7 +138,10 @@ module unstructuredGrid_mod
                 case(14)
                     CELLs(II)%typeName = 'pyrmd'
             end select
-            CELLs(II)%flowVelocity(:) = cell_array(II-1)%vector(:)
+        end do
+
+        do II = 1, IIMX
+            CELLs(II)%flowVelocity(:) = velocity(:,II)
         end do
 
         ! print*, NODEs(KKMX)%coordinate(:)
@@ -686,7 +691,6 @@ module unstructuredGrid_mod
         deallocate(CELLs)
         deallocate(NODEs)
         deallocate(BoundFACEs)
-        if(FILE_TYPE=='VTK') call deallocation_VTK
 
     end subroutine
     

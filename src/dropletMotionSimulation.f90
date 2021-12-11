@@ -26,6 +26,8 @@ module dropletMotionSimulation
 
         call read_and_set_condition(case_dir, num_droplet=num_initialDroplet)
 
+        call set_dropletPlacementBox(case_dir)
+
         timeStep = max(num_restart, 0)                !流れ場の取得の前に必ず時刻セット
 
         call update_FlowField(first=.true.)                !流れ場の取得
@@ -61,16 +63,17 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine read_and_set_condition(dir, num_droplet)
+        use dropletEquation_m
         use flow_field
         use filename_mod
         use path_operator_m
         character(*), intent(in) ::dir
-        double precision dt, L, U
+        double precision delta_t, L_represent, U_represent
         double precision :: direction_g(3)
         character(99) path2FlowFile
         integer i, n_unit
         integer, optional, intent(out) :: num_droplet
-        real T, RH
+        real temperature, relativeHumidity
 
         OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
             read(n_unit,'()')
@@ -78,12 +81,12 @@ module dropletMotionSimulation
             read(n_unit,'()')
             read(n_unit,*) n_end
             read(n_unit,'()')
-            read(n_unit,*) dt
+            read(n_unit,*) delta_t
             read(n_unit,'()')
             read(n_unit,*) outputInterval
             read(n_unit,'()')
-            read(n_unit,*) T
-            read(n_unit,*) RH
+            read(n_unit,*) temperature
+            read(n_unit,*) relativeHumidity
             read(n_unit,'()')
             if(present(num_droplet)) then
                 read(n_unit,*) num_droplet
@@ -107,8 +110,8 @@ module dropletMotionSimulation
             read(n_unit,*) LoopS
             read(n_unit,*) LoopF
             read(n_unit,'()')
-            read(n_unit,*) L
-            read(n_unit,*) U
+            read(n_unit,*) L_represent
+            read(n_unit,*) U_represent
 
         CLOSE(n_unit)
 
@@ -132,18 +135,18 @@ module dropletMotionSimulation
         elseif(loopf - loops == 0) then 
             print*, 'After', loopf, ', Checkout SteadyFlow'
         end if
-        print*, 'Delta_Time =', dt
+        print*, 'Delta_Time =', delta_t
         print*, 'Delta_Time inFLOW =', DT_FLOW
 
         call set_dir_from_path(path2FlowFile, PATH_FlowDIR, FNAME_FMT)
 
         call check_FILE_GRID    !気流ファイルのタイプをチェック
 
-        call set_basical_variables(dt, L, U)
+        call set_basical_variables(delta_t, L_represent, U_represent)
 
         call set_gravity_acceleration(direction_g)
 
-        call set_environment(T, RH)
+        call set_dropletEnvironment(temperature, relativeHumidity)
 
     end subroutine
 
@@ -287,6 +290,7 @@ module dropletMotionSimulation
 
     subroutine output_ResultSummary()
         use flow_field
+        use dropletEquation_m
         integer n_unit, cnt
         real end_time
         character(50) fname
@@ -337,8 +341,8 @@ module dropletMotionSimulation
             write(n_unit,'(A18, I15)') 'coalescence =', mainDroplet%counter('coalescence') !生存率で消滅
             write(n_unit,'(A18, I15)') 'adhesion =', mainDroplet%counter('adhesion') !付着したすべてのウイルス数
             write(n_unit,'(A)') '======================================================='
-            write(n_unit,'(A18, F18.2)') 'Temp [degC] =', environment('Temperature')
-            write(n_unit,'(A18, F18.2)') 'RH [%] =', environment('RelativeHumidity')
+            write(n_unit,'(A18, F18.2)') 'Temp [degC] =', dropletEnvironment('Temperature')
+            write(n_unit,'(A18, F18.2)') 'RH [%] =', dropletEnvironment('RelativeHumidity')
             write(n_unit,'(A18, 2X, A)') 'Used FlowFile :', trim(PATH_FlowDIR)//trim(FNAME_FMT)
             write(n_unit, '(A18, 2(I15,2x,A))') 'SearchFalseInfo :', refCellSearchInfo('NumFalse'), &
                     ' (', refCellSearchInfo('FalseRate'), '%)'

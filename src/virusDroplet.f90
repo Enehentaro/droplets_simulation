@@ -1,8 +1,9 @@
 module virusDroplet_m
-    use equation_mod
+    use dropletEquation_m
     implicit none
+    private
 
-    type virusDroplet_t
+    type, public :: virusDroplet_t
         double precision :: position(3), velocity(3)=0.d0
         double precision radius, radius_min, initialRadius, deadline
         integer :: status=0, refCellID=0, adhesBoundID=0
@@ -95,18 +96,18 @@ module virusDroplet_m
         class(virusDroplet_t) self
         logical check
         real areaMinMax(3,2)
-        integer L
+        integer J
 
         areaMinMax = get_areaMinMax()
 
         check = .false.
-        do L = 1, 3
+        do J = 1, 3
     
-            if(self%position(L) < areaMinMax(L,1)) then
-                self%position(L) = areaMinMax(L,1)
+            if(self%position(J) < areaMinMax(J,1)) then
+                self%position(J) = areaMinMax(J,1)
                 check = .true.
-            else if(self%position(L) > areaMinMax(L,2)) then
-                self%position(L) = areaMinMax(L,2)
+            else if(self%position(J) > areaMinMax(J,2)) then
+                self%position(J) = areaMinMax(J,2)
                 check = .true.
             end if
 
