@@ -1,10 +1,8 @@
 module dropletGroup_m
     use virusDroplet_m
-    use equation_mod
+    use dropletEquation_m
     implicit none
     private
-
-    real T, RH
 
     integer, public, target :: timeStep = 0  !時間ステップ
 
@@ -24,7 +22,6 @@ module dropletGroup_m
         procedure calc_initialPosition
         procedure calc_initialRadius
         procedure set_virusDeadline
-        procedure calc_minimumRadius
         procedure first_refCellSearch
 
         procedure output_backup
@@ -47,7 +44,7 @@ module dropletGroup_m
     end type
 
     public generate_dropletGroup, read_InitialDistribution, read_backup
-    public TimeOnSimu, environment, set_environment, set_dropletPlacementBox
+    public TimeOnSimu, set_dropletPlacementBox
 
     contains
 
@@ -59,10 +56,12 @@ module dropletGroup_m
         allocate(generate_dropletGroup%droplet(num_droplet))
 
         call generate_dropletGroup%calc_initialPosition()
+
         call generate_dropletGroup%calc_initialRadius()
-        call generate_dropletGroup%set_virusDeadline()
         generate_dropletGroup%droplet(:)%radius = generate_dropletGroup%droplet(:)%initialRadius
-        call generate_dropletGroup%calc_minimumRadius(RH) !最小半径の計算
+        generate_dropletGroup%droplet(:)%radius_min = get_minimumRadius(generate_dropletGroup%droplet(:)%initialRadius) !最小半径の計算
+
+        call generate_dropletGroup%set_virusDeadline()
 
         call generate_dropletGroup%first_refCellSearch()
 
@@ -199,14 +198,6 @@ module dropletGroup_m
         self%droplet(:)%deadline = virusDeadline(randble(:)) + TimeOnSimu()
 
     end subroutine set_virusDeadline
-
-    subroutine calc_minimumRadius(self, RelativeHumidity)
-        class(dropletGroup) self
-        real, intent(in) :: RelativeHumidity
-
-        self%droplet(:)%radius_min = get_minimumRadius(self%droplet(:)%initialRadius, RelativeHumidity) !最小半径の計算
-
-    end subroutine
 
     subroutine first_refCellSearch(self)
         use flow_field
@@ -435,7 +426,7 @@ module dropletGroup_m
             dropletTotalVolume = dropletTotalVolume * representativeValue('length')**3
             select case(dim)
                 case('ml')
-                    dropletTotalVolume = dropletTotalVolume * 1.d9
+                    dropletTotalVolume = dropletTotalVolume * 1.d6
             end select
         end if
 
@@ -596,7 +587,7 @@ module dropletGroup_m
         character(*), intent(in) :: fname
         double precision, intent(in) :: time
         logical, intent(in) :: initial
-        integer n_unit, L
+        integer n_unit, J
 
         if(initial) then !初回ならファイル新規作成
             open(newunit=n_unit, file=fname, status='replace')
@@ -608,7 +599,7 @@ module dropletGroup_m
 
         if(.not.allocated(statusCSV)) statusCSV = [0, 1, -1,-2]
         
-        write(n_unit,'(*(g0:,","))') real(time), (count(self%droplet(:)%status==statusCSV(L)), L = 1, size(statusCSV))
+        write(n_unit,'(*(g0:,","))') real(time), (count(self%droplet(:)%status==statusCSV(J)), J = 1, size(statusCSV))
 
         close(n_unit)
 
@@ -623,30 +614,6 @@ module dropletGroup_m
     end subroutine
 
     !====================メソッドここまで====================
-
-    subroutine set_environment(Temperature, RelativeHumidity)
-        real, intent(in) :: Temperature, RelativeHumidity
-
-        T = Temperature
-        RH = RelativeHumidity
-
-        call set_coeff_drdt(T, RH)          !温湿度依存の係数の設定
-
-    end subroutine
-
-    real function environment(name)
-        character(*), intent(in) :: name
-
-        select case(name)
-            case('Temperature')
-                environment = T
-            case('RelativeHumidity')
-                environment = RH
-            case default
-                environment = -1.e20
-        end select
-
-    end function
 
     function read_backup(fname) result(dGroup_read)
         character(*), intent(in) :: fname

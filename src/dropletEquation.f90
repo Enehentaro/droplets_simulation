@@ -1,16 +1,25 @@
-module equation_mod
+module dropletEquation_m
     implicit none
+    private
 
-    double precision, private :: dt !無次元時間間隔
-    double precision, private :: L, U, Re
+    double precision dt !無次元時間間隔
+    double precision L, U, Re
 
-    double precision, private, parameter :: Rho_represent = 1.205d0          ! 空気の密度[kg/m3]
-    double precision, private, parameter :: Mu_represent = 1.822d-5          ! 空気の粘性係数[Pa・sec]
-    double precision, private, parameter :: Rho_d = 0.99822d3          ! 飛沫（水）の密度[kg/m3]
-    double precision, private, parameter :: gumma = Rho_represent / Rho_d      !密度比（空気密度 / 飛沫(水)密度）
+    double precision, parameter :: Rho = 1.205d0          ! 空気の密度[kg/m3]
+    double precision, parameter :: Mu = 1.822d-5          ! 空気の粘性係数[Pa・sec]
+    double precision, parameter :: Rho_d = 0.99822d3          ! 飛沫（水）の密度[kg/m3]
+    double precision, parameter :: gumma = Rho / Rho_d      !密度比（空気密度 / 飛沫(水)密度）
 
-    double precision, private :: coeff_drdt !半径変化率の無次元係数
-    double precision, private :: G(3)      !無次元重力加速度
+    double precision coeff_drdt !半径変化率の無次元係数
+    double precision G(3)      !無次元重力加速度
+
+    real T, RH
+    double precision minimumRadiusRatio
+    double precision, allocatable :: minimumRadiusMatrix(:,:)
+
+    public set_basical_variables, set_gravity_acceleration, set_dropletEnvironment, dropletEnvironment
+    public evaporatin_eq, solve_motionEquation, radius_afterCoalesence, representativeValue, deltaTime
+    public get_minimumRadius, virusDeadline
 
     contains
 
@@ -21,7 +30,7 @@ module equation_mod
         L = L_represent
         U = U_represent
 
-        Re = U*L*Rho_represent / Mu_represent
+        Re = U*L*Rho / Mu
 
     end subroutine
 
@@ -38,9 +47,33 @@ module equation_mod
 
     end subroutine
 
-    subroutine set_coeff_drdt(T, RH)
+    subroutine set_dropletEnvironment(Temperature, RelativeHumidity)
+        real, intent(in) :: Temperature, RelativeHumidity
+
+        T = Temperature
+        RH = RelativeHumidity
+
+        call set_coeff_drdt          !温湿度依存の係数の設定
+        call set_minimumRadiusRatio
+
+    end subroutine
+
+    real function dropletEnvironment(name)
+        character(*), intent(in) :: name
+
+        select case(name)
+            case('Temperature')
+                dropletEnvironment = T
+            case('RelativeHumidity')
+                dropletEnvironment = RH
+            case default
+                dropletEnvironment = -1.e20
+        end select
+
+    end function
+
+    subroutine set_coeff_drdt
         !=====================================================================================
-        real, intent(in) :: T, RH   !温度[℃]、相対湿度[%]
         double precision Es, TK
         double precision, parameter :: Rv = 461.51d0                           ! 水蒸気の気体定数[J/(kg.K)]
         double precision, parameter :: T0 = 273.15d0                               ! [K]
@@ -56,14 +89,27 @@ module equation_mod
 
     end subroutine
 
-    function get_minimumRadius(initial_radius, RH) result(minimum_radius)
+    subroutine set_minimumRadiusRatio
         use csv_reader
-        implicit none
-        double precision, intent(in) :: initial_radius(:)
-        real, intent(in) :: RH
-        double precision :: minimum_radius(size(initial_radius))
-        double precision, allocatable :: rad_mat(:,:)
+
         integer i, i_max
+
+        call read_CSV('data/minimum_radius.csv', minimumRadiusMatrix)
+        
+        i_max = size(minimumRadiusMatrix, dim=2)
+        i = 1
+        do while(minimumRadiusMatrix(1,i) < RH)
+            i = i + 1
+            if(i == i_max) exit
+        end do
+        minimumRadiusRatio = minimumRadiusMatrix(2,i)
+
+        print*, 'Dmin/D0 =', minimumRadiusRatio, RH
+
+    end subroutine
+
+    elemental double precision function get_minimumRadius(initial_radius)
+        double precision, intent(in) :: initial_radius
 
         ! if(RH < 64) then
         !     minimum_radius(:) = initial_radius(:)*0.19d0
@@ -77,17 +123,7 @@ module equation_mod
         !     minimum_radius(:) = initial_radius(:)
         ! end if
 
-        call read_CSV('data/minimum_radius.csv', rad_mat)
-        
-        i_max = size(rad_mat, dim=2)
-        i = 1
-        do while(rad_mat(1,i) < RH)
-            i = i + 1
-            if(i == i_max) exit
-        end do
-
-        print*, 'Dmin/D0 =', rad_mat(2,i), RH
-        minimum_radius(:) = initial_radius(:) * rad_mat(2,i)
+        get_minimumRadius = initial_radius * minimumRadiusRatio
 
     end function
 
@@ -214,4 +250,4 @@ module equation_mod
         
     end function
 
-end module equation_mod
+end module dropletEquation_m
