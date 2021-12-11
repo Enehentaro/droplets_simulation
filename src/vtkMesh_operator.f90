@@ -113,10 +113,11 @@ module vtkMesh_operator_m
             
     end subroutine
 
-    subroutine output_vtkMesh(self, FNAME, cellScalar, cellVector)
+    subroutine output_vtkMesh(self, FNAME, cellScalar, cellVector, scalarName, vectorName)
         class(vtkMesh) self
         character(*), intent(in) :: FNAME
         real, intent(in), optional :: cellScalar(:), cellVector(:,:)
+        character(*), intent(in), optional :: scalarName, vectorName
         integer II,KK, n_unit, KKMX, IIMX, IITOTAL
 
         print*, 'OUTPUT_VTK:', FNAME
@@ -164,7 +165,11 @@ module vtkMesh_operator_m
                 write(n_unit,'(A,I0)') 'CELL_DATA ', IIMX
 
                 if(present(cellScalar)) then
-                    write(n_unit,'(A)') 'SCALARS scalar float'
+                    if(present(scalarName)) then
+                        write(n_unit,'(A)') 'SCALARS '//scalarName//' float'
+                    else
+                        write(n_unit,'(A)') 'SCALARS scalar float'
+                    end if
                     write(n_unit,'(A)') 'LOOKUP_TABLE default'
                     DO II = 1, IIMX
                         write(n_unit,'(e12.5)') cellScalar(II)
@@ -172,7 +177,11 @@ module vtkMesh_operator_m
                 end if
 
                 if(present(cellVector)) then
-                    write(n_unit,'(A)') 'VECTORS Velocity float'    
+                    if(present(vectorName)) then
+                        write(n_unit,'(A)') 'VECTORS '//vectorName//' float'
+                    else
+                        write(n_unit,'(A)') 'VECTORS vector float' 
+                    end if  
                     DO II = 1, IIMX
                         write(n_unit,'(3(e12.5,2X))') cellVector(:, II)
                     END DO

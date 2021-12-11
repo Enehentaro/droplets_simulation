@@ -97,7 +97,7 @@ program dropletCount
 
         end do
 
-        call mesh%output(trim(caseName)//'/box.vtk', cellScalar=bResult(:)%RoI)
+        call mesh%output(trim(caseName)//'/box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
 
     end subroutine
 

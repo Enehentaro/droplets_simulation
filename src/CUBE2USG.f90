@@ -72,7 +72,7 @@ program CUBE2USG
         end do
     
         i = len_trim(F_fname)
-        call USG%output(F_fname(:i-2)//'.vtk', cellVector=velocity)
+        call USG%output(F_fname(:i-2)//'.vtk', cellVector=velocity, vectorName='Velocity')
     
     end do
 
