@@ -47,7 +47,7 @@ module dropletGroup_m
     end type
 
     public generate_dropletGroup, read_InitialDistribution, read_backup
-    public TimeOnSimu, environment, set_environment, set_placementBox
+    public TimeOnSimu, environment, set_environment, set_dropletPlacementBox
 
     contains
 
@@ -729,9 +729,14 @@ module dropletGroup_m
       
     end function
 
-    subroutine set_placementBox(position_mat)
+    subroutine set_dropletPlacementBox(dir)
+        use csv_reader
+        use filename_mod
+        character(*), intent(in) :: dir
         integer i_box, num_box
-        double precision, intent(in) :: position_mat(:,:)
+        double precision, allocatable :: position_mat(:,:)
+
+        call read_CSV(dir//'/'//IniPositionFName, position_mat)
 
         num_box = size(position_mat, dim=2)
 
