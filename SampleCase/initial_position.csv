@@ -1,2 +1,2 @@
-x,y,z,lx,ly,lz
-0,0.3,0.5,0.3,0.3,0.3
+center_x,center_y,center_z,width_x,width_y,width_z
+0.0,0.3,0.5,0.3,0.3,0.3
