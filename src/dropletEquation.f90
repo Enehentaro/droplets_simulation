@@ -18,7 +18,7 @@ module dropletEquation_m
     double precision, allocatable :: minimumRadiusMatrix(:,:)
 
     public set_basical_variables, set_gravity_acceleration, set_dropletEnvironment, dropletEnvironment
-    public evaporatin_eq, solve_motionEquation, radius_afterCoalesence, representativeValue, deltaTime
+    public evaporatin_eq, solve_motionEquation, radius_afterCoalescence, representativeValue, deltaTime
     public get_minimumRadius, virusDeadline
 
     contains
@@ -219,10 +219,10 @@ module dropletEquation_m
 
     end function
 
-    double precision function radius_afterCoalesence(r1, r2)
+    double precision function radius_afterCoalescence(r1, r2)
         double precision r1, r2
 
-        radius_afterCoalesence = (r1**3 + r2**3)**(1.d0/3.d0)
+        radius_afterCoalescence = (r1**3 + r2**3)**(1.d0/3.d0)
         
     end function
 
