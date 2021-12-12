@@ -40,7 +40,7 @@ module csv_reader
 
     ! end function read_csv_dble
 
-    subroutine read_csv_char(filename, matrix, column, header)
+    subroutine read_csv_char(filename, matrix, column, header, mat_size)
         integer i, Num_unit
         character(*), intent(in) :: filename
         character(*), intent(inout), allocatable :: matrix(:,:)
