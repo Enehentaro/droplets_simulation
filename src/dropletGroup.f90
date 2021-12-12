@@ -481,11 +481,11 @@ module dropletGroup_m
         volume2 = droplet2%radius**3
         velocity_c(:) = (volume1*droplet1%velocity(:) + volume2*droplet2%velocity(:)) / (volume1 + volume2)
         
-        droplet1%radius = radius_afterCoalesence(droplet1%radius, droplet2%radius)
+        droplet1%radius = radius_afterCoalescence(droplet1%radius, droplet2%radius)
         droplet1%velocity(:) = velocity_c(:)
 
-        droplet1%radius_min = radius_afterCoalesence(droplet1%radius_min, droplet2%radius_min)
-        droplet1%initialRadius = radius_afterCoalesence(droplet1%initialRadius, droplet2%initialRadius)
+        droplet1%radius_min = radius_afterCoalescence(droplet1%radius_min, droplet2%radius_min)
+        droplet1%initialRadius = radius_afterCoalescence(droplet1%initialRadius, droplet2%initialRadius)
 
         droplet2%radius = 0.d0
         call droplet2%stop_droplet(status=-2)
