@@ -83,7 +83,7 @@ module dropletGroup_m
     !====================ここからメソッド====================
 
     subroutine calc_initialRadius(self)
-        use csv_reader
+        use simpleFile_reader
         class(dropletGroup) self
         integer vn, i, num_drop
         double precision, allocatable :: threshold(:,:)
@@ -481,11 +481,11 @@ module dropletGroup_m
         volume2 = droplet2%radius**3
         velocity_c(:) = (volume1*droplet1%velocity(:) + volume2*droplet2%velocity(:)) / (volume1 + volume2)
         
-        droplet1%radius = radius_afterCoalesence(droplet1%radius, droplet2%radius)
+        droplet1%radius = radius_afterCoalescence(droplet1%radius, droplet2%radius)
         droplet1%velocity(:) = velocity_c(:)
 
-        droplet1%radius_min = radius_afterCoalesence(droplet1%radius_min, droplet2%radius_min)
-        droplet1%initialRadius = radius_afterCoalesence(droplet1%initialRadius, droplet2%initialRadius)
+        droplet1%radius_min = radius_afterCoalescence(droplet1%radius_min, droplet2%radius_min)
+        droplet1%initialRadius = radius_afterCoalescence(droplet1%initialRadius, droplet2%initialRadius)
 
         droplet2%radius = 0.d0
         call droplet2%stop_droplet(status=-2)
@@ -497,7 +497,7 @@ module dropletGroup_m
         character(*), intent(in) :: dir
         logical, intent(in) :: initial
         integer i, n_unit, num_drop
-        character(99) fname
+        character(255) fname
 
         num_drop = size(self%droplet(:))
         if(initial) then
@@ -697,7 +697,7 @@ module dropletGroup_m
     end function
 
     subroutine set_dropletPlacementBox(dir)
-        use csv_reader
+        use simpleFile_reader
         use filename_mod
         character(*), intent(in) :: dir
         integer i_box, num_box

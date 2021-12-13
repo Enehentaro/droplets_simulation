@@ -10,13 +10,13 @@ TARGET1 = CUBE2USG
 TARGET2 = droplet2CSV
 TARGET3 = dropletCount
 
-OBJS = filename_mod.o csv_reader.o caseNameList.o path_operator.o vector.o terminalControler.o\
+OBJS = filename_mod.o simpleFile_reader.o caseNameList.o path_operator.o vector.o terminalControler.o array_IO.o\
 	SCTfile_reader.o  vtkMesh_operator.o unstructured_grid.o adjacency_solver.o \
     flow_field.o dropletEquation.o virusDroplet.o dropletGroup.o dropletMotionSimulation.o
 	
 MAINOBJS = dropletManager.o main.o
 
-TARGET1OBJS = vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
+TARGET1OBJS = array_IO.o vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
 TARGET3OBJS = boxCounter.o dropletCount.o
 
 SRCDIR    = src

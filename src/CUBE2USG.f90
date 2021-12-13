@@ -1,6 +1,7 @@
 program CUBE2USG
     use CUBE_mod
     use vtkMesh_operator_m
+    use array_IO_m
     implicit none
     character(50) F_fname, USG_fname
     character(50), allocatable :: fname(:)
@@ -66,13 +67,14 @@ program CUBE2USG
 
         end if
 
-        allocate(velocity(3, num_cell))
+        if (.not.allocated(velocity)) allocate(velocity(3, num_cell))
         do i = 0, num_cell-1
             velocity(:,i+1) = get_velocity_f(vtkCell2cubeNode(i)%nodeID(:), vtkCell2cubeNode(i)%cubeID)
         end do
     
         i = len_trim(F_fname)
-        call USG%output(F_fname(:i-2)//'.vtk', cellVector=velocity, vectorName='Velocity')
+        call output_array_asBinary(fname=F_fname(:i-2)//'.array', array=velocity)
+        ! call USG%output(F_fname(:i-2)//'.vtk', cellVector=velocity, vectorName='Velocity')
     
     end do
 
