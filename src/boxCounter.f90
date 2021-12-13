@@ -14,7 +14,7 @@ module boxCounter_m
     contains
 
     function get_box_array(dir, num_drop) result(new_box_array)
-        use csv_reader
+        use simpleFile_reader
         type(boxCounter), allocatable :: new_box_array(:)
         character(*), intent(in) :: dir
         integer, intent(in) :: num_drop

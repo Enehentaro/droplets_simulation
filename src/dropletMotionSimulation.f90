@@ -22,7 +22,7 @@ module dropletMotionSimulation
 
     subroutine firstSet_mainDroplet
         integer num_initialDroplet
-        character(99) fname
+        character(255) fname
 
         call read_and_set_condition(case_dir, num_droplet=num_initialDroplet)
 
@@ -66,11 +66,10 @@ module dropletMotionSimulation
         use dropletEquation_m
         use flow_field
         use filename_mod
-        use path_operator_m
         character(*), intent(in) ::dir
         double precision delta_t, L_represent, U_represent
         double precision :: direction_g(3)
-        character(99) path2FlowFile
+        character(255) path2FlowFile
         integer i, n_unit
         integer, optional, intent(out) :: num_droplet
         real temperature, relativeHumidity
@@ -138,9 +137,7 @@ module dropletMotionSimulation
         print*, 'Delta_Time =', delta_t
         print*, 'Delta_Time inFLOW =', DT_FLOW
 
-        call set_dir_from_path(path2FlowFile, PATH_FlowDIR, FNAME_FMT)
-
-        call check_FILE_GRID    !気流ファイルのタイプをチェック
+        call set_FlowFileNameFormat(path2FlowFile)
 
         call set_basical_variables(delta_t, L_represent, U_represent)
 
@@ -198,7 +195,7 @@ module dropletMotionSimulation
 
     subroutine output_mainDroplet(initial)
         logical, intent(in) :: initial
-        character(99) fname
+        character(255) fname
 
         write(fname,'("'//case_dir//'/VTK/drop_", i0, ".vtk")') timeStep
         call mainDroplet%output_VTK(fname, deadline=initial)
@@ -343,7 +340,7 @@ module dropletMotionSimulation
             write(n_unit,'(A)') '======================================================='
             write(n_unit,'(A18, F18.2)') 'Temp [degC] =', dropletEnvironment('Temperature')
             write(n_unit,'(A18, F18.2)') 'RH [%] =', dropletEnvironment('RelativeHumidity')
-            write(n_unit,'(A18, 2X, A)') 'Used FlowFile :', trim(PATH_FlowDIR)//trim(FNAME_FMT)
+            write(n_unit,'(A18, 2X, A)') 'Used FlowFile :', get_FlowFileName()
             write(n_unit, '(A18, 2(I15,2x,A))') 'SearchFalseInfo :', refCellSearchInfo('NumFalse'), &
                     ' (', refCellSearchInfo('FalseRate'), '%)'
 

@@ -90,7 +90,7 @@ module dropletEquation_m
     end subroutine
 
     subroutine set_minimumRadiusRatio
-        use csv_reader
+        use simpleFile_reader
 
         integer i, i_max
 
