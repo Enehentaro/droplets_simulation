@@ -8,7 +8,7 @@ module flow_field
     double precision DT_FLOW
     integer STEPinFLOW, NextUpdate
 
-    character PATH_FlowDIR*99, HEAD_AIR*20, FNAME_FMT*30 !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
+    character(:), allocatable, private :: PATH_FlowDIR, HEAD_AIR, FNAME_FMT !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
     integer, private :: FNAME_DIGITS !ファイル名の整数部桁数
     
     logical, private :: unstructuredGrid
@@ -22,7 +22,17 @@ module flow_field
     integer, private :: num_refCellSearchFalse, num_refCellSearch
 
     contains
-    !***********************************************************************
+
+    subroutine set_FlowFileNameFormat(path2FlowFile)
+        use path_operator_m
+        character(*), intent(in) :: path2FlowFile
+
+        call set_dir_from_path(path2FlowFile, PATH_FlowDIR, FNAME_FMT)
+
+        call check_FILE_GRID    !気流ファイルのタイプをチェック
+    
+    end subroutine
+
     subroutine check_FILE_GRID
         integer i, i_
 
@@ -42,7 +52,13 @@ module flow_field
             stop
 
         else
-            call check_FILE_TYPE(FNAME_FMT)
+            i_ = index(FNAME_FMT, ',')
+            if(i_ > 0) then
+                call check_FILE_TYPE(FNAME_FMT(:i_-1), PATH_FlowDIR//FNAME_FMT(i_+1:))
+                FNAME_FMT = FNAME_FMT(1:i_-1)
+            else
+                call check_FILE_TYPE(FNAME_FMT)
+            end if
 
         end if
 
@@ -104,7 +120,7 @@ module flow_field
 
     subroutine read_unsteadyFlowData
         integer FNUM
-        character(99) FNAME
+        character(255) FNAME
         character(:),allocatable :: digits_fmt
 
         FNUM = get_FileNumber()
@@ -227,6 +243,13 @@ module flow_field
         end if
 
     end subroutine clamp_STEP
+
+    function get_FlowFileName() result(fname)
+        character(:), allocatable :: fname
+
+        fname = PATH_FlowDIR//FNAME_FMT
+
+    end function
 
     integer function refCellSearchInfo(name)
         character(*), intent(in) :: name

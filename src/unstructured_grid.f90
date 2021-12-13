@@ -1,6 +1,6 @@
 module unstructuredGrid_mod
     implicit none
-    character(3), private :: FILE_TYPE  !ファイル形式
+    character(:), allocatable, private :: FILE_TYPE  !ファイル形式
 
     type node_t
         real coordinate(3)
@@ -28,8 +28,9 @@ module unstructuredGrid_mod
 
     contains
 
-    subroutine check_FILE_TYPE(FNAME)
+    subroutine check_FILE_TYPE(FNAME, meshFNAME)
         character(*), intent(in) :: FNAME
+        character(*), intent(in), optional :: meshFNAME
 
         if(allocated(CELLs)) call deallocation_unstructuredGRID
 
@@ -41,6 +42,10 @@ module unstructuredGrid_mod
 
         else if(index(FNAME, '.fld') > 0) then
             FILE_TYPE = 'FLD'
+
+        else if(index(FNAME, '.array') > 0) then
+            FILE_TYPE = 'ARRAY'
+            call read_VTK(meshFNAME, meshOnly=.true.)
 
         else
             print*, 'FILE_TYPE NG:', FNAME
@@ -64,6 +69,9 @@ module unstructuredGrid_mod
             case('FLD')
                 call read_FLD(FNAME)
 
+            case('ARRAY')
+                call read_Array(FNAME)
+
             case default
                 print*,'FILE_TYPE NG:', FILE_TYPE
                 STOP
@@ -75,13 +83,13 @@ module unstructuredGrid_mod
     subroutine read_unstructuredGrid_byNumber(path_and_head, digits_fmt, FNUM)
         character(*), intent(in) :: path_and_head, digits_fmt
         integer, intent(in) :: FNUM
-        character(99) :: FNAME
+        character(255) :: FNAME
 
         select case(FILE_TYPE)
             case('VTK')
 
                 write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".vtk")') FNUM
-                call read_VTK(FNAME)
+                call read_VTK(trim(FNAME))
 
             case('INP')
 
@@ -91,16 +99,21 @@ module unstructuredGrid_mod
                     write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".inp")') FNUM
                 end if
 
-                call read_INP(FNAME)   !INPを読み込む(SHARP用)
+                call read_INP(trim(FNAME))   !INPを読み込む(SHARP用)
 
             case('FLD')
                 if(.not.allocated(CELLs).and.FNUM > 0) then
                     write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') 0
-                    call read_FLD(FNAME)
+                    call read_FLD(trim(FNAME))
                 end if
 
                 write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FNUM
-                call read_FLD(FNAME)
+                call read_FLD(trim(FNAME))
+
+            case('ARRAY')
+
+                write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".array")') FNUM
+                call read_Array(trim(FNAME))
 
             case default
                 print*,'FILE_TYPE NG:', FILE_TYPE
@@ -110,14 +123,25 @@ module unstructuredGrid_mod
             
     end subroutine
 
-    subroutine read_VTK(FNAME)
+    subroutine read_VTK(FNAME, meshOnly)
         use vtkMesh_operator_m
         type(vtkMesh) mesh
         character(*), intent(in) :: FNAME
+        logical, intent(in) , optional :: meshOnly
         real, allocatable :: velocity(:,:)
         integer II,KK,IIH, KKMX, IIMX
+        logical onlyFlag
 
-        call mesh%read(FNAME, cellVector=velocity)
+        onlyFlag = .false.
+        if(present(meshOnly)) then
+            if(meshOnly) onlyFlag = .true.
+        end if
+
+        if(onlyFlag) then
+            call mesh%read(FNAME)
+        else
+            call mesh%read(FNAME, cellVector=velocity)
+        end if
 
         KKMX = size(mesh%node_array)
         if(.not.allocated(NODEs)) allocate(NODEs(KKMX))
@@ -140,8 +164,32 @@ module unstructuredGrid_mod
             end select
         end do
 
-        do II = 1, IIMX
+        if(.not.onlyFlag) then
+            do II = 1, IIMX
+                CELLs(II)%flowVelocity(:) = velocity(:,II)
+            end do
+        endif
+
+        ! print*, NODEs(KKMX)%coordinate(:)
+        ! print*, CELLs(IIMX)%flowVelocity(:)
+            
+    end subroutine
+
+    subroutine read_Array(FNAME)
+        use array_IO_m
+        character(*), intent(in) :: FNAME
+        real, allocatable :: velocity(:,:)
+        integer II
+
+        call read_array_asBinary(FNAME, velocity)
+
+        if(size(CELLS) /= size(velocity, dim=2)) then
+            print*, 'SIZE ERROR:', size(CELLS), size(velocity, dim=2)
+        end if
+
+        do II = 1, size(CELLS)
             CELLs(II)%flowVelocity(:) = velocity(:,II)
+            ! print*, velocity(:,II)
         end do
 
         ! print*, NODEs(KKMX)%coordinate(:)

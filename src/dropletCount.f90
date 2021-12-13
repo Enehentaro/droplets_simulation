@@ -3,7 +3,7 @@ program dropletCount
     use boxCounter_m
     implicit none
     integer n, num_drop, i_box, num_box
-    character(99) caseName, fname
+    character(255) caseName, fname
     integer, allocatable :: id_array(:)
     type(dropletGroup) dGroup
     type(boxCounter), allocatable :: box_array(:)
