@@ -2,4 +2,4 @@
 *.mod
 .vscode
 
-/droplet*
+*.exe
