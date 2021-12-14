@@ -1,4 +1,4 @@
-# GNU Fortran on Windows
+# GNU Fortran on Linux(?)
 
 TARGET = droplet
 
@@ -39,12 +39,12 @@ $(TARGET3): $(OBJECTS) $(TARGET3OBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
-	@if not exist $(OBJDIR) ( \
-		md $(OBJDIR) \
-	)
+	@if [ ! -d $(OBJDIR) ]; then \
+		echo ";; mkdir $(OBJDIR)"; mkdir $(OBJDIR); \
+	fi
 	$(FC) $< -o $@ -c -J$(MODDIR) ${FCFLAGS}
 
 all: $(TARGET) $(TARGET1) $(TARGET2) $(TARGET3)
 
 clean:
-	del /Q ${OBJDIR} *.exe
+	$(RM) -r ${OBJDIR} *.exe
