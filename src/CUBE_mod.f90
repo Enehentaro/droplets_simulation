@@ -176,6 +176,12 @@ module CUBE_mod
 
     end function get_velocity_f
 
+    integer function get_numCube()
+
+        get_numCube = size(mesh)
+        
+    end function
+
     subroutine deallocation_CUBE
         deallocate(mesh)
         deallocate(mesh_full)

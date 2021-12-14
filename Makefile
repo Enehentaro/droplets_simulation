@@ -8,9 +8,11 @@ FCFLAGS = -traceback -CB -g -O0 -fpe0
 
 TARGET1 = CUBE2USG
 TARGET2 = droplet2CSV
+TARGET3 = dropletCount
 
-OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o vector.o terminalControler.o\
+OBJS = filename_mod.o simpleFile_reader.o caseNameList.o path_operator.o vector.o terminalControler.o array_IO.o\
 	SCTfile_reader.o  vtkMesh_operator.o unstructured_grid.o adjacency_solver.o \
+<<<<<<< HEAD
 	stl_reader.o adhesion_onSTL.o plot3d_operator.o CUBE_mod.o \
     flow_field.o equation_mod.o virusDroplet_mod.o drop_motion.o 
 	
@@ -18,22 +20,43 @@ OBJS = filename_mod.o csv_reader.o caseList_mod.o path_operator.o vector.o termi
 MAINOBJS = dropletManager.o main.o
 
 TESTOBJS = counter.o CUBE2USG.o
+=======
+    flow_field.o dropletEquation.o virusDroplet.o dropletGroup.o dropletMotionSimulation.o
+	
+MAINOBJS = dropletManager.o main.o
+
+TARGET1OBJS = array_IO.o vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
+TARGET3OBJS = boxCounter.o dropletCount.o
+>>>>>>> a6b2f349828d3806d872aa1a34ee3680f4ef39dd
 
 SRCDIR    = src
 OBJDIR    = obj
 OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
 MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJS))
+<<<<<<< HEAD
 TESTOBJECTS   = $(addprefix $(OBJDIR)/, $(TESTOBJS))
+=======
+TARGET1OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET1OBJS))
+TARGET3OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET3OBJS))
+>>>>>>> a6b2f349828d3806d872aa1a34ee3680f4ef39dd
 MODDIR = ${OBJDIR}
 
 $(TARGET): $(OBJECTS) $(MAINOBJECTS)
-	$(FC) $^ -o $@
+	$(FC) $^ $(FCFLAGS) -o $@
 
+<<<<<<< HEAD
 $(TARGET1): $(OBJECTS) $(TESTOBJECTS)
 	$(FC) $^ -o $@ $(FCFLAGS)
+=======
+$(TARGET1): $(TARGET1OBJECTS)
+	$(FC) $^ $(FCFLAGS) -o $@
+>>>>>>> a6b2f349828d3806d872aa1a34ee3680f4ef39dd
 
 $(TARGET2): $(OBJECTS) $(OBJDIR)/$(TARGET2).o
-	$(FC) $^ -o $@		
+	$(FC) $^ $(FCFLAGS) -o $@
+
+$(TARGET3): $(OBJECTS) $(TARGET3OBJECTS)
+	$(FC) $^ $(FCFLAGS) -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	@if [ ! -d $(OBJDIR) ]; then \
@@ -41,7 +64,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	fi
 	$(FC) $< -o $@ -c -module $(MODDIR) $(FCFLAGS)
 
-all: $(TARGET) $(TARGET1) $(TARGET2)
+all: $(TARGET) $(TARGET1) $(TARGET2) $(TARGET3)
 
 clean:
-	$(RM) $(TARGET) $(TARGET1) $(TARGET2) -r $(OBJDIR)
+	$(RM) $(TARGET) $(TARGET1) $(TARGET2) $(TARGET3) -r $(OBJDIR)

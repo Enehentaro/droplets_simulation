@@ -1,12 +1,16 @@
 program CUBE2USG
     use CUBE_mod
     use vtkMesh_operator_m
-	use counter
+    use array_IO_m
     implicit none
     character(50) F_fname, USG_fname
-    character(50), allocatable :: field_name(:)
-    integer i, j, n, num_node, num_file, num_cell
+    character(50), allocatable :: fname(:)
+    character(20), parameter :: CorrespondenceFName = 'vtkCell2cubeNode.bin'
+    integer i, j, i_node, n, num_node, num_file, num_cell
     real X(3)
+    real, allocatable :: velocity(:,:)
+    logical existance
+    type(vtkMesh) USG
 
     type nodeInfo
         integer cubeID, nodeID(3)
@@ -23,9 +27,9 @@ program CUBE2USG
     print *, 'UnstructuredGRID_FileName ?'
     read(5,*) USG_fname
 
-    call read_VTK_mesh(USG_fname, meshONLY=.true.)
+    call USG%read(USG_fname)
 
-    num_cell = size(cell_array)
+    num_cell = size(USG%cell_array)
 
     do j = 1, num_file
         F_fname = field_name(j)
@@ -33,28 +37,82 @@ program CUBE2USG
         call read_CUBE_data(F_fname, '')
     
         if (.not.allocated(vtkCell2cubeNode)) then
-            allocate(vtkCell2cubeNode(0 : num_cell - 1))
+            inquire(file=CorrespondenceFName, exist=existance)
 
-            do i = 0, num_cell-1
-                X(:) = 0.0
-                num_node = size(cell_array(i)%nodeID)
-                do n = 1, num_node
-                    X(:) = X(:) + node_array(cell_array(i)%nodeID(n))%coordinate(:)
+            if(existance) then
+                call read_nodeInfo
+
+            else
+                allocate(vtkCell2cubeNode(0 : num_cell - 1))
+
+                do i = 0, num_cell-1
+                    X(:) = 0.0
+                    num_node = size(USG%cell_array(i)%nodeID)
+                    do n = 1, num_node
+                        i_node = USG%cell_array(i)%nodeID(n)
+                        X(:) = X(:) + USG%node_array(i_node)%coordinate(:)
+                    end do
+                    X(:) = X(:) / real(num_node)
+                    vtkCell2cubeNode(i)%cubeID = get_cube_contains(X)    
+                    vtkCell2cubeNode(i)%nodeID(:) = nearest_node(X, vtkCell2cubeNode(i)%cubeID)
                 end do
-                X(:) = X(:) / real(num_node)
-                vtkCell2cubeNode(i)%cubeID = get_cube_contains(X)    
-                vtkCell2cubeNode(i)%nodeID(:) = nearest_node(X, vtkCell2cubeNode(i)%cubeID)
-            end do
+
+                call output_nodeInfo
+
+            end if
 
         end if
 
+        if (.not.allocated(velocity)) allocate(velocity(3, num_cell))
         do i = 0, num_cell-1
-            cell_array(i)%vector(:) = get_velocity_f(vtkCell2cubeNode(i)%nodeID(:), vtkCell2cubeNode(i)%cubeID)
+            velocity(:,i+1) = get_velocity_f(vtkCell2cubeNode(i)%nodeID(:), vtkCell2cubeNode(i)%cubeID)
         end do
     
         i = len_trim(F_fname)
-        call output_VTK_mesh(F_fname(:i-2)//'.vtk')
+        call output_array_asBinary(fname=F_fname(:i-2)//'.array', array=velocity)
+        ! call USG%output(F_fname(:i-2)//'.vtk', cellVector=velocity, vectorName='Velocity')
     
     end do
+
+    contains
+
+    subroutine output_nodeInfo
+        integer n_unit, k
+
+        print*, 'output: ', CorrespondenceFName
+
+        open(newunit=n_unit, file=CorrespondenceFName, form='unformatted', status='new')
+            write(n_unit) num_cell, get_numCube()
+
+            do k = 0, num_cell-1
+                write(n_unit) vtkCell2cubeNode(k)
+            end do
+
+        close(n_unit)
+
+    end subroutine
+
+    subroutine read_nodeInfo
+        integer n_unit, k, num_cell_, num_cube
+
+        print*, 'read: ', CorrespondenceFName
+
+        open(newunit=n_unit, file=CorrespondenceFName, form='unformatted', status='old')
+            read(n_unit) num_cell_, num_cube
+
+            if((num_cell_/=num_cell).or.(num_cube/=get_numCube())) then
+                print*, 'SizeERROR:', num_cell_, num_cell, num_cube, get_numCube()
+                stop
+            end if
+
+            allocate(vtkCell2cubeNode(0 : num_cell_ - 1))
+
+            do k = 0, num_cell_-1
+                read(n_unit) vtkCell2cubeNode(k)
+            end do
+
+        close(n_unit)
+
+    end subroutine
     
 end program CUBE2USG
