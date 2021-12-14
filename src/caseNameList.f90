@@ -15,8 +15,7 @@ module caseNameList_m
 
         print*, 'Case Name ?'
         read(5, '(A)') caseName
-        inquire(file=trim(caseName), exist=existance)
-        if(existance .and. index(caseName,'.txt')>0) then
+        if(index(caseName, '.txt')>0) then
             call read_case_list(trim(caseName))
             num_case = size(case_list)
         else

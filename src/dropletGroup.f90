@@ -1,14 +1,20 @@
 module dropletGroup_m
     use virusDroplet_m
+    use dropletEquation_m
     implicit none
+    private
 
-    real, private :: T, RH
+    integer, public, target :: timeStep = 0  !時間ステップ
 
-    integer, target :: timeStep = 0  !時間ステップ
+    integer, public, allocatable :: statusCSV(:)
 
-    integer, allocatable :: statusCSV(:)
+    type placementBox
+        double precision standardPoint(3), width(3)
+    end type
 
-    type dropletGroup
+    type(placementBox), allocatable :: pBox_array(:)
+
+    type, public :: dropletGroup
         type(virusDroplet_t), allocatable :: droplet(:)
 
         contains
@@ -16,7 +22,6 @@ module dropletGroup_m
         procedure calc_initialPosition
         procedure calc_initialRadius
         procedure set_virusDeadline
-        procedure calc_minimumRadius
         procedure first_refCellSearch
 
         procedure output_backup
@@ -38,6 +43,9 @@ module dropletGroup_m
 
     end type
 
+    public generate_dropletGroup, read_InitialDistribution, read_backup
+    public TimeOnSimu, set_dropletPlacementBox
+
     contains
 
     type(dropletGroup) function generate_dropletGroup(num_droplet)   !コンストラクタ
@@ -48,10 +56,12 @@ module dropletGroup_m
         allocate(generate_dropletGroup%droplet(num_droplet))
 
         call generate_dropletGroup%calc_initialPosition()
+
         call generate_dropletGroup%calc_initialRadius()
-        call generate_dropletGroup%set_virusDeadline()
         generate_dropletGroup%droplet(:)%radius = generate_dropletGroup%droplet(:)%initialRadius
-        call generate_dropletGroup%calc_minimumRadius(RH) !最小半径の計算
+        generate_dropletGroup%droplet(:)%radius_min = get_minimumRadius(generate_dropletGroup%droplet(:)%initialRadius) !最小半径の計算
+
+        call generate_dropletGroup%set_virusDeadline()
 
         call generate_dropletGroup%first_refCellSearch()
 
@@ -73,7 +83,7 @@ module dropletGroup_m
     !====================ここからメソッド====================
 
     subroutine calc_initialRadius(self)
-        use csv_reader
+        use simpleFile_reader
         class(dropletGroup) self
         integer vn, i, num_drop
         double precision, allocatable :: threshold(:,:)
@@ -115,20 +125,14 @@ module dropletGroup_m
     end subroutine
 
     subroutine calc_initialPosition(self)
-        use csv_reader
-        use filename_mod
-        use caseNameList_m
         class(dropletGroup) self
         integer kx,ky,kz, num_perEdge, num_perBox, k, k_end, cnt
         integer i_box, num_box, num_drop
         double precision :: standard(3), delta(3), width(3), randble(3)
-        double precision, allocatable :: position_mat(:,:)
         
         num_drop = size(self%droplet)
 
-        call read_CSV(get_caseName()//'/'//IniPositionFName, position_mat)
-
-        num_box = size(position_mat, dim=2)
+        num_box = size(pBox_array)
 
         num_perBox = num_drop / num_box
         
@@ -142,8 +146,8 @@ module dropletGroup_m
         k = 1
         cnt = 1
         do i_box = 1, num_box
-            width(:) = position_mat(4:6, i_box)
-            standard(:) = position_mat(1:3, i_box) - 0.5d0*width(:)
+            width(:) = pBox_array(i_box)%width(:)
+            standard(:) = pBox_array(i_box)%standardPoint(:)
   
             if(num_perEdge >= 2) then
 
@@ -194,14 +198,6 @@ module dropletGroup_m
         self%droplet(:)%deadline = virusDeadline(randble(:)) + TimeOnSimu()
 
     end subroutine set_virusDeadline
-
-    subroutine calc_minimumRadius(self, RelativeHumidity)
-        class(dropletGroup) self
-        real, intent(in) :: RelativeHumidity
-
-        self%droplet(:)%radius_min = get_minimumRadius(self%droplet(:)%initialRadius, RelativeHumidity) !最小半径の計算
-
-    end subroutine
 
     subroutine first_refCellSearch(self)
         use flow_field
@@ -276,7 +272,7 @@ module dropletGroup_m
             if ((self%droplet(vn)%status == 0).and.&
                 (TimeOnSimu() > self%droplet(vn)%deadline)) then
 
-                call stop_droplet(self%droplet(vn), status=-1)
+                call self%droplet(vn)%stop_droplet(status=-1)
 
             end if
         end do
@@ -338,7 +334,7 @@ module dropletGroup_m
                 self%droplet(vn)%position(:) &
                     = self%droplet(vn)%position(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
             else
-                call area_check(self%droplet(vn))
+                call self%droplet(vn)%area_check()
     
             end if
         
@@ -430,7 +426,7 @@ module dropletGroup_m
             dropletTotalVolume = dropletTotalVolume * representativeValue('length')**3
             select case(dim)
                 case('ml')
-                    dropletTotalVolume = dropletTotalVolume * 1.d9
+                    dropletTotalVolume = dropletTotalVolume * 1.d6
             end select
         end if
 
@@ -479,15 +475,17 @@ module dropletGroup_m
 
     subroutine coalescence(droplet1, droplet2)
         type(virusDroplet_t), intent(inout) :: droplet1, droplet2
-        double precision :: radius_c, volume1, volume2, velocity_c(3)
+        double precision volume1, volume2, velocity_c(3)
 
         volume1 = droplet1%radius**3
         volume2 = droplet2%radius**3
-        radius_c = (volume1 + volume2)**(1.d0/3.d0) !結合後の飛沫半径
         velocity_c(:) = (volume1*droplet1%velocity(:) + volume2*droplet2%velocity(:)) / (volume1 + volume2)
         
-        droplet1%radius = radius_c
+        droplet1%radius = radius_afterCoalescence(droplet1%radius, droplet2%radius)
         droplet1%velocity(:) = velocity_c(:)
+
+        droplet1%radius_min = radius_afterCoalescence(droplet1%radius_min, droplet2%radius_min)
+        droplet1%initialRadius = radius_afterCoalescence(droplet1%initialRadius, droplet2%initialRadius)
 
         droplet2%radius = 0.d0
         call droplet2%stop_droplet(status=-2)
@@ -499,7 +497,7 @@ module dropletGroup_m
         character(*), intent(in) :: dir
         logical, intent(in) :: initial
         integer i, n_unit, num_drop
-        character(99) fname
+        character(255) fname
 
         num_drop = size(self%droplet(:))
         if(initial) then
@@ -589,7 +587,7 @@ module dropletGroup_m
         character(*), intent(in) :: fname
         double precision, intent(in) :: time
         logical, intent(in) :: initial
-        integer n_unit, L
+        integer n_unit, J
 
         if(initial) then !初回ならファイル新規作成
             open(newunit=n_unit, file=fname, status='replace')
@@ -601,7 +599,7 @@ module dropletGroup_m
 
         if(.not.allocated(statusCSV)) statusCSV = [0, 1, -1,-2]
         
-        write(n_unit,'(*(g0:,","))') real(time), (count(self%droplet(:)%status==statusCSV(L)), L = 1, size(statusCSV))
+        write(n_unit,'(*(g0:,","))') real(time), (count(self%droplet(:)%status==statusCSV(J)), J = 1, size(statusCSV))
 
         close(n_unit)
 
@@ -616,30 +614,6 @@ module dropletGroup_m
     end subroutine
 
     !====================メソッドここまで====================
-
-    subroutine set_environment(Temperature, RelativeHumidity)
-        real, intent(in) :: Temperature, RelativeHumidity
-
-        T = Temperature
-        RH = RelativeHumidity
-
-        call set_coeff_drdt(T, RH)          !温湿度依存の係数の設定
-
-    end subroutine
-
-    real function environment(name)
-        character(*), intent(in) :: name
-
-        select case(name)
-            case('Temperature')
-                environment = T
-            case('RelativeHumidity')
-                environment = RH
-            case default
-                environment = -1.e20
-        end select
-
-    end function
 
     function read_backup(fname) result(dGroup_read)
         character(*), intent(in) :: fname
@@ -721,6 +695,27 @@ module dropletGroup_m
         dGroup_read%droplet(:)%radius = diameter(:) * 0.5d0
       
     end function
+
+    subroutine set_dropletPlacementBox(dir)
+        use simpleFile_reader
+        use filename_mod
+        character(*), intent(in) :: dir
+        integer i_box, num_box
+        double precision, allocatable :: position_mat(:,:)
+
+        call read_CSV(dir//'/'//IniPositionFName, position_mat)
+
+        num_box = size(position_mat, dim=2)
+
+        if(allocated(pBox_array)) deallocate(pBox_array)
+        allocate(pBox_array(num_box))
+
+        do i_box = 1, num_box
+            pBox_array(i_box)%width(:) = position_mat(4:6, i_box)
+            pBox_array(i_box)%standardPoint(:) = position_mat(1:3, i_box) - 0.5d0*pBox_array(i_box)%width(:)
+        end do
+
+    end subroutine
 
     double precision function TimeOnSimu(step, dimension)
         integer, intent(in), optional :: step

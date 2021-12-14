@@ -28,8 +28,8 @@ module path_operator_m
     
     subroutine set_dir_from_path(path, directory, filename)
         character(*), intent(in) :: path
-        character(*), intent(inout) :: directory
-        character(*), intent(inout), optional :: filename
+        character(:), intent(out), allocatable :: directory
+        character(:), intent(out), allocatable , optional :: filename
         character(1) delimiter
         integer i
 
@@ -53,8 +53,8 @@ module path_operator_m
         directory = path(:i)
 
         print*, 'Path= ', trim(path)
-        print*, 'Directory= ', trim(directory)
-        print*, 'Filename= ', trim(filename)
+        print*, 'Directory= ', directory
+        print*, 'Filename= ', filename
 
     end subroutine set_dir_from_path
 

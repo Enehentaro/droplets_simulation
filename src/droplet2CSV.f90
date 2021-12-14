@@ -2,7 +2,7 @@ program droplet2CSV
     use dropletMotionSimulation
     implicit none
     integer n, stepEnd, stepInterval
-    character(99) caseName, fname
+    character(255) caseName, fname
     double precision time
 
     print*, 'caseName = ?'
