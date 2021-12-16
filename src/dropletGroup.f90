@@ -78,6 +78,8 @@ module dropletGroup_m
 
         read_initialDistribution = read_backup(dir//'/InitialDistribution.bu')
 
+        call read_initialDistribution%first_refCellSearch()
+
     end function
 
     !====================ここからメソッド====================
