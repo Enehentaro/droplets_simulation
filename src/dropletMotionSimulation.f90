@@ -26,7 +26,7 @@ module dropletMotionSimulation
 
         call read_and_set_condition(case_dir, num_droplet=num_initialDroplet)
 
-        call set_dropletPlacementBox(case_dir)
+        call set_dropletPlacementInformation(case_dir)
 
         timeStep = max(num_restart, 0)                !流れ場の取得の前に必ず時刻セット
 
@@ -36,7 +36,7 @@ module dropletMotionSimulation
 
             if(num_restart==0) then
                 call random_set  !実行時刻に応じた乱数シード設定
-                mainDroplet = generate_dropletGroup(num_initialDroplet)
+                mainDroplet = generate_dropletGroup(num_initialDroplet, outputDir=case_dir)
 
             else if(num_restart==-1) then
                 mainDroplet = read_InitialDistribution(case_dir)

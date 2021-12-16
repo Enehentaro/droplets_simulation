@@ -11,8 +11,9 @@ module dropletGroup_m
     type placementBox
         double precision standardPoint(3), width(3)
     end type
-
     type(placementBox), allocatable :: pBox_array(:)
+
+    double precision, allocatable :: radiusThreshold(:,:)
 
     type, public :: dropletGroup
         type(virusDroplet_t), allocatable :: droplet(:)
@@ -44,11 +45,12 @@ module dropletGroup_m
     end type
 
     public generate_dropletGroup, read_InitialDistribution, read_backup
-    public TimeOnSimu, set_dropletPlacementBox
+    public TimeOnSimu, set_dropletPlacementInformation
 
     contains
 
-    type(dropletGroup) function generate_dropletGroup(num_droplet)   !コンストラクタ
+    type(dropletGroup) function generate_dropletGroup(num_droplet, outputDir)   !コンストラクタ
+        character(*), intent(in), optional :: outputDir
         integer, intent(in) :: num_droplet
 
         if(num_droplet <= 0) return 
@@ -57,7 +59,11 @@ module dropletGroup_m
 
         call generate_dropletGroup%calc_initialPosition()
 
-        call generate_dropletGroup%calc_initialRadius()
+        if(present(outputDir)) then
+            call generate_dropletGroup%calc_initialRadius(outputDir)
+        else
+            call generate_dropletGroup%calc_initialRadius()
+        end if
         generate_dropletGroup%droplet(:)%radius = generate_dropletGroup%droplet(:)%initialRadius
         generate_dropletGroup%droplet(:)%radius_min = get_minimumRadius(generate_dropletGroup%droplet(:)%initialRadius) !最小半径の計算
 
@@ -84,28 +90,24 @@ module dropletGroup_m
 
     !====================ここからメソッド====================
 
-    subroutine calc_initialRadius(self)
-        use simpleFile_reader
+    subroutine calc_initialRadius(self, outputDir)
         class(dropletGroup) self
+        character(*), intent(in), optional :: outputDir
         integer vn, i, num_drop
-        double precision, allocatable :: threshold(:,:)
         integer, allocatable :: rad_cnt(:)
-        double precision :: radius_dim(size(self%droplet))
-        real(8) random_rad
+        double precision random_rad, radius_dim(size(self%droplet))
 
         num_drop = size(self%droplet)
-        call read_CSV('data/radius_distribution.csv', threshold)
-        ! threshold = read_csv_dble('radius_distribution.csv')
 
-        allocate(rad_cnt(size(threshold, dim=2)), source=0)
+        allocate(rad_cnt(size(radiusThreshold, dim=2)), source=0)
 
         do vn = 1, num_drop                       !飛沫半径の分布を乱数によって与える
 
             call random_number(random_rad)
 
-            do i = 1, size(threshold, dim=2)
-                if(random_rad < threshold(2, i)) then
-                    radius_dim(vn) = threshold(1, i) * 1.0d-6
+            do i = 1, size(radiusThreshold, dim=2)
+                if(random_rad < radiusThreshold(2, i)) then
+                    radius_dim(vn) = radiusThreshold(1, i) * 1.0d-6
                     rad_cnt(i) = rad_cnt(i) + 1
                     exit
                 end if
@@ -120,9 +122,20 @@ module dropletGroup_m
             stop
         end if
 
-        do i = 1, size(rad_cnt)
-            print*,'rad_cnt(', threshold(1, i), ') =', rad_cnt(i)
-        end do
+        if(present(outputDir)) then
+            block
+                integer n_unit
+
+                open(newunit=n_unit, file=outputDir//'/initialRadiusDistributon.csv', status='replace')
+                    do i = 1, size(rad_cnt)
+                        print*,'rad_cnt(', radiusThreshold(1, i), ') =', rad_cnt(i)
+                        write(n_unit, '(*(g0:,","))') radiusThreshold(1, i), rad_cnt(i)
+                    end do
+                close(n_unit)
+
+            end block
+
+        end if
 
     end subroutine
 
@@ -698,14 +711,14 @@ module dropletGroup_m
       
     end function
 
-    subroutine set_dropletPlacementBox(dir)
+    subroutine set_dropletPlacementInformation(positionDir)
         use simpleFile_reader
         use filename_mod
-        character(*), intent(in) :: dir
+        character(*), intent(in) :: positionDir
         integer i_box, num_box
         double precision, allocatable :: position_mat(:,:)
 
-        call read_CSV(dir//'/'//IniPositionFName, position_mat)
+        call read_CSV(positionDir//'/'//IniPositionFName, position_mat)
 
         num_box = size(position_mat, dim=2)
 
@@ -716,6 +729,8 @@ module dropletGroup_m
             pBox_array(i_box)%width(:) = position_mat(4:6, i_box)
             pBox_array(i_box)%standardPoint(:) = position_mat(1:3, i_box) - 0.5d0*pBox_array(i_box)%width(:)
         end do
+
+        call read_CSV('data/radius_distribution.csv', radiusThreshold)
 
     end subroutine
 
