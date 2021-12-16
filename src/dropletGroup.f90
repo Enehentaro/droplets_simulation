@@ -500,7 +500,7 @@ module dropletGroup_m
         droplet1%velocity(:) = velocity_c(:)
 
         droplet1%radius_min = radius_afterCoalescence(droplet1%radius_min, droplet2%radius_min)
-        droplet1%initialRadius = radius_afterCoalescence(droplet1%initialRadius, droplet2%initialRadius)
+        ! droplet1%initialRadius = radius_afterCoalescence(droplet1%initialRadius, droplet2%initialRadius)
 
         droplet2%radius = 0.d0
         call droplet2%stop_droplet(status=-2)
