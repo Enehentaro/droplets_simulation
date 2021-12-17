@@ -179,7 +179,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine read_Array(FNAME)
-        use array_IO_m
+        use simpleFile_reader
         character(*), intent(in) :: FNAME
         real, allocatable :: velocity(:,:)
         integer II
