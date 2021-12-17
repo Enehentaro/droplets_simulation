@@ -1,7 +1,7 @@
 program CUBE2USG
     use CUBE_mod
     use vtkMesh_operator_m
-    use array_IO_m
+    use simpleFile_reader
     implicit none
     character(50) F_fname, USG_fname
     character(50), allocatable :: fname(:)

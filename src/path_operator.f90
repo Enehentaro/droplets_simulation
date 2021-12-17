@@ -49,7 +49,7 @@ module path_operator_m
 
         i = index(path, delimiter, back=.true.)
 
-        if(present(filename)) filename = path(i+1:)
+        if(present(filename)) filename = trim(path(i+1:))
         directory = path(:i)
 
         print*, 'Path= ', trim(path)

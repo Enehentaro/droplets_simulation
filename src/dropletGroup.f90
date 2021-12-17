@@ -742,7 +742,7 @@ module dropletGroup_m
             pBox_array(i_box)%standardPoint(:) = position_mat(1:3, i_box) - 0.5d0*pBox_array(i_box)%width(:)
         end do
 
-        call read_CSV('data/radius_distribution.csv', radiusThreshold)
+        if(.not.allocated(radiusThreshold)) call read_CSV('data/radius_distribution.csv', radiusThreshold)
 
     end subroutine
 
