@@ -625,8 +625,6 @@ module unstructuredGrid_mod
         real :: a(3), b(3), r(3), normalVector(3)
         type(boundaryTriangle_t), allocatable :: BoundFACEs_pre(:)
 
-        if(.not.allocated(BoundFACEs)) return
-
         IIMX = size(CELLs)
 
         if(.not.first) BoundFACEs_pre = BoundFACEs

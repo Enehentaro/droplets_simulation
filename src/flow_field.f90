@@ -92,6 +92,8 @@ module flow_field
 
             end if
 
+            call boundary_setting(first=.true.)
+
         ! else
         !     call read_faceShape(PATH_FlowDIR)
         !     call set_faceShape
@@ -136,8 +138,6 @@ module flow_field
         !     call read_CUBE_data(FNAME, trim(PATH_FlowDIR))
 
         ! end if
-
-        NextUpdate = STEPinFLOW + INTERVAL_FLOW
             
     end subroutine read_unsteadyFlowData
 
@@ -209,6 +209,17 @@ module flow_field
         DOUBLE PRECISION, intent(in) :: time
 
         STEPinFLOW = int(time/DT_FLOW) + OFFSET   !気流計算における時刻ステップ数に相当
+
+    end subroutine
+
+    subroutine calc_NextUpdate
+        integer i
+        
+        i = 0
+        do while(i*INTERVAL_FLOW + OFFSET < STEPinFLOW)
+            i = i + 1
+        end do
+        NextUpdate = i*INTERVAL_FLOW + OFFSET
 
     end subroutine
 

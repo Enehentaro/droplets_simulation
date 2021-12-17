@@ -32,7 +32,7 @@ module dropletMotionSimulation
 
         timeStep = max(num_restart, 0)                !流れ場の取得の前に必ず時刻セット
 
-        call update_FlowField(first=.true.)                !流れ場の取得
+        call create_FlowField                !流れ場の取得
 
         if(num_restart <= 0) then
 
@@ -136,17 +136,33 @@ module dropletMotionSimulation
 
         call set_STEPinFLOW(TimeOnSimu())
 
-        if(STEPinFLOW >= NextUpdate) call update_FlowField(first=.false.)   !流れ場の更新
+        if(STEPinFLOW >= NextUpdate) call update_FlowField   !流れ場の更新
 
     end subroutine
 
-    subroutine update_FlowField(first)
-        logical, intent(in) :: first
+    subroutine create_FlowField
 
         if(INTERVAL_FLOW <= 0) then
             call read_steadyFlowData
         else
-            if(first) call set_STEPinFLOW(TimeOnSimu())
+            call set_STEPinFLOW(TimeOnSimu())
+            call read_unsteadyFlowData
+
+            call calc_NextUpdate
+
+        end if
+
+        call set_MinMaxCDN
+
+        call preprocess_onFlowField         !流れ場の前処理
+            
+    end subroutine
+
+    subroutine update_FlowField
+
+        if(INTERVAL_FLOW <= 0) then
+            call read_steadyFlowData
+        else
             call read_unsteadyFlowData
 
         end if
@@ -154,9 +170,11 @@ module dropletMotionSimulation
         call set_MinMaxCDN
 
         ! if(unstructuredGrid) then
-            call boundary_setting(first)
-            if(.not.first) call mainDroplet%boundary_move()
+            call boundary_setting(first=.false.)
+            call mainDroplet%boundary_move()
         ! end if
+
+        call calc_NextUpdate
             
     end subroutine
 
@@ -229,8 +247,6 @@ module dropletMotionSimulation
 
             end do
         end if
-
-        call preprocess_onFlowField         !流れ場の前処理
 
         call cpu_time(start_time)
         call date_and_time(date = d_start, time = t_start)
