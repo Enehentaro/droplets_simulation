@@ -661,8 +661,12 @@ module unstructuredGrid_mod
         
         end do
 
-        if(.not.first) then
-            JBMX = size(BoundFACEs)
+        JBMX = size(BoundFACEs)
+        if(first) then
+            do JB = 1, JBMX
+                BoundFACEs(JB)%moveVector(:) = 0.0
+            end do
+        else
             do JB = 1, JBMX
                 BoundFACEs(JB)%moveVector(:) = BoundFACEs(JB)%center(:) - BoundFACEs_pre(JB)%center(:)
             end do
