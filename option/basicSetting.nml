@@ -1,0 +1,4 @@
+&basicSetting
+adhesionSwitch = .true.
+coalescenceLimit = 100
+/
