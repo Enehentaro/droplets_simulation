@@ -5,12 +5,12 @@ Simulation of Virus Droplets Behavior in AFDET
   ※環境は **Intel Fortran, Linux** を想定しています。その他の環境では適宜書き換えが必要です。
   コンパイルに`make`コマンドを使います（makeのインストールが必要）。
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
-  2. ケースディレクトリ内の条件ファイル(condition.txt, initial_position.csv)を編集。
+  2. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集。
   3. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
   4. `./droplet`で実行。ケース名を入力して計算開始。
 
-## 条件ファイル(condition.txt, initial_position.csv)解説
-  ### condition.txt
+## 条件ファイル(condition.nml, initial_position.csv)解説
+  ### condition.nml
   - **リスタート位置**
     - 通常は`0`を指定
     - `1以上`にすると、その値に対応するbackupファイルが読み込まれ、そこからリスタートが始まる
@@ -57,3 +57,6 @@ Simulation of Virus Droplets Behavior in AFDET
 ## おまけ機能
   - **複数ケース連続実行**
     - optionディレクトリ内の"case_list.txt"にケース名を複数列挙し、実行時に`option/case_list.txt`と入力すると、複数ケースを連続実行できる
+  - **basicSetting.nml**
+    - optionディレクトリ内にある。付着判定のオンオフや、飛沫間合体の設定が可能。
+
