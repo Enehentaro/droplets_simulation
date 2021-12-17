@@ -323,7 +323,7 @@ module dropletGroup_m
                     call self%droplet(vn)%motionCalculation()     !運動方程式関連の処理
 
                 case(-2)
-                    targetID = - self%droplet(vn)%status  !合体飛沫の片割れも移動させる
+                    targetID = self%droplet(vn)%coalesID  !合体飛沫の片割れも移動させる
                     self%droplet(vn)%position = self%droplet(targetID)%position
                     self%droplet(vn)%velocity = self%droplet(targetID)%velocity
 
