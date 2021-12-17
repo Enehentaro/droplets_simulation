@@ -15,7 +15,7 @@ module dropletMotionSimulation
 
     logical, private :: startFlag = .false.
 
-    integer, private :: last_coalescenceStep, last_numFloating
+    integer, private :: last_coalescenceStep, last_numFloating, coalescenceLimit
 
     type(dropletGroup) mainDroplet
 
@@ -94,6 +94,8 @@ module dropletMotionSimulation
             end if
             read(n_unit,'()')
             read(n_unit,*) (direction_g(i), i=1,3)
+            read(n_unit,'()')
+            read(n_unit,*) coalescenceLimit
             
             read(n_unit,'()')
 
@@ -206,17 +208,16 @@ module dropletMotionSimulation
     subroutine coalescence_process
         use terminalControler_m
         integer numFloating, num_coalescence
-        integer, parameter :: limit = 100
         
         numFloating = mainDroplet%counter('floating')
         if(numFloating > last_numFloating) last_coalescenceStep = timeStep    !浮遊数が増加したら付着判定再起動のため更新
         last_numFloating = numFloating
 
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
-        if((timeStep - last_coalescenceStep) > limit) return
+        if((timeStep - last_coalescenceStep) > coalescenceLimit) return
 
         call set_formatTC('(" Coalescence_check [step:", i10, "/", i10, "]")')
-        call print_sameLine([timeStep, last_coalescenceStep + limit])
+        call print_sameLine([timeStep, last_coalescenceStep + coalescenceLimit])
 
         call mainDroplet%coalescence_check(stat = num_coalescence)
 
