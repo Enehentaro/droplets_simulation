@@ -9,7 +9,7 @@ Simulation of Virus Droplets Behavior in AFDET
   3. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
   4. `.\droplet.exe`で実行。ケース名を入力して計算開始。
 
-## 条件ファイル(condition.txt, initial_distribution.csv)解説
+## 条件ファイル(condition.txt, initial_position.csv)解説
   ### condition.txt
   - **リスタート位置**
     - 通常は`0`を指定
@@ -28,7 +28,7 @@ Simulation of Virus Droplets Behavior in AFDET
     - 任意の区間の流体連番ファイルを繰り返し用いるときに指定（例えば呼吸のサイクル）
     - `(先頭) = (末尾)` とすると、そのステップ数到達後は流れ場の更新が起こらなくなる
     - `(先頭) > (末尾)` とすれば、特殊な処理は起こらず、流体連番ファイルが順番に読み込まれる
-  ### initial_distribution.csv
+  ### initial_position.csv
   - 初期飛沫の配置帯（直方体）を設定する
   - 左から順に、直方体の中心座標(x,y,z), 直方体の幅(x,y,z)
   - 改行すれば配置帯を複数設定できる

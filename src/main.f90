@@ -6,7 +6,7 @@
 PROGRAM MAIN
       !$ use omp_lib
       use dropletMotionSimulation
-      use caseNameList_m
+      use caseName_m
       implicit none
       integer, pointer :: n => timeStep, nc => nowCase
       integer nc_max

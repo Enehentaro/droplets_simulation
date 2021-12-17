@@ -239,7 +239,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine create_CaseDirectory
-        use caseNameList_m
+        use caseName_m
         use path_operator_m
 
         case_dir = get_caseName()
