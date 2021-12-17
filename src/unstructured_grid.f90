@@ -1,6 +1,7 @@
 module unstructuredGrid_mod
     implicit none
     character(:), allocatable, private :: FILE_TYPE  !ファイル形式
+    character(:), allocatable, private :: meshFileNAME  !
 
     type node_t
         real coordinate(3)
@@ -45,7 +46,7 @@ module unstructuredGrid_mod
 
         else if(index(FNAME, '.array') > 0) then
             FILE_TYPE = 'ARRAY'
-            call read_VTK(meshFNAME, meshOnly=.true.)
+            meshFileNAME = meshFNAME
 
         else
             print*, 'FILE_TYPE NG:', FNAME
@@ -70,6 +71,7 @@ module unstructuredGrid_mod
                 call read_FLD(FNAME)
 
             case('ARRAY')
+                if(.not.allocated(CELLs)) call read_VTK(meshFileNAME, meshOnly=.true.)
                 call read_Array(FNAME)
 
             case default
@@ -111,6 +113,7 @@ module unstructuredGrid_mod
                 call read_FLD(trim(FNAME))
 
             case('ARRAY')
+                if(.not.allocated(CELLs)) call read_VTK(meshFileNAME, meshOnly=.true.)
 
                 write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".array")') FNUM
                 call read_Array(trim(FNAME))
