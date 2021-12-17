@@ -216,7 +216,7 @@ module flow_field
         integer i
         
         i = 0
-        do while(i*INTERVAL_FLOW + OFFSET < STEPinFLOW)
+        do while(i*INTERVAL_FLOW + OFFSET <= STEPinFLOW)
             i = i + 1
         end do
         NextUpdate = i*INTERVAL_FLOW + OFFSET

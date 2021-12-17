@@ -164,17 +164,17 @@ module dropletMotionSimulation
             call read_steadyFlowData
         else
             call read_unsteadyFlowData
+            
+            ! if(unstructuredGrid) then
+                call boundary_setting(first=.false.)
+                call mainDroplet%boundary_move()
+            ! end if
+
+            call calc_NextUpdate
 
         end if
 
         call set_MinMaxCDN
-
-        ! if(unstructuredGrid) then
-            call boundary_setting(first=.false.)
-            call mainDroplet%boundary_move()
-        ! end if
-
-        call calc_NextUpdate
             
     end subroutine
 
