@@ -287,7 +287,7 @@ module dropletGroup_m
             if ((self%droplet(vn)%status == 0).and.&
                 (TimeOnSimu() > self%droplet(vn)%deadline)) then
 
-                call self%droplet(vn)%stop_droplet(status=-1)
+                call self%droplet(vn)%stop_droplet(status=1)
 
             end if
         end do
@@ -311,14 +311,21 @@ module dropletGroup_m
 
     subroutine Calculation_Droplets(self)
         class(dropletGroup) self
-        integer vn
+        integer vn, targetID
 
         ! if(unstructuredGrid) then
             !$omp parallel do
             do vn = 1, size(self%droplet)
-                if(self%droplet(vn)%status /= 0) cycle !浮遊状態でないなら無視
-                call self%droplet(vn)%evaporation()    !蒸発方程式関連の処理
-                call self%droplet(vn)%motionCalculation()     !運動方程式関連の処理
+                if(self%droplet(vn)%status == 0) then
+                    call self%droplet(vn)%evaporation()    !蒸発方程式関連の処理
+                    call self%droplet(vn)%motionCalculation()     !運動方程式関連の処理
+
+                else if(self%droplet(vn)%status < 0) then   !合体飛沫の片割れも移動させる
+                    targetID = - self%droplet(vn)%status
+                    self%droplet(vn)%position = self%droplet(targetID)%position
+                    self%droplet(vn)%velocity = self%droplet(targetID)%velocity
+
+                end if
             end do
             !$omp end parallel do
 
@@ -368,16 +375,16 @@ module dropletGroup_m
                 dropletCounter = size(self%droplet)
 
             case('adhesion')
-                dropletCounter = count(self%droplet(:)%status > 0)
+                dropletCounter = count(self%droplet(:)%status >= 10)
 
             case('floating')
                 dropletCounter = count(self%droplet(:)%status == 0)
 
             case('death')
-                dropletCounter = count(self%droplet(:)%status == -1)
+                dropletCounter = count(self%droplet(:)%status == 1)
 
             case('coalescence')
-                dropletCounter = count(self%droplet(:)%status == -2)
+                dropletCounter = count(self%droplet(:)%status < 0)
 
             case default
                 print*, '**ERROR [dropletCounter] : ', name, ' is not found.**'
@@ -473,9 +480,9 @@ module dropletGroup_m
                 if((r1+r2) >= distance) then
                     ! print*, d1, 'and', d2, 'coalesce!'
                     if(r1 >= r2) then
-                        call coalescence(self%droplet(d1), self%droplet(d2))
+                        call coalescence(self%droplet(d1), self%droplet(d2), d1)
                     else
-                        call coalescence(self%droplet(d2), self%droplet(d1))
+                        call coalescence(self%droplet(d2), self%droplet(d1), d2)
                     end if
                     stat = stat + 1
 
@@ -488,8 +495,9 @@ module dropletGroup_m
 
     end subroutine coalescence_check
 
-    subroutine coalescence(droplet1, droplet2)
+    subroutine coalescence(droplet1, droplet2, baseID)
         type(virusDroplet_t), intent(inout) :: droplet1, droplet2
+        integer, intent(in) :: baseID
         double precision volume1, volume2, velocity_c(3)
 
         volume1 = droplet1%radius**3
@@ -503,7 +511,7 @@ module dropletGroup_m
         ! droplet1%initialRadius = radius_afterCoalescence(droplet1%initialRadius, droplet2%initialRadius)
 
         droplet2%radius = 0.d0
-        call droplet2%stop_droplet(status=-2)
+        droplet2%status = - baseID
         
     end subroutine coalescence
 

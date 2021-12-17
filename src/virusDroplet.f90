@@ -125,7 +125,7 @@ module virusDroplet_m
         if(present(status)) then
             self%status = status
         else
-            self%status = 1
+            self%status = 10
         end if
 
     end subroutine
