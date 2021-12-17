@@ -93,7 +93,7 @@ module dropletEquation_m
         use simpleFile_reader
         integer i, i_max
 
-        if(.not.allocated(minimumRadiusMatrix)) return
+        if(allocated(minimumRadiusMatrix)) return
 
         call read_CSV('data/minimum_radius.csv', minimumRadiusMatrix)
         
