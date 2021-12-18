@@ -649,7 +649,7 @@ module dropletGroup_m
         drop:do i = 1, size(self%droplet)
             radius:do j = 1, num_threshold
                 if(j < num_threshold) then
-                    threshold = (radiusThreshold(1,j) + radiusThreshold(1,j+1))*0.5d0
+                    threshold = (radiusThreshold(1,j) + radiusThreshold(1,j+1))*0.5d0 * 1.d-6
                     if(self%droplet(i)%initialRadius < threshold) then
                         iniRadDis(2,j) = iniRadDis(2,j) + 1.0
                         exit radius
