@@ -33,6 +33,7 @@ module dropletGroup_m
         procedure :: IDinBox => dropletIDinBox
         procedure :: inBox => dropletInBox
         procedure :: totalVolume => dropletTotalVolume
+        procedure initialRadiusDistribution
 
         procedure adhesion_check
         procedure survival_check
@@ -631,6 +632,36 @@ module dropletGroup_m
         close(n_unit)
 
     end subroutine
+
+    function initialRadiusDistribution(self) result(iniRadDis)
+        use simpleFile_reader
+        class(dropletGroup) self
+        integer i, j, num_threshold
+        real, allocatable :: iniRadDis(:,:)
+        double precision threshold
+
+        if(.not.allocated(radiusThreshold)) call read_CSV('data/radius_distribution.csv', radiusThreshold)
+
+        num_threshold = size(radiusThreshold, dim=2)
+        allocate(iniRadDis(2,num_threshold))
+        iniRadDis(1,:) = real(radiusThreshold(1,:))
+        iniRadDis(2,:) = 0.0
+        drop:do i = 1, size(self%droplet)
+            radius:do j = 1, num_threshold
+                if(j < num_threshold) then
+                    threshold = (radiusThreshold(1,j) + radiusThreshold(1,j+1))*0.5d0
+                    if(self%droplet(i)%initialRadius < threshold) then
+                        iniRadDis(2,j) = iniRadDis(2,j) + 1.0
+                        exit radius
+                    end if
+                else
+                    iniRadDis(2,num_threshold) = iniRadDis(2,num_threshold) + 1.0
+
+                end if
+            end do radius
+        end do drop
+
+    end function
 
     subroutine append_dropletGroup(self, dGroup)
         class(dropletGroup) self
