@@ -136,7 +136,7 @@ module dropletMotionSimulation
 
         call set_STEPinFLOW(TimeOnSimu())
 
-        if(STEPinFLOW >= NextUpdate) call update_FlowField   !流れ場の更新
+        if(isUpdateTiming()) call update_FlowField   !流れ場の更新
 
     end subroutine
 
@@ -164,7 +164,7 @@ module dropletMotionSimulation
             call read_steadyFlowData
         else
             call read_unsteadyFlowData
-            
+
             ! if(unstructuredGrid) then
                 call boundary_setting(first=.false.)
                 call mainDroplet%boundary_move()
