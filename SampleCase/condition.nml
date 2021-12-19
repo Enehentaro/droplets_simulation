@@ -1,6 +1,8 @@
 &dropletSetting
 
 num_restart = 0                 !リスタート位置(0でオフ、1以上でオン、-1で初期分布指定)
+initialDistributionFName = "InitialDistribution.bu"     !初期分布指定ファイル名
+
 n_end = 10000                   !計算終了ステップ数
 delta_t = 1.E-4                 !飛沫計算の時間間隔
 outputInterval = 100            !計算結果の出力間隔ステップ

@@ -74,8 +74,8 @@ module dropletGroup_m
 
     end function
 
-    type(dropletGroup) function read_InitialDistribution(dir)
-        character(*), intent(in) :: dir
+    type(dropletGroup) function read_InitialDistribution(fname)
+        character(*), intent(in) :: fname
 
         ! read_InitialDistribution = read_droplet_VTK(dir//'/InitialDistribution.vtk')
         ! read_InitialDistribution%droplet(:)%initialRadius = read_InitialDistribution%droplet(:)%radius
@@ -83,7 +83,7 @@ module dropletGroup_m
 
         ! call read_InitialDistribution%first_refCellSearch()
 
-        read_initialDistribution = read_backup(dir//'/InitialDistribution.bu')
+        read_initialDistribution = read_backup(fname)
 
         call read_initialDistribution%first_refCellSearch()
 
@@ -521,6 +521,7 @@ module dropletGroup_m
     end subroutine coalescence
 
     subroutine output_backup(self, dir, initial)
+        use filename_mod
         class(dropletGroup) self
         character(*), intent(in) :: dir
         logical, intent(in) :: initial
@@ -529,7 +530,7 @@ module dropletGroup_m
 
         num_drop = size(self%droplet(:))
         if(initial) then
-            fname = dir//'/InitialDistribution.bu'
+            fname = dir//'/'//IniDistributionFName
         else
             write(fname,'("'//dir//'/backup_", i0, ".bu")') timeStep
         end if
