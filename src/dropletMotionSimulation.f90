@@ -153,8 +153,6 @@ module dropletMotionSimulation
             call set_STEPinFLOW(TimeOnSimu())
             call read_unsteadyFlowData
 
-            call calc_NextUpdate
-
         end if
 
         call set_MinMaxCDN
@@ -171,8 +169,6 @@ module dropletMotionSimulation
             call boundary_setting(first=.false.)
             call mainDroplet%boundary_move()
         ! end if
-
-        call calc_NextUpdate
 
         call set_MinMaxCDN
             
