@@ -8,6 +8,7 @@ FCFLAGS = -O0 -fbacktrace -g
 TARGET1 = CUBE2USG
 TARGET2 = droplet2CSV
 TARGET3 = dropletCount
+TARGET4 = rotate
 
 OBJS = filename_mod.o simpleFile_reader.o caseName.o path_operator.o vector.o terminalControler.o \
 	SCTfile_reader.o  vtkMesh_operator.o unstructured_grid.o adjacency_solver.o \
@@ -36,6 +37,9 @@ $(TARGET2): $(OBJECTS) $(OBJDIR)/$(TARGET2).o
 	$(FC) $^ $(FCFLAGS) -o $@
 
 $(TARGET3): $(OBJECTS) $(TARGET3OBJECTS)
+	$(FC) $^ $(FCFLAGS) -o $@
+
+$(TARGET4): $(OBJECTS) $(OBJDIR)/$(TARGET4).o
 	$(FC) $^ $(FCFLAGS) -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90

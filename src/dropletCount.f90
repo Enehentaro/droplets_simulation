@@ -1,10 +1,12 @@
 program dropletCount
     use dropletMotionSimulation
     use boxCounter_m
+    use caseName_m
     implicit none
-    integer n, num_drop, i_box, num_box
+    integer n, num_drop, i_box, num_box, n_unit
     character(255) caseName, fname
-    integer, allocatable :: id_array(:)
+    character(:), allocatable :: outFName
+    integer, allocatable :: id_array(:), boxCountArray(:)
     type(dropletGroup) dGroup
     type(boxCounter), allocatable :: box_array(:)
 
@@ -14,44 +16,75 @@ program dropletCount
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
+    integer, pointer :: nc => nowCase
+    integer nc_max
 
-    print*, 'caseName = ?'
-    read(5, *) caseName
+    call case_check(num_case=nc_max)
 
-    call read_and_set_condition(trim(caseName), num_droplet=num_drop)
+    DO nc = 1, nc_max                         !実行数だけループ（通常1回）
 
-    box_array = get_box_array(trim(caseName), num_drop)
+        caseName = get_caseName()
 
-    num_box = size(box_array)
+        call read_and_set_condition(trim(caseName), num_droplet=num_drop)
 
-    do n = 0, n_end, outputInterval
-        if(n==0) then
-            fname = trim(caseName)//'/backup/InitialDistribution.bu'
-        else
-            write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
-        end if
+        box_array = get_box_array(trim(caseName), num_drop)
 
-        mainDroplet = read_backup(fname)
+        num_box = size(box_array)
 
-        do i_box = 1, num_box
-            id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
-            call box_array(i_box)%add_dropletFlag(id_array)
+        if(allocated(boxCountArray)) deallocate(boxCountArray)
+        allocate(boxCountArray(num_box))
+
+        fname = trim(caseName)//'/boxTimeSeries.csv'
+        open(newunit=n_unit, file=fname, status='replace')
+
+        do n = 0, n_end, outputInterval
+            if(n==0) then
+                fname = trim(caseName)//'/backup/InitialDistribution.bu'
+            else
+                write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
+            end if
+
+            mainDroplet = read_backup(fname)
+
+            do i_box = 1, num_box
+                id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
+                call box_array(i_box)%add_dropletFlag(id_array)
+                boxCountArray(i_box) = size(box_array(i_box)%get_id_array())
+            end do
+
+            write(n_unit,'(*(g0:,","))') TimeOnSimu(n), boxCountArray
+
         end do
 
-    end do
+        block
+            integer i
+            real, allocatable :: iniRadDis(:,:)
 
-    allocate(bResult(num_box))
-    do i_box = 1, num_box
-        id_array = box_array(i_box)%get_id_array()
-        dGroup%droplet = mainDroplet%droplet(id_array)
-        bResult(i_box)%num_droplet = size(dGroup%droplet)
-        bResult(i_box)%volume = real(dGroup%totalVolume(dim='ml'))
-    end do
+            outFName = trim(caseName)//'/boxInitialRadius.csv'
+            open(newunit=n_unit, file=outFName, status='replace')
 
-    bResult(:)%RoI = RateOfInfection(bResult(:)%volume)
+            if(allocated(bResult)) deallocate(bResult)
+            allocate(bResult(num_box))
+            do i_box = 1, num_box
+                write(n_unit,'(*(g0:,","))') i_box
+                id_array = box_array(i_box)%get_id_array()
+                dGroup%droplet = mainDroplet%droplet(id_array)
+                bResult(i_box)%num_droplet = size(dGroup%droplet)
+                bResult(i_box)%volume = real(dGroup%totalVolume(dim='ml'))
+                iniRadDis = dGroup%initialRadiusDistribution()
+                do i = 1, size(iniRadDis, dim=2)
+                    write(n_unit,'(*(g0:,","))') iniRadDis(:,i)
+                end do
+            end do
+            close(n_unit)
+        end block
 
-    call output_countCSV
-    call output_boxVTK
+        bResult(:)%RoI = RateOfInfection(bResult(:)%volume)
+
+        call output_countCSV
+        call output_boxVTK
+
+    END DO
 
     contains
 
