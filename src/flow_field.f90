@@ -109,7 +109,7 @@ module flow_field
 
         ! if(unstructuredGrid) then
             FNAME = trim(PATH_FlowDIR)//trim(FNAME_FMT)
-            call read_unstructuredGrid(FNAME)
+            call read_unstructuredGrid_byNAME(FNAME)
             call set_gravity_center
 
         ! else
@@ -122,15 +122,14 @@ module flow_field
 
     subroutine read_unsteadyFlowData
         integer FNUM
-        character(255) FNAME
-        character(:),allocatable :: digits_fmt
+        character(:), allocatable :: FNAME, digits_fmt
 
         FNUM = get_FileNumber()
         digits_fmt = get_digits_format()
 
         ! if(unstructuredGrid) then
             FNAME = trim(PATH_FlowDIR)//trim(HEAD_AIR)
-            call read_unstructuredGrid(FNAME, digits_fmt, FNUM)
+            call read_unstructuredGrid_byNumber(FNAME, digits_fmt, FNUM)
             call set_gravity_center
 
         ! else
@@ -138,6 +137,8 @@ module flow_field
         !     call read_CUBE_data(FNAME, trim(PATH_FlowDIR))
 
         ! end if
+
+        call calc_NextUpdate
             
     end subroutine
 
@@ -223,8 +224,14 @@ module flow_field
     end subroutine
 
     subroutine calc_NextUpdate
+        integer i
 
-        NextUpdate = STEPinFLOW + INTERVAL_FLOW
+        i = 0
+        do while(i*INTERVAL_FLOW + OFFSET <= STEPinFLOW)
+            i = i + 1
+        end do
+
+        NextUpdate = i*INTERVAL_FLOW + OFFSET
 
     end subroutine
 
