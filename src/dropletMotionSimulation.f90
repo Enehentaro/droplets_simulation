@@ -13,10 +13,9 @@ module dropletMotionSimulation
 
     character(:), allocatable, private :: case_dir
 
-    logical, private :: startFlag = .false.
+    logical, private :: startFlag = .false., adhesionSwitch = .true.
 
-    integer, private :: last_coalescenceStep, last_numFloating, coalescenceLimit
-    logical adhesionSwitch
+    integer, private :: last_coalescenceStep, last_numFloating, coalescenceLimit=100
 
     type(dropletGroup) mainDroplet
 
@@ -24,9 +23,10 @@ module dropletMotionSimulation
 
     subroutine firstSet_mainDroplet
         integer num_initialDroplet
-        character(255) fname
+        character(:), allocatable :: iniDisFName
 
-        call read_and_set_condition(case_dir, num_droplet=num_initialDroplet)
+        call read_and_set_condition(case_dir, num_droplet=num_initialDroplet, initialDistributionFileName=iniDisFName)
+        call read_basicSetting
 
         call set_dropletPlacementInformation(case_dir)
 
@@ -41,7 +41,7 @@ module dropletMotionSimulation
                 mainDroplet = generate_dropletGroup(num_initialDroplet, outputDir=case_dir)
 
             else if(num_restart==-1) then
-                mainDroplet = read_InitialDistribution(case_dir)
+                mainDroplet = read_InitialDistribution(case_dir//'/'//iniDisFName)
 
             end if
 
@@ -51,8 +51,11 @@ module dropletMotionSimulation
 
             print*, '**RESTART**'
 
-            write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') num_restart
-            mainDroplet = read_backup(fname)   !ここで自動割り付け
+            block
+                character(255) fname
+                write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') num_restart
+                mainDroplet = read_backup(trim(fname))   !ここで自動割り付け
+            end block
 
             n_start = num_restart
 
@@ -64,19 +67,22 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine read_and_set_condition(dir, num_droplet)
+    subroutine read_and_set_condition(dir, num_droplet, initialDistributionFileName)
         use dropletEquation_m
         use filename_mod
-        character(*), intent(in) ::dir
+        character(*), intent(in) :: dir
         double precision delta_t, L_represent, U_represent
         double precision :: direction_g(3)
-        character(255) path2FlowFile
+        character(255) path2FlowFile, initialDistributionFName
+        character(:), allocatable, optional, intent(out) :: initialDistributionFileName
         integer n_unit, num_droplets
         integer, optional, intent(out) :: num_droplet
         real temperature, relativeHumidity
         namelist /dropletSetting/ num_restart, n_end, delta_t, outputInterval, temperature, relativeHumidity,&
-             num_droplets, direction_g
+            num_droplets, direction_g, initialDistributionFName
         namelist /flowFieldSetting/ path2FlowFile, DT_FLOW, OFFSET, INTERVAL_FLOW, LoopS, LoopF, L_represent, U_represent
+
+        initialDistributionFName = IniDistributionFName
 
         OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
             read(n_unit, nml=dropletSetting)
@@ -84,6 +90,7 @@ module dropletMotionSimulation
         CLOSE(n_unit)
 
         if(present(num_droplet)) num_droplet = num_droplets
+        if(present(initialDistributionFileName)) initialDistributionFileName = trim(initialDistributionFName)
 
         if(num_restart > 0) then
             print*, 'Restart from', num_restart
@@ -115,8 +122,6 @@ module dropletMotionSimulation
         call set_gravity_acceleration(direction_g)
 
         call set_dropletEnvironment(temperature, relativeHumidity)
-
-        call read_basicSetting
 
     end subroutine
 
@@ -160,19 +165,14 @@ module dropletMotionSimulation
 
     subroutine update_FlowField
 
-        if(INTERVAL_FLOW <= 0) then
-            call read_steadyFlowData
-        else
-            call read_unsteadyFlowData
+        call read_unsteadyFlowData
 
-            ! if(unstructuredGrid) then
-                call boundary_setting(first=.false.)
-                call mainDroplet%boundary_move()
-            ! end if
+        ! if(unstructuredGrid) then
+            call boundary_setting(first=.false.)
+            call mainDroplet%boundary_move()
+        ! end if
 
-            call calc_NextUpdate
-
-        end if
+        call calc_NextUpdate
 
         call set_MinMaxCDN
             
