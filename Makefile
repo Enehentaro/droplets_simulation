@@ -16,11 +16,7 @@ OBJS = filename_mod.o simpleFile_reader.o caseName.o path_operator.o vector.o te
 	
 MAINOBJS = dropletManager.o main.o
 
-<<<<<<< HEAD
-TARGET1OBJS = array_IO.o vtkMesh_operator.o plot3d_operator.o CUBE_mod.o simpleFile_reader.o CUBE2USG.o
-=======
 TARGET1OBJS = simpleFile_reader.o vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
->>>>>>> 4773167f05a824b3a62b6de0e0ca69fced3be78e
 TARGET3OBJS = boxCounter.o dropletCount.o
 
 SRCDIR    = src

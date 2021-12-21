@@ -1,10 +1,6 @@
 program CUBE2USG
     use CUBE_mod
     use vtkMesh_operator_m
-<<<<<<< HEAD
-    use array_IO_m
-=======
->>>>>>> 4773167f05a824b3a62b6de0e0ca69fced3be78e
     use simpleFile_reader
     implicit none
     character(50) F_fname, USG_fname
