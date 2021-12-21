@@ -6,7 +6,7 @@ module flow_field
     integer INTERVAL_FLOW                           !気流データ出力間隔
     integer LoopS, LoopF, OFFSET
     double precision DT_FLOW
-    integer STEPinFLOW, NextUpdate
+    integer, private :: STEPinFLOW, NextUpdate
 
     character(:), allocatable, private :: PATH_FlowDIR, HEAD_AIR, FNAME_FMT !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
     integer, private :: FNAME_DIGITS !ファイル名の整数部桁数
@@ -92,6 +92,8 @@ module flow_field
 
             end if
 
+            call boundary_setting(first=.true.)
+
         ! else
         !     call read_faceShape(PATH_FlowDIR)
         !     call set_faceShape
@@ -107,7 +109,7 @@ module flow_field
 
         ! if(unstructuredGrid) then
             FNAME = trim(PATH_FlowDIR)//trim(FNAME_FMT)
-            call read_unstructuredGrid(FNAME)
+            call read_unstructuredGrid_byNAME(FNAME)
             call set_gravity_center
 
         ! else
@@ -116,19 +118,18 @@ module flow_field
 
         ! end if
             
-    end subroutine read_steadyFlowData
+    end subroutine
 
     subroutine read_unsteadyFlowData
         integer FNUM
-        character(255) FNAME
-        character(:),allocatable :: digits_fmt
+        character(:), allocatable :: FNAME, digits_fmt
 
         FNUM = get_FileNumber()
         digits_fmt = get_digits_format()
 
         ! if(unstructuredGrid) then
             FNAME = trim(PATH_FlowDIR)//trim(HEAD_AIR)
-            call read_unstructuredGrid(FNAME, digits_fmt, FNUM)
+            call read_unstructuredGrid_byNumber(FNAME, digits_fmt, FNUM)
             call set_gravity_center
 
         ! else
@@ -137,9 +138,9 @@ module flow_field
 
         ! end if
 
-        NextUpdate = STEPinFLOW + INTERVAL_FLOW
+        call calc_NextUpdate
             
-    end subroutine read_unsteadyFlowData
+    end subroutine
 
     subroutine set_MinMaxCDN
         ! real min_max(6)
@@ -205,6 +206,16 @@ module flow_field
 
     ! end subroutine search_refCELL_onCUBE
 
+    logical function isUpdateTiming()
+
+        if(STEPinFLOW >= NextUpdate) then
+            isUpdateTiming = .true.
+        else
+            isUpdateTiming = .false.
+        end if
+
+    end function
+
     subroutine set_STEPinFLOW(time)
         DOUBLE PRECISION, intent(in) :: time
 
@@ -212,17 +223,30 @@ module flow_field
 
     end subroutine
 
+    subroutine calc_NextUpdate
+        integer i
+
+        i = 0
+        do while(i*INTERVAL_FLOW + OFFSET <= STEPinFLOW)
+            i = i + 1
+        end do
+
+        NextUpdate = i*INTERVAL_FLOW + OFFSET
+
+    end subroutine
+
     integer function get_FileNumber()
 
         get_FileNumber = OFFSET
-        ! do while(get_FileNumber + INTERVAL_FLOW <= STEPinFLOW)  !後退評価
-        do while(get_FileNumber <= STEPinFLOW)    !前進評価
+        do while(get_FileNumber < STEPinFLOW)
             get_FileNumber = get_FileNumber + INTERVAL_FLOW
         end do
 
+        get_FileNumber = get_FileNumber + INTERVAL_FLOW   !前進評価
+
         call clamp_STEP(get_FileNumber)
 
-    end function get_FileNumber
+    end function
 
     subroutine clamp_STEP(STEP)
         integer, intent(inout) :: STEP

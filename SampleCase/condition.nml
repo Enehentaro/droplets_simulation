@@ -1,0 +1,36 @@
+&dropletSetting
+
+num_restart = 0                 !リスタート位置(0でオフ、1以上でオン、-1で初期分布指定)
+initialDistributionFName = "InitialDistribution.bu"     !初期分布指定ファイル名
+
+n_end = 10000                   !計算終了ステップ数
+delta_t = 1.E-4                 !飛沫計算の時間間隔
+outputInterval = 100            !計算結果の出力間隔ステップ
+
+temperature = 25.0              !温度[degC]
+relativeHumidity = 60.0         !相対湿度[%]
+
+num_droplets = 10000            !初期飛沫数
+
+direction_g = 0.0,0.0,-1.0      !重力方向ベクトル(x,y,z)
+
+/
+
+
+&flowFieldSetting
+
+!気流データファイル(パス)(絶対パス推奨)
+path2FlowFile = "/home/master/droplet/sample.vtk"
+
+DT_FLOW = 1.E-3                 !気流計算の時間間隔
+OFFSET = 0                      !ステップ数オフセット(飛沫計算開始時刻における気流計算ステップ数
+INTERVAL_FLOW = -1              !気流計算の計算結果出力間隔ステップ(-1で定常解析)
+
+!気流データを周期的に用いる場合の先頭と末尾(先頭＞末尾にすると無効)
+LoopS = 0
+LoopF = -1
+
+L_represent = 1.0               !気流計算の代表長さ[m]
+U_represent = 1.0               !気流計算の代表速度[m/s]
+
+/

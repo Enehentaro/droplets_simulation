@@ -1,6 +1,7 @@
 module unstructuredGrid_mod
     implicit none
     character(:), allocatable, private :: FILE_TYPE  !ファイル形式
+    character(:), allocatable, private :: meshFileNAME  !
 
     type node_t
         real coordinate(3)
@@ -21,11 +22,6 @@ module unstructuredGrid_mod
     type(boundaryTriangle_t), allocatable :: BoundFACEs(:)
     type(cell_t), allocatable :: CELLs(:)
 
-    interface read_unstructuredGrid
-        module procedure read_unstructuredGrid_byNAME
-        module procedure read_unstructuredGrid_byNumber
-    end interface
-
     contains
 
     subroutine check_FILE_TYPE(FNAME, meshFNAME)
@@ -45,7 +41,7 @@ module unstructuredGrid_mod
 
         else if(index(FNAME, '.array') > 0) then
             FILE_TYPE = 'ARRAY'
-            call read_VTK(meshFNAME, meshOnly=.true.)
+            meshFileNAME = meshFNAME
 
         else
             print*, 'FILE_TYPE NG:', FNAME
@@ -70,6 +66,7 @@ module unstructuredGrid_mod
                 call read_FLD(FNAME)
 
             case('ARRAY')
+                if(.not.allocated(CELLs)) call read_VTK(meshFileNAME, meshOnly=.true.)
                 call read_Array(FNAME)
 
             case default
@@ -80,39 +77,40 @@ module unstructuredGrid_mod
             
     end subroutine
 
-    subroutine read_unstructuredGrid_byNumber(path_and_head, digits_fmt, FNUM)
+    subroutine read_unstructuredGrid_byNumber(path_and_head, digits_fmt, FileNumber)
         character(*), intent(in) :: path_and_head, digits_fmt
-        integer, intent(in) :: FNUM
+        integer, intent(in) :: FileNumber
         character(255) :: FNAME
 
         select case(FILE_TYPE)
             case('VTK')
 
-                write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".vtk")') FNUM
+                write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".vtk")') FileNumber
                 call read_VTK(trim(FNAME))
 
             case('INP')
 
-                if(FNUM==0) then
+                if(FileNumber==0) then
                     write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".inp")') 1
                 else
-                    write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".inp")') FNUM
+                    write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".inp")') FileNumber
                 end if
 
                 call read_INP(trim(FNAME))   !INPを読み込む(SHARP用)
 
             case('FLD')
-                if(.not.allocated(CELLs).and.FNUM > 0) then
+                if(.not.allocated(CELLs).and.FileNumber > 0) then
                     write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') 0
                     call read_FLD(trim(FNAME))
                 end if
 
-                write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FNUM
+                write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FileNumber
                 call read_FLD(trim(FNAME))
 
             case('ARRAY')
+                if(.not.allocated(CELLs)) call read_VTK(meshFileNAME, meshOnly=.true.)
 
-                write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".array")') FNUM
+                write(FNAME,'("'//trim(path_and_head)//'",'//digits_fmt//',".array")') FileNumber
                 call read_Array(trim(FNAME))
 
             case default
@@ -176,7 +174,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine read_Array(FNAME)
-        use array_IO_m
+        use simpleFile_reader
         character(*), intent(in) :: FNAME
         real, allocatable :: velocity(:,:)
         integer II
@@ -622,8 +620,6 @@ module unstructuredGrid_mod
         real :: a(3), b(3), r(3), normalVector(3)
         type(boundaryTriangle_t), allocatable :: BoundFACEs_pre(:)
 
-        if(.not.allocated(BoundFACEs)) return
-
         IIMX = size(CELLs)
 
         if(.not.first) BoundFACEs_pre = BoundFACEs
@@ -658,8 +654,12 @@ module unstructuredGrid_mod
         
         end do
 
-        if(.not.first) then
-            JBMX = size(BoundFACEs)
+        JBMX = size(BoundFACEs)
+        if(first) then
+            do JB = 1, JBMX
+                BoundFACEs(JB)%moveVector(:) = 0.0
+            end do
+        else
             do JB = 1, JBMX
                 BoundFACEs(JB)%moveVector(:) = BoundFACEs(JB)%center(:) - BoundFACEs_pre(JB)%center(:)
             end do

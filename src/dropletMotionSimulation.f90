@@ -1,5 +1,6 @@
 module dropletMotionSimulation
     use dropletGroup_m
+    use flow_field
     implicit none
 
     integer outputInterval
@@ -12,9 +13,9 @@ module dropletMotionSimulation
 
     character(:), allocatable, private :: case_dir
 
-    logical, private :: startFlag = .false.
+    logical, private :: startFlag = .false., adhesionSwitch = .true.
 
-    integer, private :: last_coalescenceStep, last_numFloating
+    integer, private :: last_coalescenceStep, last_numFloating, coalescenceLimit=100
 
     type(dropletGroup) mainDroplet
 
@@ -22,24 +23,25 @@ module dropletMotionSimulation
 
     subroutine firstSet_mainDroplet
         integer num_initialDroplet
-        character(255) fname
+        character(:), allocatable :: iniDisFName
 
-        call read_and_set_condition(case_dir, num_droplet=num_initialDroplet)
+        call read_and_set_condition(case_dir, num_droplet=num_initialDroplet, initialDistributionFileName=iniDisFName)
+        call read_basicSetting
 
-        call set_dropletPlacementBox(case_dir)
+        call set_dropletPlacementInformation(case_dir)
 
         timeStep = max(num_restart, 0)                !流れ場の取得の前に必ず時刻セット
 
-        call update_FlowField(first=.true.)                !流れ場の取得
+        call create_FlowField                !流れ場の取得
 
         if(num_restart <= 0) then
 
             if(num_restart==0) then
                 call random_set  !実行時刻に応じた乱数シード設定
-                mainDroplet = generate_dropletGroup(num_initialDroplet)
+                mainDroplet = generate_dropletGroup(num_initialDroplet, outputDir=case_dir)
 
             else if(num_restart==-1) then
-                mainDroplet = read_InitialDistribution(case_dir)
+                mainDroplet = read_InitialDistribution(case_dir//'/'//iniDisFName)
 
             end if
 
@@ -49,8 +51,11 @@ module dropletMotionSimulation
 
             print*, '**RESTART**'
 
-            write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') num_restart
-            mainDroplet = read_backup(fname)   !ここで自動割り付け
+            block
+                character(255) fname
+                write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') num_restart
+                mainDroplet = read_backup(trim(fname))   !ここで自動割り付け
+            end block
 
             n_start = num_restart
 
@@ -62,57 +67,30 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine read_and_set_condition(dir, num_droplet)
+    subroutine read_and_set_condition(dir, num_droplet, initialDistributionFileName)
         use dropletEquation_m
-        use flow_field
         use filename_mod
-        character(*), intent(in) ::dir
+        character(*), intent(in) :: dir
         double precision delta_t, L_represent, U_represent
         double precision :: direction_g(3)
-        character(255) path2FlowFile
-        integer i, n_unit
+        character(255) path2FlowFile, initialDistributionFName
+        character(:), allocatable, optional, intent(out) :: initialDistributionFileName
+        integer n_unit, num_droplets
         integer, optional, intent(out) :: num_droplet
         real temperature, relativeHumidity
+        namelist /dropletSetting/ num_restart, n_end, delta_t, outputInterval, temperature, relativeHumidity,&
+            num_droplets, direction_g, initialDistributionFName
+        namelist /flowFieldSetting/ path2FlowFile, DT_FLOW, OFFSET, INTERVAL_FLOW, LoopS, LoopF, L_represent, U_represent
+
+        initialDistributionFName = IniDistributionFName
 
         OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
-            read(n_unit,'()')
-            read(n_unit,*) num_restart
-            read(n_unit,'()')
-            read(n_unit,*) n_end
-            read(n_unit,'()')
-            read(n_unit,*) delta_t
-            read(n_unit,'()')
-            read(n_unit,*) outputInterval
-            read(n_unit,'()')
-            read(n_unit,*) temperature
-            read(n_unit,*) relativeHumidity
-            read(n_unit,'()')
-            if(present(num_droplet)) then
-                read(n_unit,*) num_droplet
-            else
-                read(n_unit, '()')
-            end if
-            read(n_unit,'()')
-            read(n_unit,*) (direction_g(i), i=1,3)
-            
-            read(n_unit,'()')
-
-            read(n_unit,'()')
-            read(n_unit,'(A)') path2FlowFile
-            read(n_unit,'()')
-            read(n_unit,*) DT_FLOW
-            read(n_unit,'()')
-            read(n_unit,*) OFFSET
-            read(n_unit,'()')
-            read(n_unit,*) INTERVAL_FLOW
-            read(n_unit,'()')
-            read(n_unit,*) LoopS
-            read(n_unit,*) LoopF
-            read(n_unit,'()')
-            read(n_unit,*) L_represent
-            read(n_unit,*) U_represent
-
+            read(n_unit, nml=dropletSetting)
+            read(n_unit, nml=flowFieldSetting)
         CLOSE(n_unit)
+
+        if(present(num_droplet)) num_droplet = num_droplets
+        if(present(initialDistributionFileName)) initialDistributionFileName = trim(initialDistributionFName)
 
         if(num_restart > 0) then
             print*, 'Restart from', num_restart
@@ -147,43 +125,58 @@ module dropletMotionSimulation
 
     end subroutine
 
+    subroutine read_basicSetting
+        integer n_unit
+        namelist /basicSetting/ coalescenceLimit, adhesionSwitch
+
+        open(newunit=n_unit, file='option/basicSetting.nml', status='old')
+            read(n_unit, nml=basicSetting)
+        close(n_unit)
+
+    end subroutine
+
     subroutine check_FlowFieldUpdate
-        use flow_field
 
         if((INTERVAL_FLOW <= 0).or.(timeStep==n_end)) return
 
         call set_STEPinFLOW(TimeOnSimu())
 
-        if(STEPinFLOW >= NextUpdate) call update_FlowField(first=.false.)   !流れ場の更新
+        if(isUpdateTiming()) call update_FlowField   !流れ場の更新
 
     end subroutine
 
-    subroutine update_FlowField(first)
-        use flow_field
-        logical, intent(in) :: first
+    subroutine create_FlowField
 
         if(INTERVAL_FLOW <= 0) then
             call read_steadyFlowData
         else
-            if(first) call set_STEPinFLOW(TimeOnSimu())
+            call set_STEPinFLOW(TimeOnSimu())
             call read_unsteadyFlowData
 
         end if
 
         call set_MinMaxCDN
 
-        if(first) call preprocess_onFlowField         !流れ場の前処理
+        call preprocess_onFlowField         !流れ場の前処理
+            
+    end subroutine
+
+    subroutine update_FlowField
+
+        call read_unsteadyFlowData
 
         ! if(unstructuredGrid) then
-            call boundary_setting(first)
-            if(.not.first) call mainDroplet%boundary_move()
+            call boundary_setting(first=.false.)
+            call mainDroplet%boundary_move()
         ! end if
+
+        call set_MinMaxCDN
             
     end subroutine
 
     subroutine mainDroplet_process
 
-        call mainDroplet%adhesion_check()
+        if(adhesionSwitch) call mainDroplet%adhesion_check()
 
         call mainDroplet%survival_check()           !生存率に関する処理
 
@@ -210,17 +203,16 @@ module dropletMotionSimulation
     subroutine coalescence_process
         use terminalControler_m
         integer numFloating, num_coalescence
-        integer, parameter :: limit = 100
         
         numFloating = mainDroplet%counter('floating')
         if(numFloating > last_numFloating) last_coalescenceStep = timeStep    !浮遊数が増加したら付着判定再起動のため更新
         last_numFloating = numFloating
 
         !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
-        if((timeStep - last_coalescenceStep) > limit) return
+        if((timeStep - last_coalescenceStep) > coalescenceLimit) return
 
         call set_formatTC('(" Coalescence_check [step:", i10, "/", i10, "]")')
-        call print_sameLine([timeStep, last_coalescenceStep + limit])
+        call print_sameLine([timeStep, last_coalescenceStep + coalescenceLimit])
 
         call mainDroplet%coalescence_check(stat = num_coalescence)
 
@@ -259,7 +251,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine create_CaseDirectory
-        use caseNameList_m
+        use caseName_m
         use path_operator_m
 
         case_dir = get_caseName()
@@ -272,7 +264,6 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine periodicOutput
-        use flow_field
         use terminalControler_m
 
         print*, start_date
@@ -286,7 +277,6 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine output_ResultSummary()
-        use flow_field
         use dropletEquation_m
         integer n_unit, cnt
         real end_time

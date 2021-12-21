@@ -91,8 +91,9 @@ module dropletEquation_m
 
     subroutine set_minimumRadiusRatio
         use simpleFile_reader
-
         integer i, i_max
+
+        if(allocated(minimumRadiusMatrix)) return
 
         call read_CSV('data/minimum_radius.csv', minimumRadiusMatrix)
         
