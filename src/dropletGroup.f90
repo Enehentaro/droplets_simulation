@@ -46,7 +46,7 @@ module dropletGroup_m
     end type
 
     public generate_dropletGroup, read_InitialDistribution, read_backup
-    public TimeOnSimu, set_dropletPlacementInformation
+    public TimeOnSimu, set_dropletPlacementBox, set_dropletRadiusThreshold
 
     contains
 
@@ -108,7 +108,7 @@ module dropletGroup_m
 
             do i = 1, size(radiusThreshold, dim=2)
                 if(random_rad < radiusThreshold(2, i)) then
-                    radius_dim(vn) = radiusThreshold(1, i) * 1.0d-6
+                    radius_dim(vn) = radiusThreshold(1, i)
                     rad_cnt(i) = rad_cnt(i) + 1
                     exit
                 end if
@@ -755,7 +755,7 @@ module dropletGroup_m
       
     end function
 
-    subroutine set_dropletPlacementInformation(positionDir)
+    subroutine set_dropletPlacementBox(positionDir)
         use simpleFile_reader
         use filename_mod
         character(*), intent(in) :: positionDir
@@ -774,7 +774,17 @@ module dropletGroup_m
             pBox_array(i_box)%standardPoint(:) = position_mat(1:3, i_box) - 0.5d0*pBox_array(i_box)%width(:)
         end do
 
-        if(.not.allocated(radiusThreshold)) call read_CSV('data/radius_distribution.csv', radiusThreshold)
+    end subroutine
+
+    subroutine set_dropletRadiusThreshold
+        use simpleFile_reader
+        use filename_mod
+
+        if(allocated(radiusThreshold)) return
+
+        call read_CSV('data/radius_distribution.csv', radiusThreshold)
+
+        radiusThreshold = radiusThreshold * 1.d-6   !マイクロメートル換算
 
     end subroutine
 
