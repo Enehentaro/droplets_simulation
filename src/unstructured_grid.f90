@@ -183,6 +183,7 @@ module unstructuredGrid_mod
 
         if(size(CELLS) /= size(velocity, dim=2)) then
             print*, 'SIZE ERROR:', size(CELLS), size(velocity, dim=2)
+            stop
         end if
 
         do II = 1, size(CELLS)
@@ -380,22 +381,26 @@ module unstructuredGrid_mod
         use filename_mod
         implicit none
         character(*), intent(in) :: path
-        logical, optional :: success
+        logical, intent(out) :: success
         integer II,NA,JB, n_unit, num_cells, num_adj, num_BF, NCMAX
-        character(len_trim(path)+20) FNAME
+        character(:), allocatable :: FNAME
                 
         FNAME = trim(path)//adjacencyFileName
-        if(present(success)) then
-            inquire(file = FNAME, exist = success)
-            if(.not.success) return
-        end if
+        inquire(file = FNAME, exist = success)
+        if(.not.success) return
 
         print*, 'READ:', FNAME
 
         open(newunit=n_unit, FILE=FNAME, STATUS='OLD')
             read(n_unit,*) num_cells
-            read(n_unit,*) NCMAX
 
+            if(num_cells /= size(CELLs)) then
+                print*, 'SIZE MISMATCH :', num_cells, size(CELLs)
+                success = .false.
+                return
+            end if
+
+            read(n_unit,*) NCMAX
             ! allocate(NEXT_CELL(NCMAX,num_cells),NUM_NC(num_cells))
             DO II = 1, num_cells
                 read(n_unit,'(I5)',advance='no') num_adj
@@ -425,7 +430,7 @@ module unstructuredGrid_mod
         implicit none
         character(*), intent(in) :: path
         integer II,NA,JB, n_unit, num_cells, NCMAX
-        character(len_trim(path)+20) FNAME
+        character(:), allocatable :: FNAME
                 
         FNAME = trim(path)//adjacencyFileName
 
@@ -463,7 +468,7 @@ module unstructuredGrid_mod
         implicit none
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
-        character(len_trim(path)+20) FNAME
+        character(:), allocatable :: FNAME
 
         FNAME = trim(path)//boundaryFileName
         print*, 'READ:', FNAME
@@ -482,7 +487,7 @@ module unstructuredGrid_mod
         implicit none
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
-        character(len_trim(path)+20) FNAME
+        character(:), allocatable :: FNAME
 
         FNAME = trim(path)//boundaryFileName
         print*, 'OUTPUT:', FNAME
