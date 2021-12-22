@@ -28,7 +28,8 @@ module dropletMotionSimulation
         call read_and_set_condition(case_dir, num_droplet=num_initialDroplet, initialDistributionFileName=iniDisFName)
         call read_basicSetting
 
-        call set_dropletPlacementInformation(case_dir)
+        call set_dropletPlacementBox(case_dir)
+        call set_dropletRadiusThreshold
 
         timeStep = max(num_restart, 0)                !流れ場の取得の前に必ず時刻セット
 
