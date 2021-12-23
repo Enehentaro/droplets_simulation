@@ -1,5 +1,7 @@
 program dropletCount
-    use dropletMotionSimulation
+    use dropletGroup_m
+    use conditionValue_m
+    ! use dropletEquation_m
     use boxCounter_m
     use caseName_m
     implicit none
@@ -7,7 +9,8 @@ program dropletCount
     character(255) caseName, fname
     character(:), allocatable :: outFName
     integer, allocatable :: id_array(:), boxCountArray(:)
-    type(dropletGroup) dGroup
+    type(dropletGroup) mainDroplet, dGroup
+    type(conditionValue_t) condVal
     type(boxCounter), allocatable :: box_array(:)
 
     type boxResult_t
@@ -24,27 +27,25 @@ program dropletCount
     DO nc = 1, nc_max                         !実行数だけループ（通常1回）
 
         caseName = get_caseName()
+        call condVal%read(trim(caseName))
+    ! call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
 
-        call read_and_set_condition(trim(caseName), num_droplet=num_drop)
-
-        box_array = get_box_array(trim(caseName), num_drop)
+        box_array = get_box_array(trim(caseName), condVal%num_drop)
 
         num_box = size(box_array)
 
         if(allocated(boxCountArray)) deallocate(boxCountArray)
         allocate(boxCountArray(num_box))
 
-        fname = trim(caseName)//'/boxTimeSeries.csv'
+        fname = trim(caseName)//'/BoxTimeSeries.csv'
         open(newunit=n_unit, file=fname, status='replace')
 
-        do n = 0, n_end, outputInterval
+        do n = 0, condVal%stepEnd, condVal%outputInterval
             if(n==0) then
                 fname = trim(caseName)//'/backup/InitialDistribution.bu'
             else
                 write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
             end if
-
-            mainDroplet = read_backup(fname)
 
             do i_box = 1, num_box
                 id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
@@ -56,11 +57,20 @@ program dropletCount
 
         end do
 
+        close(n_unit)
+
         block
             integer i
             real, allocatable :: iniRadDis(:,:), outArray(:,:)
 
-            outFName = trim(caseName)//'/boxInitialRadius.csv'
+            outFName = trim(caseName)//'/BoxInitialRadius.csv'
+            allocate(bResult(num_box))
+            do i_box = 1, num_box
+                id_array = box_array(i_box)%get_FlagID()
+                dGroup%droplet = mainDroplet%droplet(id_array)
+                bResult(i_box)%num_droplet = size(dGroup%droplet)
+                bResult(i_box)%volume = real(dGroup%totalVolume(dim='ml'))
+            end do
 
             if(allocated(bResult)) deallocate(bResult)
             allocate(bResult(num_box))
@@ -76,10 +86,10 @@ program dropletCount
                 outArray(1+i_box, :) = iniRadDis(2, :)
             end do
             open(newunit=n_unit, file=outFName, status='replace')
-            write(n_unit,'(A)') 'radius,B,C,D'
-            do i = 1, size(outArray,dim=2)
-                write(n_unit,'(*(g0:,","))') outArray(:,i)
-            end do
+                write(n_unit,'(A)') 'radius,B,C,D'
+                do i = 1, size(outArray,dim=2)
+                    write(n_unit,'(*(g0:,","))') outArray(:,i)
+                end do
             close(n_unit)
         end block
 
@@ -96,7 +106,7 @@ program dropletCount
         integer n_unit, i
         character(:), allocatable :: csvFName
 
-        csvFName = trim(caseName)//'/boxCount.csv'
+        csvFName = trim(caseName)//'/BoxCount.csv'
         print*, 'output: ', csvFName
 
         open(newunit=n_unit, file=csvFName, status='replace')
@@ -134,7 +144,7 @@ program dropletCount
 
         end do
 
-        call mesh%output(trim(caseName)//'/box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
+        call mesh%output(trim(caseName)//'/Box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
 
     end subroutine
 

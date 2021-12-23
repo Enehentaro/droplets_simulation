@@ -310,6 +310,8 @@ MODULE adjacent_information
 
     subroutine solve_adjacentInformation
 
+        print*, '~ SolvingAdjacency is Required. ~'
+
         call set_GRID_INFO  !要素数等の取得
 
         if(num_cells <= 0) then
