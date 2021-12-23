@@ -395,7 +395,7 @@ module unstructuredGrid_mod
             read(n_unit,*) num_cells
 
             if(num_cells /= size(CELLs)) then
-                print*, 'SIZE MISMATCH :', num_cells, size(CELLs)
+                print*, '**SIZE MISMATCH** :', num_cells, size(CELLs)
                 success = .false.
                 return
             end if

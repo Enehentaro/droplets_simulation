@@ -17,18 +17,20 @@ module dropletEquation_m
     double precision minimumRadiusRatio
     double precision, allocatable :: minimumRadiusMatrix(:,:)
 
-    public set_basical_variables, set_gravity_acceleration, set_dropletEnvironment, dropletEnvironment
+    public set_basicVariables_dropletEquation, set_gravity_acceleration, set_dropletEnvironment, dropletEnvironment
     public evaporatin_eq, solve_motionEquation, radius_afterCoalescence, representativeValue, deltaTime
     public get_minimumRadius, virusDeadline
 
     contains
 
-    subroutine set_basical_variables(delta_t, L_represent, U_represent)
+    subroutine set_basicVariables_dropletEquation(delta_t, L_represent, U_represent)
         double precision, intent(in) :: delta_t, L_represent, U_represent
 
         dt = delta_t
         L = L_represent
         U = U_represent
+
+        print*, 'Delta_Time =', dt
 
         Re = U*L*Rho / Mu
 

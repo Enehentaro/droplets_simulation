@@ -129,7 +129,7 @@ module dropletGroup_m
 
                 open(newunit=n_unit, file=outputDir//'/initialRadiusDistributon.csv', status='replace')
                     do i = 1, size(rad_cnt)
-                        print*,'rad_cnt(', radiusThreshold(1, i), ') =', rad_cnt(i)
+                        print '(4X, A, E10.3, A, I10)', 'rad_cnt(', radiusThreshold(1, i), ' ) =', rad_cnt(i)
                         write(n_unit, '(*(g0:,","))') radiusThreshold(1, i), rad_cnt(i)
                     end do
                 close(n_unit)
@@ -635,13 +635,12 @@ module dropletGroup_m
     end subroutine
 
     function initialRadiusDistribution(self) result(iniRadDis)
-        use simpleFile_reader
         class(dropletGroup) self
         integer i, j, num_threshold
         real, allocatable :: iniRadDis(:,:)
         double precision threshold
 
-        if(.not.allocated(radiusThreshold)) call read_CSV('data/radius_distribution.csv', radiusThreshold)
+        call set_dropletRadiusThreshold
 
         num_threshold = size(radiusThreshold, dim=2)
         allocate(iniRadDis(2,num_threshold))
@@ -650,7 +649,7 @@ module dropletGroup_m
         drop:do i = 1, size(self%droplet)
             radius:do j = 1, num_threshold
                 if(j < num_threshold) then
-                    threshold = (radiusThreshold(1,j) + radiusThreshold(1,j+1))*0.5d0 * 1.d-6
+                    threshold = (radiusThreshold(1,j) + radiusThreshold(1,j+1))*0.5d0
                     if(self%droplet(i)%initialRadius < threshold) then
                         iniRadDis(2,j) = iniRadDis(2,j) + 1.0
                         exit radius

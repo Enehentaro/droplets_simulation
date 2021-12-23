@@ -1,11 +1,14 @@
 program dropletCount
-    use dropletMotionSimulation
+    use dropletGroup_m
+    use conditionValue_m
+    ! use dropletEquation_m
     use boxCounter_m
     implicit none
-    integer n, num_drop, i_box, num_box
+    integer n, i_box, num_box
     character(255) caseName, fname
     integer, allocatable :: id_array(:)
-    type(dropletGroup) dGroup
+    type(dropletGroup) mainDroplet, dGroup
+    type(conditionValue_t) condVal
     type(boxCounter), allocatable :: box_array(:)
 
     type boxResult_t
@@ -18,13 +21,14 @@ program dropletCount
     print*, 'caseName = ?'
     read(5, *) caseName
 
-    call read_and_set_condition(trim(caseName), num_droplet=num_drop)
+    call condVal%read(trim(caseName))
+    ! call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
 
-    box_array = get_box_array(trim(caseName), num_drop)
+    box_array = get_box_array(trim(caseName), condVal%num_drop)
 
     num_box = size(box_array)
 
-    do n = 0, n_end, outputInterval
+    do n = 0, condVal%stepEnd, condVal%outputInterval
         if(n==0) then
             fname = trim(caseName)//'/backup/InitialDistribution.bu'
         else
@@ -35,14 +39,14 @@ program dropletCount
 
         do i_box = 1, num_box
             id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
-            call box_array(i_box)%add_dropletFlag(id_array)
+            call box_array(i_box)%add_Flag(id_array)
         end do
 
     end do
 
     allocate(bResult(num_box))
     do i_box = 1, num_box
-        id_array = box_array(i_box)%get_id_array()
+        id_array = box_array(i_box)%get_FlagID()
         dGroup%droplet = mainDroplet%droplet(id_array)
         bResult(i_box)%num_droplet = size(dGroup%droplet)
         bResult(i_box)%volume = real(dGroup%totalVolume(dim='ml'))

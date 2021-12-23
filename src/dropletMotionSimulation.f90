@@ -22,31 +22,41 @@ module dropletMotionSimulation
     contains
 
     subroutine firstSet_mainDroplet
-        integer num_initialDroplet
-        character(:), allocatable :: iniDisFName
+        use dropletEquation_m
+        use conditionValue_m
+        type(conditionValue_t) condVal
 
-        call read_and_set_condition(case_dir, num_droplet=num_initialDroplet, initialDistributionFileName=iniDisFName)
+        call condVal%read(case_dir)
+        num_restart = condVal%restart
+        n_end = condVal%stepEnd
+        outputInterval = condVal%outputInterval
+        print*, 'n_end =',n_end
+        print*, 'output interval =', outputInterval
+        call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
+        call set_gravity_acceleration(condVal%direction_g)
+        call set_dropletEnvironment(condVal%T, condVal%RH)
+
         call read_basicSetting
 
         call set_dropletPlacementBox(case_dir)
         call set_dropletRadiusThreshold
 
-        timeStep = max(num_restart, 0)                !流れ場の取得の前に必ず時刻セット
+        n_start = max(num_restart, 0)
+        timeStep = n_start              !流れ場の取得の前に必ず時刻セット
 
-        call create_FlowField                !流れ場の取得
+        call create_FlowField(TimeOnSimu(), condVal%PATH2FlowFile, condVal%DT_FLOW, condVal%OFFSET, condVal%INTERVAL_FLOW, &
+            condVal%LoopHead, condVal%LoopTail)                !流れ場の取得
 
         if(num_restart <= 0) then
 
             if(num_restart==0) then
                 call random_set  !実行時刻に応じた乱数シード設定
-                mainDroplet = generate_dropletGroup(num_initialDroplet, outputDir=case_dir)
+                mainDroplet = generate_dropletGroup(condVal%num_drop, outputDir=case_dir)
 
             else if(num_restart==-1) then
-                mainDroplet = read_InitialDistribution(case_dir//'/'//iniDisFName)
+                mainDroplet = read_InitialDistribution(case_dir//'/'//condVal%initialDistributionFName)
 
             end if
-
-            n_start = 0
 
         else
 
@@ -58,71 +68,11 @@ module dropletMotionSimulation
                 mainDroplet = read_backup(trim(fname))   !ここで自動割り付け
             end block
 
-            n_start = num_restart
-
         end if
 
         print*, 'num_droplets =', size(mainDroplet%droplet)
         last_coalescenceStep = 0
         last_numFloating = 0
-
-    end subroutine
-
-    subroutine read_and_set_condition(dir, num_droplet, initialDistributionFileName)
-        use dropletEquation_m
-        use filename_mod
-        character(*), intent(in) :: dir
-        double precision delta_t, L_represent, U_represent
-        double precision :: direction_g(3)
-        character(255) path2FlowFile, initialDistributionFName
-        character(:), allocatable, optional, intent(out) :: initialDistributionFileName
-        integer n_unit, num_droplets
-        integer, optional, intent(out) :: num_droplet
-        real temperature, relativeHumidity
-        namelist /dropletSetting/ num_restart, n_end, delta_t, outputInterval, temperature, relativeHumidity,&
-            num_droplets, direction_g, initialDistributionFName
-        namelist /flowFieldSetting/ path2FlowFile, DT_FLOW, OFFSET, INTERVAL_FLOW, LoopS, LoopF, L_represent, U_represent
-
-        initialDistributionFName = IniDistributionFName
-
-        OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
-            read(n_unit, nml=dropletSetting)
-            read(n_unit, nml=flowFieldSetting)
-        CLOSE(n_unit)
-
-        if(present(num_droplet)) num_droplet = num_droplets
-        if(present(initialDistributionFileName)) initialDistributionFileName = trim(initialDistributionFName)
-
-        if(num_restart > 0) then
-            print*, 'Restart from', num_restart
-        else if(num_restart == -1) then
-            print*, 'InitialDistributon is Specified.'
-        end if
-
-        print*, 'n_end =',n_end
-        print*, 'output interval =', outputInterval
-
-        if(INTERVAL_FLOW > 0) then
-            print*, 'Interval of AirFlow =', INTERVAL_FLOW
-        else
-            print*, 'AirFlow is Steady'
-        end if
-
-        if(loopf - loops > 0) then
-            print*, 'Loop is from', loops, 'to', loopf
-        elseif(loopf - loops == 0) then 
-            print*, 'After', loopf, ', Checkout SteadyFlow'
-        end if
-        print*, 'Delta_Time =', delta_t
-        print*, 'Delta_Time inFLOW =', DT_FLOW
-
-        call set_FlowFileNameFormat(path2FlowFile)
-
-        call set_basical_variables(delta_t, L_represent, U_represent)
-
-        call set_gravity_acceleration(direction_g)
-
-        call set_dropletEnvironment(temperature, relativeHumidity)
 
     end subroutine
 
@@ -144,22 +94,6 @@ module dropletMotionSimulation
 
         if(isUpdateTiming()) call update_FlowField   !流れ場の更新
 
-    end subroutine
-
-    subroutine create_FlowField
-
-        if(INTERVAL_FLOW <= 0) then
-            call read_steadyFlowData
-        else
-            call set_STEPinFLOW(TimeOnSimu())
-            call read_unsteadyFlowData
-
-        end if
-
-        call set_MinMaxCDN
-
-        call preprocess_onFlowField         !流れ場の前処理
-            
     end subroutine
 
     subroutine update_FlowField
