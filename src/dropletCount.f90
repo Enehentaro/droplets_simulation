@@ -58,23 +58,27 @@ program dropletCount
 
         block
             integer i
-            real, allocatable :: iniRadDis(:,:)
+            real, allocatable :: iniRadDis(:,:), outArray(:,:)
 
             outFName = trim(caseName)//'/boxInitialRadius.csv'
-            open(newunit=n_unit, file=outFName, status='replace')
 
             if(allocated(bResult)) deallocate(bResult)
             allocate(bResult(num_box))
             do i_box = 1, num_box
-                write(n_unit,'(*(g0:,","))') i_box
+
                 id_array = box_array(i_box)%get_id_array()
                 dGroup%droplet = mainDroplet%droplet(id_array)
                 bResult(i_box)%num_droplet = size(dGroup%droplet)
                 bResult(i_box)%volume = real(dGroup%totalVolume(dim='ml'))
                 iniRadDis = dGroup%initialRadiusDistribution()
-                do i = 1, size(iniRadDis, dim=2)
-                    write(n_unit,'(*(g0:,","))') iniRadDis(:,i)
-                end do
+                if(.not.allocated(outArray)) allocate(outArray(1+num_box, size(iniRadDis, dim=2)))
+                outArray(1, :) = iniRadDis(1, :)
+                outArray(1+i_box, :) = iniRadDis(2, :)
+            end do
+            open(newunit=n_unit, file=outFName, status='replace')
+            write(n_unit,'(A)') 'radius,B,C,D'
+            do i = 1, size(outArray,dim=2)
+                write(n_unit,'(*(g0:,","))') outArray(:,i)
             end do
             close(n_unit)
         end block
