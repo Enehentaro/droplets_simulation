@@ -83,7 +83,7 @@ module flow_field
 
             call boundary_setting(first=.true.)
 
-            call output_STL(PATH_FlowDIR)
+            call output_STL(PATH_FlowDIR//HEAD_AIR//'.stl')
 
         ! else
         !     call read_faceShape(PATH_FlowDIR)

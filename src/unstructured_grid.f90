@@ -710,12 +710,10 @@ module unstructuredGrid_mod
   
     end subroutine
 
-    subroutine output_STL(dir)
-        character(*), intent(in) :: dir
-        character(:), allocatable :: fname
+    subroutine output_STL(fname)
+        character(*), intent(in) :: fname
         integer i, n_unit, JB
 
-        fname = dir//'/test.stl'
         print*, 'output_STL : ', fname
 
         open(newunit=n_unit, file=fname, status='replace')
