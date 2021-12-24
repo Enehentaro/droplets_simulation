@@ -42,6 +42,7 @@ module flow_field
 
         else
             if(index(FNAME_FMT, ',') > 0) then  !カンマが存在する場合
+                i_ = index(FNAME_FMT, ',') !カンマの位置取得
                 call check_FILE_TYPE(FNAME_FMT(:i_-1), PATH_FlowDIR//FNAME_FMT(i_+1:))
                 FNAME_FMT = FNAME_FMT(1:i_-1)
             else
@@ -81,6 +82,8 @@ module flow_field
             end if
 
             call boundary_setting(first=.true.)
+
+            call output_STL(PATH_FlowDIR)
 
         ! else
         !     call read_faceShape(PATH_FlowDIR)

@@ -678,7 +678,7 @@ module dropletGroup_m
         type(dropletGroup) dGroup_read
         integer i, n_unit, num_drop
     
-        print*, 'READ:', trim(fname)
+        print*, 'READ : ', trim(fname)
         open(newunit=n_unit, form='unformatted', file=fname, status='old')
             read(n_unit) num_drop
 
@@ -699,7 +699,7 @@ module dropletGroup_m
         integer vn, n_unit, num_drop
         character(10) str
     
-        print*, 'READ:', fname
+        print*, 'READ : ', fname
         open(newunit=n_unit, file=fname, status='old')
             read(n_unit,'()')
             read(n_unit,'()')
