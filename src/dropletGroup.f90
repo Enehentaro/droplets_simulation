@@ -409,9 +409,9 @@ module dropletGroup_m
         do i = 1, size(self%droplet)
             position(:) = self%droplet(i)%position(:)
 
-            if      (((min_cdn(1) <= position(1)) .and. (position(1) <= max_cdn(1))) &
+            if(      ((min_cdn(1) <= position(1)) .and. (position(1) <= max_cdn(1))) &
                 .and.((min_cdn(2) <= position(2)) .and. (position(2) <= max_cdn(2))) &
-                .and.((min_cdn(3) <= position(3)) .and. (position(3) <= max_cdn(3)))) then
+                .and.((min_cdn(3) <= position(3)) .and. (position(3) <= max_cdn(3)))    ) then
 
                 cnt = cnt + 1
                 id_array_(cnt) = i
@@ -502,19 +502,22 @@ module dropletGroup_m
     subroutine coalescence(droplet1, droplet2, baseID)
         type(virusDroplet_t), intent(inout) :: droplet1, droplet2
         integer, intent(in) :: baseID
-        double precision volume1, volume2, velocity_c(3)
+        double precision r3_1, r3_2, position_c(3), velocity_c(3)
 
-        volume1 = droplet1%radius**3
-        volume2 = droplet2%radius**3
-        velocity_c(:) = (volume1*droplet1%velocity(:) + volume2*droplet2%velocity(:)) / (volume1 + volume2)
+        r3_1 = droplet1%radius**3
+        r3_2 = droplet2%radius**3
+        position_c(:) = (r3_1*droplet1%position(:) + r3_2*droplet2%position(:)) / (r3_1 + r3_2)
+        velocity_c(:) = (r3_1*droplet1%velocity(:) + r3_2*droplet2%velocity(:)) / (r3_1 + r3_2)
         
-        droplet1%radius = radius_afterCoalescence(droplet1%radius, droplet2%radius)
+        droplet1%radius = (r3_1 + r3_2)**(1.d0/3.d0)
+        droplet1%position(:) = position_c(:)
         droplet1%velocity(:) = velocity_c(:)
-
-        droplet1%radius_min = radius_afterCoalescence(droplet1%radius_min, droplet2%radius_min)
+        droplet1%radius_min = (droplet1%radius_min**3 + droplet2%radius_min**3)**(1.d0/3.d0)
         ! droplet1%initialRadius = radius_afterCoalescence(droplet1%initialRadius, droplet2%initialRadius)
 
         droplet2%radius = 0.d0
+        droplet2%position(:) = position_c(:)
+        droplet2%velocity(:) = velocity_c(:)
         droplet2%status = -2
         droplet2%coalesID = baseID
         
