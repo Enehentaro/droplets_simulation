@@ -398,27 +398,49 @@ module dropletGroup_m
 
     end function
 
-    function dropletIDinBox(self, min_cdn, max_cdn) result(ID_array)
+    function dropletIDinBox(self, min_cdn, max_cdn, status) result(ID_array)
         class(dropletGroup) self
         double precision, intent(in) :: min_cdn(3), max_cdn(3)
+        integer, intent(in), optional :: status
         double precision position(3)
         integer, allocatable :: ID_array(:)
         integer i, id_array_(size(self%droplet)), cnt
 
         cnt = 0
-        do i = 1, size(self%droplet)
-            position(:) = self%droplet(i)%position(:)
+        if(present(status)) then
+            do i = 1, size(self%droplet)
+                if(self%droplet(i)%status /= status) cycle
 
-            if(      ((min_cdn(1) <= position(1)) .and. (position(1) <= max_cdn(1))) &
-                .and.((min_cdn(2) <= position(2)) .and. (position(2) <= max_cdn(2))) &
-                .and.((min_cdn(3) <= position(3)) .and. (position(3) <= max_cdn(3)))    ) then
+                position(:) = self%droplet(i)%position(:)
 
-                cnt = cnt + 1
-                id_array_(cnt) = i
+                if(      ((min_cdn(1) <= position(1)) .and. (position(1) <= max_cdn(1))) &
+                    .and.((min_cdn(2) <= position(2)) .and. (position(2) <= max_cdn(2))) &
+                    .and.((min_cdn(3) <= position(3)) .and. (position(3) <= max_cdn(3)))    ) then
 
-            end if
+                    cnt = cnt + 1
+                    id_array_(cnt) = i
 
-        end do
+                end if
+
+            end do
+
+
+        else
+            do i = 1, size(self%droplet)
+                position(:) = self%droplet(i)%position(:)
+
+                if(      ((min_cdn(1) <= position(1)) .and. (position(1) <= max_cdn(1))) &
+                    .and.((min_cdn(2) <= position(2)) .and. (position(2) <= max_cdn(2))) &
+                    .and.((min_cdn(3) <= position(3)) .and. (position(3) <= max_cdn(3)))    ) then
+
+                    cnt = cnt + 1
+                    id_array_(cnt) = i
+
+                end if
+
+            end do
+
+        end if
 
         ID_array = id_array_(:cnt)
         
@@ -460,11 +482,11 @@ module dropletGroup_m
 
     subroutine coalescence_check(self, stat)
         class(dropletGroup) self
-        integer, intent(out) :: stat
-        integer d1, d2, num_droplets
+        integer, intent(out), optional :: stat
+        integer d1, d2, num_droplets, num_coales
         double precision :: distance, r1, r2
 
-        stat = 0
+        num_coales = 0
 
         num_droplets = size(self%droplet)
 
@@ -488,7 +510,7 @@ module dropletGroup_m
                     else
                         call coalescence(self%droplet(d2), self%droplet(d1), d2)
                     end if
-                    stat = stat + 1
+                    num_coales = num_coales + 1
 
                 end if
 
@@ -496,6 +518,8 @@ module dropletGroup_m
 
         end do drop1
         !$OMP end parallel do
+
+        if(present(stat)) stat = num_coales
 
     end subroutine coalescence_check
 

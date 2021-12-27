@@ -15,7 +15,7 @@ module dropletMotionSimulation
 
     logical, private :: startFlag = .false., adhesionSwitch = .true.
 
-    integer, private :: last_coalescenceStep, last_numFloating, coalescenceLimit=100
+    integer, private :: last_coalescenceStep, last_numFloating, coalescenceLimit=100, num_divide=4
 
     type(dropletGroup) mainDroplet
 
@@ -78,7 +78,7 @@ module dropletMotionSimulation
 
     subroutine read_basicSetting
         integer n_unit
-        namelist /basicSetting/ coalescenceLimit, adhesionSwitch
+        namelist /basicSetting/ coalescenceLimit, adhesionSwitch, num_divide
 
         open(newunit=n_unit, file='option/basicSetting.nml', status='old')
             read(n_unit, nml=basicSetting)
@@ -115,7 +115,7 @@ module dropletMotionSimulation
 
         call mainDroplet%survival_check()           !生存率に関する処理
 
-        call coalescence_process        !飛沫間の合体判定
+        call divideAreacoalescence_process        !飛沫間の合体判定
 
         call mainDroplet%calculation()     !飛沫の運動計算
 
@@ -152,6 +152,56 @@ module dropletMotionSimulation
         call mainDroplet%coalescence_check(stat = num_coalescence)
 
         if(num_coalescence >= 1) last_coalescenceStep = timeStep
+
+    end subroutine
+
+    subroutine divideAreaCoalescence_process
+        ! integer, parameter :: num_divide = 4
+        type(dropletGroup) dGroup
+        integer i, j, k, id, m
+        integer, allocatable :: ID_array(:)
+        double precision AreaMin(3), AreaMax(3), width(3), delta(3), min_cdn(3), max_cdn(3)
+        double precision, parameter :: deltaRatio = 1.d-2
+
+        AreaMin(:) = 1.d9
+        AreaMax(:) = -1.d9
+        do m = 1, size(mainDroplet%droplet)
+            if(mainDroplet%droplet(m)%status==0) then
+                do i = 1, 3
+                    AreaMin(i) = min(mainDroplet%droplet(m)%position(i), AreaMin(i))
+                    AreaMax(i) = max(mainDroplet%droplet(m)%position(i), AreaMax(i))
+                end do
+            end if
+        end do
+        ! AreaMin(:) = AreaMin(:) - 1.d-9 ;print*, 'AreaMin:',AreaMin
+        ! AreaMax(:) = AreaMax(:) + 1.d-9 ;print*, 'AreaMax:',AreaMax
+        width(:) = (AreaMax(:) - AreaMin(:)) / dble(num_divide)   !;print*, 'width:',width
+        delta(:) = (AreaMax(:) - AreaMin(:))*deltaRatio
+
+        do k = 1, num_divide
+            min_cdn(3) = AreaMin(3) + width(3)*dble(k-1) - delta(3)
+            max_cdn(3) = AreaMin(3) + width(3)*dble(k) + delta(3)
+            do j = 1, num_divide
+                min_cdn(2) = AreaMin(2) + width(2)*dble(j-1) - delta(2)
+                max_cdn(2) = AreaMin(2) + width(2)*dble(j) + delta(2)
+                do i = 1, num_divide
+                    min_cdn(1) = AreaMin(1) + width(1)*dble(i-1) - delta(1)
+                    max_cdn(1) = AreaMin(1) + width(1)*dble(i) + delta(1)
+
+                    ID_array = mainDroplet%IDinBox(min_cdn, max_cdn, status=0)
+                    ! print*, 'divide_stat :', size(ID_array), min_cdn, max_cdn
+                    dGroup%droplet = mainDroplet%droplet(ID_array)
+                    call dGroup%coalescence_check()
+
+                    do m = 1, size(ID_array)
+                        id = ID_array(m)
+                        mainDroplet%droplet(id) = dGroup%droplet(m)
+                        if(dGroup%droplet(m)%coalesID > 0) mainDroplet%droplet(id)%coalesID = ID_array(dGroup%droplet(m)%coalesID)
+                    end do
+
+                end do
+            end do
+        end do
 
     end subroutine
 
