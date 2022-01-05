@@ -382,8 +382,9 @@ module unstructuredGrid_mod
         implicit none
         character(*), intent(in) :: path
         logical, intent(out) :: success
-        integer II,NA,JB, n_unit, num_cells, num_adj, num_BF, NCMAX
+        integer II,NA, n_unit, num_cells, num_adj, num_BF, NCMAX
         character(:), allocatable :: FNAME
+        character(255) str
                 
         FNAME = trim(path)//adjacencyFileName
         inquire(file = FNAME, exist = success)
@@ -401,25 +402,20 @@ module unstructuredGrid_mod
             end if
 
             read(n_unit,*) NCMAX
-            ! allocate(NEXT_CELL(NCMAX,num_cells),NUM_NC(num_cells))
+
             DO II = 1, num_cells
-                read(n_unit,'(I5)',advance='no') num_adj
+                read(n_unit,'(A)') str
+                read(str, *) num_adj
                 allocate(CELLs(II)%adjacentCellID(num_adj))
-                DO NA = 1, num_adj
-                    read(n_unit,'(I12)',advance='no') CELLs(II)%adjacentCellID(NA)
-                END DO
-                read(n_unit,'()')
+                read(str, *) NA, CELLs(II)%adjacentCellID(:)
             END DO
 
             DO II = 1, num_cells
-                read(n_unit, fmt='(I4)', advance='no') num_BF  ! Number of Boundary
+                read(n_unit,'(A)') str
+                read(str, *) num_BF
                 allocate(CELLs(II)%boundFaceID(num_BF))
-                do JB = 1, num_BF
-                    read(n_unit, fmt='(I10)', advance='no') CELLs(II)%boundFaceID(JB)
-                end do
-                read(n_unit,'()')  !改行
+                read(str, *) NA, CELLs(II)%boundFaceID(:)
             END DO
-
 
         close(n_unit)
 
@@ -429,7 +425,7 @@ module unstructuredGrid_mod
         use filename_mod
         implicit none
         character(*), intent(in) :: path
-        integer II,NA,JB, n_unit, num_cells, NCMAX
+        integer II, n_unit, num_cells, NCMAX
         character(:), allocatable :: FNAME
                 
         FNAME = trim(path)//adjacencyFileName
@@ -444,19 +440,11 @@ module unstructuredGrid_mod
             write(n_unit,*) NCMAX
 
             DO II = 1, num_cells
-                write(n_unit,'(I5)',advance='no') size(CELLs(II)%adjacentCellID)
-                DO NA = 1, size(CELLs(II)%adjacentCellID)
-                    write(n_unit,'(I12)',advance='no') CELLs(II)%adjacentCellID(NA)
-                END DO
-                write(n_unit,'()')
+                write(n_unit,'(*(i0:,X))') size(CELLs(II)%adjacentCellID), CELLs(II)%adjacentCellID(:)
             END DO
 
             DO II = 1, num_cells
-                write(n_unit, fmt='(I4)', advance='no') size(CELLs(II)%boundFaceID)  ! Number of Boundary
-                do JB = 1, size(CELLs(II)%boundFaceID)
-                    write(n_unit, fmt='(I10)', advance='no') CELLs(II)%boundFaceID(JB)
-                end do
-                write(n_unit,'()')  !改行
+                write(n_unit,'(*(i0:,X))') size(CELLs(II)%boundFaceID), CELLs(II)%boundFaceID(:)
             END DO
 
         close(n_unit)
@@ -495,34 +483,11 @@ module unstructuredGrid_mod
         open(newunit=n_unit, FILE=FNAME , STATUS='replace')
             write(n_unit,*) JBMX
             do JB = 1, JBMX
-                write(n_unit,*) BoundFACEs(JB)%nodeID(:)
+                write(n_unit,'(*(i0:,X))') BoundFACEs(JB)%nodeID(:)
             end do
         close(n_unit)
         
     end subroutine
-
-    ! subroutine set_nodeID_onBoundFace(nodeID_onBoundFace)
-    !     integer, intent(in) :: nodeID_onBoundFace(:,:)
-    !     integer i, num_BF
-
-    !     num_BF = size(nodeID_onBoundFace, dim=2)
-    !     allocate(BoundFACEs(num_BF))
-
-    !     do i = 1, num_BF
-    !         BoundFACEs(i)%nodeID = nodeID_onBoundFace(:,i)
-    !     end do
-    ! end subroutine set_nodeID_onBoundFace
-
-    ! subroutine set_adjacency(num_adjacent, adjacentCellID)
-    !     integer, intent(in) :: num_adjacent(:), adjacentCellID(:,:)
-    !     integer i, num_cell
-
-    !     num_cell = size(CELLs)
-    !     do i = 1, num_cell
-    !         CELLs(i)%adjacentCellID = adjacentCellID(1:num_adjacent(i), i)
-    !     end do
-
-    ! end subroutine set_adjacency
 
     integer function nearest_cell(X) !最も近いセルNCNの探索
         real, intent(in) :: X(3)
@@ -684,29 +649,8 @@ module unstructuredGrid_mod
                 ID = CELLs(II)%nodeID(n)
                 CELLs(II)%flowVelocity(:) = CELLs(II)%flowVelocity(:) + pointVector(:,ID)
             end do
-            CELLs(II)%flowVelocity(:) = CELLs(II)%flowVelocity(:) / num_node
+            CELLs(II)%flowVelocity(:) = CELLs(II)%flowVelocity(:) / real(num_node)
         END DO
-  
-        ! do II = 1, size(celldata, dim=2)   !点データをセルデータに変換
-              
-        !     IF (celltype(II)==0) THEN
-  
-        !         celldata(:,II) = 0.25d0*(pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) &
-        !             + pointdata(:, cell2node(3,II)) + pointdata(:, cell2node(4,II)))
-  
-        !     ELSE IF (celltype(II)==1) THEN
-  
-        !         celldata(:,II) = (pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) + pointdata(:, cell2node(3,II)) &
-        !             + pointdata(:, cell2node(4,II)) + pointdata(:, cell2node(5,II)) + pointdata(:, cell2node(6,II))) / 6.0d0
-  
-        !     ELSE IF (celltype(II)==2) THEN
-  
-        !         celldata(:,II) = 0.20d0*(pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) &
-        !             + pointdata(:, cell2node(3,II)) + pointdata(:, cell2node(4,II)) + pointdata(:, cell2node(5,II)))
-  
-        !     END IF
-  
-        ! end do
   
     end subroutine
 
@@ -733,6 +677,39 @@ module unstructuredGrid_mod
 
             write(n_unit, '("endsolid test")')
         close(n_unit)
+
+    end subroutine
+
+    subroutine solve_adacencyOnUnstructuredGrid
+        use adjacencySolver_m
+        integer i, j, num_adjacent, num_boundFace
+        integer, parameter :: max_vertex=6, max_adjacent=4, max_boundFace=4
+        integer cellVertices(max_vertex, size(CELLs))
+        integer adjacentCellArray(max_adjacent, size(CELLs))
+        integer cellBoundFaces(max_boundFace, size(CELLs))
+        integer, allocatable :: boundFaceVertices(:,:)
+
+        cellVertices = 0
+        do i = 1, size(CELLs)
+            cellVertices(1:size(CELLs(i)%nodeID(:)), i) = CELLs(i)%nodeID(:)
+        end do
+
+        cellBoundFaces = 0
+        adjacentCellArray = 0
+        call solve_BoundaryAndAdjacency(cellVertices, cellBoundFaces, boundFaceVertices, adjacentCellArray)
+
+        allocate(BoundFACEs(size(boundFaceVertices, dim=2)))
+        do j = 1, size(BoundFACEs)
+            BoundFACEs(j)%nodeID = boundFaceVertices(:,j)
+        end do
+
+        do i = 1, size(CELLs)
+            num_boundFace = max_boundFace - count(cellBoundFaces(:,i)==0)
+            CELLs(i)%boundFaceID = cellBoundFaces(1:num_boundFace, i)
+
+            num_adjacent = max_adjacent - count(adjacentCellArray(:,i)==0)
+            CELLs(i)%adjacentCellID = adjacentCellArray(1:num_adjacent, i)
+        end do
 
     end subroutine
 
