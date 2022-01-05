@@ -389,13 +389,13 @@ module unstructuredGrid_mod
         inquire(file = FNAME, exist = success)
         if(.not.success) return
 
-        print*, 'READ:', FNAME
+        print*, 'READ : ', FNAME
 
         open(newunit=n_unit, FILE=FNAME, STATUS='OLD')
             read(n_unit,*) num_cells
 
             if(num_cells /= size(CELLs)) then
-                print*, 'SIZE MISMATCH :', num_cells, size(CELLs)
+                print*, '**SIZE MISMATCH** :', num_cells, size(CELLs)
                 success = .false.
                 return
             end if
@@ -471,7 +471,7 @@ module unstructuredGrid_mod
         character(:), allocatable :: FNAME
 
         FNAME = trim(path)//boundaryFileName
-        print*, 'READ:', FNAME
+        print*, 'READ : ', FNAME
         open(newunit=n_unit, FILE=FNAME , STATUS='old')
             read(n_unit,*) JBMX
             allocate(BoundFACEs(JBMX))
@@ -708,6 +708,32 @@ module unstructuredGrid_mod
   
         ! end do
   
+    end subroutine
+
+    subroutine output_STL(fname)
+        character(*), intent(in) :: fname
+        integer i, n_unit, JB
+
+        print*, 'output_STL : ', fname
+
+        open(newunit=n_unit, file=fname, status='replace')
+            write(n_unit, '("solid test")')
+
+            do JB = 1, size(BoundFACEs)
+                write(n_unit, '(" facet normal", 3(X,F7.4))') BoundFACEs(JB)%normalVector(:)
+                write(n_unit, '(" outer loop")')
+
+                do i = 1, 3
+                    write(n_unit, '("  vertex", 3(X,E11.4))') NODEs(BoundFACEs(JB)%nodeID(i))%coordinate(:)
+                end do
+
+                write(n_unit, '(" endloop")')
+                write(n_unit, '(" endfacet")')
+            end do
+
+            write(n_unit, '("endsolid test")')
+        close(n_unit)
+
     end subroutine
 
     integer function get_mesh_info(name)

@@ -116,7 +116,7 @@ module simpleFile_reader
             print *, '#Records =', num_record
 
             do i = 1, num_record
-                read (Num_unit, *) array(i)
+                read (Num_unit, '(A)') array(i)
             end do
 
         close (Num_unit)

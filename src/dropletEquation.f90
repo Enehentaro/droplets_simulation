@@ -17,18 +17,20 @@ module dropletEquation_m
     double precision minimumRadiusRatio
     double precision, allocatable :: minimumRadiusMatrix(:,:)
 
-    public set_basical_variables, set_gravity_acceleration, set_dropletEnvironment, dropletEnvironment
-    public evaporatin_eq, solve_motionEquation, radius_afterCoalescence, representativeValue, deltaTime
+    public set_basicVariables_dropletEquation, set_gravity_acceleration, set_dropletEnvironment, dropletEnvironment
+    public evaporatin_eq, solve_motionEquation, representativeValue, deltaTime
     public get_minimumRadius, virusDeadline
 
     contains
 
-    subroutine set_basical_variables(delta_t, L_represent, U_represent)
+    subroutine set_basicVariables_dropletEquation(delta_t, L_represent, U_represent)
         double precision, intent(in) :: delta_t, L_represent, U_represent
 
         dt = delta_t
         L = L_represent
         U = U_represent
+
+        print*, 'Delta_Time =', dt
 
         Re = U*L*Rho / Mu
 
@@ -162,15 +164,19 @@ module dropletEquation_m
         double precision, intent(in) :: vel_d(3), vel_a(3), radius_d
         double precision speed_r, Re_d, CD, C, vel_d_next(3)
 
+        if(radius_d <= 0.d0) then
+            print*, '**zeroRadius ERROR**', radius_d
+            stop
+        end if
+
         speed_r = norm2(vel_a(:) - vel_d(:))    !相対速度の大きさ
         Re_d = (speed_r * 2.0d0*radius_d) * Re
 
         CD = DragCoefficient(Re_d) !抗力係数
 
-        C = (3.0d0*Cd*gumma*speed_r)/(8.0d0*radius_d)
+        C = (3.0d0*CD*gumma*speed_r)/(8.0d0*radius_d)
 
-        vel_d_next(:) = ( vel_d(:) + ( G(:) + C*vel_a(:) )* dt ) &
-                            / ( 1.0d0 + C*dt )
+        vel_d_next(:) = ( vel_d(:) + ( G(:) + C*vel_a(:) )* dt ) / ( 1.0d0 + C*dt )
 
     end function
 
@@ -218,13 +224,6 @@ module dropletEquation_m
         virusDeadline = - log(deathParameter) / alpha
         virusDeadline = virusDeadline * U/L !無次元化
 
-    end function
-
-    double precision function radius_afterCoalescence(r1, r2)
-        double precision r1, r2
-
-        radius_afterCoalescence = (r1**3 + r2**3)**(1.d0/3.d0)
-        
     end function
 
     double precision function representativeValue(name)

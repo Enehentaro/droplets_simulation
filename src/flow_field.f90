@@ -4,7 +4,7 @@ module flow_field
     implicit none
 
     integer INTERVAL_FLOW                           !気流データ出力間隔
-    integer LoopS, LoopF, OFFSET
+    integer LoopHead, LoopTail, OFFSET
     double precision DT_FLOW
     integer, private :: STEPinFLOW, NextUpdate
 
@@ -23,37 +23,26 @@ module flow_field
 
     contains
 
-    subroutine set_FlowFileNameFormat(path2FlowFile)
-        use path_operator_m
-        character(*), intent(in) :: path2FlowFile
-
-        call set_dir_from_path(path2FlowFile, PATH_FlowDIR, FNAME_FMT)
-
-        call check_FILE_GRID    !気流ファイルのタイプをチェック
-    
-    end subroutine
-
     subroutine check_FILE_GRID
-        integer i, i_
+        integer i_integerPart, i_
 
         unstructuredGrid = .true.
 
-        i = index(FNAME_FMT, '0')
-        i_ = index(FNAME_FMT, '_', back=.true.)
-        if(i_ > i) i = i_ + 1
-        HEAD_AIR = FNAME_FMT(: i-1)             !ファイル名の接頭文字(最初のゼロの手前まで)
-        FNAME_DIGITS = index(FNAME_FMT, '.') - i   !ファイル名の整数部桁数(最初のゼロの位置からドットまでの文字数)
+        i_integerPart = index(FNAME_FMT, '0')   !ひとまず最初のゼロの位置を整数部位置とする
+        i_ = index(FNAME_FMT, '_', back=.true.)  !アンダーバーの位置取得
+        if(i_ > i_integerPart) i_integerPart = i_ + 1   !アンダーバーの位置がゼロの位置より後ろの場合、アンダーバー以降を整数部位置とする
+        HEAD_AIR = FNAME_FMT(: i_integerPart - 1)             !ファイル名の接頭部(整数部位置の手前まで)
+        FNAME_DIGITS = index(FNAME_FMT, '.') - i_integerPart   !ファイル名の整数部桁数(整数部位置からドットまでの文字数)
 
-        i = len_trim(FNAME_FMT)
-        if(FNAME_FMT(i-1 : i) == '.f') then
+        if(FNAME_FMT(len(FNAME_FMT)-1 :) == '.f') then
             unstructuredGrid = .false.
             print*, 'FILE_GRID : [CUBE] ', trim(FNAME_FMT)
             print*, 'DO NOT USE CUBEGRID'
             stop
 
         else
-            i_ = index(FNAME_FMT, ',')
-            if(i_ > 0) then
+            if(index(FNAME_FMT, ',') > 0) then  !カンマが存在する場合
+                i_ = index(FNAME_FMT, ',') !カンマの位置取得
                 call check_FILE_TYPE(FNAME_FMT(:i_-1), PATH_FlowDIR//FNAME_FMT(i_+1:))
                 FNAME_FMT = FNAME_FMT(1:i_-1)
             else
@@ -94,6 +83,8 @@ module flow_field
 
             call boundary_setting(first=.true.)
 
+            call output_STL(PATH_FlowDIR//HEAD_AIR//'.stl')
+
         ! else
         !     call read_faceShape(PATH_FlowDIR)
         !     call set_faceShape
@@ -103,6 +94,48 @@ module flow_field
         num_refCellSearch = 0
 
     end subroutine preprocess_onFlowField
+
+    subroutine create_FlowField(time, PATH2FlowFile, DeltaT_FLOW, timeOFFSET, outputINTERVAL_FLOW, flowLoopHead, flowLoopTail)
+        use path_operator_m
+        double precision, intent(in) :: time, DeltaT_FLOW
+        integer, intent(in) :: timeOFFSET, outputINTERVAL_FLOW, flowLoopHead, flowLoopTail
+        character(*), intent(in) :: PATH2FlowFile
+
+        call set_dir_from_path(PATH2FlowFile, PATH_FlowDIR, FNAME_FMT)
+        call check_FILE_GRID    !気流ファイルのタイプをチェック
+
+        INTERVAL_FLOW = outputINTERVAL_FLOW
+
+        if(INTERVAL_FLOW <= 0) then
+            print*, 'AirFlow is Steady'
+            call read_steadyFlowData
+        else
+            print*, 'Interval of AirFlow =', INTERVAL_FLOW
+
+            OFFSET = timeOFFSET
+            print*, 'OFFSET =', OFFSET
+
+            LoopHead = flowLoopHead
+            LoopTail = flowLoopTail
+            if(LoopTail - LoopHead > 0) then
+                print*, 'Loop is from', LoopHead, 'to', LoopTail
+            elseif(LoopTail - LoopHead == 0) then 
+                print*, 'After', LoopTail, ', Checkout SteadyFlow'
+            end if
+
+            DT_FLOW = DeltaT_FLOW
+            print*, 'Delta_Time inFLOW =', DT_FLOW
+
+            call set_STEPinFLOW(time)
+            call read_unsteadyFlowData
+
+        end if
+
+        call set_MinMaxCDN
+
+        call preprocess_onFlowField         !流れ場の前処理
+            
+    end subroutine
 
     subroutine read_steadyFlowData
         character(:), allocatable :: FNAME
@@ -252,15 +285,15 @@ module flow_field
         integer, intent(inout) :: STEP
         integer Lamda, Delta
         
-        if(STEP >= LoopF) then
-            Lamda = LoopF - LoopS
+        if(STEP >= LoopTail) then
+            Lamda = LoopTail - LoopHead
 
             if(Lamda > 0) then
-                Delta = mod(STEP - LoopS, Lamda)
-                STEP = LoopS + Delta
+                Delta = mod(STEP - LoopHead, Lamda)
+                STEP = LoopHead + Delta
 
             else if(Lamda == 0) then
-                STEP = LoopF
+                STEP = LoopTail
                 INTERVAL_FLOW = -1
                 print*, '**Checkout SteadyFlow**'
             end if

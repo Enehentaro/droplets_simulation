@@ -15,38 +15,48 @@ module dropletMotionSimulation
 
     logical, private :: startFlag = .false., adhesionSwitch = .true.
 
-    integer, private :: last_coalescenceStep, last_numFloating, coalescenceLimit=100
+    integer, private :: last_coalescenceStep, last_numFloating, coalescenceLimit=100, num_divide=4
 
     type(dropletGroup) mainDroplet
 
     contains
 
     subroutine firstSet_mainDroplet
-        integer num_initialDroplet
-        character(:), allocatable :: iniDisFName
+        use dropletEquation_m
+        use conditionValue_m
+        type(conditionValue_t) condVal
 
-        call read_and_set_condition(case_dir, num_droplet=num_initialDroplet, initialDistributionFileName=iniDisFName)
+        call condVal%read(case_dir)
+        num_restart = condVal%restart
+        n_end = condVal%stepEnd
+        outputInterval = condVal%outputInterval
+        print*, 'n_end =',n_end
+        print*, 'output interval =', outputInterval
+        call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
+        call set_gravity_acceleration(condVal%direction_g)
+        call set_dropletEnvironment(condVal%T, condVal%RH)
+
         call read_basicSetting
 
         call set_dropletPlacementBox(case_dir)
         call set_dropletRadiusThreshold
 
-        timeStep = max(num_restart, 0)                !流れ場の取得の前に必ず時刻セット
+        n_start = max(num_restart, 0)
+        timeStep = n_start              !流れ場の取得の前に必ず時刻セット
 
-        call create_FlowField                !流れ場の取得
+        call create_FlowField(TimeOnSimu(), condVal%PATH2FlowFile, condVal%DT_FLOW, condVal%OFFSET, condVal%INTERVAL_FLOW, &
+            condVal%LoopHead, condVal%LoopTail)                !流れ場の取得
 
         if(num_restart <= 0) then
 
             if(num_restart==0) then
                 call random_set  !実行時刻に応じた乱数シード設定
-                mainDroplet = generate_dropletGroup(num_initialDroplet, outputDir=case_dir)
+                mainDroplet = generate_dropletGroup(condVal%num_drop, outputDir=case_dir)
 
             else if(num_restart==-1) then
-                mainDroplet = read_InitialDistribution(case_dir//'/'//iniDisFName)
+                mainDroplet = read_InitialDistribution(case_dir//'/'//condVal%initialDistributionFName)
 
             end if
-
-            n_start = 0
 
         else
 
@@ -58,8 +68,6 @@ module dropletMotionSimulation
                 mainDroplet = read_backup(trim(fname))   !ここで自動割り付け
             end block
 
-            n_start = num_restart
-
         end if
 
         print*, 'num_droplets =', size(mainDroplet%droplet)
@@ -68,67 +76,9 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine read_and_set_condition(dir, num_droplet, initialDistributionFileName)
-        use dropletEquation_m
-        use filename_mod
-        character(*), intent(in) :: dir
-        double precision delta_t, L_represent, U_represent
-        double precision :: direction_g(3)
-        character(255) path2FlowFile, initialDistributionFName
-        character(:), allocatable, optional, intent(out) :: initialDistributionFileName
-        integer n_unit, num_droplets
-        integer, optional, intent(out) :: num_droplet
-        real temperature, relativeHumidity
-        namelist /dropletSetting/ num_restart, n_end, delta_t, outputInterval, temperature, relativeHumidity,&
-            num_droplets, direction_g, initialDistributionFName
-        namelist /flowFieldSetting/ path2FlowFile, DT_FLOW, OFFSET, INTERVAL_FLOW, LoopS, LoopF, L_represent, U_represent
-
-        initialDistributionFName = IniDistributionFName
-
-        OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
-            read(n_unit, nml=dropletSetting)
-            read(n_unit, nml=flowFieldSetting)
-        CLOSE(n_unit)
-
-        if(present(num_droplet)) num_droplet = num_droplets
-        if(present(initialDistributionFileName)) initialDistributionFileName = trim(initialDistributionFName)
-
-        if(num_restart > 0) then
-            print*, 'Restart from', num_restart
-        else if(num_restart == -1) then
-            print*, 'InitialDistributon is Specified.'
-        end if
-
-        print*, 'n_end =',n_end
-        print*, 'output interval =', outputInterval
-
-        if(INTERVAL_FLOW > 0) then
-            print*, 'Interval of AirFlow =', INTERVAL_FLOW
-        else
-            print*, 'AirFlow is Steady'
-        end if
-
-        if(loopf - loops > 0) then
-            print*, 'Loop is from', loops, 'to', loopf
-        elseif(loopf - loops == 0) then 
-            print*, 'After', loopf, ', Checkout SteadyFlow'
-        end if
-        print*, 'Delta_Time =', delta_t
-        print*, 'Delta_Time inFLOW =', DT_FLOW
-
-        call set_FlowFileNameFormat(path2FlowFile)
-
-        call set_basical_variables(delta_t, L_represent, U_represent)
-
-        call set_gravity_acceleration(direction_g)
-
-        call set_dropletEnvironment(temperature, relativeHumidity)
-
-    end subroutine
-
     subroutine read_basicSetting
         integer n_unit
-        namelist /basicSetting/ coalescenceLimit, adhesionSwitch
+        namelist /basicSetting/ coalescenceLimit, adhesionSwitch, num_divide
 
         open(newunit=n_unit, file='option/basicSetting.nml', status='old')
             read(n_unit, nml=basicSetting)
@@ -144,22 +94,6 @@ module dropletMotionSimulation
 
         if(isUpdateTiming()) call update_FlowField   !流れ場の更新
 
-    end subroutine
-
-    subroutine create_FlowField
-
-        if(INTERVAL_FLOW <= 0) then
-            call read_steadyFlowData
-        else
-            call set_STEPinFLOW(TimeOnSimu())
-            call read_unsteadyFlowData
-
-        end if
-
-        call set_MinMaxCDN
-
-        call preprocess_onFlowField         !流れ場の前処理
-            
     end subroutine
 
     subroutine update_FlowField
@@ -181,7 +115,7 @@ module dropletMotionSimulation
 
         call mainDroplet%survival_check()           !生存率に関する処理
 
-        call coalescence_process        !飛沫間の合体判定
+        !call divideAreacoalescence_process        !飛沫間の合体判定
 
         call mainDroplet%calculation()     !飛沫の運動計算
 
@@ -218,6 +152,56 @@ module dropletMotionSimulation
         call mainDroplet%coalescence_check(stat = num_coalescence)
 
         if(num_coalescence >= 1) last_coalescenceStep = timeStep
+
+    end subroutine
+
+    subroutine divideAreaCoalescence_process
+        ! integer, parameter :: num_divide = 4
+        type(dropletGroup) dGroup
+        integer i, j, k, id, m
+        integer, allocatable :: ID_array(:)
+        double precision AreaMin(3), AreaMax(3), width(3), delta(3), min_cdn(3), max_cdn(3)
+        double precision, parameter :: deltaRatio = 1.d-2
+
+        AreaMin(:) = 1.d9
+        AreaMax(:) = -1.d9
+        do m = 1, size(mainDroplet%droplet)
+            if(mainDroplet%droplet(m)%status==0) then
+                do i = 1, 3
+                    AreaMin(i) = min(mainDroplet%droplet(m)%position(i), AreaMin(i))
+                    AreaMax(i) = max(mainDroplet%droplet(m)%position(i), AreaMax(i))
+                end do
+            end if
+        end do
+        ! AreaMin(:) = AreaMin(:) - 1.d-9 ;print*, 'AreaMin:',AreaMin
+        ! AreaMax(:) = AreaMax(:) + 1.d-9 ;print*, 'AreaMax:',AreaMax
+        width(:) = (AreaMax(:) - AreaMin(:)) / dble(num_divide)   !;print*, 'width:',width
+        delta(:) = (AreaMax(:) - AreaMin(:))*deltaRatio
+
+        do k = 1, num_divide
+            min_cdn(3) = AreaMin(3) + width(3)*dble(k-1) - delta(3)
+            max_cdn(3) = AreaMin(3) + width(3)*dble(k) + delta(3)
+            do j = 1, num_divide
+                min_cdn(2) = AreaMin(2) + width(2)*dble(j-1) - delta(2)
+                max_cdn(2) = AreaMin(2) + width(2)*dble(j) + delta(2)
+                do i = 1, num_divide
+                    min_cdn(1) = AreaMin(1) + width(1)*dble(i-1) - delta(1)
+                    max_cdn(1) = AreaMin(1) + width(1)*dble(i) + delta(1)
+
+                    ID_array = mainDroplet%IDinBox(min_cdn, max_cdn, status=0)
+                    ! print*, 'divide_stat :', size(ID_array), min_cdn, max_cdn
+                    dGroup%droplet = mainDroplet%droplet(ID_array)
+                    call dGroup%coalescence_check()
+
+                    do m = 1, size(ID_array)
+                        id = ID_array(m)
+                        mainDroplet%droplet(id) = dGroup%droplet(m)
+                        if(dGroup%droplet(m)%coalesID > 0) mainDroplet%droplet(id)%coalesID = ID_array(dGroup%droplet(m)%coalesID)
+                    end do
+
+                end do
+            end do
+        end do
 
     end subroutine
 
