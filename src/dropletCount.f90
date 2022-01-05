@@ -1,7 +1,7 @@
 program dropletCount
     use dropletGroup_m
     use conditionValue_m
-    ! use dropletEquation_m
+    use dropletEquation_m
     use boxCounter_m
     implicit none
     integer n, i_box, num_box
@@ -22,7 +22,7 @@ program dropletCount
     read(5, *) caseName
 
     call condVal%read(trim(caseName))
-    ! call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
+    call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
 
     box_array = get_box_array(trim(caseName), condVal%num_drop)
 
