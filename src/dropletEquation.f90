@@ -165,7 +165,7 @@ module dropletEquation_m
         double precision speed_r, Re_d, CD, C, vel_d_next(3)
 
         if(radius_d <= 0.d0) then
-            print*, '**zeroRadius ERROR**', radius_d
+            print*, '**ZeroRadius ERROR**', radius_d
             stop
         end if
 
@@ -228,6 +228,8 @@ module dropletEquation_m
 
     double precision function representativeValue(name)
         character(*), intent(in) :: name
+
+        if(L*U <= 0.d0) print*, '**WARNING** ZeroRepresentativeValue :', L, U   !代表値がゼロなら警告
 
         select case(name)
             case('length')
