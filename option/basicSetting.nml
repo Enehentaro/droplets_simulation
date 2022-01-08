@@ -1,4 +1,5 @@
 &basicSetting
 adhesionSwitch = .true.
 coalescenceLimit = 100
+num_divide = 4
 /

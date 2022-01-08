@@ -66,7 +66,7 @@ module flow_field
 
     subroutine preprocess_onFlowField
         ! use adhesion_onSTL_m
-        use adjacent_information
+        ! use adjacencySolver_m
         logical success
 
         ! if(unstructuredGrid) then
@@ -75,7 +75,7 @@ module flow_field
                 call read_boundaries(PATH_FlowDIR)
 
             else
-                call solve_adjacentInformation
+                call solve_adacencyOnUnstructuredGrid
                 call output_boundaries(PATH_FlowDIR)
                 call output_adjacency(PATH_FlowDIR)
 
@@ -83,7 +83,7 @@ module flow_field
 
             call boundary_setting(first=.true.)
 
-            call output_STL(PATH_FlowDIR)
+            call output_STL(PATH_FlowDIR//HEAD_AIR//'.stl')
 
         ! else
         !     call read_faceShape(PATH_FlowDIR)
