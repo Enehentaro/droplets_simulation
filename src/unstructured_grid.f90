@@ -99,13 +99,22 @@ module unstructuredGrid_mod
                 call read_INP(trim(FNAME))   !INPを読み込む(SHARP用)
 
             case('FLD')
+                if(allocated(CELLs)) then
+                    write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FileNumber
+                    call read_FLD(trim(FNAME), findTopology= .false., findVelocity = .true.)
 
-                write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FileNumber
-                call read_FLD(trim(FNAME), findTopology= .true., findVelocity = .true.)
+                else    !セル配列が未割り当て（要するに初回）のとき
+                    write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FileNumber !とりあえずその番号ファイルにアクセス
+                    call read_FLD(trim(FNAME), findTopology= .true., findVelocity = .true.)
 
-                if(.not.allocated(CELLs)) then
-                    write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') 0
-                    call read_FLD(trim(FNAME), findTopology= .true., findVelocity = .false.)
+                    if(.not.allocated(CELLs)) then !それでもまだ未割り当てのとき
+                        write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') 0 !ゼロ番にアクセス
+                        call read_FLD(trim(FNAME), findTopology= .true., findVelocity = .false.)
+
+                        write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FileNumber !やっと該当番号ファイルにアクセス
+                        call read_FLD(trim(FNAME), findTopology= .false., findVelocity = .true.)
+                    end if
+
                 end if
 
             case('ARRAY')
@@ -354,7 +363,7 @@ module unstructuredGrid_mod
         end if
         
         ! call grid%search_scalar_data("PRES",pressure)
-        if(findVelocity) then
+        if(findVelocity .and. (.not.allocated(CELLs))) then
             call grid%search_vector_data("VEL",velocity)
             call point2cellVelocity(real(velocity))
         end if
