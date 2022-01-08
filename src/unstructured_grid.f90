@@ -363,7 +363,7 @@ module unstructuredGrid_mod
         end if
         
         ! call grid%search_scalar_data("PRES",pressure)
-        if(findVelocity .and. (.not.allocated(CELLs))) then
+        if(findVelocity) then
             call grid%search_vector_data("VEL",velocity)
             call point2cellVelocity(real(velocity))
         end if
@@ -655,6 +655,11 @@ module unstructuredGrid_mod
     subroutine point2cellVelocity(pointVector)
         real, intent(in) :: pointVector(:,:)
         integer II, IIMX, n, ID, num_node
+
+        if(.not.allocated(CELLs)) then
+            print*, '**MISS point2cellVelocity** CELL_ARRAY is not yet allocated.'
+            return
+        end if
 
         IIMX = size(CELLs)
         DO II = 1, IIMX
