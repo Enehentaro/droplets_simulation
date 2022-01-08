@@ -1,7 +1,7 @@
 program dropletCount
     use dropletGroup_m
     use conditionValue_m
-    ! use dropletEquation_m
+    use dropletEquation_m
     use boxCounter_m
     use caseName_m
     implicit none
@@ -28,7 +28,7 @@ program dropletCount
 
         caseName = get_caseName()
         call condVal%read(trim(caseName))
-    ! call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
+        call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
 
         box_array = get_box_array(trim(caseName), condVal%num_drop)
 
@@ -46,11 +46,12 @@ program dropletCount
             else
                 write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
             end if
+            mainDroplet = read_backup(trim(fname))
 
             do i_box = 1, num_box
                 id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
-                call box_array(i_box)%add_dropletFlag(id_array)
-                boxCountArray(i_box) = size(box_array(i_box)%get_id_array())
+                call box_array(i_box)%add_Flag(id_array)
+                boxCountArray(i_box) = size(box_array(i_box)%get_FlagID())
             end do
 
             write(n_unit,'(*(g0:,","))') TimeOnSimu(n), boxCountArray
@@ -64,7 +65,7 @@ program dropletCount
             real, allocatable :: iniRadDis(:,:), outArray(:,:)
 
             outFName = trim(caseName)//'/BoxInitialRadius.csv'
-            allocate(bResult(num_box))
+            if(.not.allocated(bResult)) allocate(bResult(num_box))
             do i_box = 1, num_box
                 id_array = box_array(i_box)%get_FlagID()
                 dGroup%droplet = mainDroplet%droplet(id_array)
@@ -76,7 +77,7 @@ program dropletCount
             allocate(bResult(num_box))
             do i_box = 1, num_box
 
-                id_array = box_array(i_box)%get_id_array()
+                id_array = box_array(i_box)%get_FlagID()
                 dGroup%droplet = mainDroplet%droplet(id_array)
                 bResult(i_box)%num_droplet = size(dGroup%droplet)
                 bResult(i_box)%volume = real(dGroup%totalVolume(dim='ml'))

@@ -715,7 +715,7 @@ module unstructuredGrid_mod
         character(:), allocatable :: fname
         integer i, n_unit, JB
 
-        fname = dir//'/test.stl'
+        fname = dir//'test.stl'
         print*, 'output_STL : ', fname
 
         open(newunit=n_unit, file=fname, status='replace')

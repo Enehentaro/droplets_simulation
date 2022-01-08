@@ -5,10 +5,12 @@ program rotate
     character(:), allocatable :: fname, outFName
     type(dropletGroup) dGroup
     double precision r, theta, vec(2)
-    double precision, parameter :: center(2) = [1.9d0, 1.1d0], PI = acos(-1.d0), &
-        phi = atan((1.20286d0 - center(2))/(1.8382d0 - center(1))) + PI*0.5d0
+    double precision, parameter :: center(2) = [1.9d0, 1.1d0], PI = acos(-1.d0), &  !A
+        phi = atan((1.203d0 - center(2))/(1.838d0 - center(1))) + PI*0.5d0
+    ! double precision, parameter :: center(2) = [1.9d0, 0.8d0], PI = acos(-1.d0), &  !B
+    !     phi = atan((0.917084d0 - center(2))/(1.85622d0 - center(1))) + PI*0.5d0
 
-    dGroup = read_backup('InitialDistribution_pre.bu')
+    dGroup = read_backup('InitialDistribution_convers_A_A2B.bu')
 
     print*, 'phi:', phi
     print*, 'PI:', PI
