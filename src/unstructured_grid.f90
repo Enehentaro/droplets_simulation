@@ -63,7 +63,7 @@ module unstructuredGrid_mod
                 call read_INP(FNAME)   !INPを読み込む(SHARP用)
 
             case('FLD')
-                call read_FLD(FNAME)
+                call read_FLD(FNAME, findTopology= .true., findVelocity = .true.)
 
             case('ARRAY')
                 if(.not.allocated(CELLs)) call read_VTK(meshFileNAME, meshOnly=.true.)
@@ -99,13 +99,14 @@ module unstructuredGrid_mod
                 call read_INP(trim(FNAME))   !INPを読み込む(SHARP用)
 
             case('FLD')
-                if(.not.allocated(CELLs).and.FileNumber > 0) then
-                    write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') 0
-                    call read_FLD(trim(FNAME))
-                end if
 
                 write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FileNumber
-                call read_FLD(trim(FNAME))
+                call read_FLD(trim(FNAME), findTopology= .true., findVelocity = .true.)
+
+                if(.not.allocated(CELLs)) then
+                    write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') 0
+                    call read_FLD(trim(FNAME), findTopology= .true., findVelocity = .false.)
+                end if
 
             case('ARRAY')
                 if(.not.allocated(CELLs)) call read_VTK(meshFileNAME, meshOnly=.true.)
@@ -291,13 +292,14 @@ module unstructuredGrid_mod
             
     end subroutine
 
-    subroutine read_FLD(FNAME)
+    subroutine read_FLD(FNAME, findTopology, findVelocity)
         use SCT_file_reader_m
         implicit none
         type(sct_grid_t) grid
         integer ii, iitet, iiwed, iipyr, iihex, iimx, iicnt
         integer kk, kkmx
         integer,allocatable :: tetras(:,:), wedges(:,:), pyramids(:,:), hexas(:,:)
+        logical, intent(in) :: findTopology, findVelocity
         real(8),allocatable :: points(:,:)
         real(8),allocatable :: velocity(:,:)!, pressure(:)
         character(*), intent(in) :: FNAME
@@ -306,52 +308,56 @@ module unstructuredGrid_mod
 
         call grid%read_SCT_file(FNAME)
         
-        if(.not.allocated(CELLs)) then
+        if(findTopology) then
             !!ファイルが存在し, かつトポロジー情報が存在する場合以下の処理が行われる.  
             call grid%extract_cell_vertices(tetras, pyramids, wedges, hexas)
-            call grid%get_2d_array_of_point_coords(points)
-            iitet = grid%get_tetrahedron_count()
-            iipyr = grid%get_pyramid_count()
-            iiwed = grid%get_wedge_count()
-            iihex = grid%get_hexahedron_count()
-            iimx = grid%get_element_count()
-            kkmx = grid%get_vertex_count()
-
-            if(iihex>0) then
-                print*, 'Hexahedron is not yet supported.', iihex
-                stop
+            if(allocated(tetras)) then
+                call grid%get_2d_array_of_point_coords(points)
+                iitet = grid%get_tetrahedron_count()
+                iipyr = grid%get_pyramid_count()
+                iiwed = grid%get_wedge_count()
+                iihex = grid%get_hexahedron_count()
+                iimx = grid%get_element_count()
+                kkmx = grid%get_vertex_count()
+    
+                if(iihex>0) then
+                    print*, 'Hexahedron is not yet supported.', iihex
+                    stop
+                end if
+    
+                allocate(CELLs(iimx))
+                allocate(NODEs(kkmx))
+    
+                do kk = 1, kkmx
+                    NODEs(kk)%coordinate(:) = real(points(:,kk))
+                end do
+    
+                iicnt = 1
+                do ii = 1, iitet
+                    CELLs(iicnt)%nodeID = tetras(:,ii)
+                    CELLs(iicnt)%typeName = 'tetra'
+                    iicnt = iicnt + 1
+                end do
+                do ii = 1, iiwed
+                    CELLs(iicnt)%nodeID = wedges(:,ii)
+                    CELLs(iicnt)%typeName = 'prism'
+                    iicnt = iicnt + 1
+                end do
+                do ii = 1, iipyr
+                    CELLs(iicnt)%nodeID = pyramids(:,ii)
+                    CELLs(iicnt)%typeName = 'pyrmd'
+                    iicnt = iicnt + 1
+                end do
+    
             end if
-
-            allocate(CELLs(iimx))
-            allocate(NODEs(kkmx))
-
-            do kk = 1, kkmx
-                NODEs(kk)%coordinate(:) = real(points(:,kk))
-            end do
-
-            iicnt = 1
-            do ii = 1, iitet
-                CELLs(iicnt)%nodeID = tetras(:,ii)
-                CELLs(iicnt)%typeName = 'tetra'
-                iicnt = iicnt + 1
-            end do
-            do ii = 1, iiwed
-                CELLs(iicnt)%nodeID = wedges(:,ii)
-                CELLs(iicnt)%typeName = 'prism'
-                iicnt = iicnt + 1
-            end do
-            do ii = 1, iipyr
-                CELLs(iicnt)%nodeID = pyramids(:,ii)
-                CELLs(iicnt)%typeName = 'pyrmd'
-                iicnt = iicnt + 1
-            end do
 
         end if
         
         ! call grid%search_scalar_data("PRES",pressure)
-        call grid%search_vector_data("VEL",velocity)
-
-        call point2cellVelocity(real(velocity))
+        if(findVelocity) then
+            call grid%search_vector_data("VEL",velocity)
+            call point2cellVelocity(real(velocity))
+        end if
           
     end subroutine
 
