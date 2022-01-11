@@ -671,7 +671,7 @@ module dropletGroup_m
         real, allocatable :: iniRadDis(:,:)
         double precision threshold
 
-        call set_dropletRadiusThreshold
+        ! call set_dropletRadiusThreshold
 
         num_threshold = size(radiusThreshold, dim=2)
         allocate(iniRadDis(2,num_threshold))
@@ -817,13 +817,13 @@ module dropletGroup_m
 
     end subroutine
 
-    subroutine set_dropletRadiusThreshold
+    subroutine set_dropletRadiusThreshold(radiusDistributionFilename)
         use simpleFile_reader
-        use filename_mod
+        character(*), intent(in) :: radiusDistributionFilename
 
         if(allocated(radiusThreshold)) return
 
-        call read_CSV('data/radius_distribution.csv', radiusThreshold)
+        call read_CSV('data/'//radiusDistributionFilename, radiusThreshold)
 
         radiusThreshold(1,:) = radiusThreshold(1,:) * 1.d-6   !マイクロメートル換算
 

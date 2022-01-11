@@ -36,10 +36,15 @@ module dropletMotionSimulation
         call set_gravity_acceleration(condVal%direction_g)
         call set_dropletEnvironment(condVal%T, condVal%RH)
 
-        call read_basicSetting
+        block
+            character(:), allocatable :: radDisFNAME
 
-        call set_dropletPlacementBox(case_dir)
-        call set_dropletRadiusThreshold
+            call read_basicSetting(radiusDistributionFilename = radDisFNAME)
+
+            call set_dropletPlacementBox(case_dir)
+            call set_dropletRadiusThreshold(radDisFNAME)
+
+        end block
 
         n_start = max(num_restart, 0)
         timeStep = n_start              !流れ場の取得の前に必ず時刻セット
@@ -76,13 +81,17 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine read_basicSetting
+    subroutine read_basicSetting(radiusDistributionFilename)
         integer n_unit
-        namelist /basicSetting/ coalescenceLimit, adhesionSwitch, num_divide
+        character(:), allocatable, intent(out) :: radiusDistributionFilename
+        character(255) radiusDistributionFNAME
+        namelist /basicSetting/ coalescenceLimit, adhesionSwitch, num_divide, radiusDistributionFNAME
 
         open(newunit=n_unit, file='option/basicSetting.nml', status='old')
             read(n_unit, nml=basicSetting)
         close(n_unit)
+
+        radiusDistributionFilename = trim(radiusDistributionFNAME)
 
     end subroutine
 

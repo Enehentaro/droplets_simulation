@@ -2,4 +2,5 @@
 adhesionSwitch = .true.
 coalescenceLimit = 100
 num_divide = 4
+radiusDistributionFNAME = radius_distribution.csv
 /
