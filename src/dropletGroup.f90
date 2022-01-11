@@ -148,6 +148,10 @@ module dropletGroup_m
         
         num_drop = size(self%droplet)
 
+        if(.not.allocated(pBox_array)) then
+            print*, 'ERROR : InitialPositionBox is not Set.'
+            stop
+        end if
         num_box = size(pBox_array)
 
         num_perBox = num_drop / num_box
@@ -787,8 +791,19 @@ module dropletGroup_m
         character(*), intent(in) :: positionDir
         integer i_box, num_box
         double precision, allocatable :: position_mat(:,:)
+        character(:), allocatable :: fname
+        logical existance
+        
+        fname = positionDir//'/'//IniPositionFName
 
-        call read_CSV(positionDir//'/'//IniPositionFName, position_mat)
+        inquire(file=fname, exist=existance)
+
+        if(.not.existance) then
+            print*, '**Warning** '//fname//' is not found!'
+            return
+        end if
+
+        call read_CSV(fname, position_mat)
 
         num_box = size(position_mat, dim=2)
 
