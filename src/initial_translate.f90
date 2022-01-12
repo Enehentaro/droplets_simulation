@@ -22,7 +22,7 @@ program translate
     do i = 1, size(dGroup%droplet)      !回転を行うループ
         vec = dGroup%droplet(i)%position(1:2) - center(1:2)
         dGroup%droplet(i)%position(1) = cos(phi)*vec(1) - sin(phi)*vec(2) + center(1)
-        dGroup%droplet(i)%position(2) = sin(phi)*vec(1) - cos(phi)*vec(2) + center(2)
+        dGroup%droplet(i)%position(2) = sin(phi)*vec(1) + cos(phi)*vec(2) + center(2)
     end do
 
     do i = 1, size(dGroup%droplet)      !平行移動を行うループ
@@ -32,6 +32,6 @@ program translate
     end do
 
     call dGroup%output_backup(dir='test-test', initial=.true.)  !BUファイル出力
-    call dGroup%output_VTK('test-test/test_translate.vtk')                !確認VTKファイル出力
+    call dGroup%output_VTK('test-test/InitialDistribution_B.vtk')                !確認VTKファイル出力
     
 end program translate
