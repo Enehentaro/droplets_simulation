@@ -53,6 +53,8 @@ Simulation of Virus Droplets Behavior in AFDET
     - 飛沫計算結果を再度読み込み、統計データ（浮遊数推移など）をCSVファイルに書き出す
   - dropletCount
     - 飛沫計算結果を再度読み込み、カウントボックスを通過した飛沫数を調べる。optionディレクトリ内の"boxList.csv"を、ケースディレクトリに配置する必要がある。
+  - initialTranslate
+    - 飛沫の初期配置データを読み込み、任意の座標への回転、平行移動を行う。
 
 ## おまけ機能
   - **複数ケース連続実行**

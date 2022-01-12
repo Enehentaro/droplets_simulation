@@ -19,7 +19,8 @@ program CUBE2USG
 
     type(nodeInfo), allocatable :: vtkCell2cubeNode(:)
 
-    call read_textRecord(filename, field_name, num_record)
+    call read_textRecord(filename, field_name)
+    num_record = size(field_name)
     
     print *, 'UnstructuredGRID_FileName ?'
     read(5,*) USG_fname
