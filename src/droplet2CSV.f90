@@ -7,13 +7,14 @@ program droplet2CSV
     character(255) caseName, fname
     double precision time
     type(conditionValue_t) condVal
-    type(dropletGroup) dGroup
+    type(BasicParameter) baseParam
+    type(DropletGroup) dGroup
 
     print*, 'caseName = ?'
     read(5, *) caseName
 
     call condVal%read(caseName)
-    call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
+    baseParam = BasicParameter_(condVal%dt, condVal%L, condVal%U)
 
     print*, 'End = ?'
     read(5,*) stepEnd
@@ -27,7 +28,7 @@ program droplet2CSV
         write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
         dGroup = read_backup(fname)
 
-        time = TimeOnSimu(step=n, dimension=.true.)
+        time = baseParam%TimeOnSimu(step=n, dimension=.true.)
         if(n==0) then
             call dGroup%output_CSV(trim(caseName)//'/particle.csv', time, initial=.true.)
         else

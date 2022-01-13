@@ -8,7 +8,7 @@ PROGRAM MAIN
       use dropletMotionSimulation
       use caseName_m
       implicit none
-      integer, pointer :: n => timeStep, nc => nowCase
+      integer, pointer :: nc => nowCase
       integer nc_max
 
       !$OMP parallel
@@ -29,28 +29,38 @@ PROGRAM MAIN
 
             call checkpoint                    !計算条件の確認および時刻計測のためのチェックポイント
 
-            print '("*******************************************")'
-            print '("            START step_loop                ")'
-            print '("*******************************************")'
-
-            do n = n_start + 1, n_end           !ステップ数だけループ
-
-                  call mainDroplet_process      !飛沫計算の一連の処理
-
-                  call dropletManagement       !外部サブルーチンによる管理
-
-                  if (mod(n, outputInterval) == 0) call periodicOutput             !出力
-
-                  call check_FlowFieldUpdate        !流れ場の更新チェック
-
-            end do
-
-            print '("*******************************************")'
-            print '("             END step_loop                 ")'
-            print '("*******************************************")'
+            call mainDropletLoop
 
             call output_ResultSummary       !最終結果出力
             
       END DO
 
+
+      contains
+
+      subroutine mainDropletLoop
+            integer, pointer :: n => timeStep
+            
+            print '("*******************************************")'
+            print '("            START step_loop                ")'
+            print '("*******************************************")'
+    
+            do n = n_start + 1, n_end           !ステップ数だけループ
+    
+                call mainDroplet_process      !飛沫計算の一連の処理
+    
+                call dropletManagement       !外部サブルーチンによる管理
+    
+                if (mod(n, outputInterval) == 0) call periodicOutput             !出力
+    
+                call check_FlowFieldUpdate        !流れ場の更新チェック
+    
+            end do
+    
+            print '("*******************************************")'
+            print '("             END step_loop                 ")'
+            print '("*******************************************")'
+    
+      end subroutine
+    
 END PROGRAM MAIN

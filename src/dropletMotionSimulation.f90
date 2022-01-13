@@ -1,28 +1,38 @@
 module dropletMotionSimulation
-    use dropletGroup_m
+    use dropletGenerator_m
+    use dropletEquation_m
     use flow_field
     implicit none
 
-    integer outputInterval
+    private
 
-    integer, private :: num_restart
-    integer n_start, n_end
+    integer, public :: outputInterval
+
+    integer num_restart
+    integer, public, target :: timeStep
+    integer, public :: n_start, n_end
 
     character(:), allocatable :: start_date
     real start_time
 
-    character(:), allocatable, private :: case_dir
+    character(:), allocatable :: case_dir
 
-    logical, private :: startFlag = .false., adhesionSwitch = .true.
+    logical :: startFlag = .false., adhesionSwitch = .true.
 
-    integer, private :: last_coalescenceStep, last_numFloating, coalescenceLimit=100, num_divide=4
+    integer :: last_coalescenceStep, last_numFloating, coalescenceLimit=100, num_divide=4
 
-    type(dropletGroup) mainDroplet
+    type(DropletGroup) mainDroplet
+
+    type(DropletEquationSolver), target :: dropletSolver
+
+    type(DropletGenerator) dropGenerator
+
+    public create_CaseDirectory, firstSet_mainDroplet, checkpoint, output_ResultSummary
+    public mainDroplet_process, periodicOutput, check_FlowFieldUpdate
 
     contains
 
     subroutine firstSet_mainDroplet
-        use dropletEquation_m
         use conditionValue_m
         type(conditionValue_t) condVal
 
@@ -32,31 +42,35 @@ module dropletMotionSimulation
         outputInterval = condVal%outputInterval
         print*, 'n_end =',n_end
         print*, 'output interval =', outputInterval
-        call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
-        call set_gravity_acceleration(condVal%direction_g)
-        call set_dropletEnvironment(condVal%T, condVal%RH)
+
+        dropletSolver = DropletEquationSolver_( &
+                            condVal%dt, condVal%L, condVal%U, &
+                            condVal%direction_g, condVal%T, condVal%RH &
+                            )
+
+        n_start = max(num_restart, 0)
+        ! dropGenerator%timeStep = n_start              !流れ場の取得の前に必ず時刻セット
+
+        call create_FlowField( &                !流れ場の取得
+            dropletSolver%TimeOnSimu(n_start), condVal%PATH2FlowFile, &
+            condVal%DT_FLOW, condVal%OFFSET, condVal%INTERVAL_FLOW, &
+            condVal%LoopHead, condVal%LoopTail &
+            )
 
         block
             character(:), allocatable :: radDisFNAME
 
             call read_basicSetting(radiusDistributionFilename = radDisFNAME)
 
-            call set_dropletPlacementBox(case_dir)
-            call set_dropletRadiusThreshold(radDisFNAME)
+            dropGenerator = DropletGenerator_(dropletSolver, radDisFNAME, case_dir)
 
         end block
-
-        n_start = max(num_restart, 0)
-        timeStep = n_start              !流れ場の取得の前に必ず時刻セット
-
-        call create_FlowField(TimeOnSimu(), condVal%PATH2FlowFile, condVal%DT_FLOW, condVal%OFFSET, condVal%INTERVAL_FLOW, &
-            condVal%LoopHead, condVal%LoopTail)                !流れ場の取得
 
         if(num_restart <= 0) then
 
             if(num_restart==0) then
                 call random_set  !実行時刻に応じた乱数シード設定
-                mainDroplet = generate_dropletGroup(condVal%num_drop, outputDir=case_dir)
+                mainDroplet = dropGenerator%generateDroplet(condVal%num_drop, timeStep, outputDir=case_dir)
 
             else if(num_restart==-1) then
                 mainDroplet = read_InitialDistribution(case_dir//'/'//condVal%initialDistributionFName)
@@ -68,7 +82,9 @@ module dropletMotionSimulation
             print*, '**RESTART**'
 
             block
+                use virusDroplet_m
                 character(255) fname
+
                 write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') num_restart
                 mainDroplet = read_backup(trim(fname))   !ここで自動割り付け
             end block
@@ -95,11 +111,27 @@ module dropletMotionSimulation
 
     end subroutine
 
+    type(DropletGroup) function read_InitialDistribution(fname)
+        use virusDroplet_m
+        character(*), intent(in) :: fname
+
+        ! read_InitialDistribution = read_droplet_VTK(dir//'/InitialDistribution.vtk')
+        ! read_InitialDistribution%droplet(:)%initialRadius = read_InitialDistribution%droplet(:)%radius
+        ! call read_InitialDistribution%calc_minimumRadius(RH)
+
+        ! call read_InitialDistribution%first_refCellSearch()
+
+        read_initialDistribution = read_backup(fname)
+
+        call read_initialDistribution%first_refCellSearch()
+
+    end function
+
     subroutine check_FlowFieldUpdate
 
         if((INTERVAL_FLOW <= 0).or.(timeStep==n_end)) return
 
-        call set_STEPinFLOW(TimeOnSimu())
+        call set_STEPinFLOW(dropletSolver%TimeOnSimu(timeStep))
 
         if(isUpdateTiming()) call update_FlowField   !流れ場の更新
 
@@ -122,12 +154,72 @@ module dropletMotionSimulation
 
         if(adhesionSwitch) call mainDroplet%adhesion_check()
 
-        call mainDroplet%survival_check()           !生存率に関する処理
+        call mainDroplet%survival_check(dropletSolver%TimeOnSimu(timeStep))           !生存率に関する処理
 
         call divideAreacoalescence_process        !飛沫間の合体判定
 
-        call mainDroplet%calculation()     !飛沫の運動計算
+        call Calculation_Droplets     !飛沫の運動計算
 
+    end subroutine
+
+    subroutine Calculation_Droplets()
+        integer vn, targetID
+
+        ! if(unstructuredGrid) then
+            !$omp parallel do
+            do vn = 1, size(mainDroplet%droplet)
+
+                select case(mainDroplet%droplet(vn)%status)
+                case(0)
+                    call evaporation(mainDroplet%droplet(vn))    !蒸発方程式関連の処理
+                    call motionCalculation(mainDroplet%droplet(vn))     !運動方程式関連の処理
+
+                case(-2)
+                    targetID = mainDroplet%droplet(vn)%coalesID  !合体飛沫の片割れも移動させる
+                    mainDroplet%droplet(vn)%position = mainDroplet%droplet(targetID)%position
+                    mainDroplet%droplet(vn)%velocity = mainDroplet%droplet(targetID)%velocity
+
+                end select
+
+            end do
+            !$omp end parallel do
+
+        ! else
+        !     do vn = 1, size(self%droplet)
+        !         if(self%droplet(vn)%status /= 0) cycle !浮遊状態でないなら無視
+        !         call self%droplet(vn)%evaporation()    !蒸発方程式関連の処理
+        !         call self%droplet(vn)%motionCalculation_onCUBE()     !運動方程式関連の処理
+        !     end do
+
+        ! end if
+
+    end subroutine
+
+    subroutine evaporation(droplet) !CALCULATE droplet evaporation
+        use virusDroplet_m
+        type(virusDroplet_t) droplet
+        double precision radius_n
+      
+        if (droplet%radius <= droplet%radius_min) return  !半径が最小になったものを除く
+    
+        radius_n = dropletSolver%evaporatin_eq(droplet%radius)
+        
+        droplet%radius = max(radius_n, droplet%radius_min)
+      
+    end subroutine
+
+
+    subroutine motionCalculation(droplet)
+        use virusDroplet_m
+        type(virusDroplet_t) droplet
+        double precision velAir(3)
+
+        velAir(:) = CELLs(droplet%refCellID)%flowVelocity(:)
+    
+        call dropletSolver%solve_motionEquation(droplet%position(:), droplet%velocity(:), velAir(:), droplet%radius)
+
+        call search_refCELL(real(droplet%position(:)), droplet%refCellID)
+        
     end subroutine
 
     subroutine output_mainDroplet(initial)
@@ -138,7 +230,7 @@ module dropletMotionSimulation
         call mainDroplet%output_VTK(fname, deadline=initial)
 
         fname = case_dir//'/particle.csv'
-        call mainDroplet%output_CSV(fname, TimeOnSimu(dimension=.true.), initial)
+        call mainDroplet%output_CSV(fname, dropletSolver%TimeOnSimu(step=timeStep, dimension=.true.), initial)
 
         call mainDroplet%output_backup(case_dir//'/backup', initial)
 
@@ -166,7 +258,7 @@ module dropletMotionSimulation
 
     subroutine divideAreaCoalescence_process
         ! integer, parameter :: num_divide = 4
-        type(dropletGroup) dGroup
+        type(DropletGroup) dGroup
         integer i, j, k, id, m
         integer, allocatable :: ID_array(:)
         double precision AreaMin(3), AreaMax(3), width(3), delta(3), min_cdn(3), max_cdn(3)
@@ -261,7 +353,7 @@ module dropletMotionSimulation
         use terminalControler_m
 
         print*, start_date
-        print*, 'Now_Step_Time =', TimeOnSimu(dimension=.true.), '[sec]'
+        print*, 'Now_Step_Time =', dropletSolver%TimeOnSimu(step=timeStep, dimension=.true.), '[sec]'
         print*, '# floating :', mainDroplet%Counter('floating'), '/', mainDroplet%Counter('total')
         if(refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
         call output_mainDroplet(initial=.false.)
@@ -296,8 +388,8 @@ module dropletMotionSimulation
             inquire(file=fname, exist=existance)
         end do
 
-        TimeStart = TimeOnSimu(step=n_start, dimension=.true.)
-        TimeEnd = TimeOnSimu(step=n_end, dimension=.true.)
+        TimeStart = dropletSolver%TimeOnSimu(step=n_start, dimension=.true.)
+        TimeEnd = dropletSolver%TimeOnSimu(step=n_end, dimension=.true.)
 
         open(newunit=n_unit, file=fname, status='new')
             write(n_unit,*)'*******************************************'
@@ -322,8 +414,8 @@ module dropletMotionSimulation
             write(n_unit,'(A18, I15)') 'coalescence =', mainDroplet%counter('coalescence') !生存率で消滅
             write(n_unit,'(A18, I15)') 'adhesion =', mainDroplet%counter('adhesion') !付着したすべてのウイルス数
             write(n_unit,'(A)') '======================================================='
-            write(n_unit,'(A18, F18.2)') 'Temp [degC] =', dropletEnvironment('Temperature')
-            write(n_unit,'(A18, F18.2)') 'RH [%] =', dropletEnvironment('RelativeHumidity')
+            write(n_unit,'(A18, F18.2)') 'Temp [degC] =', dropletSolver%dropletEnvironment('Temperature')
+            write(n_unit,'(A18, F18.2)') 'RH [%] =', dropletSolver%dropletEnvironment('RelativeHumidity')
             write(n_unit,'(A18, 2X, A)') 'Used FlowFile :', get_FlowFileName()
             write(n_unit, '(A18, 2(I15,2x,A))') 'SearchFalseInfo :', refCellSearchInfo('NumFalse'), &
                     ' (', refCellSearchInfo('FalseRate'), '%)'

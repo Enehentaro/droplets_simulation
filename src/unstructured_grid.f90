@@ -652,6 +652,32 @@ module unstructuredGrid_mod
 
     end subroutine
 
+    subroutine adhesionCheckOnBound(position, radius, cellID, stat)
+        use vector_m
+        double precision, intent(in) :: position(3), radius
+        integer, intent(in) :: cellID
+        integer, intent(out) :: stat
+        integer JJ, JB
+
+        double precision :: r_vector(3), inner
+
+        stat = 0
+
+        do JJ = 1, size(CELLs(CellID)%boundFaceID)
+            JB = CELLs(CellID)%boundFaceID(JJ)
+
+            r_vector(:) = position(:) - BoundFACEs(JB)%center(:)
+
+            inner = dot_product(r_vector(:), BoundFACEs(JB)%normalVector(:))
+            !外向き法線ベクトルと位置ベクトルの内積は、平面からの飛び出し量に相当
+
+            if (inner + radius > 0.d0) then !(飛び出し量+飛沫半径)がゼロ以上なら付着判定  
+                stat = JB       !付着した境界面番号
+            end if
+        end do
+
+    end subroutine
+
     subroutine point2cellVelocity(pointVector)
         real, intent(in) :: pointVector(:,:)
         integer II, IIMX, n, ID, num_node

@@ -7,8 +7,9 @@ program dropletCount
     integer n, i_box, num_box
     character(255) caseName, fname
     integer, allocatable :: id_array(:)
-    type(dropletGroup) mainDroplet, dGroup
+    type(DropletGroup) mainDroplet, dGroup
     type(conditionValue_t) condVal
+    ! type(BasicParameter) baseParam
     type(boxCounter), allocatable :: box_array(:)
 
     type boxResult_t
@@ -22,7 +23,7 @@ program dropletCount
     read(5, *) caseName
 
     call condVal%read(trim(caseName))
-    call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
+    ! baseParam = BasicParameter_(condVal%dt, condVal%L, condVal%U)
 
     box_array = get_box_array(trim(caseName), condVal%num_drop)
 
@@ -49,7 +50,7 @@ program dropletCount
         id_array = box_array(i_box)%get_FlagID()
         dGroup%droplet = mainDroplet%droplet(id_array)
         bResult(i_box)%num_droplet = size(dGroup%droplet)
-        bResult(i_box)%volume = real(dGroup%totalVolume(dim='ml'))
+        bResult(i_box)%volume = real(dGroup%totalVolume() *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
     end do
 
     bResult(:)%RoI = RateOfInfection(bResult(:)%volume)

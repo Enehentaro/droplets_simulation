@@ -12,7 +12,7 @@ TARGET3 = dropletCount
 
 OBJS = filename_mod.o simpleFile_reader.o path_operator.o vector.o terminalControler.o caseName.o  conditionValue.o\
 	SCTfile_reader.o  vtkMesh_operator.o adjacency_solver.o unstructured_grid.o \
-    flow_field.o dropletEquation.o virusDroplet.o dropletGroup.o dropletMotionSimulation.o
+    flow_field.o dropletEquation.o virusDroplet.o dropletGenerator.o dropletMotionSimulation.o
 	
 MAINOBJS = dropletManager.o main.o
 
