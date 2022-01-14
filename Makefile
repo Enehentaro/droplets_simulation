@@ -3,8 +3,9 @@
 MAINTARGET = droplet
 
 FC = ifort
+
 FCFLAGS = -traceback -CB -g -O0 -fpe0
-#FCFLAGS = -qopenmp
+# FCFLAGS = -qopenmp
 
 TARGET1 = CUBE2USG
 TARGET2 = droplet2CSV
@@ -14,21 +15,21 @@ TARGET4 = initialTranslate
 COMMONOBJ = filename_mod.o simpleFile_reader.o path_operator.o vector.o terminalControler.o caseName.o conditionValue.o \
     	dropletEquation.o virusDroplet.o
 	
-MAINOBJS = $(COMMONOBJ) SCTfile_reader.o vtkMesh_operator.o adjacency_solver.o unstructured_grid.o flow_field.o \
+MAINOBJ = $(COMMONOBJ) SCTfile_reader.o vtkMesh_operator.o adjacency_solver.o unstructured_grid.o flow_field.o \
 			dropletGenerator.o dropletMotionSimulation.o main.o
 
-TARGET1OBJS = simpleFile_reader.o vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
-TARGET2OBJS = $(COMMONOBJ) droplet2CSV.o
-TARGET3OBJS = $(COMMONOBJ) vtkMesh_operator.o boxCounter.o dropletCount.o
-TARGET4OBJS = $(COMMONOBJ) initial_translate.o
+TARGET1OBJ = simpleFile_reader.o vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
+TARGET2OBJ = $(COMMONOBJ) droplet2CSV.o
+TARGET3OBJ = $(COMMONOBJ) vtkMesh_operator.o boxCounter.o dropletCount.o
+TARGET4OBJ = $(COMMONOBJ) initial_translate.o
 
 SRCDIR    = src
 OBJDIR    = obj
-MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJS))
-TARGET1OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET1OBJS))
-TARGET2OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET2OBJS))
-TARGET3OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET3OBJS))
-TARGET4OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET4OBJS))
+MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJ))
+TARGET1OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET1OBJ))
+TARGET2OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET2OBJ))
+TARGET3OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET3OBJ))
+TARGET4OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET4OBJ))
 MODDIR = ${OBJDIR}
 
 $(MAINTARGET): $(MAINOBJECTS)
