@@ -101,9 +101,10 @@ module simpleFile_reader
     end subroutine read_csv_int
 
     subroutine read_textRecord(filename, array)
-        integer i, Num_unit, num_record
+        integer i, Num_unit
         character(*), intent(in) :: filename
         character(*), intent(out), allocatable :: array(:)
+        integer :: num_record
 
         print*, 'simpleREADER : ', filename
 
