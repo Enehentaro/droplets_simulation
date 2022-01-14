@@ -1,6 +1,6 @@
 # Intel Fortran on Linux
 
-TARGET = droplet
+MAINTARGET = droplet
 
 FC = ifort
 FCFLAGS = -traceback -CB -g -O0 -fpe0
@@ -11,38 +11,39 @@ TARGET2 = droplet2CSV
 TARGET3 = dropletCount
 TARGET4 = initialTranslate
 
-OBJS = filename_mod.o simpleFile_reader.o path_operator.o vector.o terminalControler.o caseName.o  conditionValue.o\
-	SCTfile_reader.o  vtkMesh_operator.o adjacency_solver.o unstructured_grid.o \
-    flow_field.o dropletEquation.o virusDroplet.o dropletGenerator.o dropletMotionSimulation.o
+COMMONOBJ = filename_mod.o simpleFile_reader.o path_operator.o vector.o terminalControler.o caseName.o conditionValue.o \
+    	dropletEquation.o virusDroplet.o
 	
-MAINOBJS = dropletManager.o main.o
+MAINOBJS = $(COMMONOBJ) SCTfile_reader.o vtkMesh_operator.o adjacency_solver.o unstructured_grid.o flow_field.o \
+			dropletGenerator.o dropletMotionSimulation.o main.o
 
 TARGET1OBJS = simpleFile_reader.o vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
-TARGET3OBJS = boxCounter.o dropletCount.o
-TARGET4OBJS = initial_translate.o
+TARGET2OBJS = $(COMMONOBJ) droplet2CSV.o
+TARGET3OBJS = $(COMMONOBJ) vtkMesh_operator.o boxCounter.o dropletCount.o
+TARGET4OBJS = $(COMMONOBJ) initial_translate.o
 
 SRCDIR    = src
 OBJDIR    = obj
-OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
 MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJS))
 TARGET1OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET1OBJS))
+TARGET2OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET2OBJS))
 TARGET3OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET3OBJS))
 TARGET4OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET4OBJS))
 MODDIR = ${OBJDIR}
 
-$(TARGET): $(OBJECTS) $(MAINOBJECTS)
+$(MAINTARGET): $(MAINOBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
 $(TARGET1): $(TARGET1OBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
-$(TARGET2): $(OBJECTS) $(OBJDIR)/$(TARGET2).o
+$(TARGET2): $(TARGET2OBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
-$(TARGET3): $(OBJECTS) $(TARGET3OBJECTS)
+$(TARGET3): $(TARGET3OBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
-$(TARGET4): $(OBJECTS) $(TARGET4OBJECTS)
+$(TARGET4): $(TARGET4OBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
@@ -51,7 +52,7 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	fi
 	$(FC) $< -o $@ -c -module $(MODDIR) $(FCFLAGS)
 
-all: $(TARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
+all: $(MAINTARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
 
 clean:
-	$(RM) $(TARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) -r $(OBJDIR)
+	$(RM) $(MAINTARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) -r $(OBJDIR)
