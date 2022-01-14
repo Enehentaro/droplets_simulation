@@ -22,8 +22,6 @@ module virusDroplet_m
 
         contains
 
-        procedure first_refCellSearch
-
         procedure output_backup
         procedure :: output_VTK => output_droplet_VTK
         procedure :: output_CSV => output_droplet_CSV
@@ -32,14 +30,10 @@ module virusDroplet_m
         procedure :: IDinBox => dropletIDinBox
         procedure :: inBox => dropletInBox
         procedure :: totalVolume => dropletTotalVolume
-        ! procedure initialRadiusDistribution
 
-        procedure adhesion_check
-        procedure area_check
         procedure survival_check
         procedure coalescence_check
         ! procedure :: calculation => Calculation_Droplets
-        procedure boundary_move
 
         procedure :: append => append_dropletGroup
 
@@ -50,99 +44,6 @@ module virusDroplet_m
     contains
 
     !====================ここからメソッド====================
-
-    subroutine first_refCellSearch(self)
-        use flow_field
-        class(DropletGroup) self
-        integer j, num_drop
-        logical success
-
-        print*, 'first_refCellSearch occured!'
-
-        num_drop = size(self%droplet)
-
-        ! if(unstructuredGrid) then
-            j = 1
-            self%droplet(j)%refCellID = nearest_cell(real(self%droplet(j)%position(:)))
-
-            self%droplet(j+1:)%refCellID = self%droplet(j)%refCellID !時間短縮を図る
-
-            do j = 2, num_drop
-                call search_refCELL(real(self%droplet(j)%position(:)), self%droplet(j)%refCellID, stat=success)
-                if(.not.success) self%droplet(j+1:)%refCellID = self%droplet(j)%refCellID
-            end do
-
-        ! else
-        !     j = 1
-        !     self%droplet(j)%refCELL%ID = get_cube_contains(real(self%droplet(j)%position(:)))    
-        !     self%droplet(j)%refCELL%nodeID(:) = nearest_node(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL%ID)
-
-        !     self%droplet(j+1:)%refCELL = self%droplet(j)%refCELL !時間短縮を図る
-
-        !     do j = 2, num_drop
-        !         call search_refCELL_onCUBE(real(self%droplet(j)%position(:)), self%droplet(j)%refCELL)
-        !     end do
-
-        ! end if
-
-    end subroutine
-   
-    subroutine adhesion_check(self)
-        use unstructuredGrid_mod
-        class(DropletGroup) self
-        integer i
-        
-        ! if(unstructuredGrid) then
-            do i = 1, size(self%droplet)
-                if(self%droplet(i)%status==0) then
-                    call adhesionCheckOnBound( &
-                        self%droplet(i)%position, self%droplet(i)%radius, self%droplet(i)%refCellID, &
-                        stat=self%droplet(i)%adhesBoundID &
-                        )
-                    if (self%droplet(i)%adhesBoundID >= 1) call self%droplet(i)%stop_droplet()
-                end if
-            end do
-        ! else
-        !     do i = 1, size(self%droplet)
-        !         if(self%droplet(i)%status==0) then
-        !             if(adhesion_onSTL(real(self%droplet(i)%position(:)))) call stop_droplet(self%droplet(i))
-        !             call self%droplet(i)%area_check()
-        !         end if
-        !     end do
-        ! end if
-
-        call self%area_check()
-
-    end subroutine
-
-    subroutine area_check(self)
-        use flow_field
-        class(DropletGroup) self
-        logical check
-        real areaMinMax(3,2)
-        integer i, J
-
-        areaMinMax = get_areaMinMax()
-
-        do i = 1, size(self%droplet)
-            check = .false.
-            do J = 1, 3
-        
-                if(self%droplet(i)%position(J) < areaMinMax(J,1)) then
-                    self%droplet(i)%position(J) = areaMinMax(J,1)
-                    check = .true.
-                else if(self%droplet(i)%position(J) > areaMinMax(J,2)) then
-                    self%droplet(i)%position(J) = areaMinMax(J,2)
-                    check = .true.
-                end if
-
-            end do
-
-            if (check) call self%droplet(i)%stop_droplet()
-
-        end do
-
-    end subroutine
 
     subroutine survival_check(self, time)
         ! use terminalControler_m
@@ -180,31 +81,6 @@ module virusDroplet_m
         ! end do
       
     end subroutine
-                      
-    subroutine boundary_move(self) !境界面の移動に合わせて付着飛沫も移動
-        use unstructuredGrid_mod
-        class(DropletGroup) self
-        integer vn, JB
-
-        ! print*, 'CALL:boundary_move'
-
-        do vn = 1, size(self%droplet)
-        
-            if (self%droplet(vn)%status <= 0) cycle !付着していないならスルー
-    
-            JB = self%droplet(vn)%adhesBoundID
-            if (JB > 0) then
-                self%droplet(vn)%position(:) &
-                    = self%droplet(vn)%position(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
-            end if
-        
-        end do
-
-        call self%area_check()
-
-        ! print*, 'FIN:boundary_move'
-
-    end subroutine boundary_move
 
     integer function dropletCounter(self, name)
         class(DropletGroup) self
@@ -578,21 +454,6 @@ module virusDroplet_m
         dGroup_read%droplet(:)%radius = diameter(:) * 0.5d0
       
     end function
-
-    ! subroutine motionCalculation_onCUBE(self)
-    !     class(virusDroplet_t) self
-    !     double precision velAir(3)
-    !     type(reference_cell_t) :: RefC
-
-    !     RefC = self%refCELL
-
-    !     velAir(:) = get_velocity_f(RefC%nodeID, RefC%ID)
-
-    !     call solve_motionEquation(self%position(:), self%velocity(:), velAir(:), self%radius)
-
-    !     call search_refCELL_onCUBE(real(self%position(:)), self%refCELL)
-    
-    ! end subroutine
 
     subroutine stop_droplet(self, status)
         class(virusDroplet_t) self

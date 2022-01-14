@@ -47,9 +47,10 @@ module dropletGenerator_m
 
     end function
 
-    type(DropletGroup) function generateDroplet(self, num_droplet, timeStep, outputDir)
+    type(DropletGroup) function generateDroplet(self, num_droplet, nowTime, outputDir)
         class(DropletGenerator) self
-        integer, intent(in) :: num_droplet, timeStep
+        integer, intent(in) :: num_droplet
+        double precision, intent(in) :: nowTime
         character(*), intent(in), optional :: outputDir
 
         if(num_droplet <= 0) return 
@@ -67,9 +68,7 @@ module dropletGenerator_m
         generateDroplet%droplet(:)%radius_min = self%equation%get_minimumRadius( &
                                                         generateDroplet%droplet(:)%initialRadius ) !最小半径の計算
 
-        call self%set_virusDeadline(generateDroplet, timeStep)
-
-        call generateDroplet%first_refCellSearch()
+        call self%set_virusDeadline(generateDroplet, nowTime)
 
     end function
 
@@ -193,16 +192,15 @@ module dropletGenerator_m
 
     end subroutine
 
-    subroutine set_virusDeadline(self, dGroup, timeStep)
+    subroutine set_virusDeadline(self, dGroup, nowTime)
         class(DropletGenerator) self
         type(DropletGroup) dGroup
-        integer, intent(in) :: timeStep
+        double precision, intent(in) :: nowTime
         double precision randble(size(dGroup%droplet))
 
         call random_number(randble)
 
-        dGroup%droplet(:)%deadline = self%equation%virusDeadline(randble(:)) &
-                                    +self%equation%TimeOnSimu(timeStep)
+        dGroup%droplet(:)%deadline = self%equation%virusDeadline(randble(:)) + nowTime
 
     end subroutine
 

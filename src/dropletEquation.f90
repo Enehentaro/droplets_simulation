@@ -11,7 +11,7 @@ module dropletEquation_m
 
         contains
         procedure, public :: repValue => representativeValue
-        procedure, public :: TimeOnSimu => TimeOnSimulation
+        procedure TimeStep2RealTime
     end type
 
     double precision, parameter :: Rho = 1.205d0          ! 空気の密度[kg/m3]
@@ -290,16 +290,14 @@ module dropletEquation_m
 
     end function
 
-    double precision function TimeOnSimulation(self, step, dimension)
+    double precision function TimeStep2RealTime(self, step, dimension)
         class(BasicParameter) self
         integer, intent(in) :: step
-        logical, intent(in), optional :: dimension
+        logical, intent(in) :: dimension
 
-        TimeOnSimulation = step * self%dt
+        TimeStep2RealTime = step * self%dt
         
-        if(present(dimension)) then
-            if(dimension) TimeOnSimulation = TimeOnSimulation * self%repValue('time')
-        end if
+        if(dimension) TimeStep2RealTime = TimeStep2RealTime * self%repValue('time')
 
     end function
 

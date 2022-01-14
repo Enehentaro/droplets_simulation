@@ -6,11 +6,11 @@ module dropletMotionSimulation
 
     private
 
-    integer, public :: outputInterval
+    integer outputInterval
 
     integer num_restart
-    integer, public, target :: timeStep
-    integer, public :: n_start, n_end
+    integer, target :: timeStep
+    integer :: n_start, n_end
 
     character(:), allocatable :: start_date
     real start_time
@@ -27,14 +27,18 @@ module dropletMotionSimulation
 
     type(DropletGenerator) dropGenerator
 
-    public create_CaseDirectory, firstSet_mainDroplet, checkpoint, output_ResultSummary
-    public mainDroplet_process, periodicOutput, check_FlowFieldUpdate
+    public mainDropletLoop, simulationSetUp, output_ResultSummary
 
     contains
 
-    subroutine firstSet_mainDroplet
+    subroutine simulationSetUp(case_name)
+        use virusDroplet_m
         use conditionValue_m
+        character(*), intent(in) :: case_name
         type(conditionValue_t) condVal
+
+        case_dir = case_name
+        call create_CaseDirectory
 
         call condVal%read(case_dir)
         num_restart = condVal%restart
@@ -46,16 +50,9 @@ module dropletMotionSimulation
         dropletSolver = DropletEquationSolver_( &
                             condVal%dt, condVal%L, condVal%U, &
                             condVal%direction_g, condVal%T, condVal%RH &
-                            )
+                        )
 
         n_start = max(num_restart, 0)
-        ! dropGenerator%timeStep = n_start              !流れ場の取得の前に必ず時刻セット
-
-        call create_FlowField( &                !流れ場の取得
-            dropletSolver%TimeOnSimu(n_start), condVal%PATH2FlowFile, &
-            condVal%DT_FLOW, condVal%OFFSET, condVal%INTERVAL_FLOW, &
-            condVal%LoopHead, condVal%LoopTail &
-            )
 
         block
             character(:), allocatable :: radDisFNAME
@@ -70,23 +67,26 @@ module dropletMotionSimulation
 
             if(num_restart==0) then
                 call random_set  !実行時刻に応じた乱数シード設定
-                mainDroplet = dropGenerator%generateDroplet(condVal%num_drop, timeStep, outputDir=case_dir)
+                mainDroplet = dropGenerator%generateDroplet(condVal%num_drop, TimeOnSimu(), outputDir=case_dir)
 
             else if(num_restart==-1) then
-                mainDroplet = read_InitialDistribution(case_dir//'/'//condVal%initialDistributionFName)
+
+                mainDroplet = read_backup(case_dir//'/'//condVal%initialDistributionFName)
 
             end if
+
+            call output_mainDroplet(initial = .true.)
 
         else
 
             print*, '**RESTART**'
 
             block
-                use virusDroplet_m
                 character(255) fname
 
                 write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') num_restart
                 mainDroplet = read_backup(trim(fname))   !ここで自動割り付け
+
             end block
 
         end if
@@ -94,6 +94,16 @@ module dropletMotionSimulation
         print*, 'num_droplets =', size(mainDroplet%droplet)
         last_coalescenceStep = 0
         last_numFloating = 0
+
+        call checkpoint
+
+        call create_FlowField( &                !流れ場の取得
+                dropletSolver%TimeStep2RealTime(step=n_start, dimension=.false.), &
+                condVal%PATH2FlowFile, condVal%DT_FLOW, condVal%OFFSET, condVal%INTERVAL_FLOW, &
+                condVal%LoopHead, condVal%LoopTail &
+            )
+
+        if(num_restart <= 0) call first_refCellSearch(mainDroplet)
 
     end subroutine
 
@@ -111,87 +121,170 @@ module dropletMotionSimulation
 
     end subroutine
 
-    type(DropletGroup) function read_InitialDistribution(fname)
-        use virusDroplet_m
-        character(*), intent(in) :: fname
+    subroutine mainDropletLoop
+        integer, pointer :: n => timeStep
+        
+        print '("*******************************************")'
+        print '("            START step_loop                ")'
+        print '("*******************************************")'
 
-        ! read_InitialDistribution = read_droplet_VTK(dir//'/InitialDistribution.vtk')
-        ! read_InitialDistribution%droplet(:)%initialRadius = read_InitialDistribution%droplet(:)%radius
-        ! call read_InitialDistribution%calc_minimumRadius(RH)
+        do n = n_start + 1, n_end           !ステップ数だけループ
 
-        ! call read_InitialDistribution%first_refCellSearch()
+            if(adhesionSwitch) call adhesion_check(mainDroplet)
 
-        read_initialDistribution = read_backup(fname)
+            call mainDroplet%survival_check(TimeOnSimu())           !生存率に関する処理
+    
+            ! call coalescence_process
+            call divideAreacoalescence_process        !飛沫間の合体判定
+    
+            call Calculation_Droplets     !飛沫の運動計算
 
-        call read_initialDistribution%first_refCellSearch()
+            if (mod(n, outputInterval) == 0) call periodicOutput             !出力
 
-    end function
+            call check_FlowFieldUpdate        !流れ場の更新チェック
+
+        end do
+
+        print '("*******************************************")'
+        print '("             END step_loop                 ")'
+        print '("*******************************************")'
+
+    end subroutine
 
     subroutine check_FlowFieldUpdate
 
         if((INTERVAL_FLOW <= 0).or.(timeStep==n_end)) return
 
-        call set_STEPinFLOW(dropletSolver%TimeOnSimu(timeStep))
+        call set_STEPinFLOW(TimeOnSimu())
 
         if(isUpdateTiming()) call update_FlowField   !流れ場の更新
 
     end subroutine
 
+    subroutine first_refCellSearch(dGroup)
+        type(DropletGroup) dGroup
+        integer j, num_drop
+        logical success
+
+        print*, 'first_refCellSearch occured!'
+
+        num_drop = size(dGroup%droplet)
+
+        j = 1
+        dGroup%droplet(j)%refCellID = nearest_cell(real(dGroup%droplet(j)%position(:)))
+
+        dGroup%droplet(j+1:)%refCellID = dGroup%droplet(j)%refCellID !時間短縮を図る
+
+        do j = 2, num_drop
+            call search_refCELL(real(dGroup%droplet(j)%position(:)), dGroup%droplet(j)%refCellID, stat=success)
+            if(.not.success) dGroup%droplet(j+1:)%refCellID = dGroup%droplet(j)%refCellID
+        end do
+
+    end subroutine
+   
+    subroutine adhesion_check(dGroup)
+        use unstructuredGrid_mod
+        type(DropletGroup) dGroup
+        integer i
+
+        do i = 1, size(dGroup%droplet)
+            if(dGroup%droplet(i)%status==0) then
+                call adhesionCheckOnBound( &
+                    dGroup%droplet(i)%position, dGroup%droplet(i)%radius, dGroup%droplet(i)%refCellID, &
+                    stat=dGroup%droplet(i)%adhesBoundID &
+                    )
+                if (dGroup%droplet(i)%adhesBoundID >= 1) call dGroup%droplet(i)%stop_droplet()
+            end if
+        end do
+            
+        call area_check(dGroup)
+
+    end subroutine
+
+    subroutine area_check(dGroup)
+        type(DropletGroup) dGroup
+        logical check
+        real areaMinMax(3,2)
+        integer i, J
+
+        areaMinMax = get_areaMinMax()
+
+        do i = 1, size(dGroup%droplet)
+            check = .false.
+            do J = 1, 3
+        
+                if(dGroup%droplet(i)%position(J) < areaMinMax(J,1)) then
+                    dGroup%droplet(i)%position(J) = areaMinMax(J,1)
+                    check = .true.
+                else if(dGroup%droplet(i)%position(J) > areaMinMax(J,2)) then
+                    dGroup%droplet(i)%position(J) = areaMinMax(J,2)
+                    check = .true.
+                end if
+
+            end do
+
+            if (check) call dGroup%droplet(i)%stop_droplet()
+
+        end do
+
+    end subroutine
+                      
+    subroutine boundary_move(dGroup) !境界面の移動に合わせて付着飛沫も移動
+        use unstructuredGrid_mod
+        type(DropletGroup) dGroup
+        integer vn, JB
+
+        ! print*, 'CALL:boundary_move'
+
+        do vn = 1, size(dGroup%droplet)
+        
+            if (dGroup%droplet(vn)%status <= 0) cycle !付着していないならスルー
+    
+            JB = dGroup%droplet(vn)%adhesBoundID
+            if (JB > 0) then
+                dGroup%droplet(vn)%position(:) &
+                    = dGroup%droplet(vn)%position(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
+            end if
+        
+        end do
+
+        ! call area_check(dGroup)
+
+        ! print*, 'FIN:boundary_move'
+
+    end subroutine boundary_move
+
     subroutine update_FlowField
 
         call read_unsteadyFlowData
 
-        ! if(unstructuredGrid) then
-            call boundary_setting(first=.false.)
-            call mainDroplet%boundary_move()
-        ! end if
+        call boundary_setting(first=.false.)
+        call boundary_move(mainDroplet)
 
         call set_MinMaxCDN
             
     end subroutine
 
-    subroutine mainDroplet_process
-
-        if(adhesionSwitch) call mainDroplet%adhesion_check()
-
-        call mainDroplet%survival_check(dropletSolver%TimeOnSimu(timeStep))           !生存率に関する処理
-
-        call divideAreacoalescence_process        !飛沫間の合体判定
-
-        call Calculation_Droplets     !飛沫の運動計算
-
-    end subroutine
-
     subroutine Calculation_Droplets()
         integer vn, targetID
 
-        ! if(unstructuredGrid) then
-            !$omp parallel do
-            do vn = 1, size(mainDroplet%droplet)
+        !$omp parallel do
+        do vn = 1, size(mainDroplet%droplet)
 
-                select case(mainDroplet%droplet(vn)%status)
-                case(0)
-                    call evaporation(mainDroplet%droplet(vn))    !蒸発方程式関連の処理
-                    call motionCalculation(mainDroplet%droplet(vn))     !運動方程式関連の処理
+            select case(mainDroplet%droplet(vn)%status)
+            case(0)
+                call evaporation(mainDroplet%droplet(vn))    !蒸発方程式関連の処理
+                call motionCalculation(mainDroplet%droplet(vn))     !運動方程式関連の処理
 
-                case(-2)
-                    targetID = mainDroplet%droplet(vn)%coalesID  !合体飛沫の片割れも移動させる
-                    mainDroplet%droplet(vn)%position = mainDroplet%droplet(targetID)%position
-                    mainDroplet%droplet(vn)%velocity = mainDroplet%droplet(targetID)%velocity
+            case(-2)
+                targetID = mainDroplet%droplet(vn)%coalesID  !合体飛沫の片割れも移動させる
+                mainDroplet%droplet(vn)%position = mainDroplet%droplet(targetID)%position
+                mainDroplet%droplet(vn)%velocity = mainDroplet%droplet(targetID)%velocity
 
-                end select
+            end select
 
-            end do
-            !$omp end parallel do
-
-        ! else
-        !     do vn = 1, size(self%droplet)
-        !         if(self%droplet(vn)%status /= 0) cycle !浮遊状態でないなら無視
-        !         call self%droplet(vn)%evaporation()    !蒸発方程式関連の処理
-        !         call self%droplet(vn)%motionCalculation_onCUBE()     !運動方程式関連の処理
-        !     end do
-
-        ! end if
+        end do
+        !$omp end parallel do
 
     end subroutine
 
@@ -230,7 +323,7 @@ module dropletMotionSimulation
         call mainDroplet%output_VTK(fname, deadline=initial)
 
         fname = case_dir//'/particle.csv'
-        call mainDroplet%output_CSV(fname, dropletSolver%TimeOnSimu(step=timeStep, dimension=.true.), initial)
+        call mainDroplet%output_CSV(fname, TimeOnSimu(dimension=.true.), initial)
 
         call mainDroplet%output_backup(case_dir//'/backup', initial)
 
@@ -310,8 +403,6 @@ module dropletMotionSimulation
         character(1) input
         character d_start*8, t_start*10
 
-        if(num_restart <= 0) call output_mainDroplet(initial = .true.)
-
         if(.not.startFlag) then
             do
                 print*, 'Do you want to start the calculation? (y/n)'
@@ -337,12 +428,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine create_CaseDirectory
-        use caseName_m
         use path_operator_m
-
-        case_dir = get_caseName()
-
-        print*, '#', nowCase, '[',case_dir,']'
 
         call make_directory(case_dir//'/VTK')
         call make_directory(case_dir//'/backup')
@@ -353,7 +439,7 @@ module dropletMotionSimulation
         use terminalControler_m
 
         print*, start_date
-        print*, 'Now_Step_Time =', dropletSolver%TimeOnSimu(step=timeStep, dimension=.true.), '[sec]'
+        print*, 'Now_Step_Time =', TimeOnSimu(dimension=.true.), '[sec]'
         print*, '# floating :', mainDroplet%Counter('floating'), '/', mainDroplet%Counter('total')
         if(refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
         call output_mainDroplet(initial=.false.)
@@ -388,8 +474,8 @@ module dropletMotionSimulation
             inquire(file=fname, exist=existance)
         end do
 
-        TimeStart = dropletSolver%TimeOnSimu(step=n_start, dimension=.true.)
-        TimeEnd = dropletSolver%TimeOnSimu(step=n_end, dimension=.true.)
+        TimeStart = dropletSolver%TimeStep2RealTime(step=n_start, dimension=.true.)
+        TimeEnd = dropletSolver%TimeStep2RealTime(step=n_end, dimension=.true.)
 
         open(newunit=n_unit, file=fname, status='new')
             write(n_unit,*)'*******************************************'
@@ -423,6 +509,17 @@ module dropletMotionSimulation
         close(n_unit)
         
     end subroutine
+
+    double precision function TimeOnSimu(dimension)
+        logical, intent(in), optional :: dimension
+
+        if(present(dimension)) then
+            TimeOnSimu = dropletSolver%TimeStep2RealTime(timeStep, dimension)
+        else
+            TimeOnSimu = dropletSolver%TimeStep2RealTime(timeStep, .false.)
+        end if
+
+    end function
 
     function DateAndTime_string(date, time) result(string)
         character(*), intent(in) :: date, time

@@ -28,7 +28,7 @@ program droplet2CSV
         write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
         dGroup = read_backup(fname)
 
-        time = baseParam%TimeOnSimu(step=n, dimension=.true.)
+        time = baseParam%TimeStep2RealTime(step=n, dimension=.true.)
         if(n==0) then
             call dGroup%output_CSV(trim(caseName)//'/particle.csv', time, initial=.true.)
         else

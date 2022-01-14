@@ -39,6 +39,8 @@ module caseName_m
 
         caseName = trim(case_array(nowCase))
 
+        print*, '#', nowCase, '[',caseName,']'
+
     end function
 
 end module caseName_m
