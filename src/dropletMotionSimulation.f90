@@ -316,6 +316,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine output_mainDroplet(initial)
+        use filename_mod
         logical, intent(in) :: initial
         character(255) fname
 
@@ -325,7 +326,12 @@ module dropletMotionSimulation
         fname = case_dir//'/particle.csv'
         call mainDroplet%output_CSV(fname, TimeOnSimu(dimension=.true.), initial)
 
-        call mainDroplet%output_backup(case_dir//'/backup', initial)
+        if(initial) then
+            fname = case_dir//'/'//IniDistributionFName
+        else
+            write(fname,'("'//case_dir//'/backup_", i0, ".bu")') timeStep
+        end if
+        call mainDroplet%output_backup(trim(fname))
 
     end subroutine
 

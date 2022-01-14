@@ -250,20 +250,12 @@ module virusDroplet_m
         
     end subroutine coalescence
 
-    subroutine output_backup(self, dir, initial)
-        use filename_mod
+    subroutine output_backup(self, fname)
         class(DropletGroup) self
-        character(*), intent(in) :: dir
-        logical, intent(in) :: initial
+        character(*), intent(in) :: fname
         integer i, n_unit, num_drop
-        character(255) fname
 
         num_drop = size(self%droplet(:))
-        if(initial) then
-            fname = dir//'/'//IniDistributionFName
-        else
-            ! write(fname,'("'//dir//'/backup_", i0, ".bu")') timeStep
-        end if
 
         open(newunit=n_unit, form='unformatted', file=fname, status='replace')
             write(n_unit) num_drop
@@ -274,7 +266,7 @@ module virusDroplet_m
 
         print*, 'writeOUT:', trim(fname)
 
-    end subroutine output_backup
+    end subroutine
 
     subroutine output_droplet_VTK(self, fname, deadline)
         class(DropletGroup) self
