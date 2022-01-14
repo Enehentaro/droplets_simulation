@@ -1,7 +1,7 @@
 program dropletCount
-    use dropletGroup_m
+    use virusDroplet_m
     use conditionValue_m
-    use dropletEquation_m
+    ! use dropletEquation_m
     use boxCounter_m
     implicit none
     integer n, i_box, num_box

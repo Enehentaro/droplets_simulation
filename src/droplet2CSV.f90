@@ -1,5 +1,5 @@
 program droplet2CSV
-    use dropletGroup_m
+    use virusDroplet_m
     use conditionValue_m
     use dropletEquation_m
     implicit none
@@ -22,7 +22,7 @@ program droplet2CSV
     print*, 'interval = ?'
     read(5,*) stepInterval
 
-    statusCSV = [0, 1,-1,-2]
+    dGroup%statusCSV = [0, 1,-1,-2]
 
     do n = 0, stepEnd, stepInterval
         write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
