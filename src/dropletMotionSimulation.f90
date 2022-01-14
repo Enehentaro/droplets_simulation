@@ -59,7 +59,10 @@ module dropletMotionSimulation
 
             call read_basicSetting(radiusDistributionFilename = radDisFNAME)
 
-            dropGenerator = DropletGenerator_(dropletSolver, radDisFNAME, case_dir)
+            dropGenerator = DropletGenerator_( &
+                                dropletSolver, radDisFNAME, case_dir, &
+                                generationRate = condVal%periodicGeneration(1), generationMode = condVal%periodicGeneration(2) &
+                            )
 
         end block
 
@@ -129,6 +132,8 @@ module dropletMotionSimulation
         print '("*******************************************")'
 
         do n = n_start + 1, n_end           !ステップ数だけループ
+            
+            call dropGenerator%periodicGeneration(mainDroplet, TimeOnSimu())
 
             if(adhesionSwitch) call adhesion_check(mainDroplet)
 
@@ -327,9 +332,9 @@ module dropletMotionSimulation
         call mainDroplet%output_CSV(fname, TimeOnSimu(dimension=.true.), initial)
 
         if(initial) then
-            fname = case_dir//'/'//IniDistributionFName
+            fname = case_dir//'/backup/'//IniDistributionFName
         else
-            write(fname,'("'//case_dir//'/backup_", i0, ".bu")') timeStep
+            write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') timeStep
         end if
         call mainDroplet%output_backup(trim(fname))
 
@@ -363,6 +368,8 @@ module dropletMotionSimulation
         double precision AreaMin(3), AreaMax(3), width(3), delta(3), min_cdn(3), max_cdn(3)
         double precision, parameter :: deltaRatio = 1.d-2
 
+        if(num_divide <= 0) return
+
         AreaMin(:) = 1.d9
         AreaMax(:) = -1.d9
         do m = 1, size(mainDroplet%droplet)
@@ -390,12 +397,14 @@ module dropletMotionSimulation
 
                     ID_array = mainDroplet%IDinBox(min_cdn, max_cdn, status=0)
                     ! print*, 'divide_stat :', size(ID_array), min_cdn, max_cdn
-                    dGroup%droplet = mainDroplet%droplet(ID_array)
-                    call dGroup%coalescence_check()
+                    dGroup%droplet = mainDroplet%droplet(ID_array)  !分割エリア内の飛沫を抽出（ここでIDが変わる）
+                    call dGroup%coalescence_check()  !分割エリア内で合体判定
 
                     do m = 1, size(ID_array)
                         id = ID_array(m)
-                        mainDroplet%droplet(id) = dGroup%droplet(m)
+                        mainDroplet%droplet(id) = dGroup%droplet(m)  !飛沫情報をもとのIDに格納
+
+                          !合体飛沫については、合体先ID（coalesID）ももとのIDに戻す必要がある
                         if(dGroup%droplet(m)%coalesID > 0) mainDroplet%droplet(id)%coalesID = ID_array(dGroup%droplet(m)%coalesID)
                     end do
 

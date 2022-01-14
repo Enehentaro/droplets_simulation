@@ -30,6 +30,7 @@ module virusDroplet_m
         procedure :: IDinBox => dropletIDinBox
         procedure :: inBox => dropletInBox
         procedure :: totalVolume => dropletTotalVolume
+        procedure :: IDinState =>dropletIDinState
 
         procedure survival_check
         procedure coalescence_check
@@ -181,6 +182,27 @@ module virusDroplet_m
 
         dropletTotalVolume = dropletTotalVolume * 4.d0/3.d0*PI
 
+    end function
+
+    function dropletIDinState(self, status) result(ID_array)
+        class(DropletGroup) self
+        integer, intent(in) :: status
+        integer, allocatable :: ID_array(:)
+        integer i, cnt
+
+        cnt = 0
+        allocate(ID_array(count(self%droplet(:)%status==status)))
+        
+        do i = 1, size(self%droplet)
+            if(self%droplet(i)%status == status) then
+
+                cnt = cnt + 1
+                ID_array(cnt) = i
+
+            end if
+
+        end do
+        
     end function
 
     subroutine coalescence_check(self, stat)
