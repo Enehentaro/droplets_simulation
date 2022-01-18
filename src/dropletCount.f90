@@ -3,8 +3,10 @@ program dropletCount
     use conditionValue_m
     use dropletEquation_m
     use boxCounter_m
+    use caseName_m
     implicit none
-    integer n, i_box, num_box
+    integer n, i_box, num_box, nc_max
+    integer, pointer :: nc => nowCase
     character(255) caseName, fname
     integer, allocatable :: id_array(:)
     type(dropletGroup) mainDroplet, dGroup
@@ -18,44 +20,50 @@ program dropletCount
     type(boxResult_t), allocatable :: bResult(:)
 
 
-    print*, 'caseName = ?'
-    read(5, *) caseName
+    call case_check(num_case = nc_max)
+    !print*, 'caseName = ?'
+    !read(5, *) caseName
 
-    call condVal%read(trim(caseName))
-    call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
-
-    box_array = get_box_array(trim(caseName), condVal%num_drop)
-
-    num_box = size(box_array)
-
-    do n = 0, condVal%stepEnd, condVal%outputInterval
-        if(n==0) then
-            fname = trim(caseName)//'/backup/InitialDistribution.bu'
-        else
-            write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
-        end if
-
-        mainDroplet = read_backup(fname)
-
-        do i_box = 1, num_box
-            id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
-            call box_array(i_box)%add_Flag(id_array)
+    do nc = 1, nc_max
+        caseName = get_caseName()
+        call condVal%read(trim(caseName))
+        call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
+    
+        box_array = get_box_array(trim(caseName), condVal%num_drop)
+    
+        num_box = size(box_array)
+    
+        do n = 0, condVal%stepEnd, condVal%outputInterval
+            if(n==0) then
+                fname = trim(caseName)//'/backup/InitialDistribution.bu'
+            else
+                write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
+            end if
+    
+            mainDroplet = read_backup(fname)
+    
+            do i_box = 1, num_box
+                id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
+                call box_array(i_box)%add_Flag(id_array)
+            end do
+    
         end do
+    
+        allocate(bResult(num_box))
+        do i_box = 1, num_box
+            id_array = box_array(i_box)%get_FlagID()
+            dGroup%droplet = mainDroplet%droplet(id_array)
+            bResult(i_box)%num_droplet = size(dGroup%droplet)
+            bResult(i_box)%volume = real(dGroup%totalVolume(dim='ml'))
+        end do
+    
+        bResult(:)%RoI = RateOfInfection(bResult(:)%volume)
+    
+        call output_countCSV
+        call output_boxVTK
 
+        deallocate(bResult)
     end do
-
-    allocate(bResult(num_box))
-    do i_box = 1, num_box
-        id_array = box_array(i_box)%get_FlagID()
-        dGroup%droplet = mainDroplet%droplet(id_array)
-        bResult(i_box)%num_droplet = size(dGroup%droplet)
-        bResult(i_box)%volume = real(dGroup%totalVolume(dim='ml'))
-    end do
-
-    bResult(:)%RoI = RateOfInfection(bResult(:)%volume)
-
-    call output_countCSV
-    call output_boxVTK
 
     contains
 
