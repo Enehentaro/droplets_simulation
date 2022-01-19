@@ -64,7 +64,7 @@ program dropletCount
         integer n_unit, i
         character(:), allocatable :: csvFName
 
-        csvFName = trim(caseName)//'/boxCount.csv'
+        csvFName = trim(caseName)//'/BoxCount.csv'
         print*, 'output: ', csvFName
 
         open(newunit=n_unit, file=csvFName, status='replace')
@@ -102,7 +102,7 @@ program dropletCount
 
         end do
 
-        call mesh%output(trim(caseName)//'/box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
+        call mesh%output(trim(caseName)//'/Box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
 
     end subroutine
 

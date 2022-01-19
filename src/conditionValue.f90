@@ -21,13 +21,13 @@ module conditionValue_m
     contains
 
     subroutine read_condition(self, dir)
-        use filename_mod
+        use filename_mod, only : conditionFName, defaultIniDisFName => IniDistributionFName
         class(conditionValue_t) self
         character(*), intent(in) :: dir
         integer n_unit
 
         double precision delta_t, L_represent, U_represent, direction_g(3)
-        character(255) :: initialDistributionFName = IniDistributionFName
+        character(255) :: initialDistributionFName = defaultIniDisFName
         integer num_restart, n_end, outputInterval, num_droplets
         real temperature, relativeHumidity
         integer :: periodicGeneration(2) = 0

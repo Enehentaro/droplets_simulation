@@ -61,7 +61,7 @@ Simulation of Virus Droplets Behavior in AFDET
 
 ## おまけ機能
   - **複数ケース連続実行**
-    - optionディレクトリ内の"case_list.txt"にケース名を複数列挙し、実行時に`option/case_list.txt`と入力すると、複数ケースを連続実行できる
+    - optionディレクトリ内の"case_list.txt"にケース名を複数列挙し、実行時に`*`と入力すると、複数ケースを連続実行できる
   - **basicSetting.nml**
     - optionディレクトリ内にある。付着判定のオンオフや、飛沫間合体の設定が可能。
 

@@ -30,7 +30,8 @@ module virusDroplet_m
         procedure :: IDinBox => dropletIDinBox
         procedure :: inBox => dropletInBox
         procedure :: totalVolume => dropletTotalVolume
-        procedure :: IDinState =>dropletIDinState
+        procedure :: IDinState => dropletIDinState
+        procedure :: getArea => get_dropletGroupArea
 
         procedure survival_check
         procedure coalescence_check
@@ -204,6 +205,24 @@ module virusDroplet_m
         end do
         
     end function
+
+    subroutine get_dropletGroupArea(self, AreaMin, AreaMax)
+        class(DropletGroup) self
+        double precision, intent(out) :: AreaMin(3), AreaMax(3)
+        integer i, m
+
+        AreaMin(:) = 1.d9
+        AreaMax(:) = -1.d9
+        do m = 1, size(self%droplet)
+            if(self%droplet(m)%status==0) then
+                do i = 1, 3
+                    AreaMin(i) = min(self%droplet(m)%position(i), AreaMin(i))
+                    AreaMax(i) = max(self%droplet(m)%position(i), AreaMax(i))
+                end do
+            end if
+        end do
+
+    end subroutine
 
     subroutine coalescence_check(self, stat)
         class(DropletGroup) self

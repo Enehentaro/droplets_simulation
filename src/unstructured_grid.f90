@@ -393,7 +393,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine read_adjacency(path, success)
-        use filename_mod
+        use filename_mod, only : adjacencyFileName
         implicit none
         character(*), intent(in) :: path
         logical, intent(out) :: success
@@ -437,7 +437,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine output_adjacency(path)
-        use filename_mod
+        use filename_mod, only : adjacencyFileName
         implicit none
         character(*), intent(in) :: path
         integer II, n_unit, num_cells, NCMAX
@@ -467,7 +467,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine read_boundaries(path)
-        use filename_mod
+        use filename_mod, only : boundaryFileName
         implicit none
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
@@ -486,7 +486,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine output_boundaries(path)
-        use filename_mod
+        use filename_mod, only : boundaryFileName
         implicit none
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX

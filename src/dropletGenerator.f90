@@ -224,7 +224,7 @@ module dropletGenerator_m
 
     subroutine set_dropletPlacementBox(self, positionDir)
         use simpleFile_reader
-        use filename_mod
+        use filename_mod, only : IniPositionFName
         class(DropletGenerator) self
         character(*), intent(in) :: positionDir
         integer i_box, num_box
@@ -245,7 +245,6 @@ module dropletGenerator_m
 
         num_box = size(position_mat, dim=2)
 
-        if(allocated(self%pBox_array)) deallocate(self%pBox_array)
         allocate(self%pBox_array(num_box))
 
         do i_box = 1, num_box
@@ -259,8 +258,6 @@ module dropletGenerator_m
         use simpleFile_reader
         class(DropletGenerator) self
         character(*), intent(in) :: radiusDistributionFilename
-
-        if(allocated(self%radiusThreshold)) return
 
         call read_CSV('data/'//radiusDistributionFilename, self%radiusThreshold)
 
@@ -304,7 +301,7 @@ module dropletGenerator_m
         double precision, intent(in) :: nowTime
         integer num_generated, required_generation, num_nowGenerate
 
-        required_generation = int(dble(self%generateRate)*nowTime)  !この時刻までに生成されているべき数
+        required_generation = int(dble(self%generateRate)*nowTime)  !このステップ終了までに生成されているべき数
 
         select case(self%generateMode)
         case(1)
@@ -321,7 +318,7 @@ module dropletGenerator_m
 
             num_nowGenerate = required_generation - num_generated !今このステップで生成されるべき数
 
-            print*, num_generated, required_generation, num_nowGenerate
+            ! print*, num_generated, required_generation, num_nowGenerate
             
             block
                 integer generateEnd, nonActive_perBox, i_box, num_box, generate_perBox

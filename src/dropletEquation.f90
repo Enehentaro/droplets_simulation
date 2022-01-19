@@ -132,8 +132,6 @@ module dropletEquation_m
         class(DropletEquationSolver) self
         integer i, i_max
 
-        if(allocated(self%minimumRadiusMatrix)) return
-
         call read_CSV('data/minimum_radius.csv', self%minimumRadiusMatrix)
         
         i_max = size(self%minimumRadiusMatrix, dim=2)

@@ -139,8 +139,7 @@ module dropletMotionSimulation
 
             call mainDroplet%survival_check(TimeOnSimu())           !生存率に関する処理
     
-            ! call coalescence_process
-            call divideAreacoalescence_process        !飛沫間の合体判定
+            call coalescence_process        !飛沫間の合体判定
     
             call Calculation_Droplets     !飛沫の運動計算
 
@@ -321,7 +320,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine output_mainDroplet(initial)
-        use filename_mod
+        use filename_mod, only : IniDistributionFName
         logical, intent(in) :: initial
         character(255) fname
 
@@ -348,38 +347,32 @@ module dropletMotionSimulation
         if(numFloating > last_numFloating) last_coalescenceStep = timeStep    !浮遊数が増加したら付着判定再起動のため更新
         last_numFloating = numFloating
 
-        !最後の合体から100ステップが経過したら、以降は合体が起こらないとみなしてリターン
+        !最後の合体から指定ステップが経過したら、以降は合体が起こらないとみなしてリターン
         if((timeStep - last_coalescenceStep) > coalescenceLimit) return
 
         call set_formatTC('(" Coalescence_check [step:", i10, "/", i10, "]")')
         call print_sameLine([timeStep, last_coalescenceStep + coalescenceLimit])
 
-        call mainDroplet%coalescence_check(stat = num_coalescence)
+        ! call mainDroplet%coalescence_check(stat = num_coalescence)
+        call divideAreaCoalescence_process(num_coales = num_coalescence)
 
         if(num_coalescence >= 1) last_coalescenceStep = timeStep
 
     end subroutine
 
-    subroutine divideAreaCoalescence_process
-        ! integer, parameter :: num_divide = 4
+    subroutine divideAreaCoalescence_process(num_coales)
         type(DropletGroup) dGroup
-        integer i, j, k, id, m
+        integer, intent(out) :: num_coales
+        integer i, j, k, id, m, stat_coales
         integer, allocatable :: ID_array(:)
         double precision AreaMin(3), AreaMax(3), width(3), delta(3), min_cdn(3), max_cdn(3)
         double precision, parameter :: deltaRatio = 1.d-2
 
+        num_coales = 0
         if(num_divide <= 0) return
 
-        AreaMin(:) = 1.d9
-        AreaMax(:) = -1.d9
-        do m = 1, size(mainDroplet%droplet)
-            if(mainDroplet%droplet(m)%status==0) then
-                do i = 1, 3
-                    AreaMin(i) = min(mainDroplet%droplet(m)%position(i), AreaMin(i))
-                    AreaMax(i) = max(mainDroplet%droplet(m)%position(i), AreaMax(i))
-                end do
-            end if
-        end do
+        call mainDroplet%getArea(AreaMin, AreaMax)
+
         ! AreaMin(:) = AreaMin(:) - 1.d-9 ;print*, 'AreaMin:',AreaMin
         ! AreaMax(:) = AreaMax(:) + 1.d-9 ;print*, 'AreaMax:',AreaMax
         width(:) = (AreaMax(:) - AreaMin(:)) / dble(num_divide)   !;print*, 'width:',width
@@ -398,7 +391,8 @@ module dropletMotionSimulation
                     ID_array = mainDroplet%IDinBox(min_cdn, max_cdn, status=0)
                     ! print*, 'divide_stat :', size(ID_array), min_cdn, max_cdn
                     dGroup%droplet = mainDroplet%droplet(ID_array)  !分割エリア内の飛沫を抽出（ここでIDが変わる）
-                    call dGroup%coalescence_check()  !分割エリア内で合体判定
+                    call dGroup%coalescence_check(stat=stat_coales)  !分割エリア内で合体判定
+                    num_coales = num_coales + stat_coales
 
                     do m = 1, size(ID_array)
                         id = ID_array(m)
