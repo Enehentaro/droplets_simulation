@@ -10,16 +10,20 @@ module dropletMotionSimulation
 
     integer num_restart
     integer, target :: timeStep
-    integer :: n_start, n_end
+    integer n_start, n_end
 
     character(:), allocatable :: start_date
     real start_time
 
     character(:), allocatable :: case_dir
 
-    logical :: startFlag = .false., adhesionSwitch = .true.
+    logical :: startFlag = .false.
+    integer :: last_coalescenceStep=0
+    logical generationFlag
 
-    integer :: last_coalescenceStep, last_numFloating, coalescenceLimit=100, num_divide=4
+    logical :: adhesionSwitch = .true.
+    integer :: coalescenceLimit=10000, num_divide=4
+    character(:), allocatable :: radiusDistributionFilename
 
     type(DropletGroup) mainDroplet
 
@@ -27,7 +31,7 @@ module dropletMotionSimulation
 
     type(DropletGenerator) dropGenerator
 
-    public mainDropletLoop, simulationSetUp, output_ResultSummary
+    public mainDropletLoop, simulationSetUp, output_ResultSummary, read_basicSettingOnSimulation
 
     contains
 
@@ -54,17 +58,10 @@ module dropletMotionSimulation
 
         n_start = max(num_restart, 0)
 
-        block
-            character(:), allocatable :: radDisFNAME
-
-            call read_basicSetting(radiusDistributionFilename = radDisFNAME)
-
-            dropGenerator = DropletGenerator_( &
-                                dropletSolver, radDisFNAME, case_dir, &
-                                generationRate = condVal%periodicGeneration(1), generationMode = condVal%periodicGeneration(2) &
-                            )
-
-        end block
+        dropGenerator = DropletGenerator_( &
+                            dropletSolver, radiusDistributionFilename, case_dir, &
+                            generationRate = condVal%periodicGeneration(1), generationMode = condVal%periodicGeneration(2) &
+                        )
 
         if(num_restart <= 0) then
 
@@ -96,7 +93,6 @@ module dropletMotionSimulation
 
         print*, 'num_droplets =', size(mainDroplet%droplet)
         last_coalescenceStep = 0
-        last_numFloating = 0
 
         call checkpoint
 
@@ -110,13 +106,15 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine read_basicSetting(radiusDistributionFilename)
+    subroutine read_basicSettingOnSimulation
         integer n_unit
-        character(:), allocatable, intent(out) :: radiusDistributionFilename
+        character(23) :: fname ='option/basicSetting.nml'
         character(255) radiusDistributionFNAME
         namelist /basicSetting/ coalescenceLimit, adhesionSwitch, num_divide, radiusDistributionFNAME
 
-        open(newunit=n_unit, file='option/basicSetting.nml', status='old')
+        print*, 'READ : ', fname
+        
+        open(newunit=n_unit, file=fname, status='old')
             read(n_unit, nml=basicSetting)
         close(n_unit)
 
@@ -133,7 +131,7 @@ module dropletMotionSimulation
 
         do n = n_start + 1, n_end           !ステップ数だけループ
             
-            call dropGenerator%periodicGeneration(mainDroplet, TimeOnSimu())
+            call dropGenerator%periodicGeneration(mainDroplet, TimeOnSimu(), generationFlag)
 
             if(adhesionSwitch) call adhesion_check(mainDroplet)
 
@@ -344,8 +342,7 @@ module dropletMotionSimulation
         integer numFloating, num_coalescence
         
         numFloating = mainDroplet%counter('floating')
-        if(numFloating > last_numFloating) last_coalescenceStep = timeStep    !浮遊数が増加したら付着判定再起動のため更新
-        last_numFloating = numFloating
+        if(generationFlag) last_coalescenceStep = timeStep - 1    !飛沫発生が起こったら前ステップに付着が起こったことにする（付着判定再起動のため）
 
         !最後の合体から指定ステップが経過したら、以降は合体が起こらないとみなしてリターン
         if((timeStep - last_coalescenceStep) > coalescenceLimit) return

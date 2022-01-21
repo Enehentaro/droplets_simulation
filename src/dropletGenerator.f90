@@ -295,12 +295,14 @@ module dropletGenerator_m
 
     end function
 
-    subroutine dropletPeriodicGeneration(self, dGroup, nowTime)
+    subroutine dropletPeriodicGeneration(self, dGroup, nowTime, stat)
         class(DropletGenerator) self
         type(DropletGroup) dGroup
         double precision, intent(in) :: nowTime
         integer num_generated, required_generation, num_nowGenerate
+        logical, intent(out) :: stat
 
+        stat = .false.
         required_generation = int(dble(self%generateRate)*nowTime)  !このステップ終了までに生成されているべき数
 
         select case(self%generateMode)
@@ -310,6 +312,7 @@ module dropletGenerator_m
             if(num_nowGenerate >= 1) then 
                 dGroup = self%generateDroplet(num_nowGenerate, nowTime)
                 dGroup%droplet = [dGroup%droplet, dGroup%droplet]
+                stat = .true.
             end if
 
         case(2)
@@ -344,6 +347,8 @@ module dropletGenerator_m
                         dGroup%droplet(nonActiveID_array(:))%status = 0
 
                     end if
+
+                    stat = .true.
                 
                 end if
             end block

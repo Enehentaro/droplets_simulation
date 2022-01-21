@@ -17,6 +17,8 @@ PROGRAM MAIN
             !$OMP end single
       !$OMP end parallel
 
+      call read_basicSettingOnSimulation
+
       call case_check(num_case=nc_max) 
 
       DO nc = 1, nc_max                         !実行数だけループ（通常1回）
