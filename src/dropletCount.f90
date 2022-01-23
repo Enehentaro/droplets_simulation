@@ -50,15 +50,15 @@ program dropletCount
         end do
     
         allocate(bResult(num_box))
-        
+
         do i_box = 1, num_box
             id_array = box_array(i_box)%get_FlagID()
             dGroup%droplet = mainDroplet%droplet(id_array)
             bResult(i_box)%num_droplet = size(dGroup%droplet)
             bResult(i_box)%volume = real(dGroup%totalVolume() *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
         end do
-    
-        bResult(:)%RoI = RateOfInfection(bResult(:)%volume)
+
+        bResult(:)%RoI = RateOfInfection(bResult(:)%volume) !1分間あたりの感染確率を計算
     
         call output_countCSV
         call output_boxVTK
@@ -116,9 +116,10 @@ program dropletCount
     end subroutine
 
     elemental real function RateOfInfection(volume)
+        !1分間あたりの感染確率を計算（もとの資料では1時間あたりの感染確率だが、1分間あたりに換算）
         real, intent(in) :: volume
 
-        RateOfInfection = 1. - exp(-volume*1.e7 / 900.)
+        RateOfInfection = 1. - exp(-volume*1.e7 / (900./60.))
 
     end function
 
