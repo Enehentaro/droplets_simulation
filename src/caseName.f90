@@ -7,7 +7,7 @@ module caseName_m
 
     subroutine case_check(num_case)
         use simpleFile_reader
-        use filename_mod
+        use filename_mod, only : conditionFName, caseListFName
         character(30) caseName
         integer, intent(out) :: num_case
         integer i
@@ -15,8 +15,8 @@ module caseName_m
 
         print*, 'Case Name ?'
         read(5, '(A)') caseName
-        if(index(caseName, '.txt')>0) then
-            call read_textRecord(trim(caseName), case_array)
+        if(trim(caseName)=='*') then
+            call read_textRecord('option/'//caseListFName, case_array)
             num_case = size(case_array)
         else
             num_case = 1
@@ -38,6 +38,8 @@ module caseName_m
         character(:), allocatable :: caseName
 
         caseName = trim(case_array(nowCase))
+
+        print*, '#', nowCase, '[',caseName,']'
 
     end function
 

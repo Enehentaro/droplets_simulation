@@ -1,7 +1,7 @@
 program dropletCount
-    use dropletGroup_m
+    use virusDroplet_m
     use conditionValue_m
-    use dropletEquation_m
+    ! use dropletEquation_m
     use boxCounter_m
     use caseName_m
     implicit none
@@ -9,8 +9,9 @@ program dropletCount
     integer, pointer :: nc => nowCase
     character(255) caseName, fname
     integer, allocatable :: id_array(:)
-    type(dropletGroup) mainDroplet, dGroup
+    type(DropletGroup) mainDroplet, dGroup
     type(conditionValue_t) condVal
+    ! type(BasicParameter) baseParam
     type(boxCounter), allocatable :: box_array(:)
 
     type boxResult_t
@@ -19,7 +20,6 @@ program dropletCount
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
-
     call case_check(num_case = nc_max)
     !print*, 'caseName = ?'
     !read(5, *) caseName
@@ -27,7 +27,7 @@ program dropletCount
     do nc = 1, nc_max
         caseName = get_caseName()
         call condVal%read(trim(caseName))
-        call set_basicVariables_dropletEquation(condVal%dt, condVal%L, condVal%U)
+        ! baseParam = BasicParameter_(condVal%dt, condVal%L, condVal%U)
     
         box_array = get_box_array(trim(caseName), condVal%num_drop)
     
@@ -50,19 +50,21 @@ program dropletCount
         end do
     
         allocate(bResult(num_box))
+
         do i_box = 1, num_box
             id_array = box_array(i_box)%get_FlagID()
             dGroup%droplet = mainDroplet%droplet(id_array)
             bResult(i_box)%num_droplet = size(dGroup%droplet)
-            bResult(i_box)%volume = real(dGroup%totalVolume(dim='ml'))
+            bResult(i_box)%volume = real(dGroup%totalVolume() *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
         end do
-    
-        bResult(:)%RoI = RateOfInfection(bResult(:)%volume)
+
+        bResult(:)%RoI = RateOfInfection(bResult(:)%volume) !1分間あたりの感染確率を計算
     
         call output_countCSV
         call output_boxVTK
 
         deallocate(bResult)
+
     end do
 
     contains
@@ -71,7 +73,7 @@ program dropletCount
         integer n_unit, i
         character(:), allocatable :: csvFName
 
-        csvFName = trim(caseName)//'/boxCount.csv'
+        csvFName = trim(caseName)//'/BoxCount.csv'
         print*, 'output: ', csvFName
 
         open(newunit=n_unit, file=csvFName, status='replace')
@@ -109,14 +111,15 @@ program dropletCount
 
         end do
 
-        call mesh%output(trim(caseName)//'/box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
+        call mesh%output(trim(caseName)//'/Box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
 
     end subroutine
 
     elemental real function RateOfInfection(volume)
+        !1分間あたりの感染確率を計算（もとの資料では1時間あたりの感染確率だが、1分間あたりに換算）
         real, intent(in) :: volume
 
-        RateOfInfection = 1. - exp(-volume*1.e7 / 900.)
+        RateOfInfection = 1. - exp(-volume*1.e7 / (900./60.))
 
     end function
 

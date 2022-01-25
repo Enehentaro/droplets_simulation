@@ -5,7 +5,7 @@ module conditionValue_m
     type, public :: conditionValue_t
         double precision dt, L, U, direction_g(3)
         character(:), allocatable :: initialDistributionFName
-        integer restart, stepEnd, outputInterval, num_drop
+        integer restart, stepEnd, outputInterval, num_drop, periodicGeneration(2)
         real T, RH
 
         character(:), allocatable :: path2FlowFile
@@ -21,25 +21,24 @@ module conditionValue_m
     contains
 
     subroutine read_condition(self, dir)
-        use filename_mod
+        use filename_mod, only : conditionFName, defaultIniDisFName => IniDistributionFName
         class(conditionValue_t) self
         character(*), intent(in) :: dir
         integer n_unit
 
         double precision delta_t, L_represent, U_represent, direction_g(3)
-        character(255) initialDistributionFName
+        character(255) :: initialDistributionFName = defaultIniDisFName
         integer num_restart, n_end, outputInterval, num_droplets
         real temperature, relativeHumidity
+        integer :: periodicGeneration(2) = 0
 
         character(255) PATH2FlowFile
         double precision DT_FLOW
         integer OFFSET, INTERVAL_FLOW, LoopHead, LoopTail
 
         namelist /dropletSetting/ num_restart, n_end, delta_t, outputInterval, temperature, relativeHumidity,&
-            num_droplets, direction_g, initialDistributionFName
+            num_droplets, direction_g, initialDistributionFName, periodicGeneration
         namelist /flowFieldSetting/ PATH2FlowFile, DT_FLOW, OFFSET, INTERVAL_FLOW, LoopHead, LoopTail, L_represent, U_represent
-
-        initialDistributionFName = IniDistributionFName
 
         OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
             read(n_unit, nml=dropletSetting)
@@ -57,6 +56,7 @@ module conditionValue_m
         self%num_drop = num_droplets
         self%T = temperature
         self%RH = relativeHumidity
+        self%periodicGeneration = periodicGeneration
 
         self%PATH2FlowFile = trim(PATH2FlowFile)
         self%DT_FLOW = DT_FLOW

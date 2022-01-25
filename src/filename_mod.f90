@@ -4,5 +4,5 @@ module filename_mod
     character(21), parameter :: conditionFName = 'condition.nml'
     character(20), parameter :: IniPositionFName = 'initial_position.csv'
     character(22), parameter :: IniDistributionFName = 'InitialDistribution.bu'
-
+    character(13), parameter :: caseListFName = 'case_list.txt'
 end module filename_mod

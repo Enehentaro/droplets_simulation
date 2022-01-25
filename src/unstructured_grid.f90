@@ -63,7 +63,7 @@ module unstructuredGrid_mod
                 call read_INP(FNAME)   !INPを読み込む(SHARP用)
 
             case('FLD')
-                call read_FLD(FNAME)
+                call read_FLD(FNAME, findTopology= .true., findVelocity = .true.)
 
             case('ARRAY')
                 if(.not.allocated(CELLs)) call read_VTK(meshFileNAME, meshOnly=.true.)
@@ -99,13 +99,23 @@ module unstructuredGrid_mod
                 call read_INP(trim(FNAME))   !INPを読み込む(SHARP用)
 
             case('FLD')
-                if(.not.allocated(CELLs).and.FileNumber > 0) then
-                    write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') 0
-                    call read_FLD(trim(FNAME))
-                end if
+                if(allocated(CELLs)) then
+                    write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FileNumber
+                    call read_FLD(trim(FNAME), findTopology= .false., findVelocity = .true.)
 
-                write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FileNumber
-                call read_FLD(trim(FNAME))
+                else    !セル配列が未割り当て（要するに初回）のとき
+                    write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FileNumber !とりあえずその番号ファイルにアクセス
+                    call read_FLD(trim(FNAME), findTopology= .true., findVelocity = .true.)
+
+                    if(.not.allocated(CELLs)) then !それでもまだ未割り当てのとき
+                        write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') 0 !ゼロ番にアクセス
+                        call read_FLD(trim(FNAME), findTopology= .true., findVelocity = .false.)
+
+                        write(FNAME,'("'//trim(path_and_head)//'", i0, ".fld")') FileNumber !やっと該当番号ファイルにアクセス
+                        call read_FLD(trim(FNAME), findTopology= .false., findVelocity = .true.)
+                    end if
+
+                end if
 
             case('ARRAY')
                 if(.not.allocated(CELLs)) call read_VTK(meshFileNAME, meshOnly=.true.)
@@ -291,13 +301,14 @@ module unstructuredGrid_mod
             
     end subroutine
 
-    subroutine read_FLD(FNAME)
+    subroutine read_FLD(FNAME, findTopology, findVelocity)
         use SCT_file_reader_m
         implicit none
         type(sct_grid_t) grid
         integer ii, iitet, iiwed, iipyr, iihex, iimx, iicnt
         integer kk, kkmx
         integer,allocatable :: tetras(:,:), wedges(:,:), pyramids(:,:), hexas(:,:)
+        logical, intent(in) :: findTopology, findVelocity
         real(8),allocatable :: points(:,:)
         real(8),allocatable :: velocity(:,:)!, pressure(:)
         character(*), intent(in) :: FNAME
@@ -306,52 +317,56 @@ module unstructuredGrid_mod
 
         call grid%read_SCT_file(FNAME)
         
-        if(.not.allocated(CELLs)) then
+        if(findTopology) then
             !!ファイルが存在し, かつトポロジー情報が存在する場合以下の処理が行われる.  
             call grid%extract_cell_vertices(tetras, pyramids, wedges, hexas)
-            call grid%get_2d_array_of_point_coords(points)
-            iitet = grid%get_tetrahedron_count()
-            iipyr = grid%get_pyramid_count()
-            iiwed = grid%get_wedge_count()
-            iihex = grid%get_hexahedron_count()
-            iimx = grid%get_element_count()
-            kkmx = grid%get_vertex_count()
-
-            if(iihex>0) then
-                print*, 'Hexahedron is not yet supported.', iihex
-                stop
+            if(allocated(tetras)) then
+                call grid%get_2d_array_of_point_coords(points)
+                iitet = grid%get_tetrahedron_count()
+                iipyr = grid%get_pyramid_count()
+                iiwed = grid%get_wedge_count()
+                iihex = grid%get_hexahedron_count()
+                iimx = grid%get_element_count()
+                kkmx = grid%get_vertex_count()
+    
+                if(iihex>0) then
+                    print*, 'Hexahedron is not yet supported.', iihex
+                    stop
+                end if
+    
+                allocate(CELLs(iimx))
+                allocate(NODEs(kkmx))
+    
+                do kk = 1, kkmx
+                    NODEs(kk)%coordinate(:) = real(points(:,kk))
+                end do
+    
+                iicnt = 1
+                do ii = 1, iitet
+                    CELLs(iicnt)%nodeID = tetras(:,ii)
+                    CELLs(iicnt)%typeName = 'tetra'
+                    iicnt = iicnt + 1
+                end do
+                do ii = 1, iiwed
+                    CELLs(iicnt)%nodeID = wedges(:,ii)
+                    CELLs(iicnt)%typeName = 'prism'
+                    iicnt = iicnt + 1
+                end do
+                do ii = 1, iipyr
+                    CELLs(iicnt)%nodeID = pyramids(:,ii)
+                    CELLs(iicnt)%typeName = 'pyrmd'
+                    iicnt = iicnt + 1
+                end do
+    
             end if
-
-            allocate(CELLs(iimx))
-            allocate(NODEs(kkmx))
-
-            do kk = 1, kkmx
-                NODEs(kk)%coordinate(:) = real(points(:,kk))
-            end do
-
-            iicnt = 1
-            do ii = 1, iitet
-                CELLs(iicnt)%nodeID = tetras(:,ii)
-                CELLs(iicnt)%typeName = 'tetra'
-                iicnt = iicnt + 1
-            end do
-            do ii = 1, iiwed
-                CELLs(iicnt)%nodeID = wedges(:,ii)
-                CELLs(iicnt)%typeName = 'prism'
-                iicnt = iicnt + 1
-            end do
-            do ii = 1, iipyr
-                CELLs(iicnt)%nodeID = pyramids(:,ii)
-                CELLs(iicnt)%typeName = 'pyrmd'
-                iicnt = iicnt + 1
-            end do
 
         end if
         
         ! call grid%search_scalar_data("PRES",pressure)
-        call grid%search_vector_data("VEL",velocity)
-
-        call point2cellVelocity(real(velocity))
+        if(findVelocity) then
+            call grid%search_vector_data("VEL",velocity)
+            call point2cellVelocity(real(velocity))
+        end if
           
     end subroutine
 
@@ -378,12 +393,13 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine read_adjacency(path, success)
-        use filename_mod
+        use filename_mod, only : adjacencyFileName
         implicit none
         character(*), intent(in) :: path
         logical, intent(out) :: success
-        integer II,NA,JB, n_unit, num_cells, num_adj, num_BF, NCMAX
+        integer II,NA, n_unit, num_cells, num_adj, num_BF, NCMAX
         character(:), allocatable :: FNAME
+        character(255) str
                 
         FNAME = trim(path)//adjacencyFileName
         inquire(file = FNAME, exist = success)
@@ -401,35 +417,30 @@ module unstructuredGrid_mod
             end if
 
             read(n_unit,*) NCMAX
-            ! allocate(NEXT_CELL(NCMAX,num_cells),NUM_NC(num_cells))
+
             DO II = 1, num_cells
-                read(n_unit,'(I5)',advance='no') num_adj
+                read(n_unit,'(A)') str
+                read(str, *) num_adj
                 allocate(CELLs(II)%adjacentCellID(num_adj))
-                DO NA = 1, num_adj
-                    read(n_unit,'(I12)',advance='no') CELLs(II)%adjacentCellID(NA)
-                END DO
-                read(n_unit,'()')
+                read(str, *) NA, CELLs(II)%adjacentCellID(:)
             END DO
 
             DO II = 1, num_cells
-                read(n_unit, fmt='(I4)', advance='no') num_BF  ! Number of Boundary
+                read(n_unit,'(A)') str
+                read(str, *) num_BF
                 allocate(CELLs(II)%boundFaceID(num_BF))
-                do JB = 1, num_BF
-                    read(n_unit, fmt='(I10)', advance='no') CELLs(II)%boundFaceID(JB)
-                end do
-                read(n_unit,'()')  !改行
+                read(str, *) NA, CELLs(II)%boundFaceID(:)
             END DO
-
 
         close(n_unit)
 
     end subroutine
 
     subroutine output_adjacency(path)
-        use filename_mod
+        use filename_mod, only : adjacencyFileName
         implicit none
         character(*), intent(in) :: path
-        integer II,NA,JB, n_unit, num_cells, NCMAX
+        integer II, n_unit, num_cells, NCMAX
         character(:), allocatable :: FNAME
                 
         FNAME = trim(path)//adjacencyFileName
@@ -444,19 +455,11 @@ module unstructuredGrid_mod
             write(n_unit,*) NCMAX
 
             DO II = 1, num_cells
-                write(n_unit,'(I5)',advance='no') size(CELLs(II)%adjacentCellID)
-                DO NA = 1, size(CELLs(II)%adjacentCellID)
-                    write(n_unit,'(I12)',advance='no') CELLs(II)%adjacentCellID(NA)
-                END DO
-                write(n_unit,'()')
+                write(n_unit,'(*(i0:,X))') size(CELLs(II)%adjacentCellID), CELLs(II)%adjacentCellID(:)
             END DO
 
             DO II = 1, num_cells
-                write(n_unit, fmt='(I4)', advance='no') size(CELLs(II)%boundFaceID)  ! Number of Boundary
-                do JB = 1, size(CELLs(II)%boundFaceID)
-                    write(n_unit, fmt='(I10)', advance='no') CELLs(II)%boundFaceID(JB)
-                end do
-                write(n_unit,'()')  !改行
+                write(n_unit,'(*(i0:,X))') size(CELLs(II)%boundFaceID), CELLs(II)%boundFaceID(:)
             END DO
 
         close(n_unit)
@@ -464,7 +467,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine read_boundaries(path)
-        use filename_mod
+        use filename_mod, only : boundaryFileName
         implicit none
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
@@ -483,7 +486,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine output_boundaries(path)
-        use filename_mod
+        use filename_mod, only : boundaryFileName
         implicit none
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
@@ -495,34 +498,11 @@ module unstructuredGrid_mod
         open(newunit=n_unit, FILE=FNAME , STATUS='replace')
             write(n_unit,*) JBMX
             do JB = 1, JBMX
-                write(n_unit,*) BoundFACEs(JB)%nodeID(:)
+                write(n_unit,'(*(i0:,X))') BoundFACEs(JB)%nodeID(:)
             end do
         close(n_unit)
         
     end subroutine
-
-    ! subroutine set_nodeID_onBoundFace(nodeID_onBoundFace)
-    !     integer, intent(in) :: nodeID_onBoundFace(:,:)
-    !     integer i, num_BF
-
-    !     num_BF = size(nodeID_onBoundFace, dim=2)
-    !     allocate(BoundFACEs(num_BF))
-
-    !     do i = 1, num_BF
-    !         BoundFACEs(i)%nodeID = nodeID_onBoundFace(:,i)
-    !     end do
-    ! end subroutine set_nodeID_onBoundFace
-
-    ! subroutine set_adjacency(num_adjacent, adjacentCellID)
-    !     integer, intent(in) :: num_adjacent(:), adjacentCellID(:,:)
-    !     integer i, num_cell
-
-    !     num_cell = size(CELLs)
-    !     do i = 1, num_cell
-    !         CELLs(i)%adjacentCellID = adjacentCellID(1:num_adjacent(i), i)
-    !     end do
-
-    ! end subroutine set_adjacency
 
     integer function nearest_cell(X) !最も近いセルNCNの探索
         real, intent(in) :: X(3)
@@ -672,9 +652,40 @@ module unstructuredGrid_mod
 
     end subroutine
 
+    subroutine adhesionCheckOnBound(position, radius, cellID, stat)
+        use vector_m
+        double precision, intent(in) :: position(3), radius
+        integer, intent(in) :: cellID
+        integer, intent(out) :: stat
+        integer JJ, JB
+
+        double precision :: r_vector(3), inner
+
+        stat = 0
+
+        do JJ = 1, size(CELLs(CellID)%boundFaceID)
+            JB = CELLs(CellID)%boundFaceID(JJ)
+
+            r_vector(:) = position(:) - BoundFACEs(JB)%center(:)
+
+            inner = dot_product(r_vector(:), BoundFACEs(JB)%normalVector(:))
+            !外向き法線ベクトルと位置ベクトルの内積は、平面からの飛び出し量に相当
+
+            if (inner + radius > 0.d0) then !(飛び出し量+飛沫半径)がゼロ以上なら付着判定  
+                stat = JB       !付着した境界面番号
+            end if
+        end do
+
+    end subroutine
+
     subroutine point2cellVelocity(pointVector)
         real, intent(in) :: pointVector(:,:)
         integer II, IIMX, n, ID, num_node
+
+        if(.not.allocated(CELLs)) then
+            print*, '**MISS point2cellVelocity** CELL_ARRAY is not yet allocated.'
+            return
+        end if
 
         IIMX = size(CELLs)
         DO II = 1, IIMX
@@ -684,29 +695,8 @@ module unstructuredGrid_mod
                 ID = CELLs(II)%nodeID(n)
                 CELLs(II)%flowVelocity(:) = CELLs(II)%flowVelocity(:) + pointVector(:,ID)
             end do
-            CELLs(II)%flowVelocity(:) = CELLs(II)%flowVelocity(:) / num_node
+            CELLs(II)%flowVelocity(:) = CELLs(II)%flowVelocity(:) / real(num_node)
         END DO
-  
-        ! do II = 1, size(celldata, dim=2)   !点データをセルデータに変換
-              
-        !     IF (celltype(II)==0) THEN
-  
-        !         celldata(:,II) = 0.25d0*(pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) &
-        !             + pointdata(:, cell2node(3,II)) + pointdata(:, cell2node(4,II)))
-  
-        !     ELSE IF (celltype(II)==1) THEN
-  
-        !         celldata(:,II) = (pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) + pointdata(:, cell2node(3,II)) &
-        !             + pointdata(:, cell2node(4,II)) + pointdata(:, cell2node(5,II)) + pointdata(:, cell2node(6,II))) / 6.0d0
-  
-        !     ELSE IF (celltype(II)==2) THEN
-  
-        !         celldata(:,II) = 0.20d0*(pointdata(:, cell2node(1,II)) + pointdata(:, cell2node(2,II)) &
-        !             + pointdata(:, cell2node(3,II)) + pointdata(:, cell2node(4,II)) + pointdata(:, cell2node(5,II)))
-  
-        !     END IF
-  
-        ! end do
   
     end subroutine
 
@@ -733,6 +723,39 @@ module unstructuredGrid_mod
 
             write(n_unit, '("endsolid test")')
         close(n_unit)
+
+    end subroutine
+
+    subroutine solve_adacencyOnUnstructuredGrid
+        use adjacencySolver_m
+        integer i, j, num_adjacent, num_boundFace
+        integer, parameter :: max_vertex=6, max_adjacent=4, max_boundFace=4
+        integer cellVertices(max_vertex, size(CELLs))
+        integer adjacentCellArray(max_adjacent, size(CELLs))
+        integer cellBoundFaces(max_boundFace, size(CELLs))
+        integer, allocatable :: boundFaceVertices(:,:)
+
+        cellVertices = 0
+        do i = 1, size(CELLs)
+            cellVertices(1:size(CELLs(i)%nodeID(:)), i) = CELLs(i)%nodeID(:)
+        end do
+
+        cellBoundFaces = 0
+        adjacentCellArray = 0
+        call solve_BoundaryAndAdjacency(cellVertices, cellBoundFaces, boundFaceVertices, adjacentCellArray)
+
+        allocate(BoundFACEs(size(boundFaceVertices, dim=2)))
+        do j = 1, size(BoundFACEs)
+            BoundFACEs(j)%nodeID = boundFaceVertices(:,j)
+        end do
+
+        do i = 1, size(CELLs)
+            num_boundFace = max_boundFace - count(cellBoundFaces(:,i)==0)
+            CELLs(i)%boundFaceID = cellBoundFaces(1:num_boundFace, i)
+
+            num_adjacent = max_adjacent - count(adjacentCellArray(:,i)==0)
+            CELLs(i)%adjacentCellID = adjacentCellArray(1:num_adjacent, i)
+        end do
 
     end subroutine
 
