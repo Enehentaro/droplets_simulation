@@ -173,7 +173,7 @@ module dropletMotionSimulation
         num_drop = size(dGroup%droplet)
 
         j = 1
-        dGroup%droplet(j)%refCellID = nearest_cell(real(dGroup%droplet(j)%position(:)))
+        dGroup%droplet(j)%refCellID = mainMesh%nearest_cell(real(dGroup%droplet(j)%position(:)))
 
         dGroup%droplet(j+1:)%refCellID = dGroup%droplet(j)%refCellID !時間短縮を図る
 
@@ -191,7 +191,7 @@ module dropletMotionSimulation
 
         do i = 1, size(dGroup%droplet)
             if(dGroup%droplet(i)%status==0) then
-                call adhesionCheckOnBound( &
+                call mainMesh%adhesionCheckOnBound( &
                     dGroup%droplet(i)%position, dGroup%droplet(i)%radius, dGroup%droplet(i)%refCellID, &
                     stat=dGroup%droplet(i)%adhesBoundID &
                     )
@@ -245,7 +245,7 @@ module dropletMotionSimulation
             JB = dGroup%droplet(vn)%adhesBoundID
             if (JB > 0) then
                 dGroup%droplet(vn)%position(:) &
-                    = dGroup%droplet(vn)%position(:) + BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
+                    = dGroup%droplet(vn)%position(:) + mainMesh%BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
             end if
         
         end do
@@ -260,7 +260,7 @@ module dropletMotionSimulation
 
         call read_unsteadyFlowData
 
-        call boundary_setting(first=.false.)
+        call mainMesh%boundary_setting(first=.false.)
         call boundary_move(mainDroplet)
 
         call set_MinMaxCDN
@@ -309,7 +309,7 @@ module dropletMotionSimulation
         type(virusDroplet_t) droplet
         double precision velAir(3)
 
-        velAir(:) = CELLs(droplet%refCellID)%flowVelocity(:)
+        velAir(:) = mainMesh%CELLs(droplet%refCellID)%flowVelocity(:)
     
         call dropletSolver%solve_motionEquation(droplet%position(:), droplet%velocity(:), velAir(:), droplet%radius)
 

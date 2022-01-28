@@ -11,13 +11,15 @@ module flow_field
     character(:), allocatable, private :: PATH_FlowDIR, HEAD_AIR, FNAME_FMT !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
     integer, private :: FNAME_DIGITS !ファイル名の整数部桁数
     
-    logical, private :: unstructuredGrid
+    ! logical, private :: unstructuredGrid
 
     real, private :: MAX_CDN(3), MIN_CDN(3)         !節点座標の上限および下限
 
     ! type reference_cell_t
     !     integer :: ID = 0, nodeID(3) = 0
     ! end type
+
+    type(UnstructuredGridForDropSimu) mainMesh
 
     integer, private :: num_refCellSearchFalse, num_refCellSearch
 
@@ -26,7 +28,7 @@ module flow_field
     subroutine check_FILE_GRID
         integer i_integerPart, i_
 
-        unstructuredGrid = .true.
+        ! unstructuredGrid = .true.
 
         i_integerPart = index(FNAME_FMT, '0')   !ひとまず最初のゼロの位置を整数部位置とする
         i_ = index(FNAME_FMT, '_', back=.true.)  !アンダーバーの位置取得
@@ -35,18 +37,18 @@ module flow_field
         FNAME_DIGITS = index(FNAME_FMT, '.') - i_integerPart   !ファイル名の整数部桁数(整数部位置からドットまでの文字数)
 
         if(FNAME_FMT(len(FNAME_FMT)-1 :) == '.f') then
-            unstructuredGrid = .false.
+            ! unstructuredGrid = .false.
             print*, 'FILE_GRID : [CUBE] ', trim(FNAME_FMT)
-            print*, 'DO NOT USE CUBEGRID'
+            print*, '** DO NOT USE CUBEGRID **'
             stop
 
         else
             if(index(FNAME_FMT, ',') > 0) then  !カンマが存在する場合
                 i_ = index(FNAME_FMT, ',') !カンマの位置取得
-                call check_FILE_TYPE(FNAME_FMT(:i_-1), PATH_FlowDIR//FNAME_FMT(i_+1:))
+                call mainMesh%check_FILE_TYPE(FNAME_FMT(:i_-1), PATH_FlowDIR//FNAME_FMT(i_+1:))
                 FNAME_FMT = FNAME_FMT(1:i_-1)
             else
-                call check_FILE_TYPE(FNAME_FMT)
+                call mainMesh%check_FILE_TYPE(FNAME_FMT)
             end if
 
         end if
@@ -70,20 +72,20 @@ module flow_field
         logical success
 
         ! if(unstructuredGrid) then
-            call read_adjacency(PATH_FlowDIR, success)
+            call mainMesh%read_adjacency(PATH_FlowDIR, success)
             if(success) then
-                call read_boundaries(PATH_FlowDIR)
+                call mainMesh%read_boundaries(PATH_FlowDIR)
 
             else
-                call solve_adacencyOnUnstructuredGrid
-                call output_boundaries(PATH_FlowDIR)
-                call output_adjacency(PATH_FlowDIR)
+                call mainMesh%solve_adacencyOnUnstructuredGrid()
+                call mainMesh%output_boundaries(PATH_FlowDIR)
+                call mainMesh%output_adjacency(PATH_FlowDIR)
 
             end if
 
-            call boundary_setting(first=.true.)
+            call mainMesh%boundary_setting(first=.true.)
 
-            call output_STL(PATH_FlowDIR//HEAD_AIR//'.stl')
+            call mainMesh%output_STL(PATH_FlowDIR//HEAD_AIR//'.stl')
 
         ! else
         !     call read_faceShape(PATH_FlowDIR)
@@ -142,8 +144,8 @@ module flow_field
 
         ! if(unstructuredGrid) then
             FNAME = trim(PATH_FlowDIR)//trim(FNAME_FMT)
-            call read_unstructuredGrid_byNAME(FNAME)
-            call set_gravity_center
+            call mainMesh%read_unstructuredGrid_byNAME(FNAME)
+            call mainMesh%set_gravity_center()
 
         ! else
         !     FNAME = trim(PATH_FlowDIR)//trim(FNAME_FMT)
@@ -162,8 +164,8 @@ module flow_field
 
         ! if(unstructuredGrid) then
             FNAME = trim(PATH_FlowDIR)//trim(HEAD_AIR)
-            call read_unstructuredGrid_byNumber(FNAME, digits_fmt, FNUM)
-            call set_gravity_center
+            call mainMesh%read_unstructuredGrid_byNumber(FNAME, digits_fmt, FNUM)
+            call mainMesh%set_gravity_center()
 
         ! else
         !     write(FNAME,'("'//trim(PATH_FlowDIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".f")') FNUM
@@ -179,14 +181,14 @@ module flow_field
         ! real min_max(6)
 
         ! if(unstructuredGrid) then
-            MAX_CDN(1) = maxval(NODEs(:)%coordinate(1))
-            MAX_CDN(2) = maxval(NODEs(:)%coordinate(2))
-            MAX_CDN(3) = maxval(NODEs(:)%coordinate(3))
+            MAX_CDN(1) = maxval(mainMesh%NODEs(:)%coordinate(1))
+            MAX_CDN(2) = maxval(mainMesh%NODEs(:)%coordinate(2))
+            MAX_CDN(3) = maxval(mainMesh%NODEs(:)%coordinate(3))
             print*, 'MAX_coordinates=', MAX_CDN(:)
                 
-            MIN_CDN(1) = minval(NODEs(:)%coordinate(1))
-            MIN_CDN(2) = minval(NODEs(:)%coordinate(2))
-            MIN_CDN(3) = minval(NODEs(:)%coordinate(3))
+            MIN_CDN(1) = minval(mainMesh%NODEs(:)%coordinate(1))
+            MIN_CDN(2) = minval(mainMesh%NODEs(:)%coordinate(2))
+            MIN_CDN(3) = minval(mainMesh%NODEs(:)%coordinate(3))
             print*, 'MIN_coordinates=', MIN_CDN(:)
 
         ! else
@@ -213,11 +215,11 @@ module flow_field
 
         num_refCellSearch = num_refCellSearch + 1
 
-        reference_cell = nearer_cell(X, reference_cell)
+        reference_cell = mainMesh%nearer_cell(X, reference_cell)
         if(present(stat)) stat = .True.
 
-        if (.not.nearcell_check(X(:), reference_cell)) then
-            reference_cell = nearest_cell(X)
+        if (.not.mainMesh%nearcell_check(X(:), reference_cell)) then
+            reference_cell = mainMesh%nearest_cell(X)
             if(present(stat)) stat = .false.
             num_refCellSearchFalse = num_refCellSearchFalse + 1
         end if
