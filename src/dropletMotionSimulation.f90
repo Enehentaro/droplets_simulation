@@ -96,12 +96,23 @@ module dropletMotionSimulation
 
         call checkpoint
 
-        call create_FlowField( &                !流れ場の取得
+        if(allocated(condVal%meshFile)) then
+            call create_FlowField( &                !流れ場の取得
+                dropletSolver%TimeStep2RealTime(step=n_start, dimension=.false.), &
+                condVal%PATH2FlowFile, condVal%DT_FLOW, condVal%OFFSET, condVal%INTERVAL_FLOW, &
+                condVal%LoopHead, condVal%LoopTail, &
+                condVal%meshFile &
+            )
+
+        else
+            call create_FlowField( &                !流れ場の取得
                 dropletSolver%TimeStep2RealTime(step=n_start, dimension=.false.), &
                 condVal%PATH2FlowFile, condVal%DT_FLOW, condVal%OFFSET, condVal%INTERVAL_FLOW, &
                 condVal%LoopHead, condVal%LoopTail &
             )
 
+        end if
+            
         if(num_restart <= 0) call first_refCellSearch(mainDroplet)
 
     end subroutine
@@ -178,7 +189,7 @@ module dropletMotionSimulation
         dGroup%droplet(j+1:)%refCellID = dGroup%droplet(j)%refCellID !時間短縮を図る
 
         do j = 2, num_drop
-            call search_refCELL(real(dGroup%droplet(j)%position(:)), dGroup%droplet(j)%refCellID, stat=success)
+            call mainMesh%search_refCELL(real(dGroup%droplet(j)%position(:)), dGroup%droplet(j)%refCellID, stat=success)
             if(.not.success) dGroup%droplet(j+1:)%refCellID = dGroup%droplet(j)%refCellID
         end do
 
@@ -209,7 +220,7 @@ module dropletMotionSimulation
         real areaMinMax(3,2)
         integer i, J
 
-        areaMinMax = get_areaMinMax()
+        areaMinMax = mainMesh%get_MinMaxCDN()
 
         do i = 1, size(dGroup%droplet)
             check = .false.
@@ -258,12 +269,11 @@ module dropletMotionSimulation
 
     subroutine update_FlowField
 
-        call read_unsteadyFlowData
+        call mainMesh%updateWithFlowFieldFile(get_requiredFlowFieldFileName())
 
-        call mainMesh%boundary_setting(first=.false.)
         call boundary_move(mainDroplet)
 
-        call set_MinMaxCDN
+        call calc_NextUpdate
             
     end subroutine
 
@@ -313,7 +323,7 @@ module dropletMotionSimulation
     
         call dropletSolver%solve_motionEquation(droplet%position(:), droplet%velocity(:), velAir(:), droplet%radius)
 
-        call search_refCELL(real(droplet%position(:)), droplet%refCellID)
+        call mainMesh%search_refCELL(real(droplet%position(:)), droplet%refCellID)
         
     end subroutine
 
@@ -447,7 +457,7 @@ module dropletMotionSimulation
         print*, start_date
         print*, 'Now_Step_Time =', TimeOnSimu(dimension=.true.), '[sec]'
         print*, '# floating :', mainDroplet%Counter('floating'), '/', mainDroplet%Counter('total')
-        if(refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', refCellSearchInfo('NumFalse')
+        if(mainMesh%refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', mainMesh%refCellSearchInfo('NumFalse')
         call output_mainDroplet(initial=.false.)
         print '("====================================================")'
         call reset_formatTC
@@ -508,9 +518,9 @@ module dropletMotionSimulation
             write(n_unit,'(A)') '======================================================='
             write(n_unit,'(A18, F18.2)') 'Temp [degC] =', dropletSolver%dropletEnvironment('Temperature')
             write(n_unit,'(A18, F18.2)') 'RH [%] =', dropletSolver%dropletEnvironment('RelativeHumidity')
-            write(n_unit,'(A18, 2X, A)') 'Used FlowFile :', get_FlowFileName()
-            write(n_unit, '(A18, 2(I15,2x,A))') 'SearchFalseInfo :', refCellSearchInfo('NumFalse'), &
-                    ' (', refCellSearchInfo('FalseRate'), '%)'
+            write(n_unit,'(A18, 2X, A)') 'Used FlowFile :', get_defaultFlowFileName()
+            write(n_unit, '(A18, 2(I15,2x,A))') 'SearchFalseInfo :', mainMesh%refCellSearchInfo('NumFalse'), &
+                    ' (', mainMesh%refCellSearchInfo('FalseRate'), '%)'
 
         close(n_unit)
         
