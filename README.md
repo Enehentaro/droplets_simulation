@@ -26,6 +26,7 @@ Simulation of Virus Droplets Behavior in AFDET
       - INP
       - FLD
     - CUBE格子(PLOT3D)は、予め非構造格子に変換してから計算してください。
+    - .arrayファイルを指定する場合、別途メッシュファイルが必要なので、`meshFile = ***`と指定する
   - **ステップ数オフセット OFFSET**
     - 飛沫計算を、流体連番ファイルの途中の番号から始めたいときに指定
   - **気流データを周期的に用いる場合の先頭と末尾 LoopHead, LoopTail**
