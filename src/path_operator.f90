@@ -26,7 +26,7 @@ module path_operator_m
 
     end subroutine make_directory
     
-    subroutine set_dir_from_path(path, directory, filename)
+    subroutine get_DirFromPath(path, directory, filename)
         character(*), intent(in) :: path
         character(:), intent(out), allocatable :: directory
         character(:), intent(out), allocatable , optional :: filename
@@ -49,14 +49,14 @@ module path_operator_m
 
         i = index(path, delimiter, back=.true.)
 
-        if(present(filename)) filename = path(i+1:)
+        if(present(filename)) filename = trim(path(i+1:))
         directory = path(:i)
 
         print*, 'Path= ', trim(path)
         print*, 'Directory= ', directory
-        print*, 'Filename= ', filename
+        if(present(filename)) print*, 'Filename= ', filename
 
-    end subroutine set_dir_from_path
+    end subroutine
 
     function replace_str( str, from, to )
         character (*),intent (in) :: str
@@ -70,6 +70,6 @@ module path_operator_m
             if ( str(i:i) == from ) replace_str(i:i) = to
         end do
 
-    end function replace_str
+    end function
 
 end module path_operator_m

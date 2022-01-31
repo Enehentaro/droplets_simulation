@@ -3,21 +3,21 @@ module boxCounter_m
 
     type boxCounter
         real center(3), width(3), min_cdn(3), max_cdn(3)
-        logical, allocatable :: dropletFlag(:)
+        logical, allocatable :: Flag(:)
 
         contains
 
-        procedure add_dropletFlag
-        procedure get_id_array
+        procedure add_Flag
+        procedure get_FlagID
     end type
 
     contains
 
-    function get_box_array(dir, num_drop) result(new_box_array)
+    function get_box_array(dir, num_Flag) result(new_box_array)
         use simpleFile_reader
         type(boxCounter), allocatable :: new_box_array(:)
         character(*), intent(in) :: dir
-        integer, intent(in) :: num_drop
+        integer, intent(in) :: num_Flag
         double precision, allocatable :: boxSize_mat(:,:)
         integer i, num_box
 
@@ -39,30 +39,30 @@ module boxCounter_m
                     stop
             end if
 
-            allocate(new_box_array(i)%dropletFlag(num_drop), source=.false.)
+            allocate(new_box_array(i)%Flag(num_Flag), source=.false.)
         end do
 
     end function
 
-    subroutine add_dropletFlag(self, id_array)
+    subroutine add_Flag(self, id_array)
         class(boxCounter) self
         integer, intent(in) :: id_array(:)
 
-        self%dropletFlag(id_array) = .true.
+        self%Flag(id_array) = .true.
 
     end subroutine
 
-    function get_id_array(self) result(id_array)
+    function get_FlagID(self) result(id_array)
         class(boxCounter) self
         integer, allocatable :: id_array(:)
         integer i, cnt, n_size
 
-        n_size = count(self%dropletFlag)
+        n_size = count(self%Flag)
         allocate(id_array(n_size))
 
         cnt = 0
-        do i = 1, size(self%dropletFlag)
-            if(self%dropletFlag(i)) then
+        do i = 1, size(self%Flag)
+            if(self%Flag(i)) then
                 cnt = cnt + 1
                 id_array(cnt) = i
             end if
