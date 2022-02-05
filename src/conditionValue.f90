@@ -8,7 +8,7 @@ module conditionValue_m
         integer restart, stepEnd, outputInterval, num_drop, periodicGeneration(2)
         real T, RH
 
-        character(:), allocatable :: path2FlowFile
+        character(:), allocatable :: path2FlowFile, meshFile
         double precision DT_FLOW
         integer OFFSET, INTERVAL_FLOW, LoopHead, LoopTail
 
@@ -33,12 +33,14 @@ module conditionValue_m
         integer :: periodicGeneration(2) = 0
 
         character(255) PATH2FlowFile
+        character(255) :: meshFile = 'null'
         double precision DT_FLOW
         integer OFFSET, INTERVAL_FLOW, LoopHead, LoopTail
 
         namelist /dropletSetting/ num_restart, n_end, delta_t, outputInterval, temperature, relativeHumidity,&
-            num_droplets, direction_g, initialDistributionFName, periodicGeneration
-        namelist /flowFieldSetting/ PATH2FlowFile, DT_FLOW, OFFSET, INTERVAL_FLOW, LoopHead, LoopTail, L_represent, U_represent
+                                    num_droplets, direction_g, initialDistributionFName, periodicGeneration
+        namelist /flowFieldSetting/ PATH2FlowFile, meshFile, DT_FLOW, OFFSET, INTERVAL_FLOW, LoopHead, LoopTail,&
+                                    L_represent, U_represent
 
         OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
             read(n_unit, nml=dropletSetting)
@@ -59,6 +61,7 @@ module conditionValue_m
         self%periodicGeneration = periodicGeneration
 
         self%PATH2FlowFile = trim(PATH2FlowFile)
+        if(meshFile /= 'null') self%meshFile = trim(meshFile)
         self%DT_FLOW = DT_FLOW
         self%OFFSET = OFFSET
         self%INTERVAL_FLOW = INTERVAL_FLOW
