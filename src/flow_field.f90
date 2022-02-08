@@ -127,7 +127,7 @@ module flow_field
 
     logical function isUpdateTiming()
 
-        if(STEPinFLOW >= NextUpdate) then
+        if(STEPinFLOW >= NextUpdate .and. INTERVAL_FLOW > 0) then
             isUpdateTiming = .true.
         else
             isUpdateTiming = .false.
@@ -145,19 +145,11 @@ module flow_field
     subroutine calc_NextUpdate
         integer i
 
-        if(INTERVAL_FLOW > 0) then
-            i = 0
-            do while(i*INTERVAL_FLOW + OFFSET <= STEPinFLOW)
-                i = i + 1
-            end do
-            NextUpdate = i*INTERVAL_FLOW + OFFSET
-
-        else
-            NextUpdate = 999999999
-
-        end if
-
-
+        i = 0
+        do while(i*INTERVAL_FLOW + OFFSET <= STEPinFLOW)
+            i = i + 1
+        end do
+        NextUpdate = i*INTERVAL_FLOW + OFFSET
 
     end subroutine
 
