@@ -172,7 +172,7 @@ module dropletMotionSimulation
 
         if(isUpdateTiming()) then
             call update_FlowField   !流れ場の更新
-            call boundary_move(mainDroplet)
+            call dropletOnBoundary(mainDroplet)
         end if
 
     end subroutine
@@ -245,12 +245,12 @@ module dropletMotionSimulation
 
     end subroutine
                       
-    subroutine boundary_move(dGroup) !境界面の移動に合わせて付着飛沫も移動
+    subroutine dropletOnBoundary(dGroup) !境界面の移動に合わせて付着飛沫も移動
         use unstructuredGrid_mod
         type(DropletGroup) dGroup
         integer vn, JB
 
-        ! print*, 'CALL:boundary_move'
+        ! print*, 'CALL:dropletOnBoundary'
 
         do vn = 1, size(dGroup%droplet)
         
@@ -266,7 +266,7 @@ module dropletMotionSimulation
 
         ! call area_check(dGroup)
 
-        ! print*, 'FIN:boundary_move'
+        ! print*, 'FIN:dropletOnBoundary'
 
     end subroutine
 
