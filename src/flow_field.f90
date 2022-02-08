@@ -112,6 +112,16 @@ module flow_field
         else
             mainMesh = UnstructuredGridAdjacencySolved_(get_requiredFlowFieldFileName())
         end if
+
+        call calc_NextUpdate
+
+    end subroutine
+
+    subroutine update_FlowField
+
+        call mainMesh%updateWithFlowFieldFile(get_requiredFlowFieldFileName())
+
+        call calc_NextUpdate
             
     end subroutine
 
@@ -135,12 +145,19 @@ module flow_field
     subroutine calc_NextUpdate
         integer i
 
-        i = 0
-        do while(i*INTERVAL_FLOW + OFFSET <= STEPinFLOW)
-            i = i + 1
-        end do
+        if(INTERVAL_FLOW > 0) then
+            i = 0
+            do while(i*INTERVAL_FLOW + OFFSET <= STEPinFLOW)
+                i = i + 1
+            end do
+            NextUpdate = i*INTERVAL_FLOW + OFFSET
 
-        NextUpdate = i*INTERVAL_FLOW + OFFSET
+        else
+            NextUpdate = 999999999
+
+        end if
+
+
 
     end subroutine
 
