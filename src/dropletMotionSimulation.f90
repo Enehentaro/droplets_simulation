@@ -60,14 +60,14 @@ module dropletMotionSimulation
 
         dropGenerator = DropletGenerator_( &
                             dropletSolver, radiusDistributionFilename, case_dir, &
-                            generationRate = condVal%periodicGeneration(1), generationMode = condVal%periodicGeneration(2) &
+                            generationRate = condVal%periodicGeneration &
                         )
 
         if(num_restart <= 0) then
 
             if(num_restart==0) then
-                call random_set  !実行時刻に応じた乱数シード設定
-                mainDroplet = dropGenerator%generateDroplet(condVal%num_drop, TimeOnSimu(), outputDir=case_dir)
+                ! call random_set  !実行時刻に応じた乱数シード設定
+                mainDroplet = dropGenerator%generateDroplet(condVal%num_drop, TimeOnSimu())
 
             else if(num_restart==-1) then
 
@@ -170,7 +170,10 @@ module dropletMotionSimulation
 
         call set_STEPinFLOW(TimeOnSimu())
 
-        if(isUpdateTiming()) call update_FlowField   !流れ場の更新
+        if(isUpdateTiming()) then
+            call update_FlowField   !流れ場の更新
+            call dropletOnBoundary(mainDroplet)
+        end if
 
     end subroutine
 
@@ -242,12 +245,12 @@ module dropletMotionSimulation
 
     end subroutine
                       
-    subroutine boundary_move(dGroup) !境界面の移動に合わせて付着飛沫も移動
+    subroutine dropletOnBoundary(dGroup) !境界面の移動に合わせて付着飛沫も移動
         use unstructuredGrid_mod
         type(DropletGroup) dGroup
         integer vn, JB
 
-        ! print*, 'CALL:boundary_move'
+        ! print*, 'CALL:dropletOnBoundary'
 
         do vn = 1, size(dGroup%droplet)
         
@@ -263,18 +266,8 @@ module dropletMotionSimulation
 
         ! call area_check(dGroup)
 
-        ! print*, 'FIN:boundary_move'
+        ! print*, 'FIN:dropletOnBoundary'
 
-    end subroutine boundary_move
-
-    subroutine update_FlowField
-
-        call mainMesh%updateWithFlowFieldFile(get_requiredFlowFieldFileName())
-
-        call boundary_move(mainDroplet)
-
-        call calc_NextUpdate
-            
     end subroutine
 
     subroutine Calculation_Droplets()
@@ -546,22 +539,22 @@ module dropletMotionSimulation
 
     end function
 
-    subroutine random_set    !実行時刻に依存した乱数シードを指定する
-        implicit none
-        integer :: seedsize, i
-        integer, allocatable :: seed(:)
+    ! subroutine random_set    !実行時刻に依存した乱数シードを指定する
+    !     implicit none
+    !     integer :: seedsize, i
+    !     integer, allocatable :: seed(:)
 
-        print*, 'call:random_set'
+    !     print*, 'call:random_set'
     
-        call random_seed(size=seedsize) !シードのサイズを取得。（コンパイラごとに異なるらしい）
-        allocate(seed(seedsize)) !新シード配列サイズの割り当て
+    !     call random_seed(size=seedsize) !シードのサイズを取得。（コンパイラごとに異なるらしい）
+    !     allocate(seed(seedsize)) !新シード配列サイズの割り当て
     
-        do i = 1, seedsize
-            call system_clock(count=seed(i)) !時間を新シード配列に取得
-        end do
+    !     do i = 1, seedsize
+    !         call system_clock(count=seed(i)) !時間を新シード配列に取得
+    !     end do
     
-        call random_seed(put=seed(:)) !新シードを指定
+    !     call random_seed(put=seed(:)) !新シードを指定
           
-    end subroutine random_set
+    ! end subroutine random_set
 
 end module dropletMotionSimulation

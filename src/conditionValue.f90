@@ -5,7 +5,7 @@ module conditionValue_m
     type, public :: conditionValue_t
         double precision dt, L, U, direction_g(3)
         character(:), allocatable :: initialDistributionFName
-        integer restart, stepEnd, outputInterval, num_drop, periodicGeneration(2)
+        integer restart, stepEnd, outputInterval, num_drop, periodicGeneration
         real T, RH
 
         character(:), allocatable :: path2FlowFile, meshFile
@@ -30,7 +30,7 @@ module conditionValue_m
         character(255) :: initialDistributionFName = defaultIniDisFName
         integer num_restart, n_end, outputInterval, num_droplets
         real temperature, relativeHumidity
-        integer :: periodicGeneration(2) = 0
+        integer :: periodicGeneration = 0
 
         character(255) PATH2FlowFile
         character(255) :: meshFile = 'null'

@@ -14,7 +14,7 @@ num_droplets = 10000            !初期飛沫数
 
 direction_g = 0.0,0.0,-1.0      !重力方向ベクトル(x,y,z)
 
-periodicGeneration = 0,0        !飛沫周期発生（1秒あたり発生個数）, 発生モード（1:新規発生, 2:nonAvtive配置後順次Activate）
+periodicGeneration = 0          !飛沫周期発生（1秒あたり発生個数）
 /
 
 
