@@ -2,8 +2,7 @@ import math
 
 def virus_deadline(death_param):
     halfLife = 3960.0   #半減期 1.1 h ( = 3960 sec)
-    alpha = math.log(2.0) / halfLife
-    deadline = - math.log(death_param) / alpha
+    deadline = - math.log(death_param, 2) * halfLife
     return deadline
 
 import random
