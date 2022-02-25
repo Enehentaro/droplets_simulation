@@ -75,11 +75,11 @@ module unstructuredGrid_mod
 
         if(present(meshFile)) then
             UnstructuredGridAdjacencySolved_%UnstructuredGrid = UnstructuredGrid_(FlowFieldFile, meshFile)
+            call get_DirFromPath(meshFile, Dir)
         else
             UnstructuredGridAdjacencySolved_%UnstructuredGrid = UnstructuredGrid_(FlowFieldFile)
+            call get_DirFromPath(FlowFieldFile, Dir)
         end if
-
-        call get_DirFromPath(FlowFieldFile, Dir)
 
         call UnstructuredGridAdjacencySolved_%AdjacencySolvingProcess(Dir)    !流れ場の前処理
 
@@ -112,11 +112,7 @@ module unstructuredGrid_mod
                 end if
 
             case('array')
-                block
-                    character(:), allocatable :: FlowDir
-                    FlowDir = FNAME( : index(FNAME, '/', back=.true.))
-                    call self%read_VTK(FlowDir//meshFile, meshOnly=.true.)
-                end block
+                call self%read_VTK(meshFile, meshOnly=.true.)
                 call self%read_Array(FNAME)
 
             case default
@@ -913,7 +909,7 @@ module unstructuredGrid_mod
         character(*), intent(in) :: FileName
         character(:), allocatable :: extension
 
-        extension = FileName(index(FileName, '.')+1 : )
+        extension = FileName(index(FileName, '.', back=.true.)+1 : )
 
     end function
       
