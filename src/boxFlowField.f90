@@ -1,14 +1,10 @@
 program boxFlowField
     use conditionValue_m
     use boxCounter_m
-    use caseName_m
     use unstructuredGrid_mod
     implicit none
-    integer i_box, num_box, nc_max
-    integer, pointer :: nc => nowCase
+    integer i_box, num_box, nc
     character(255) caseName
-    type(conditionValue_t) condVal
-    ! type(BasicParameter) baseParam
     type(boxCounter), allocatable :: box_array(:)
 
     type boxResult_t
@@ -16,32 +12,32 @@ program boxFlowField
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
-    type(UnstructuredGrid) mesh
+    type(UnstructuredGridAdjacencySolved) mesh
 
-    call case_check(num_case = nc_max)
-    !print*, 'caseName = ?'
-    !read(5, *) caseName
+    box_array = get_box_array('.', 0)
+    num_box = size(box_array)
 
-    do nc = 1, nc_max
-        caseName = get_caseName()
-        call condVal%read(trim(caseName))
-        ! baseParam = BasicParameter_(condVal%dt, condVal%L, condVal%U)
-    
-        box_array = get_box_array(trim(caseName), 0)
-    
-        num_box = size(box_array)
+    do nc = 1, iargc()
+        ! コマンドライン引数を取得
+        call getarg(nc, caseName)
+        print*, trim(caseName)
 
         ! mesh = UnstructuredGrid_(condVal%path2FlowFile, condVal%meshFile)
-        mesh = UnstructuredGrid_('/home/master/droplet/office1_960_246/honkeisan_haiki_a/field_0000005125.array', 'case1.vtk')
+        if(nc==1) then
+            mesh = UnstructuredGridAdjacencySolved_(trim(caseName)//'/field_0000003000.array', 'case1.vtk')
+        else
+            call mesh%updateWithFlowFieldFile(trim(caseName)//'/field_0000003000.array')
+        end if
 
         allocate(bResult(num_box))
 
         block
             integer i_cell
-
+            i_cell = 1
             do i_box = 1, num_box
                 print*, i_box,'/',num_box
-                i_cell = mesh%nearest_cell(box_array(i_box)%center)
+                ! i_cell = mesh%nearest_cell(box_array(i_box)%center)
+                call mesh%search_refCELL(box_array(i_box)%center, i_cell)
                 bResult(i_box)%flowVelocity = mesh%CELLs(i_cell)%flowVelocity
             end do
 
