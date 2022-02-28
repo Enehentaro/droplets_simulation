@@ -2,6 +2,7 @@ program boxFlowField
     use conditionValue_m
     use boxCounter_m
     use unstructuredGrid_mod
+    use terminalControler_m
     implicit none
     integer i_box, num_box, nc
     character(255) caseName
@@ -24,18 +25,20 @@ program boxFlowField
 
         ! mesh = UnstructuredGrid_(condVal%path2FlowFile, condVal%meshFile)
         if(nc==1) then
-            mesh = UnstructuredGridAdjacencySolved_(trim(caseName)//'/field_0000003000.array', 'case1.vtk')
+            mesh = UnstructuredGridAdjacencySolved_(trim(caseName)//'/field_0000005125.array', './case1.vtk')
         else
-            call mesh%updateWithFlowFieldFile(trim(caseName)//'/field_0000003000.array')
+            call mesh%updateWithFlowFieldFile(trim(caseName)//'/field_0000005125.array')
         end if
 
         allocate(bResult(num_box))
+
+        call set_formatTC('("BoxCellSerch [ #box : ",i6," / ",i6," ]")')
 
         block
             integer i_cell
             i_cell = 1
             do i_box = 1, num_box
-                print*, i_box,'/',num_box
+                call print_sameLine([i_box, num_box])
                 ! i_cell = mesh%nearest_cell(box_array(i_box)%center)
                 call mesh%search_refCELL(box_array(i_box)%center, i_cell)
                 bResult(i_box)%flowVelocity = mesh%CELLs(i_cell)%flowVelocity

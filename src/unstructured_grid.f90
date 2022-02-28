@@ -668,7 +668,7 @@ module unstructuredGrid_mod
 
         distance = norm2(X(:) - self%CELLs(NCN)%center(:))
 
-        if (distance < 1.0d1*self%CELLs(NCN)%width) then
+        if (distance < 1.0d0*self%CELLs(NCN)%width) then
             nearcell_check = .True.
         else
             nearcell_check = .False.
