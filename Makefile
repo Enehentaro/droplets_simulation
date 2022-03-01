@@ -1,10 +1,11 @@
-# Intel Fortran on Linux
+# GNU Fortran
 
 MAINTARGET = droplet
 
-FC = ifort
+FC = gfortran
 
-FCFLAGS = -traceback -CB -g -O0 -fpe0
+FCFLAGS = 
+# FCFLAGS = -traceback -CB -g -O0 -fpe0
 # FCFLAGS = -qopenmp
 
 TARGET1 = CUBE2USG
@@ -51,9 +52,9 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	@if [ ! -d $(OBJDIR) ]; then \
 		mkdir -p $(OBJDIR); \
 	fi
-	$(FC) $< -o $@ -c -module $(MODDIR) $(FCFLAGS)
+	$(FC) $< -o $@ -c -I $(MODDIR) -J $(MODDIR) $(FCFLAGS)
 
 all: $(MAINTARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
 
 clean:
-	$(RM) $(MAINTARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) -r $(OBJDIR)
+	$(RM) *.exe src/*.mod -r $(OBJDIR)

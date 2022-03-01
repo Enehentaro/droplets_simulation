@@ -1,7 +1,7 @@
 module path_operator_m
     implicit none
 
-    character(7), parameter, private :: OS = 'Linux'
+    character(7), parameter, private :: OS = 'Windows'!'Linux'
 
     contains
 
