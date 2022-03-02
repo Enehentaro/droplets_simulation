@@ -4,9 +4,7 @@ MAINTARGET = droplet
 
 FC = gfortran
 
-FCFLAGS = 
-# FCFLAGS = -traceback -CB -g -O0 -fpe0
-# FCFLAGS = -qopenmp
+FCFLAGS = #-O0 -fbacktrace -g
 
 TARGET1 = CUBE2USG
 TARGET2 = droplet2CSV
