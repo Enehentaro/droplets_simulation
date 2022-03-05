@@ -3,7 +3,7 @@ Simulation of Virus Droplets Behavior in AFDET
 
 ## 使い方
   ※このブランチは **GNU Fortran, GNU Make** 用です。`master`ブランチへは絶対にマージしないでください。
-  コンパイルに`make`コマンドを使います（makeのインストールが必要）。
+  コンパイルに`make`コマンドを使います（`GNU make`のインストールが必要）。
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
   2. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集。
   3. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
