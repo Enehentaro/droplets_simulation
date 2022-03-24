@@ -101,9 +101,10 @@ module simpleFile_reader
     end subroutine read_csv_int
 
     subroutine read_textRecord(filename, array)
-        integer i, Num_unit, num_record
+        integer i, Num_unit
         character(*), intent(in) :: filename
         character(*), intent(out), allocatable :: array(:)
+        integer :: num_record
 
         print*, 'simpleREADER : ', filename
 
@@ -115,7 +116,7 @@ module simpleFile_reader
             print *, '#Records =', num_record
 
             do i = 1, num_record
-                read (Num_unit, *) array(i)
+                read (Num_unit, '(A)') array(i)
             end do
 
         close (Num_unit)
@@ -184,7 +185,7 @@ module simpleFile_reader
         real, intent(in) :: array(:,:)
         integer n_unit
 
-        print*, 'output_array : ', fname
+        print*, 'output_binArray : ', fname
 
         open(newunit=n_unit, file=fname, form='unformatted', status='replace')
 
@@ -201,7 +202,7 @@ module simpleFile_reader
         real, allocatable, intent(out) :: array(:,:)
         integer n_unit, arrayShape(2)
 
-        print*, 'read_array : ', fname
+        print*, 'read_binArray : ', fname
 
         open(newunit=n_unit, file=fname, form='unformatted', status='old')
 
@@ -210,6 +211,25 @@ module simpleFile_reader
             allocate(array(arrayShape(1), arrayShape(2)))
 
             read(n_unit) array
+
+        close(n_unit)
+
+    end subroutine
+
+    subroutine read_array_real(fname, array)
+        character(*), intent(in)  :: fname
+        real, allocatable, intent(out) :: array(:)
+        integer n_unit, size
+
+        print*, 'read_array : ', fname
+
+        open(newunit=n_unit, file=fname, status='old')
+
+            read(n_unit, *) size
+
+            allocate(array(size))
+
+            read(n_unit, *) array
 
         close(n_unit)
 

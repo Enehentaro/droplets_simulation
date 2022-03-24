@@ -2,4 +2,6 @@
 *.mod
 .vscode
 
-*.exe
+/droplet*
+/*.txt
+

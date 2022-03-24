@@ -1607,7 +1607,7 @@ contains
 
         subrecn = irecn - 1
 
-        if(.not. allocated(ret_array)) allocate(ret_array(iretn*irecn))
+        if(.not. allocated(ret_array)) allocate(ret_array(ret_array_size))
 
         if(subrecn == 0) then
             read(unit,iostat=ios) (ret_array(L), L=1, irecn*iretn)
@@ -1640,7 +1640,7 @@ contains
 
         subrecn = irecn - 1
         
-        if(.not. allocated(ret_array)) allocate(ret_array(iretn*irecn))
+        if(.not. allocated(ret_array)) allocate(ret_array(ret_array_size))
 
         if(subrecn == 0) then
             read(unit,iostat=ios) (ret_array(L), L=1, irecn*iretn)

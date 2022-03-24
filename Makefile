@@ -1,50 +1,60 @@
-# GNU Fortran on Windows
+# GNU Fortran
 
-TARGET = droplet
+MAINTARGET = droplet
 
 FC = gfortran
-FCFLAGS = -O0 -fbacktrace -g -fcheck=all -mcmodel=large
+
+FCFLAGS = #-O0 -fbacktrace -g
 
 TARGET1 = CUBE2USG
 TARGET2 = droplet2CSV
 TARGET3 = dropletCount
+TARGET4 = initialTranslate
 
-OBJS = filename_mod.o simpleFile_reader.o caseName.o path_operator.o vector.o terminalControler.o \
-	SCTfile_reader.o  vtkMesh_operator.o unstructured_grid.o adjacency_solver.o \
-    flow_field.o dropletEquation.o virusDroplet.o dropletGroup.o dropletMotionSimulation.o
+COMMONOBJ = filename_mod.o simpleFile_reader.o path_operator.o vector.o terminalControler.o caseName.o conditionValue.o \
+    	dropletEquation.o virusDroplet.o
 	
-MAINOBJS = dropletManager.o main.o
+MAINOBJ = $(COMMONOBJ) SCTfile_reader.o vtkMesh_operator.o adjacency_solver.o unstructured_grid.o flow_field.o \
+			dropletGenerator.o dropletMotionSimulation.o main.o
 
-TARGET1OBJS = simpleFile_reader.o vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
-TARGET3OBJS = boxCounter.o dropletCount.o
+TARGET1OBJ = simpleFile_reader.o vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
+TARGET2OBJ = $(COMMONOBJ) droplet2CSV.o
+TARGET3OBJ = $(COMMONOBJ) vtkMesh_operator.o boxCounter.o dropletCount.o
+TARGET4OBJ = $(COMMONOBJ) initial_translate.o
 
 SRCDIR    = src
 OBJDIR    = obj
-OBJECTS   = $(addprefix $(OBJDIR)/, $(OBJS))
-MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJS))
-TARGET1OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET1OBJS))
-TARGET3OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET3OBJS))
+MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJ))
+TARGET1OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET1OBJ))
+TARGET2OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET2OBJ))
+TARGET3OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET3OBJ))
+TARGET4OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET4OBJ))
 MODDIR = ${OBJDIR}
 
-$(TARGET): $(OBJECTS) $(MAINOBJECTS)
+$(MAINTARGET): $(MAINOBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
 $(TARGET1): $(TARGET1OBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
-$(TARGET2): $(OBJECTS) $(OBJDIR)/$(TARGET2).o
+$(TARGET2): $(TARGET2OBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
-$(TARGET3): $(OBJECTS) $(TARGET3OBJECTS)
+$(TARGET3): $(TARGET3OBJECTS)
+	$(FC) $^ $(FCFLAGS) -o $@
+
+$(TARGET4): $(TARGET4OBJECTS)
 	$(FC) $^ $(FCFLAGS) -o $@
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	@if [ ! -d $(OBJDIR) ]; then \
 		echo ";; mkdir $(OBJDIR)"; mkdir $(OBJDIR); \
 	fi
-	$(FC) $< -o $@ -c -J$(MODDIR) ${FCFLAGS}
 
-all: $(TARGET) $(TARGET1) $(TARGET2) $(TARGET3)
+	$(FC) $< -o $@ -c -I $(MODDIR) -J $(MODDIR) $(FCFLAGS)
+
+all: $(MAINTARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
 
 clean:
-	$(RM) -r ${OBJDIR} *.exe
+
+	$(RM) *.exe src/*.mod -r $(OBJDIR)
