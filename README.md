@@ -1,5 +1,5 @@
 # Droplets Simulation
-Simulation of Virus Droplets Behavior in AFDET
+Simulation of Virus-Laden Droplets Behavior in AFDET
 
 ## 使い方
   ※環境は **Intel Fortran, Linux** を想定しています。その他の環境では適宜書き換えが必要です。
