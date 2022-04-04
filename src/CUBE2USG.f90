@@ -1,23 +1,17 @@
 program CUBE2USG
-    use CUBE_mod
+    use plot3d_operator
     use vtkMesh_operator_m
     use simpleFile_reader
     implicit none
     character(50) F_fname, USG_fname
     character(50),parameter :: filename = 'name.txt'
     character(50), allocatable :: field_name(:)
-    character(20), parameter :: CorrespondenceFName = 'vtkCell2cubeNode.bin'
-    integer i, j, i_node, n, num_node, num_record, num_cell
-    real X(3)
+    character(20), parameter :: CorrespondenceFName = 'vtkCell2cubeNode.txt'
+    integer fileID, num_record, num_cell
     real, allocatable :: velocity(:,:)
-    logical existance
     type(vtkMesh) USG
-
-    type nodeInfo
-        integer cubeID, nodeID(3)
-    end type
-
-    type(nodeInfo), allocatable :: vtkCell2cubeNode(:)
+    type(Plot3dMesh) cubeMesh
+    type(plot3dNodeInfo), allocatable :: vtkCell2cubeNode(:)
 
     call read_textRecord(filename, field_name)
     num_record = size(field_name)
@@ -29,88 +23,157 @@ program CUBE2USG
 
     num_cell = size(USG%cell_array)
 
-    do j = 1, num_record
-        F_fname = field_name(j)
+    cubeMesh = read_plot3d_multigrid('mesh.g')   !Gファイル読み込み
 
-        call read_CUBE_data(F_fname, '')
-    
-        if (.not.allocated(vtkCell2cubeNode)) then
-            inquire(file=CorrespondenceFName, exist=existance)
-
-            if(existance) then
-                call read_nodeInfo
-
-            else
-                allocate(vtkCell2cubeNode(0 : num_cell - 1))
-
-                do i = 0, num_cell-1
-                    X(:) = 0.0
-                    num_node = size(USG%cell_array(i)%nodeID)
-                    do n = 1, num_node
-                        i_node = USG%cell_array(i)%nodeID(n)
-                        X(:) = X(:) + USG%node_array(i_node)%coordinate(:)
-                    end do
-                    X(:) = X(:) / real(num_node)
-                    vtkCell2cubeNode(i)%cubeID = get_cube_contains(X)    
-                    vtkCell2cubeNode(i)%nodeID(:) = nearest_node(X, vtkCell2cubeNode(i)%cubeID)
-                end do
-
-                call output_nodeInfo
-
-            end if
-
+    do fileID = 1, num_record
+        F_fname = field_name(fileID)
+        if(fileID==1) then 
+            call cubeMesh%read_plot3d_function(F_fname, update=.false.)   !Fファイル読み込み（初回時）
+        else
+            call cubeMesh%read_plot3d_function(F_fname, update=.true.)   !Fファイル読み込み（更新）
         end if
-
-        if (.not.allocated(velocity)) allocate(velocity(3, num_cell))
-        do i = 0, num_cell-1
-            velocity(:,i+1) = get_velocity_f(vtkCell2cubeNode(i)%nodeID(:), vtkCell2cubeNode(i)%cubeID)
-        end do
     
-        i = len_trim(F_fname)
-        call output_array_asBinary(fname=F_fname(:i-2)//'.array', array=velocity)
-        ! call USG%output(F_fname(:i-2)//'.vtk', cellVector=velocity, vectorName='Velocity')
+        if (.not.allocated(vtkCell2cubeNode)) call solve_correspondence
+        
+        if (.not.allocated(velocity)) allocate(velocity(3, num_cell))
+        
+        block
+            integer cellID
+            character(:), allocatable :: fname_base
+
+            do cellID = 0, num_cell-1
+                velocity(:,cellID+1) = cubeMesh%get_velocity(vtkCell2cubeNode(cellID))
+            end do
+
+            fname_base = F_fname(:len_trim(F_fname)-2)
+
+            call output_array_asBinary(fname=fname_base//'.array', array=velocity)
+            if(fileID==1) call USG%output(fname_base//'.vtk', cellVector=velocity, vectorName='Velocity')
+
+        end block
+
     
     end do
 
     contains
 
     subroutine output_nodeInfo
-        integer n_unit, k
+        integer n_unit, i
 
         print*, 'output: ', CorrespondenceFName
 
-        open(newunit=n_unit, file=CorrespondenceFName, form='unformatted', status='new')
-            write(n_unit) num_cell, get_numCube()
+        open(newunit=n_unit, file=CorrespondenceFName, status='replace', action='write')
 
-            do k = 0, num_cell-1
-                write(n_unit) vtkCell2cubeNode(k)
+            write(n_unit, '("#cube ", i0)') cubeMesh%get_numCube()
+            write(n_unit, '("cubeshape", 3(x, i0))') cubeMesh%get_cubeShape()
+
+            write(n_unit, '("#usgcell ", i0)') num_cell
+            do i = 0, num_cell-1
+                write(n_unit, '(i0, x, 3(x, i0))') vtkCell2cubeNode(i)%cubeID, vtkCell2cubeNode(i)%nodeID(:)
             end do
 
         close(n_unit)
 
     end subroutine
 
-    subroutine read_nodeInfo
-        integer n_unit, k, num_cell_, num_cube
+    subroutine search_nodeInfo
+        use timeKeeper_m
+        use terminalControler_m
+        integer n, num_node, i_node, i
+        real X(3), progress_percent, estimation, speed
+        type(TimeKeeper) tk
+
+        tk = TimeKeeper_()
+
+        print*, "START : CUBENODE SEARCH"
+        call set_formatTC('("SEARCH vtkcell2cubenode [ ",f6.2," % ] ", f8.1, " sec is left.")')
+
+        allocate(vtkCell2cubeNode(0 : num_cell - 1))
+        do i = 0, num_cell-1
+
+            progress_percent = real(i*100) / real(num_cell-1)
+            speed = real(i) / tk%erapsedTime()
+            estimation = real(num_cell-1 - i) / (speed + 1.e-9)
+            call print_sameLine([progress_percent, estimation])
+
+            X(:) = 0.0
+            num_node = size(USG%cell_array(i)%nodeID)
+            do n = 1, num_node
+                i_node = USG%cell_array(i)%nodeID(n)
+                X(:) = X(:) + USG%node_array(i_node)%coordinate(:)
+            end do
+            X(:) = X(:) / real(num_node)
+            vtkCell2cubeNode(i) = cubeMesh%nearestNodeInfo(X)
+            
+        end do
+
+    end subroutine
+
+    subroutine read_nodeInfo(success)
+        logical, intent(out) :: success
+        integer n_unit, i, num_cell_, num_cube, cubeShape(3)
+        character dummy*10
 
         print*, 'read: ', CorrespondenceFName
 
-        open(newunit=n_unit, file=CorrespondenceFName, form='unformatted', status='old')
-            read(n_unit) num_cell_, num_cube
+        open(newunit=n_unit, file=CorrespondenceFName, status='old', action='read')
 
-            if((num_cell_/=num_cell).or.(num_cube/=get_numCube())) then
-                print*, 'SizeERROR:', num_cell_, num_cell, num_cube, get_numCube()
-                stop
+            read(n_unit, *) dummy, num_cube
+            read(n_unit, *) dummy, cubeShape
+
+            read(n_unit, *) dummy, num_cell_
+
+            if((num_cell_/=num_cell).or.(num_cube/=cubeMesh%get_numCube()).or.&
+                .not.isEqual(cubeShape, cubeMesh%get_cubeShape())) then
+
+                print*, 'SizeERROR:', num_cell_, num_cell, num_cube, cubeMesh%get_numCube()
+                success = .false.
+                return
+                
             end if
 
             allocate(vtkCell2cubeNode(0 : num_cell_ - 1))
-
-            do k = 0, num_cell_-1
-                read(n_unit) vtkCell2cubeNode(k)
+            do i = 0, num_cell_-1
+                read(n_unit, *) vtkCell2cubeNode(i)%cubeID, vtkCell2cubeNode(i)%nodeID(:)
             end do
 
         close(n_unit)
 
+        success = .true.
+
     end subroutine
+
+    subroutine solve_correspondence
+        logical existance, success
+
+        inquire(file=CorrespondenceFName, exist=existance)
+
+        if(existance) then
+            call read_nodeInfo(success)
+        else
+            success = .false.
+        end if
+
+        if(.not.success) then
+            call search_nodeInfo
+            call output_nodeInfo
+        end if
+
+    end subroutine
+
+    logical function isEqual(a, b)
+        integer, intent(in) :: a(:), b(:)
+        integer i
+
+        isEqual = .true.
+
+        do i = 1, size(a)
+            if(a(i)/=b(i)) then
+                isEqual = .false.
+                return
+            end if
+        end do
+
+    end function
     
 end program CUBE2USG
