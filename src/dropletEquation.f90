@@ -32,7 +32,7 @@ module dropletEquation_m
         procedure set_gravity_acceleration, set_dropletEnvironment, dropletEnvironment
         procedure set_coeff_drdt, set_minimumRadiusRatio
         procedure next_position, next_velocity
-        procedure, public :: get_minimumRadius, virusDeadline
+        procedure, public :: get_minimumRadius!, virusDeadline
 
         procedure, public :: evaporatin_eq, solve_motionEquation
 
@@ -256,16 +256,16 @@ module dropletEquation_m
     !     survival_rate = 0.999825d0**(time)
     ! end function
 
-    elemental double precision function virusDeadline(self, deathParameter)
-        class(DropletEquationSolver), intent(in) :: self
-        double precision, intent(in) :: deathParameter
-        double precision, parameter :: halfLife = 3960.d0   !半減期 1.1 h ( = 3960 sec)
-        double precision, parameter :: alpha = log(2.d0) / halfLife
+    ! elemental double precision function virusDeadline(self, deathParameter)
+    !     class(DropletEquationSolver), intent(in) :: self
+    !     double precision, intent(in) :: deathParameter
+    !     double precision, parameter :: halfLife = 3960.d0   !半減期 1.1 h ( = 3960 sec)
+    !     double precision, parameter :: alpha = log(2.d0) / halfLife
 
-        virusDeadline = - log(deathParameter) / alpha
-        virusDeadline = virusDeadline * self%U/self%L !無次元化
+    !     virusDeadline = - log(deathParameter) / alpha
+    !     virusDeadline = virusDeadline * self%U/self%L !無次元化
 
-    end function
+    ! end function
 
     double precision function representativeValue(self, name)
         class(BasicParameter) self
@@ -282,7 +282,8 @@ module dropletEquation_m
                 representativeValue = self%L / self%U
 
             case default
-                representativeValue = -1.d20
+                print*, 'RepresentativeValueERROR : ', name
+                stop
 
         end select
 

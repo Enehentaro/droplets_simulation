@@ -112,12 +112,22 @@ module flow_field
         else
             mainMesh = UnstructuredGridAdjacencySolved_(get_requiredFlowFieldFileName())
         end if
+
+        call calc_NextUpdate
+
+    end subroutine
+
+    subroutine update_FlowField
+
+        call mainMesh%updateWithFlowFieldFile(get_requiredFlowFieldFileName())
+
+        call calc_NextUpdate
             
     end subroutine
 
     logical function isUpdateTiming()
 
-        if(STEPinFLOW >= NextUpdate) then
+        if(STEPinFLOW >= NextUpdate .and. INTERVAL_FLOW > 0) then
             isUpdateTiming = .true.
         else
             isUpdateTiming = .false.
@@ -139,7 +149,6 @@ module flow_field
         do while(i*INTERVAL_FLOW + OFFSET <= STEPinFLOW)
             i = i + 1
         end do
-
         NextUpdate = i*INTERVAL_FLOW + OFFSET
 
     end subroutine
