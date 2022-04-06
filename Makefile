@@ -23,37 +23,51 @@ TARGET2OBJ = $(COMMONOBJ) droplet2CSV.o
 TARGET3OBJ = $(COMMONOBJ) vtkMesh_operator.o boxCounter.o dropletCount.o
 TARGET4OBJ = $(COMMONOBJ) initial_translate.o
 
-SRCDIR    = src
-OBJDIR    = obj
-MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJ))
-TARGET1OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET1OBJ))
-TARGET2OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET2OBJ))
-TARGET3OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET3OBJ))
-TARGET4OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET4OBJ))
+SRCDIR = src
+OBJDIR = obj
+BINDIR = bin
 MODDIR = ${OBJDIR}
+MAINOBJECTS = $(addprefix $(OBJDIR)/, $(MAINOBJ))
+TARGET1OBJECTS = $(addprefix $(OBJDIR)/, $(TARGET1OBJ))
+TARGET2OBJECTS = $(addprefix $(OBJDIR)/, $(TARGET2OBJ))
+TARGET3OBJECTS = $(addprefix $(OBJDIR)/, $(TARGET3OBJ))
+TARGET4OBJECTS = $(addprefix $(OBJDIR)/, $(TARGET4OBJ))
 
 $(MAINTARGET): $(MAINOBJECTS)
-	$(FC) $^ $(FCFLAGS) -o $@
+	$(call linkCompile,$^,$@)
 
 $(TARGET1): $(TARGET1OBJECTS)
-	$(FC) $^ $(FCFLAGS) -o $@
+	$(call linkCompile,$^,$@)
 
 $(TARGET2): $(TARGET2OBJECTS)
-	$(FC) $^ $(FCFLAGS) -o $@
+	$(call linkCompile,$^,$@)
 
 $(TARGET3): $(TARGET3OBJECTS)
-	$(FC) $^ $(FCFLAGS) -o $@
+	$(call linkCompile,$^,$@)
 
 $(TARGET4): $(TARGET4OBJECTS)
-	$(FC) $^ $(FCFLAGS) -o $@
+	$(call linkCompile,$^,$@)
 
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
-	@if [ ! -d $(OBJDIR) ]; then \
-		mkdir -p $(OBJDIR); \
-	fi
+	$(call mkdirIfNotExist,$(OBJDIR))
 	$(FC) $< -o $@ -c -module $(MODDIR) $(FCFLAGS)
 
 all: $(MAINTARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
 
 clean:
-	$(RM) $(MAINTARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) -r $(OBJDIR)
+	$(RM) -r $(OBJDIR) $(BINDIR)
+
+#===========以下、自作関数=============================================
+
+#ディレクトリが存在しなければ作成する
+define mkdirIfNotExist
+	@if [ ! -d ${1} ]; then \
+		mkdir -p ${1}; \
+	fi
+endef
+
+#分割コンパイルされたオブジェクトをリンクし、実行ファイルをbinディレクトリに出力
+define linkCompile
+	$(call mkdirIfNotExist,$(BINDIR))
+	$(FC) ${1} $(FCFLAGS) -o $(BINDIR)/${2}
+endef
