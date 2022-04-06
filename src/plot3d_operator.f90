@@ -1,47 +1,48 @@
+!CUBE出力ファイル形式：Plot3Dを取り扱うためのモジュール
 module plot3d_operator
     implicit none
     private
 
-    type area_t
-        real, dimension(3) :: min, max
+    type area_t !エリア構造体
+        real, dimension(3) :: min, max  !最小座標と最大座標
     end type
 
-    type cube_inP3D
-        real, allocatable :: nodes(:,:,:,:)
-        real, allocatable :: f(:,:,:,:)
+    type cube_inP3D !cube（ソルバの名前ではなく、Plot3D形式における立方体のこと）構造体
+        real, allocatable :: nodes(:,:,:,:) !接点座標配列（i,j,k, xyz）
+        real, allocatable :: f(:,:,:,:)     !保存量配列（i,j,k, f）
         type(area_t) area
         contains
         procedure, public :: isIncluded
         procedure areaOfCube, nearest_nodeID!, nearer_nodeID
     end type
 
-    type, public :: plot3dNodeInfo
-        integer cubeID, nodeID(3)
+    type, public :: plot3dNodeInfo  !節点情報構造体
+        integer cubeID, nodeID(3)   !節点が属するcubeID、そのcube内の節点ID（i,j,kそれぞれのIDを指定するので要素数3）
     end type
 
-    type, public :: Plot3dMesh
+    type, public :: Plot3dMesh  !Plot3Dメッシュクラス
         private
-        type(cube_inP3D), pointer :: cubes(:)
+        type(cube_inP3D), allocatable :: cubes(:)   !cube配列
         contains
         procedure areaOfMesh
         procedure, public :: read_plot3d_function, get_numCube, get_velocity, get_cubeShape
         procedure, public :: get_cubeID_contains, nearestNodeInfo
     end type
 
-    public :: read_plot3d_multigrid
+    public :: read_plot3d_multigrid !Plot3Dメッシュクラスの事実上コンストラクタ
     
     contains
 
+    !メッシュファイル（.g）を読み込んでメッシュクラスを返す関数
     function read_plot3d_multigrid(fName) result(mesh)
         character(*), intent(in) :: fName
         type(Plot3dMesh) mesh
-        type(cube_inP3D), pointer :: cube
         integer n_unit, i,j,k, i_cube, num_cube, xyz
         integer, allocatable :: ni(:), nj(:), nk(:)
 
         print*, 'READ_multigrid:', fName
 
-        open(newunit=n_unit , form='unformatted', file=fName, status='old')
+        open(newunit=n_unit , form='unformatted', file=fName, status='old', action='read')
 
             read(n_unit) num_cube   ;print*, 'num_cube=', num_cube
             allocate(mesh%cubes(num_cube))
@@ -54,17 +55,15 @@ module plot3d_operator
             print*, 'nk=', minval(nk(:)), maxval(ni(:))
 
             do i_cube = 1, num_cube
-                cube => mesh%cubes(i_cube)
-                allocate(cube%nodes(ni(i_cube), nj(i_cube), nk(i_cube), 3))
+                allocate(mesh%cubes(i_cube)%nodes(ni(i_cube), nj(i_cube), nk(i_cube), 3))
             end do
 
             do i_cube = 1, num_cube
-                cube => mesh%cubes(i_cube)
-                read(n_unit) ((((   cube%nodes(i,j,k, xyz), &
+                read(n_unit) ((((   mesh%cubes(i_cube)%nodes(i,j,k, xyz), &
                     i = 1, ni(i_cube) ), j = 1, nj(i_cube) ), k = 1, nk(i_cube) ), xyz = 1,3)
                     ! (((iblank(i,j,k,i_cube), i = 1, ni(i_cube) ), j = 1, nj(i_cube) ), k = 1, nk(i_cube) )
 
-                cube%area = cube%areaOfCube()
+                mesh%cubes(i_cube)%area = mesh%cubes(i_cube)%areaOfCube()
             end do
 
         close(n_unit)
@@ -79,6 +78,7 @@ module plot3d_operator
 
     end function
 
+    !メッシュのエリアを構造体で返す関数
     type(area_t) function areaOfMesh(self)
         class(Plot3dMesh), intent(in) :: self
         integer i_cube, num_cube
@@ -99,6 +99,7 @@ module plot3d_operator
 
     end function
 
+    !cubeのエリアを構造体で返す関数
     type(area_t) function areaOfCube(self)
         class(cube_inP3D), intent(in) :: self
 
@@ -111,6 +112,7 @@ module plot3d_operator
 
     end function
 
+    !cubeのエリア内に任意座標（引数）が含まれているかを返す関数
     logical function isIncluded(self, cdn)
         class(cube_inP3D), intent(in) :: self
         real, intent(in) :: cdn(3)
@@ -129,6 +131,7 @@ module plot3d_operator
 
     end function
 
+    !任意座標（引数）を含むcubeをメッシュの中から探してそのIDを返す関数
     integer function get_cubeID_contains(self, cdn)
         class(Plot3dMesh), intent(in) :: self
         real, intent(in) :: cdn(3)
@@ -149,6 +152,7 @@ module plot3d_operator
 
     end function
 
+    !任意座標（引数）に最近傍な節点を探してそのIDを返す関数
     function nearest_nodeID(self, cdn) result(nodeID)
         class(cube_inP3D), intent(in) :: self
         real, intent(in) :: cdn(3)
@@ -224,6 +228,7 @@ module plot3d_operator
 
     ! end function
 
+    !任意座標（引数）に最近傍な節点を探し、その情報（cubeID,nodeID）を返す関数
     type(plot3dNodeInfo) function nearestNodeInfo(self, cdn)
         class(Plot3dMesh), intent(in) :: self
         real, intent(in) :: cdn(3)
@@ -417,6 +422,8 @@ module plot3d_operator
     !     close(n_unit)
     ! end subroutine
 
+    !メッシュクラスメソッド
+    !保存量ファイル（.f）を読み込み、メッシュクラスに格納する
     subroutine read_plot3d_function(self, fName, update)
         class(Plot3dMesh) self
         character(*), intent(in) :: fName
@@ -428,7 +435,7 @@ module plot3d_operator
 
         print*, 'READ_function:', fName
 
-        open(newunit=n_unit , form='unformatted', file=fName, status='old')
+        open(newunit=n_unit , form='unformatted', file=fName, status='old', action='read')
 
             read(n_unit) num_cube   ;print*, 'num_cube=', num_cube
             if(num_cube /= size(self%cubes)) then
@@ -624,6 +631,7 @@ module plot3d_operator
 
     ! end function
 
+    !メッシュを構成するcube数を返す関数
     integer function get_numCube(self)
         class(Plot3dMesh), intent(in) :: self
 
@@ -631,6 +639,7 @@ module plot3d_operator
 
     end function
 
+    !cubeの形状（i,j,k接点数）を返す関数
     function get_cubeShape(self) result(cubeShape)
         class(Plot3dMesh), intent(in) :: self
         integer shapeArray(4), cubeShape(3)
@@ -640,6 +649,7 @@ module plot3d_operator
 
     end function
 
+    !任意接点（引数）における流速を返す関数
     function get_velocity(self, node) result(velocity)
         class(Plot3dMesh) self
         type(plot3dNodeInfo), intent(in) :: node

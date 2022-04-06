@@ -1,3 +1,6 @@
+!CUBE格子上の流速場をVTK非構造格子に載せるプログラム。
+!非構造格子上の各格子に対して、CUBE格子上の最近傍節点を探し、対応付けを行う。
+!対応する各節点における流速を配列にして、そのままバイナリファイル出力を行う。
 program CUBE2USG
     use plot3d_operator
     use vtkMesh_operator_m
@@ -47,7 +50,10 @@ program CUBE2USG
 
             fname_base = F_fname(:len_trim(F_fname)-2)
 
+            !流速場配列をバイナリ出力
             call output_array_asBinary(fname=fname_base//'.array', array=velocity)
+
+            !確認用に、ひとつだけVTKファイル出力
             if(fileID==1) call USG%output(fname_base//'.vtk', cellVector=velocity, vectorName='Velocity')
 
         end block
@@ -57,6 +63,7 @@ program CUBE2USG
 
     contains
 
+    !対応する節点情報をアスキーファイルで出力するサブルーチン
     subroutine output_nodeInfo
         integer n_unit, i
 
@@ -76,6 +83,7 @@ program CUBE2USG
 
     end subroutine
 
+    !非構造格子に対応する節点情報を探すサブルーチン
     subroutine search_nodeInfo
         use timeKeeper_m
         use terminalControler_m
@@ -109,6 +117,7 @@ program CUBE2USG
 
     end subroutine
 
+    !節点情報対応付けファイルを読み込むすサブルーチン
     subroutine read_nodeInfo(success)
         logical, intent(out) :: success
         integer n_unit, i, num_cell_, num_cube, cubeShape(3)
@@ -143,24 +152,26 @@ program CUBE2USG
 
     end subroutine
 
+    !格子と節点の対応付けを解決するサブルーチン
     subroutine solve_correspondence
         logical existance, success
 
         inquire(file=CorrespondenceFName, exist=existance)
 
-        if(existance) then
+        if(existance) then  !対応付けファイルが存在すれば読み込む
             call read_nodeInfo(success)
         else
-            success = .false.
+            success = .false.   !なければ失敗
         end if
 
-        if(.not.success) then
+        if(.not.success) then   !対応付けに失敗すれば改めて最近傍節点の探索を行う
             call search_nodeInfo
             call output_nodeInfo
         end if
 
     end subroutine
 
+    !配列が等しいかどうかを判定する関数
     logical function isEqual(a, b)
         integer, intent(in) :: a(:), b(:)
         integer i
