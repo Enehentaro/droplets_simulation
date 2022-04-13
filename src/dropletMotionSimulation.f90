@@ -65,17 +65,17 @@ module dropletMotionSimulation
 
         if(num_restart <= 0) then
 
-            if(num_restart==0) then
-                ! call random_set  !実行時刻に応じた乱数シード設定
-                mainDroplet = dropGenerator%generateDroplet(condVal%num_drop, TimeOnSimu())
-
-            else if(num_restart==-1) then
+            if(allocated(condVal%initialDistributionFName)) then
 
                 mainDroplet = read_backup(case_dir//'/'//condVal%initialDistributionFName)
 
+            else
+
+                mainDroplet = dropGenerator%generateDroplet(condVal%num_drop, TimeOnSimu())
+
             end if
 
-            call output_mainDroplet(initial = .true.)
+            call output_mainDroplet(initial = .true.)   !この時点では、飛沫の参照セルは見つかっていない
 
         else
 
