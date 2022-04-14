@@ -293,7 +293,7 @@ module unstructuredGrid_mod
 
         print*, 'READ_INP:', trim(FNAME)
             
-        open(newunit=n_unit,FILE=FNAME,STATUS='OLD')
+        open(newunit=n_unit,FILE=FNAME,status='old', action='read')
             read(n_unit,*)KKMX,IIMX2
             print*,'KKMX,IIMX2=',KKMX,IIMX2
             
@@ -483,7 +483,7 @@ module unstructuredGrid_mod
 
         print*, 'READ : ', FNAME
 
-        open(newunit=n_unit, FILE=FNAME, STATUS='OLD')
+        open(newunit=n_unit, FILE=FNAME, status='old', action='read')
             read(n_unit,*) num_cells
 
             if(num_cells /= size(self%CELLs)) then
@@ -551,7 +551,7 @@ module unstructuredGrid_mod
 
         FNAME = trim(path)//boundaryFileName
         print*, 'READ : ', FNAME
-        open(newunit=n_unit, FILE=FNAME , STATUS='old')
+        open(newunit=n_unit, FILE=FNAME , status='old', action='read')
             read(n_unit,*) JBMX
             allocate(self%BoundFACEs(JBMX))
             do JB = 1, JBMX

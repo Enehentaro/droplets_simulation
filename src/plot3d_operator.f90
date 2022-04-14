@@ -21,7 +21,7 @@ module plot3d_operator
 
         print*, 'READ_multigrid:', fName
 
-        open(newunit=n_unit , form='unformatted', file=fName, status='old')
+        open(newunit=n_unit , form='unformatted', file=fName, status='old', action='read')
 
             read(n_unit) num_cube   ;print*, 'num_cube=', num_cube
             allocate(mesh(num_cube))
@@ -264,7 +264,7 @@ module plot3d_operator
 
         print*, 'READ_function:', fName
 
-        open(newunit=n_unit , form='unformatted', file=fName, status='old')
+        open(newunit=n_unit , form='unformatted', file=fName, status='old', action='read')
 
             read(n_unit) num_cube   ;print*, 'num_cube=', num_cube
             if(num_cube /= size(mesh)) then
