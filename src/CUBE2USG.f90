@@ -2,12 +2,14 @@ program CUBE2USG
     use CUBE_mod
     use vtkMesh_operator_m
     use simpleFile_reader
+    use caseName_m
     implicit none
-    character(50) F_fname, USG_fname
+    character(100) F_fname, USG_fname, caseName
     character(50),parameter :: filename = 'name.txt'
     character(50), allocatable :: field_name(:)
     character(20), parameter :: CorrespondenceFName = 'vtkCell2cubeNode.bin'
-    integer i, j, i_node, n, num_node, num_record, num_cell
+    integer i, j, i_node, n, num_node, num_record, num_cell, nc_max
+    integer, pointer :: nc => nowCase
     real X(3)
     real, allocatable :: velocity(:,:)
     logical existance
@@ -29,47 +31,53 @@ program CUBE2USG
 
     num_cell = size(USG%cell_array)
 
-    do j = 1, num_record
-        F_fname = field_name(j)
+    call case_check(num_case = nc_max)
+    do nc = 1, nc_max
+        caseName = get_caseName()
 
-        call read_CUBE_data(F_fname, '')
-    
-        if (.not.allocated(vtkCell2cubeNode)) then
-            inquire(file=CorrespondenceFName, exist=existance)
+        do j = 1, num_record
+            F_fname = trim(caseName)//'/output/'//field_name(j)
 
-            if(existance) then
-                call read_nodeInfo
+            call read_CUBE_data(F_fname, '')
+        
+            if (.not.allocated(vtkCell2cubeNode)) then
+                inquire(file=CorrespondenceFName, exist=existance)
 
-            else
-                allocate(vtkCell2cubeNode(0 : num_cell - 1))
+                if(existance) then
+                    call read_nodeInfo
 
-                do i = 0, num_cell-1
-                    X(:) = 0.0
-                    num_node = size(USG%cell_array(i)%nodeID)
-                    do n = 1, num_node
-                        i_node = USG%cell_array(i)%nodeID(n)
-                        X(:) = X(:) + USG%node_array(i_node)%coordinate(:)
+                else
+                    allocate(vtkCell2cubeNode(0 : num_cell - 1))
+
+                    do i = 0, num_cell-1
+                        X(:) = 0.0
+                        num_node = size(USG%cell_array(i)%nodeID)
+                        do n = 1, num_node
+                            i_node = USG%cell_array(i)%nodeID(n)
+                            X(:) = X(:) + USG%node_array(i_node)%coordinate(:)
+                        end do
+                        X(:) = X(:) / real(num_node)
+                        vtkCell2cubeNode(i)%cubeID = get_cube_contains(X)    
+                        vtkCell2cubeNode(i)%nodeID(:) = nearest_node(X, vtkCell2cubeNode(i)%cubeID)
                     end do
-                    X(:) = X(:) / real(num_node)
-                    vtkCell2cubeNode(i)%cubeID = get_cube_contains(X)    
-                    vtkCell2cubeNode(i)%nodeID(:) = nearest_node(X, vtkCell2cubeNode(i)%cubeID)
-                end do
 
-                call output_nodeInfo
+                    call output_nodeInfo
+
+                end if
 
             end if
 
-        end if
-
-        if (.not.allocated(velocity)) allocate(velocity(3, num_cell))
-        do i = 0, num_cell-1
-            velocity(:,i+1) = get_velocity_f(vtkCell2cubeNode(i)%nodeID(:), vtkCell2cubeNode(i)%cubeID)
+            if (.not.allocated(velocity)) allocate(velocity(3, num_cell))
+            do i = 0, num_cell-1
+                velocity(:,i+1) = get_velocity_f(vtkCell2cubeNode(i)%nodeID(:), vtkCell2cubeNode(i)%cubeID)
+            end do
+        
+            i = len_trim(F_fname)
+            call output_array_asBinary(fname=F_fname(:i-2)//'.array', array=velocity)
+            ! call USG%output(F_fname(:i-2)//'.vtk', cellVector=velocity, vectorName='Velocity')
+        
         end do
-    
-        i = len_trim(F_fname)
-        call output_array_asBinary(fname=F_fname(:i-2)//'.array', array=velocity)
-        ! call USG%output(F_fname(:i-2)//'.vtk', cellVector=velocity, vectorName='Velocity')
-    
+
     end do
 
     contains

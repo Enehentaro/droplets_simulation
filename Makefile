@@ -18,7 +18,7 @@ COMMONOBJ = filename_mod.o simpleFile_reader.o path_operator.o vector.o terminal
 MAINOBJ = $(COMMONOBJ) SCTfile_reader.o vtkMesh_operator.o adjacency_solver.o unstructured_grid.o flow_field.o \
 			dropletGenerator.o dropletMotionSimulation.o main.o
 
-TARGET1OBJ = simpleFile_reader.o vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
+TARGET1OBJ = $(COMMONOBJ) vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
 TARGET2OBJ = $(COMMONOBJ) droplet2CSV.o
 TARGET3OBJ = $(COMMONOBJ) vtkMesh_operator.o boxCounter.o dropletCount.o
 TARGET4OBJ = $(COMMONOBJ) initial_translate.o
