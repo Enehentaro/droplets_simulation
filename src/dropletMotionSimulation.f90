@@ -147,9 +147,9 @@ module dropletMotionSimulation
             if(adhesionSwitch) call adhesion_check(mainDroplet)
 
             call mainDroplet%survival_check(TimeOnSimu())           !生存率に関する処理
-    
+
             call coalescence_process        !飛沫間の合体判定
-    
+
             call Calculation_Droplets     !飛沫の運動計算
 
             if (mod(n, outputInterval) == 0) call periodicOutput             !出力

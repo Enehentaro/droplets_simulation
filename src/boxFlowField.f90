@@ -13,7 +13,7 @@ program boxFlowField
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
-    type(UnstructuredGridAdjacencySolved) mesh
+    type(UnstructuredGrid) mesh
 
     box_array = get_box_array('.', 0)
     num_box = size(box_array)
@@ -25,7 +25,7 @@ program boxFlowField
 
         ! mesh = UnstructuredGrid_(condVal%path2FlowFile, condVal%meshFile)
         if(nc==1) then
-            mesh = UnstructuredGridAdjacencySolved_(trim(caseName)//'/field_0000005125.array', './case1.vtk')
+            mesh = UnstructuredGrid_(trim(caseName)//'/field_0000005125.array', './case1.vtk')
         else
             call mesh%updateWithFlowFieldFile(trim(caseName)//'/field_0000005125.array')
         end if

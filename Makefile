@@ -8,19 +8,19 @@ PROGRAMS = droplet CUBE2USG droplet2CSV dropletCount initialTranslate boxFlow
 
 #頻繁に使うファイル
 COMMONOBJ = filename_mod simpleFile_reader path_operator vector terminalControler caseName conditionValue \
-    	dropletEquation virusDroplet
+    	dropletEquation virusDroplet timeKeeper
 
 #プログラムコンパイルに必要な依存ファイル配列
 #配列の名前は、プログラム名＋"_OBJ"
 #左から順にコンパイルするので、記述順に注意
 droplet_OBJ = $(COMMONOBJ) SCTfile_reader vtkMesh_operator adjacency_solver unstructured_grid flow_field \
 			dropletGenerator dropletMotionSimulation main
-CUBE2USG_OBJ = simpleFile_reader vtkMesh_operator plot3d_operator CUBE_mod CUBE2USG
+CUBE2USG_OBJ = $(COMMONOBJ) vtkMesh_operator plot3d_operator CUBE2USG
 droplet2CSV_OBJ = $(COMMONOBJ) droplet2CSV
 dropletCount_OBJ = $(COMMONOBJ) vtkMesh_operator boxCounter dropletCount
 initialTranslate_OBJ = $(COMMONOBJ) initial_translate
-boxFlow_OBJ = $(COMMONOBJ) SCTfile_reader.o vtkMesh_operator.o adjacency_solver.o unstructured_grid.o flow_field.o \
-				boxCounter.o boxFlowField.o
+boxFlow_OBJ = $(COMMONOBJ) SCTfile_reader vtkMesh_operator adjacency_solver unstructured_grid flow_field \
+				boxCounter boxFlowField
         
 #ディレクトリ指定
 SRCDIR = src
