@@ -103,7 +103,7 @@ program CUBE2USG
 
         print*, 'read: ', CorrespondenceFName
 
-        open(newunit=n_unit, file=CorrespondenceFName, form='unformatted', status='old')
+        open(newunit=n_unit, file=CorrespondenceFName, form='unformatted', status='old', action='read')
             read(n_unit) num_cell_, num_cube
 
             if((num_cell_/=num_cell).or.(num_cube/=get_numCube())) then
