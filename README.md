@@ -4,10 +4,11 @@ Simulation of Virus Droplets Behavior in AFDET
 ## 使い方
   ※環境は **Intel Fortran, Linux** を想定しています。その他の環境では適宜書き換えが必要です。
   コンパイルに`make`コマンドを使います（makeのインストールが必要）。
+  Makefileのあるディレクトリが、作業ディレクトリ（実行ディレクトリ）です。
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
   2. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集。
-  3. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
-  4. `./droplet`で実行。ケース名を入力して計算開始。
+  3. `make` コマンドでコンパイル。
+  4. `./bin/droplet`で実行。ケース名を入力して計算開始。
 
 ## 条件ファイル(condition.nml, initial_position.csv)解説
   ### condition.nml
@@ -16,9 +17,8 @@ Simulation of Virus Droplets Behavior in AFDET
     - `1以上`にすると、その値に対応するbackupファイルが読み込まれ、そこからリスタートが始まる
     - `-1`にすると、backupファイル(.bu)が読み込まれ、それを初期飛沫分布とする。backupファイル名は自由に指定可能。
   - **飛沫周期発生 preriodicGeneration**
-    - 長さ2の整数配列。要素1に1秒当たりの発生飛沫数を与え、要素2に発生モード(1 or 2)を与える。
-      - 発生モード1：新規に飛沫を発生させ、メイン飛沫群に加えていく。計算終了まで発生し続ける。
-      - 発生モード2：最初にnonActive飛沫群を配置し、その中から少しずつActivateしていく。初期配置飛沫数より増えることはない。
+    - 1秒当たりの発生飛沫数（整数）を指定
+    - 初期配置飛沫をすべてNonActiveにしたのち、順次Activateしていくので、初期配置数が飛沫数の上限となる
   - **気流データファイル名 path2FlowFile**
     - 実行ディレクトリからの相対パス、もしくは絶対パスを指定
     - 現在可能な流れ場ファイル：
