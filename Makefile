@@ -4,7 +4,7 @@ FCFLAGS = -traceback -CB -g -O0 -fpe0
 # FCFLAGS = -qopenmp
 
 #プログラム名配列
-PROGRAMS = droplet CUBE2USG droplet2CSV dropletCount initialTranslate
+PROGRAMS = droplet CUBE2USG droplet2CSV dropletCount initialTranslate boxFlow
 
 #頻繁に使うファイル
 COMMONOBJ = filename_mod simpleFile_reader path_operator vector terminalControler caseName conditionValue \
@@ -19,7 +19,9 @@ CUBE2USG_OBJ = simpleFile_reader vtkMesh_operator plot3d_operator CUBE_mod CUBE2
 droplet2CSV_OBJ = $(COMMONOBJ) droplet2CSV
 dropletCount_OBJ = $(COMMONOBJ) vtkMesh_operator boxCounter dropletCount
 initialTranslate_OBJ = $(COMMONOBJ) initial_translate
-
+boxFlow_OBJ = $(COMMONOBJ) SCTfile_reader.o vtkMesh_operator.o adjacency_solver.o unstructured_grid.o flow_field.o \
+				boxCounter.o boxFlowField.o
+        
 #ディレクトリ指定
 SRCDIR = src
 OBJDIR = obj

@@ -2,6 +2,7 @@ module dropletMotionSimulation
     use dropletGenerator_m
     use dropletEquation_m
     use flow_field
+    use timeKeeper_m
     implicit none
 
     private
@@ -12,8 +13,7 @@ module dropletMotionSimulation
     integer, target :: timeStep
     integer n_start, n_end
 
-    character(:), allocatable :: start_date
-    real start_time
+    type(TimeKeeper) tK
 
     character(:), allocatable :: case_dir
 
@@ -416,7 +416,6 @@ module dropletMotionSimulation
 
     subroutine checkpoint
         character(1) input
-        character d_start*8, t_start*10
 
         if(.not.startFlag) then
             do
@@ -436,9 +435,7 @@ module dropletMotionSimulation
             end do
         end if
 
-        call cpu_time(start_time)
-        call date_and_time(date = d_start, time = t_start)
-        start_date = '[Start Date] ' // DateAndTime_string(d_start, t_start)
+        tk = TimeKeeper_()
 
     end subroutine
 
@@ -453,7 +450,7 @@ module dropletMotionSimulation
     subroutine periodicOutput
         use terminalControler_m
 
-        print*, start_date
+        print*, '[Start Date] ' // tk%startDateAndTime()
         print*, 'Now_Step_Time =', TimeOnSimu(dimension=.true.), '[sec]'
         print*, '# floating :', mainDroplet%Counter('floating'), '/', mainDroplet%Counter('total')
         if(mainMesh%refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', mainMesh%refCellSearchInfo('NumFalse')
@@ -466,19 +463,18 @@ module dropletMotionSimulation
     subroutine output_ResultSummary()
         use dropletEquation_m
         integer n_unit, cnt
-        real end_time
+        real erapsed_time
         character(50) fname
-        character d_end*8, t_end*10
         logical existance
         double precision TimeStart, TimeEnd
-        character(:), allocatable :: end_date
+        character(:), allocatable :: startDAT, endDAT
         
-        call cpu_time(end_time)
-        call date_and_time(date = d_end, time = t_end)
+        erapsed_time = tk%erapsedTime()
 
-        end_date = '[ END  Date] ' // DateAndTime_string(d_end, t_end)
-        print*, start_date
-        print*, end_date
+        startDAT = '[Start Date] ' // tk%startDateAndTime()
+        endDAT = '[ END  Date] ' // nowDateAndTime()
+        print*, startDAT
+        print*, endDAT
 
         fname = case_dir//'/ResultSummary.txt'
         inquire(file=fname, exist=existance)
@@ -499,11 +495,11 @@ module dropletMotionSimulation
             write(n_unit,*)'*                                         *'
             write(n_unit,*)'*******************************************'
             write(n_unit,'(A)') '======================================================='
-            write(n_unit,*) start_date
-            write(n_unit,*) end_date
-            write(n_unit, '(A18, F15.3, 2X, A)') 'Erapsed Time =', end_time - start_time, '[sec]'
+            write(n_unit,*) startDAT
+            write(n_unit,*) endDAT
+            write(n_unit, '(A18, F15.3, 2X, A)') 'Erapsed Time =', erapsed_time, '[sec]'
             write(n_unit, '(A18, F15.3, 2X, A)') 'Cost of Calc =', &
-                    (end_time - start_time) / (TimeEnd - TimeStart), '[sec/sec]'
+                    erapsed_time / (TimeEnd - TimeStart), '[sec/sec]'
             write(n_unit,'(A)') '======================================================='
             write(n_unit, '(A18, 2(F15.3,2x,A))') 'Time [sec] =', TimeStart, '-', TimeEnd
             write(n_unit, '(A18, 2(I15,2x,A))') 'Step =', n_start, '-', n_end !計算回数
