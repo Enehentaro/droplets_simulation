@@ -20,8 +20,10 @@ module unstructuredGrid_mod
     type, public :: UnstructuredGrid
         type(node_t), allocatable :: NODEs(:)
         type(cell_t), allocatable :: CELLs(:)
+        type(boundaryTriangle_t), allocatable :: BoundFACEs(:)
 
-        real MIN_CDN(3), MAX_CDN(3)
+        real, private :: MIN_CDN(3), MAX_CDN(3)
+        integer, private :: num_refCellSearchFalse = 0, num_refCellSearch = 0
 
         contains
 
@@ -31,14 +33,7 @@ module unstructuredGrid_mod
         procedure, private :: set_gravity_center, set_MinMaxCDN, point2cellVelocity
         procedure, private :: read_VTK, read_array, read_INP, read_FLD
 
-    end type
-
-    type, public, extends(UnstructuredGrid) :: UnstructuredGridAdjacencySolved
-        type(boundaryTriangle_t), allocatable :: BoundFACEs(:)
-
-        integer :: num_refCellSearchFalse = 0, num_refCellSearch = 0
-
-        contains
+        !=====================================================================
 
         procedure updateWithFlowFieldFile
         procedure nearer_cell
@@ -51,37 +46,25 @@ module unstructuredGrid_mod
 
     end type
 
-    public UnstructuredGrid_, UnstructuredGridAdjacencySolved_
+    public UnstructuredGrid_
 
     contains
 
     type(UnstructuredGrid) function UnstructuredGrid_(FlowFieldFile, meshFile)
-        character(*), intent(in) :: FlowFieldFile
-        character(*), intent(in), optional :: meshFile
-
-        if(present(meshFile)) then
-            call UnstructuredGrid_%setupWithFlowFieldFile(FlowFieldFile, meshFile)
-        else
-            call UnstructuredGrid_%setupWithFlowFieldFile(FlowFieldFile)
-        end if
-
-    end function
-
-    type(UnstructuredGridAdjacencySolved) function UnstructuredGridAdjacencySolved_(FlowFieldFile, meshFile)
         use path_operator_m
         character(*), intent(in) :: FlowFieldFile
         character(*), intent(in), optional :: meshFile
         character(:), allocatable :: Dir
 
         if(present(meshFile)) then
-            UnstructuredGridAdjacencySolved_%UnstructuredGrid = UnstructuredGrid_(FlowFieldFile, meshFile)
+            call UnstructuredGrid_%setupWithFlowFieldFile(FlowFieldFile, meshFile)
             call get_DirFromPath(meshFile, Dir)
         else
-            UnstructuredGridAdjacencySolved_%UnstructuredGrid = UnstructuredGrid_(FlowFieldFile)
+            call UnstructuredGrid_%setupWithFlowFieldFile(FlowFieldFile)
             call get_DirFromPath(FlowFieldFile, Dir)
         end if
 
-        call UnstructuredGridAdjacencySolved_%AdjacencySolvingProcess(Dir)    !流れ場の前処理
+        call UnstructuredGrid_%AdjacencySolvingProcess(Dir)    !流れ場の前処理
 
     end function
 
@@ -93,7 +76,7 @@ module unstructuredGrid_mod
 
         select case(extensionOf(FNAME))
             case('vtk')
-                call self%read_VTK(FNAME)
+                call self%read_VTK(FNAME, meshOnly=.false.)
 
             case('inp')
                 call self%read_INP(FNAME)   !INPを読み込む(SHARP用)
@@ -127,13 +110,13 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine updateWithFlowFieldFile(self, FNAME)
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         character(*), intent(in) :: FNAME
         character(:), allocatable :: extension
 
         select case(extensionOf(FNAME))
             case('vtk')
-                call self%read_VTK(FNAME)
+                call self%read_VTK(FNAME, meshOnly=.true.)
 
             case('inp')
                 call self%read_INP(FNAME)   !INPを読み込む(SHARP用)
@@ -158,7 +141,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine AdjacencySolvingProcess(self, dir)
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         character(*), intent(in) :: dir
         logical success
 
@@ -208,17 +191,11 @@ module unstructuredGrid_mod
         class(UnstructuredGrid) self
         type(vtkMesh) mesh
         character(*), intent(in) :: FNAME
-        logical, intent(in) , optional :: meshOnly
+        logical, intent(in) :: meshOnly
         real, allocatable :: velocity(:,:)
         integer II,KK,IIH, KKMX, IIMX
-        logical onlyFlag
 
-        onlyFlag = .false.
-        if(present(meshOnly)) then
-            if(meshOnly) onlyFlag = .true.
-        end if
-
-        if(onlyFlag) then
+        if(meshOnly) then
             call mesh%read(FNAME)
         else
             call mesh%read(FNAME, cellVector=velocity)
@@ -245,7 +222,7 @@ module unstructuredGrid_mod
             end select
         end do
 
-        if(.not.onlyFlag) then
+        if(.not.meshOnly) then
             do II = 1, IIMX
                 self%CELLs(II)%flowVelocity(:) = velocity(:,II)
             end do
@@ -470,7 +447,7 @@ module unstructuredGrid_mod
 
     subroutine read_adjacency(self, path, success)
         use filename_mod, only : adjacencyFileName
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         character(*), intent(in) :: path
         logical, intent(out) :: success
         integer II,NA, n_unit, num_cells, num_adj, num_BF, NCMAX
@@ -479,7 +456,10 @@ module unstructuredGrid_mod
                 
         FNAME = trim(path)//adjacencyFileName
         inquire(file = FNAME, exist = success)
-        if(.not.success) return
+        if(.not.success) then
+            print*, 'AdjacencyFile was not found.'
+            return
+        end if
 
         print*, 'READ : ', FNAME
 
@@ -514,7 +494,7 @@ module unstructuredGrid_mod
 
     subroutine output_adjacency(self, path)
         use filename_mod, only : adjacencyFileName
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         character(*), intent(in) :: path
         integer II, n_unit, num_cells, NCMAX
         character(:), allocatable :: FNAME
@@ -544,7 +524,7 @@ module unstructuredGrid_mod
 
     subroutine read_boundaries(self, path)
         use filename_mod, only : boundaryFileName
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
         character(:), allocatable :: FNAME
@@ -563,7 +543,7 @@ module unstructuredGrid_mod
 
     subroutine output_boundaries(self, path)
         use filename_mod, only : boundaryFileName
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
         character(:), allocatable :: FNAME
@@ -600,7 +580,7 @@ module unstructuredGrid_mod
     end function
 
     integer function nearer_cell(self, X, NCN)  !近セルの探索（隣接セルから）
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         integer, intent(in) :: NCN
         real, intent(in) :: X(3)
         integer NA, featuredCELL, adjacentCELL
@@ -680,7 +660,7 @@ module unstructuredGrid_mod
     end function
 
     subroutine search_refCELL(self, X, reference_cell, stat)
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         real, intent(in) :: X(3)
         integer, intent(inout) :: reference_cell
         logical, optional :: stat
@@ -699,7 +679,7 @@ module unstructuredGrid_mod
     end subroutine
 
     integer function refCellSearchInfo(self, name)
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         character(*), intent(in) :: name
 
         select case(name)
@@ -716,7 +696,7 @@ module unstructuredGrid_mod
                      
     subroutine boundary_setting(self, first) !全境界面に対して外向き法線ベクトルと重心を算出
         use vector_m
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         logical, intent(in) :: first
         integer II, JJ, JB, IIMX, JBMX, nodeID(3)
         real :: a(3), b(3), r(3), normalVector(3)
@@ -771,7 +751,7 @@ module unstructuredGrid_mod
 
     subroutine adhesionCheckOnBound(self, position, radius, cellID, stat)
         use vector_m
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         double precision, intent(in) :: position(3), radius
         integer, intent(in) :: cellID
         integer, intent(out) :: stat
@@ -820,7 +800,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine output_STL(self, fname)
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         character(*), intent(in) :: fname
         integer i, n_unit, JB
 
@@ -848,21 +828,21 @@ module unstructuredGrid_mod
 
     subroutine solve_adacencyOnUnstructuredGrid(self)
         use adjacencySolver_m
-        class(UnstructuredGridAdjacencySolved) self
+        class(UnstructuredGrid) self
         integer i, j, num_adjacent, num_boundFace
         integer, parameter :: max_vertex=6, max_adjacent=4, max_boundFace=4
-        integer cellVertices(max_vertex, size(self%CELLs))
-        integer adjacentCellArray(max_adjacent, size(self%CELLs))
-        integer cellBoundFaces(max_boundFace, size(self%CELLs))
+        integer, allocatable :: cellVertices(:, :)
+        integer, allocatable :: adjacentCellArray(:, :)
+        integer, allocatable :: cellBoundFaces(:, :)
         integer, allocatable :: boundFaceVertices(:,:)
 
-        cellVertices = 0
+        allocate(cellVertices(max_vertex, size(self%CELLs)), source=0)
         do i = 1, size(self%CELLs)
             cellVertices(1:size(self%CELLs(i)%nodeID(:)), i) = self%CELLs(i)%nodeID(:)
         end do
 
-        cellBoundFaces = 0
-        adjacentCellArray = 0
+        allocate(cellBoundFaces(max_adjacent, size(self%CELLs)), source=0)
+        allocate(adjacentCellArray(max_boundFace, size(self%CELLs)), source=0)
         call solve_BoundaryAndAdjacency(cellVertices, cellBoundFaces, boundFaceVertices, adjacentCellArray)
 
         allocate(self%BoundFACEs(size(boundFaceVertices, dim=2)))

@@ -10,7 +10,7 @@ module flow_field
     character(:), allocatable, private :: FullFileName
     character(:), allocatable, private :: FileNameFormat
 
-    type(UnstructuredGridAdjacencySolved) mainMesh
+    type(UnstructuredGrid) mainMesh
 
     contains
 
@@ -108,9 +108,9 @@ module flow_field
         end if
 
         if(present(meshFile)) then
-            mainMesh = UnstructuredGridAdjacencySolved_(get_requiredFlowFieldFileName(), meshFile)
+            mainMesh = UnstructuredGrid_(get_requiredFlowFieldFileName(), meshFile)
         else
-            mainMesh = UnstructuredGridAdjacencySolved_(get_requiredFlowFieldFileName())
+            mainMesh = UnstructuredGrid_(get_requiredFlowFieldFileName())
         end if
 
         call calc_NextUpdate
