@@ -43,7 +43,7 @@ module conditionValue_m
         namelist /flowFieldSetting/ PATH2FlowFile, meshFile, DT_FLOW, OFFSET, INTERVAL_FLOW, LoopHead, LoopTail,&
                                     L_represent, U_represent
 
-        OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, STATUS='OLD')
+        OPEN(newunit=n_unit, FILE=dir//'/'//conditionFName, status='old', action='read')
             read(n_unit, nml=dropletSetting)
             read(n_unit, nml=flowFieldSetting)
         CLOSE(n_unit)

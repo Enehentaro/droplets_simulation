@@ -32,7 +32,7 @@ module dropletEquation_m
         procedure set_gravity_acceleration, set_dropletEnvironment, dropletEnvironment
         procedure set_coeff_drdt, set_minimumRadiusRatio
         procedure next_position, next_velocity
-        procedure, public :: get_minimumRadius!, virusDeadline
+        procedure, public :: get_radiusLowerLimitRatio
 
         procedure, public :: evaporatin_eq, solve_motionEquation
 
@@ -146,9 +146,8 @@ module dropletEquation_m
 
     end subroutine
 
-    elemental double precision function get_minimumRadius(self, initial_radius)
+    double precision function get_radiusLowerLimitRatio(self)
         class(DropletEquationSolver), intent(in) :: self
-        double precision, intent(in) :: initial_radius
 
         ! if(RH < 64) then
         !     minimum_radius(:) = initial_radius(:)*0.19d0
@@ -162,7 +161,7 @@ module dropletEquation_m
         !     minimum_radius(:) = initial_radius(:)
         ! end if
 
-        get_minimumRadius = initial_radius * self%minimumRadiusRatio
+        get_radiusLowerLimitRatio = self%minimumRadiusRatio
 
     end function
 

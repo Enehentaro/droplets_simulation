@@ -1,9 +1,14 @@
 module simpleFile_reader
     implicit none
+    private
+    !簡単なファイル（CSV、TXTなど）の操作手続き集モジュール
 
     interface read_CSV
         module procedure read_csv_dble, read_csv_int, read_csv_char
     end interface
+
+    public read_CSV, read_textRecord, read_array_real
+    public read_array_asBinary, output_array_asBinary
 
     contains
 
@@ -20,7 +25,7 @@ module simpleFile_reader
 
         print*, 'CSV_READER:', filename
 
-        open (newunit=Num_unit, file=filename, status='old')
+        open (newunit=Num_unit, file=filename, status='old', action='read')
 
             mat_size = get_size_csv(Num_unit, header_flag)
 
@@ -51,7 +56,7 @@ module simpleFile_reader
 
         print*, 'CSV_READER:', filename
 
-        open (newunit=Num_unit, file=filename, status='old')
+        open (newunit=Num_unit, file=filename, status='old', action='read')
 
             mat_size = get_size_csv(Num_unit, header_flag)
 
@@ -82,7 +87,7 @@ module simpleFile_reader
 
         print*, 'CSV_READER:', filename
 
-        open (newunit=Num_unit, file=filename, status='old')
+        open (newunit=Num_unit, file=filename, status='old', action='read')
 
             mat_size = get_size_csv(Num_unit, header_flag)
 
@@ -108,7 +113,7 @@ module simpleFile_reader
 
         print*, 'simpleREADER : ', filename
 
-        open (newunit=Num_unit, file=filename, status='old')
+        open (newunit=Num_unit, file=filename, status='old', action='read')
 
             num_record = get_num_records(Num_unit, header_flag=.false.)
 
@@ -204,7 +209,7 @@ module simpleFile_reader
 
         print*, 'read_binArray : ', fname
 
-        open(newunit=n_unit, file=fname, form='unformatted', status='old')
+        open(newunit=n_unit, file=fname, form='unformatted', status='old', action='read')
 
             read(n_unit) arrayShape(:)
 
@@ -223,7 +228,7 @@ module simpleFile_reader
 
         print*, 'read_array : ', fname
 
-        open(newunit=n_unit, file=fname, status='old')
+        open(newunit=n_unit, file=fname, status='old', action='read')
 
             read(n_unit, *) size
 

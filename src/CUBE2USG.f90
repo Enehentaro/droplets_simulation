@@ -117,7 +117,7 @@ program CUBE2USG
 
     end subroutine
 
-    !節点情報対応付けファイルを読み込むすサブルーチン
+    !節点情報対応付けファイルを読み込むサブルーチン
     subroutine read_nodeInfo(success)
         logical, intent(out) :: success
         integer n_unit, i, num_cell_, num_cube, cubeShape(3)

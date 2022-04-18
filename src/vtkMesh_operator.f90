@@ -40,7 +40,7 @@ module vtkMesh_operator_m
 
         print*, 'READ_VTK:', FNAME
             
-        open(newunit=n_unit,FILE=FNAME, STATUS='OLD')
+        open(newunit=n_unit,FILE=FNAME, status='old', action='read')
             if(dataOnly) then
                 do while(index(AAA, 'CELL_DATA')==0)
                     read(n_unit, '(A)') AAA

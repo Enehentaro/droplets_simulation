@@ -125,7 +125,7 @@ module dropletMotionSimulation
 
         print*, 'READ : ', fname
         
-        open(newunit=n_unit, file=fname, status='old')
+        open(newunit=n_unit, file=fname, status='old', action='read')
             read(n_unit, nml=basicSetting)
         close(n_unit)
 
@@ -204,9 +204,9 @@ module dropletMotionSimulation
         integer i
 
         do i = 1, size(dGroup%droplet)
-            if(dGroup%droplet(i)%status==0) then
+            if(dGroup%droplet(i)%isFloating()) then
                 call mainMesh%adhesionCheckOnBound( &
-                    dGroup%droplet(i)%position, dGroup%droplet(i)%radius, dGroup%droplet(i)%refCellID, &
+                    dGroup%droplet(i)%position, dGroup%droplet(i)%get_radius(), dGroup%droplet(i)%refCellID, &
                     stat=dGroup%droplet(i)%adhesBoundID &
                     )
                 if (dGroup%droplet(i)%adhesBoundID >= 1) call dGroup%droplet(i)%stop_droplet()
@@ -254,7 +254,7 @@ module dropletMotionSimulation
 
         do vn = 1, size(dGroup%droplet)
         
-            if (dGroup%droplet(vn)%status <= 0) cycle !付着していないならスルー
+            if (dGroup%droplet(vn)%isFloating()) cycle !付着していないならスルー
     
             JB = dGroup%droplet(vn)%adhesBoundID
             if (JB > 0) then
@@ -276,17 +276,19 @@ module dropletMotionSimulation
         !$omp parallel do
         do vn = 1, size(mainDroplet%droplet)
 
-            select case(mainDroplet%droplet(vn)%status)
-            case(0)
+            if(mainDroplet%droplet(vn)%isFloating())then
+
                 call evaporation(mainDroplet%droplet(vn))    !蒸発方程式関連の処理
                 call motionCalculation(mainDroplet%droplet(vn))     !運動方程式関連の処理
-
-            case(-2)
-                targetID = mainDroplet%droplet(vn)%coalesID  !合体飛沫の片割れも移動させる
-                mainDroplet%droplet(vn)%position = mainDroplet%droplet(targetID)%position
-                mainDroplet%droplet(vn)%velocity = mainDroplet%droplet(targetID)%velocity
-
-            end select
+            
+            else 
+                targetID = mainDroplet%droplet(vn)%coalescenceID()
+                if(targetID > 0) then
+                    !合体飛沫の片割れも移動させる
+                    mainDroplet%droplet(vn)%position = mainDroplet%droplet(targetID)%position
+                    mainDroplet%droplet(vn)%velocity = mainDroplet%droplet(targetID)%velocity
+                end if
+            end if
 
         end do
         !$omp end parallel do
@@ -298,11 +300,11 @@ module dropletMotionSimulation
         type(virusDroplet_t) droplet
         double precision radius_n
       
-        if (droplet%radius <= droplet%radius_min) return  !半径が最小になったものを除く
+        if (.not.droplet%isEvaporating()) return  !半径が最小になったものを除く
     
-        radius_n = dropletSolver%evaporatin_eq(droplet%radius)
+        radius_n = dropletSolver%evaporatin_eq(droplet%get_radius())
         
-        droplet%radius = max(radius_n, droplet%radius_min)
+        call droplet%updateRadius(radius_n)
       
     end subroutine
 
@@ -314,7 +316,7 @@ module dropletMotionSimulation
 
         velAir(:) = mainMesh%CELLs(droplet%refCellID)%flowVelocity(:)
     
-        call dropletSolver%solve_motionEquation(droplet%position(:), droplet%velocity(:), velAir(:), droplet%radius)
+        call dropletSolver%solve_motionEquation(droplet%position(:), droplet%velocity(:), velAir(:), droplet%get_radius())
 
         call mainMesh%search_refCELL(real(droplet%position(:)), droplet%refCellID)
         
@@ -394,13 +396,17 @@ module dropletMotionSimulation
                     call dGroup%coalescence_check(stat=stat_coales)  !分割エリア内で合体判定
                     num_coales = num_coales + stat_coales
 
-                    do m = 1, size(ID_array)
-                        id = ID_array(m)
-                        mainDroplet%droplet(id) = dGroup%droplet(m)  !飛沫情報をもとのIDに格納
+                    block
+                        integer coalesID
+                        do m = 1, size(ID_array)
+                            id = ID_array(m)
+                            mainDroplet%droplet(id) = dGroup%droplet(m)  !飛沫情報をもとのIDに格納
 
-                          !合体飛沫については、合体先ID（coalesID）ももとのIDに戻す必要がある
-                        if(dGroup%droplet(m)%coalesID > 0) mainDroplet%droplet(id)%coalesID = ID_array(dGroup%droplet(m)%coalesID)
-                    end do
+                            coalesID = dGroup%droplet(m)%coalescenceID()
+                            !合体飛沫については、合体先ID（coalesID）ももとのIDに戻す必要がある
+                            if(coalesID > 0) mainDroplet%droplet(id)%coalesID = ID_array(coalesID)
+                        end do
+                    end block
 
                 end do
             end do
