@@ -831,9 +831,9 @@ module unstructuredGrid_mod
         class(UnstructuredGrid) self
         integer i, j, num_adjacent, num_boundFace
         integer, parameter :: max_vertex=6, max_adjacent=4, max_boundFace=4
-        integer, allocatable :: cellVertices(:, :)
-        integer, allocatable :: adjacentCellArray(:, :)
-        integer, allocatable :: cellBoundFaces(:, :)
+        integer, allocatable :: cellVertices(:,:)
+        integer, allocatable :: adjacentCellArray(:,:)
+        integer, allocatable :: cellBoundFaces(:,:)
         integer, allocatable :: boundFaceVertices(:,:)
 
         allocate(cellVertices(max_vertex, size(self%CELLs)), source=0)
