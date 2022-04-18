@@ -201,11 +201,13 @@ MODULE adjacencySolver_m
     subroutine find_boundFaceInformation(self, cellBoundFaces, boundFaceVertices)
         class(AdjacencySolver) self
         INTEGER II,JJJ,JB
-        integer cellBoundFaces(:,:), NoB(size(cellBoundFaces, dim=2))
+        integer cellBoundFaces(:,:)
+        integer, allocatable :: NoB(:)
         integer, allocatable, intent(out) :: boundFaceVertices(:,:)
-  
+
+        allocate(NoB(size(cellBoundFaces, dim=2)), source=0)
         allocate(boundFaceVertices(3, self%num_BoundFace), source=0)
-        NoB = 0
+
         JB = 0
         DO JJJ = 1, size(self%halfFaceArray)
             IF (self%halfFaceArray(JJJ)%ownerID(2) /= 0) cycle   !境界面以外はスルー
@@ -222,7 +224,10 @@ MODULE adjacencySolver_m
         
     subroutine find_adjacentCellID(self, adjacentCellArray)
         class(AdjacencySolver) self
-        integer II, JJJ, adjacentCellArray(:,:), num_adjacent(size(adjacentCellArray))
+        integer II, JJJ, adjacentCellArray(:,:)
+        integer, allocatable :: num_adjacent(:)
+
+        allocate(num_adjacent(size(adjacentCellArray)), source=0)
 
         do JJJ = 1, size(self%halfFaceArray)
             if (self%halfFaceArray(JJJ)%ownerID(2) <= 0) cycle !境界面はスルー
