@@ -135,41 +135,29 @@ module dropletMotionSimulation
 
     subroutine mainDropletLoop
         integer, pointer :: n => timeStep
-        real lapTime(7)
         
         print '("*******************************************")'
         print '("            START step_loop                ")'
         print '("*******************************************")'
 
-        lapTime = 0.0
-        lapTime(1) = tK%lapTime()
-        lapTime(1) = tK%lapTime()
-
         do n = n_start + 1, n_end           !ステップ数だけループ
             
             call dropGenerator%periodicGeneration(mainDroplet, TimeOnSimu(), generationFlag)
-            lapTime(1) = lapTime(1) + tK%lapTime()
 
             if(adhesionSwitch) call adhesion_check(mainDroplet)
-            lapTime(2) = lapTime(2) + tK%lapTime()
 
             call mainDroplet%survival_check(TimeOnSimu())           !生存率に関する処理
-            lapTime(3) = lapTime(3) + tK%lapTime()
 
             call coalescence_process        !飛沫間の合体判定
-            lapTime(4) = lapTime(4) + tK%lapTime()
 
             call Calculation_Droplets     !飛沫の運動計算
-            lapTime(5) = lapTime(5) + tK%lapTime()
 
             if (mod(n, outputInterval) == 0) then
                 call periodicOutput             !出力
                 print*, "It will take", real(n_end - n)/(60.*real(n)/tK%erapsedTime()), "minites"
             end if
-            lapTime(6) = lapTime(6) + tK%lapTime()
 
             call check_FlowFieldUpdate        !流れ場の更新チェック
-            lapTime(7) = lapTime(7) + tK%lapTime()
 
         end do
 
