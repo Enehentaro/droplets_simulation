@@ -118,7 +118,7 @@ MODULE adjacencySolver_m
         checkCounter = 0
         call set_formatTC('("DIVIDE halfFace [ #group : ",i6," / ",i6," ]")')
         do groupID = 1, num_group  !面をグループに分ける
-            call print_sameLine([groupID, num_group])
+            call print_progress([groupID, num_group])
             faceID_array(:) = 0
             faceCounter = 1
             do faceID = 1, num_halfFace
@@ -143,7 +143,7 @@ MODULE adjacencySolver_m
         call set_formatTC('("CHECK halfFace [ #group : ",i6," / ",i6," ]")')
         !$omp parallel do private(faceID1,faceID2, match, k,l, num_face,numNode) reduction(+:num_BoundFaces)
         do groupID = 1, num_group
-            call print_sameLine([groupID, num_group])
+            call print_progress([groupID, num_group])
             num_face = size(faceGroup(groupID)%faceID)
 
             face1 : do i = 1, num_face

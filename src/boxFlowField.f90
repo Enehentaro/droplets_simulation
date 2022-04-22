@@ -38,7 +38,7 @@ program boxFlowField
             integer i_cell
             i_cell = 1
             do i_box = 1, num_box
-                call print_sameLine([i_box, num_box])
+                call print_progress([i_box, num_box])
                 ! i_cell = mesh%nearest_cell(box_array(i_box)%center)
                 call mesh%search_refCELL(box_array(i_box)%center, i_cell)
                 bResult(i_box)%flowVelocity = mesh%CELLs(i_cell)%flowVelocity
@@ -82,19 +82,20 @@ program boxFlowField
                                             0.0,0.0,0.0, 1.0,0.0,0.0, 0.0,1.0,0.0, 1.0,1.0,0.0, &
                                             0.0,0.0,1.0, 1.0,0.0,1.0, 0.0,1.0,1.0, 1.0,1.0,1.0], shape(trans))
         real velArray(3, size(box_array))
+        real, allocatable :: xyz(:,:)
+        integer, allocatable :: vertices(:,:), types(:)
                                         
-        call boxMesh%allocation_node(num_box*8)
-        call boxMesh%allocation_cell(num_box)
-
+        allocate(xyz(3, num_box*8))
+        allocate(vertices(8, num_box), types(num_box))
         do i = 1, num_box
 
             do j = 1, 8
-                k = 8*(i-1) + j - 1
-                boxMesh%node_array(k)%coordinate(:) = box_array(i)%min_cdn(:) + box_array(i)%width(:)*trans(:,j)
+                k = j + 8*(i-1)
+                xyz(:,k) = box_array(i)%min_cdn(:) + box_array(i)%width(:)*trans(:,j)
+                vertices(j,i) = k
             end do
-
-            boxMesh%cell_array(i-1)%nodeID = [(8*(i-1) + j - 1, j = 1, 8)]
-            boxMesh%cell_array(i-1)%n_TYPE = 11
+            
+            types(i) = 11
 
         end do
 
@@ -103,6 +104,8 @@ program boxFlowField
             velArray(:,i) = bResult(i)%flowVelocity
 
         end do
+
+        boxMesh = vtkMesh_(xyz, vertices, types)
 
         call boxMesh%output(trim(caseName)//'/BoxFlow.vtk', cellVector=velArray, vectorName='VEL')
 

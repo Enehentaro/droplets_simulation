@@ -122,6 +122,8 @@ module flow_field
         call mainMesh%updateWithFlowFieldFile(get_requiredFlowFieldFileName())
 
         call calc_NextUpdate
+
+        print*, "Update_FlowField : FIN"
             
     end subroutine
 

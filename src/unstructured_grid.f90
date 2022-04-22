@@ -14,7 +14,7 @@ module unstructuredGrid_mod
     type cell_t
         character(5) typeName
         integer, allocatable :: nodeID(:), boundFaceID(:), adjacentCellID(:)
-        real center(3), flowVelocity(3), width
+        real center(3), flowVelocity(3), threshold
     end type cell_t
 
     type, public :: UnstructuredGrid
@@ -192,8 +192,10 @@ module unstructuredGrid_mod
         type(vtkMesh) mesh
         character(*), intent(in) :: FNAME
         logical, intent(in) :: meshOnly
+        real, allocatable :: cdn(:,:)
+        integer, allocatable :: vertices(:,:), types(:)
         real, allocatable :: velocity(:,:)
-        integer II,KK,IIH, KKMX, IIMX
+        integer II,KK, KKMX, IIMX
 
         if(meshOnly) then
             call mesh%read(FNAME)
@@ -201,23 +203,26 @@ module unstructuredGrid_mod
             call mesh%read(FNAME, cellVector=velocity)
         end if
 
-        KKMX = size(mesh%node_array)
+        KKMX = mesh%get_numNode()
         if(.not.allocated(self%NODEs)) allocate(self%NODEs(KKMX))
+        cdn = mesh%get_nodeCoordinate()
         do KK = 1, KKMX
-            self%NODEs(KK)%coordinate(:) = mesh%node_array(KK-1)%coordinate(:)
+            self%NODEs(KK)%coordinate(:) = cdn(:,KK)
         end do
         
-        IIMX = size(mesh%cell_array)
+        IIMX = mesh%get_numCell()
         if(.not.allocated(self%CELLs)) allocate(self%CELLs(IIMX))
+        call mesh%get_cellVertices(vertices, types)
         do II = 1, IIMX
-            IIH = size(mesh%cell_array(II-1)%nodeID)
-            self%CELLs(II)%nodeID = mesh%cell_array(II-1)%nodeID(1:IIH) + 1
-            select case(mesh%cell_array(II-1)%n_TYPE)
+            select case(types(II))
                 case(10)
+                    self%CELLs(II)%nodeID = vertices(1:4, II)
                     self%CELLs(II)%typeName = 'tetra'
                 case(13)
+                    self%CELLs(II)%nodeID = vertices(1:6, II)
                     self%CELLs(II)%typeName = 'prism'
                 case(14)
+                    self%CELLs(II)%nodeID = vertices(1:5, II)
                     self%CELLs(II)%typeName = 'pyrmd'
             end select
         end do
@@ -422,27 +427,34 @@ module unstructuredGrid_mod
           
     end subroutine
 
-    subroutine set_gravity_center(self) !セル重心の算出
+    subroutine set_gravity_center(self) !セル重心およびセル閾値の算出
         class(UnstructuredGrid) self
-        integer II,IIMX, n, num_node, ID
+        integer II,IIMX, n, num_node, nodeID
+        real vector(3)
 
         IIMX = size(self%CELLs)
 
-        !$omp parallel do private(num_node, ID)
+        !$omp parallel do private(num_node, nodeID, vector)
         DO II = 1, IIMX
-            self%CELLs(II)%center(:) = 0.0
+            vector(:) = 0.0
             num_node = size(self%CELLs(II)%nodeID)
             do n = 1, num_node
-                ID = self%CELLs(II)%nodeID(n)
-                self%CELLs(II)%center(:) = self%CELLs(II)%center(:) + self%NODEs(ID)%coordinate(:)
+                nodeID = self%CELLs(II)%nodeID(n)
+                vector(:) = vector(:) + self%NODEs(nodeID)%coordinate(:)
             end do
-            self%CELLs(II)%center(:) = self%CELLs(II)%center(:) / num_node
+            self%CELLs(II)%center(:) = vector(:) / real(num_node)
             
-            self%CELLs(II)%width = norm2( &
-                self%NODEs(self%CELLs(II)%nodeID(2))%coordinate(:) - self%NODEs(self%CELLs(II)%nodeID(1))%coordinate(:))
+            self%CELLs(II)%threshold = 0.0
+            do n = 1, num_node
+                nodeID = self%CELLs(II)%nodeID(n)
+                vector(:) = self%NODEs(nodeID)%coordinate(:) - self%CELLs(II)%center(:)
+                self%CELLs(II)%threshold = max(self%CELLs(II)%threshold, norm2(vector)) 
+            end do
+            ! print*, self%CELLs(II)%threshold
         
         END DO
-        !$omp end parallel do 
+        !$omp end parallel do
+
     end subroutine
 
     subroutine read_adjacency(self, path, success)
@@ -576,6 +588,7 @@ module unstructuredGrid_mod
         !$omp end parallel do 
         
         nearest_cell = minloc(distance, dim=1)   !最小値インデックス
+        ! print*, distance(nearest_cell)
         
     end function
 
@@ -583,60 +596,37 @@ module unstructuredGrid_mod
         class(UnstructuredGrid) self
         integer, intent(in) :: NCN
         real, intent(in) :: X(3)
-        integer NA, featuredCELL, adjacentCELL
+        integer NA, featuringCellID, adjaCellID
+        integer, allocatable :: adjacentCellIDs(:)
         real distance, distance_min
         logical update
 
         nearer_cell = NCN
         distance_min = norm2(self%CELLs(nearer_cell)%center(:) - X(:))   !注目セル重心と粒子との距離
         update = .true.
+
         do while(update)    !更新が起こり続ける限り繰り返し
             update = .false.
-            featuredCELL = nearer_cell
 
-            checkAdjacent : do NA = 1, size(self%CELLs(featuredCELL)%adjacentCellID)  !全隣接セルに対してループ。
+            featuringCellID = nearer_cell       !注目セル
 
-                adjacentCELL = self%CELLs(featuredCELL)%adjacentCellID(NA)  !注目セルの隣接セルのひとつに注目
-                if (adjacentCELL <= 0) cycle checkAdjacent
+            adjacentCellIDs = self%CELLs(featuringCellID)%adjacentCellID(:)  !注目セルの全隣接セル
 
-                distance = norm2(self%CELLs(adjacentCELL)%center(:) - X(:))   !注目セル重心と粒子との距離
+            do NA = 1, size(adjacentCellIDs)  !注目セルの全隣接セルに対してループ。
+
+                adjaCellID = adjacentCellIDs(NA)  !注目セルに隣接するセルのひとつ
+                ! if (adjacentCELL <= 0) cycle checkAdjacent
+
+                distance = norm2(self%CELLs(adjaCellID)%center(:) - X(:))   !隣接セル重心と粒子との距離
                 if(distance < distance_min) then
-                    nearer_cell = adjacentCELL
+                    nearer_cell = adjaCellID
                     distance_min = distance
                     update = .true.
-
                 end if
 
-            end do checkAdjacent
+            end do
 
         end do
-        
-        ! check:DO
-        !     distance(:) = 1.0d10     !初期値はなるべく大きくとる
-    
-        !     DO NA = 1, size(CELLs(nearer_cell)%adjacentCellID)  !全隣接セルに対してループ。
-        !         IIaround = CELLs(nearer_cell)%adjacentCellID(NA)  !現時点で近いとされるセルの隣接セルのひとつに注目
-        !         IF (IIaround > 0) distance(NA) = norm2(CENC(:,IIaround)-X(:))   !注目セル重心と粒子との距離を距離配列に代入
-        !     END DO
-    
-        !     distancecheck(2) = minval(distance,dim=1)     !距離配列の最小値
-    
-        !     if(distancecheck(2) < distancecheck(1)) then !より近いセルの発見で条件満足
-        !         distancecheck(1) = distancecheck(2)    !最小値の更新
-        !         index_min = minloc(distance,dim=1)            !最小値のインデックス
-        !         nearer_cell = NEXT_CELL(index_min, nearer_cell)    !現時点で近いとされるセルの更新
-        !         if(nearer_cell==0) then
-        !             print*,'nearer_cell_error', nearer_cell, X(:)
-        !             return
-        !         end if
-
-        !     else  !より近いセルを発見できなかった場合
-    
-        !         exit check     !ループ脱出
-    
-        !     end if
-        
-        ! END DO check
         
     end function
 
@@ -649,12 +639,12 @@ module unstructuredGrid_mod
         distance = norm2(X(:) - self%CELLs(NCN)%center(:))
 
         !遠くのセルを参照していないかどうかのチェック
-        !参照セルとの距離がセル幅未満であればOK（この条件は経験則でしかない）
-        if (distance < self%CELLs(NCN)%width) then
+        !参照セルとの距離がセル閾値未満であればOK（この条件は経験則でしかない）
+        if (distance < self%CELLs(NCN)%threshold) then
             nearcell_check = .True.
         else
             nearcell_check = .False.
-            ! print*, 'nearcell_check:False', distance, CELLs(NCN)%width
+            ! print*, 'nearcell_check:False', distance, self%CELLs(NCN)%threshold
         end if
 
     end function
@@ -705,8 +695,6 @@ module unstructuredGrid_mod
         IIMX = size(self%CELLs)
 
         if(.not.first) BoundFACEs_pre = self%BoundFACEs
-        
-        print*, 'SET:boundary'
         
         do II = 1, IIMX
             

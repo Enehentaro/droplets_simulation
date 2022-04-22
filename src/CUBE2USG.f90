@@ -24,7 +24,7 @@ program CUBE2USG
 
     call USG%read(USG_fname)
 
-    num_cell = size(USG%cell_array)
+    num_cell = USG%get_numCell()
 
     cubeMesh = read_plot3d_multigrid('mesh.g')   !Gファイル読み込み
 
@@ -44,8 +44,8 @@ program CUBE2USG
             integer cellID
             character(:), allocatable :: fname_base
 
-            do cellID = 0, num_cell-1
-                velocity(:,cellID+1) = cubeMesh%get_velocity(vtkCell2cubeNode(cellID))
+            do cellID = 1, num_cell
+                velocity(:, cellID) = cubeMesh%get_velocity(vtkCell2cubeNode(cellID))
             end do
 
             fname_base = F_fname(:len_trim(F_fname)-2)
@@ -75,7 +75,7 @@ program CUBE2USG
             write(n_unit, '("cubeshape", 3(x, i0))') cubeMesh%get_cubeShape()
 
             write(n_unit, '("#usgcell ", i0)') num_cell
-            do i = 0, num_cell-1
+            do i = 1, num_cell
                 write(n_unit, '(i0, x, 3(x, i0))') vtkCell2cubeNode(i)%cubeID, vtkCell2cubeNode(i)%nodeID(:)
             end do
 
@@ -87,31 +87,26 @@ program CUBE2USG
     subroutine search_nodeInfo
         use timeKeeper_m
         use terminalControler_m
-        integer n, num_node, i_node, i
-        real X(3), progress_percent, estimation, speed
+        integer i
+        real progress_percent, estimation, speed
         type(TimeKeeper) tk
+        real, allocatable :: cellCenter(:,:)
 
         tk = TimeKeeper_()
 
         print*, "START : CUBENODE SEARCH"
         call set_formatTC('("SEARCH vtkcell2cubenode [ ",f6.2," % ] ", f8.1, " sec is left.")')
 
-        allocate(vtkCell2cubeNode(0 : num_cell - 1))
-        do i = 0, num_cell-1
+        allocate(vtkCell2cubeNode(num_cell))
+        cellCenter = USG%get_cellCenter()
+        do i = 1, num_cell
 
             progress_percent = real(i*100) / real(num_cell-1)
             speed = real(i) / tk%erapsedTime()
             estimation = real(num_cell-1 - i) / (speed + 1.e-9)
-            call print_sameLine([progress_percent, estimation])
+            call print_progress([progress_percent, estimation])
 
-            X(:) = 0.0
-            num_node = size(USG%cell_array(i)%nodeID)
-            do n = 1, num_node
-                i_node = USG%cell_array(i)%nodeID(n)
-                X(:) = X(:) + USG%node_array(i_node)%coordinate(:)
-            end do
-            X(:) = X(:) / real(num_node)
-            vtkCell2cubeNode(i) = cubeMesh%nearestNodeInfo(X)
+            vtkCell2cubeNode(i) = cubeMesh%nearestNodeInfo(cellCenter(:,i))
             
         end do
 
@@ -142,7 +137,7 @@ program CUBE2USG
             end if
 
             allocate(vtkCell2cubeNode(0 : num_cell_ - 1))
-            do i = 0, num_cell_-1
+            do i = 1, num_cell_
                 read(n_unit, *) vtkCell2cubeNode(i)%cubeID, vtkCell2cubeNode(i)%nodeID(:)
             end do
 
