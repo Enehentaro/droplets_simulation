@@ -96,20 +96,24 @@ program dropletCount
                                             0.0,0.0,0.0, 1.0,0.0,0.0, 0.0,1.0,0.0, 1.0,1.0,0.0, &
                                             0.0,0.0,1.0, 1.0,0.0,1.0, 0.0,1.0,1.0, 1.0,1.0,1.0], shape(trans))
                                         
-        call mesh%allocation_node(num_box*8)
-        call mesh%allocation_cell(num_box)
-
+        real, allocatable :: xyz(:,:)
+        integer, allocatable :: vertices(:,:), types(:)
+                                        
+        allocate(xyz(3, num_box*8))
+        allocate(vertices(8, num_box), types(num_box))
         do i = 1, num_box
 
             do j = 1, 8
-                k = 8*(i-1) + j - 1
-                mesh%node_array(k)%coordinate(:) = box_array(i)%min_cdn(:) + box_array(i)%width(:)*trans(:,j)
+                k = j + 8*(i-1)
+                xyz(:,k) = box_array(i)%min_cdn(:) + box_array(i)%width(:)*trans(:,j)
+                vertices(j,i) = k
             end do
 
-            mesh%cell_array(i-1)%nodeID = [(8*(i-1) + j - 1, j = 1, 8)]
-            mesh%cell_array(i-1)%n_TYPE = 11
+            types(i) = 11
 
         end do
+
+        mesh = vtkMesh_(xyz, vertices, types)
 
         call mesh%output(trim(caseName)//'/Box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
 

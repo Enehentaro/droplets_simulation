@@ -227,6 +227,8 @@ module dropletGenerator_m
         logical, intent(out) :: stat
 
         stat = .false.
+        if(self%generateRate == 0) return
+        
         required_generation = int(dble(self%generateRate)*nowTime * self%equation%repValue('time'))  !このステップ終了までに生成されているべき数
 
         num_generated = dGroup%counter('total') - dGroup%counter('nonActive')  !今までに生成された数
