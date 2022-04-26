@@ -60,3 +60,4 @@ if __name__ == '__main__':
         file.write(f"{len(radius_list)}\n")
         for r in radius_list:
             file.write(f"{r}\n")
+            
