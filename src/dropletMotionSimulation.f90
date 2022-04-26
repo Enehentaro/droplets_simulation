@@ -58,6 +58,8 @@ module dropletMotionSimulation
 
         n_start = max(num_restart, 0)
 
+        timeStep = n_start
+
         dropGenerator = DropletGenerator_( &
                             dropletSolver, radiusDistributionFilename, case_dir, &
                             generationRate = condVal%periodicGeneration &
