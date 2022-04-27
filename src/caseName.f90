@@ -24,13 +24,13 @@ module caseName_m
             case_array(1) = caseName
         end if
 
-        !do i = 1, num_case
-        !    inquire(file=trim(case_array(i))//'/'//conditionFName, exist=existance)
-        !    if(.not.existance) then
-        !        print*, 'Case:[ ', trim(case_array(i)), ' ] is not found.'
-        !        stop
-        !    end if
-        !end do
+        do i = 1, num_case
+            inquire(file=trim(case_array(i))//'/'//conditionFName, exist=existance)
+            if(.not.existance) then
+                print*, 'Case:[ ', trim(case_array(i)), ' ] is not found.'
+                stop
+            end if
+        end do
 
     end subroutine
 
