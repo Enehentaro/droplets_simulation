@@ -3,7 +3,7 @@
 TARGET = droplet
 
 FC = gfortran
-FCFLAGS = -O0 -fbacktrace -g -fcheck=all
+FCFLAGS = -O0 -fbacktrace -g -fcheck=all -mcmodel=large
 
 TARGET1 = CUBE2USG
 TARGET2 = droplet2CSV

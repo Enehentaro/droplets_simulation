@@ -808,7 +808,7 @@ module dropletGroup_m
 
         if(allocated(radiusThreshold)) return
 
-        call read_CSV('data/radius_distribution.csv', radiusThreshold)
+        call read_CSV('data/radius_distribution_cough.csv', radiusThreshold)
 
         radiusThreshold(1,:) = radiusThreshold(1,:) * 1.d-6   !マイクロメートル換算
 

@@ -1,0 +1,11 @@
+del A-6\InitialDistribution.bu
+del A-8\InitialDistribution.bu
+del A-10\InitialDistribution.bu
+del A-12\InitialDistribution.bu
+del A-14\InitialDistribution.bu
+del A-16\InitialDistribution.bu 
+del A-18\InitialDistribution.bu
+del A-20\InitialDistribution.bu
+del A-22\InitialDistribution.bu
+del A-24\InitialDistribution.bu
+del A-26\InitialDistribution.bu

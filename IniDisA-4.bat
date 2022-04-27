@@ -1,0 +1,11 @@
+copy InitialDistribution_A-4.bu A-6
+copy InitialDistribution_A-4.bu A-8
+copy InitialDistribution_A-4.bu A-10
+copy InitialDistribution_A-4.bu A-12
+copy InitialDistribution_A-4.bu A-14
+copy InitialDistribution_A-4.bu A-16
+copy InitialDistribution_A-4.bu A-18
+copy InitialDistribution_A-4.bu A-20
+copy InitialDistribution_A-4.bu A-22
+copy InitialDistribution_A-4.bu A-24
+copy InitialDistribution_A-4.bu A-26

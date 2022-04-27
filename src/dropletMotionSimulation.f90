@@ -115,7 +115,8 @@ module dropletMotionSimulation
 
         call mainDroplet%survival_check()           !生存率に関する処理
 
-        call divideAreacoalescence_process        !飛沫間の合体判定
+        ! call divideAreacoalescence_process        !飛沫間の合体判定
+        call coalescence_process
 
         call mainDroplet%calculation()     !飛沫の運動計算
 
