@@ -2,14 +2,12 @@ program CUBE2USG
     use CUBE_mod
     use vtkMesh_operator_m
     use simpleFile_reader
-    use caseName_m
     implicit none
-    character(100) F_fname, USG_fname, caseName
+    character(100) F_fname, USG_fname, casefname
     character(50),parameter :: filename = 'name.txt'
-    character(50), allocatable :: field_name(:)
+    character(50), allocatable :: field_name(:), caseName(:)
     character(20), parameter :: CorrespondenceFName = 'vtkCell2cubeNode.bin'
-    integer i, j, i_node, n, num_node, num_record, num_cell, nc_max
-    integer, pointer :: nc => nowCase
+    integer i, j, i_node, n, num_node, num_record, num_cell, nc, nc_max
     real X(3)
     real, allocatable :: velocity(:,:)
     logical existance
@@ -23,6 +21,11 @@ program CUBE2USG
 
     call read_textRecord(filename, field_name)
     num_record = size(field_name)
+
+    print *, 'Case Name ?'
+    read(5,'(A)') casefname
+    call read_textRecord(casefname, caseName)
+    nc_max = size(caseName)
     
     print *, 'UnstructuredGRID_FileName ?'
     read(5,*) USG_fname
@@ -31,12 +34,10 @@ program CUBE2USG
 
     num_cell = size(USG%cell_array)
 
-    call case_check(num_case = nc_max)
     do nc = 1, nc_max
-        caseName = get_caseName()
 
         do j = 1, num_record
-            F_fname = trim(caseName)//'/output/'//field_name(j)
+            F_fname = trim(caseName(nc))//'/output/'//trim(field_name(j))
 
             call read_CUBE_data(F_fname, '')
         

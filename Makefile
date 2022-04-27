@@ -15,7 +15,7 @@ COMMONOBJ = filename_mod simpleFile_reader path_operator vector terminalControle
 #左から順にコンパイルするので、記述順に注意
 droplet_OBJ = $(COMMONOBJ) SCTfile_reader vtkMesh_operator adjacency_solver unstructured_grid flow_field \
 			dropletGenerator dropletMotionSimulation main
-CUBE2USG_OBJ = simpleFile_reader caseName vtkMesh_operator plot3d_operator CUBE_mod CUBE2USG
+CUBE2USG_OBJ = simpleFile_reader vtkMesh_operator plot3d_operator CUBE_mod CUBE2USG
 droplet2CSV_OBJ = $(COMMONOBJ) droplet2CSV
 dropletCount_OBJ = $(COMMONOBJ) vtkMesh_operator boxCounter dropletCount
 initialTranslate_OBJ = $(COMMONOBJ) initial_translate
