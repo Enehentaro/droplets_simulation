@@ -6,11 +6,11 @@ program CUBE2USG
     use vtkMesh_operator_m
     use simpleFile_reader
     implicit none
-    character(50) F_fname, USG_fname
+    character(100) F_fname, USG_fname, casefname
     character(50),parameter :: filename = 'name.txt'
-    character(50), allocatable :: field_name(:)
+    character(50), allocatable :: field_name(:), caseName(:)
     character(20), parameter :: CorrespondenceFName = 'vtkCell2cubeNode.txt'
-    integer fileID, num_record, num_cell
+    integer fileID, num_record, num_cell, nc, nc_max
     real, allocatable :: velocity(:,:)
     type(vtkMesh) USG
     type(Plot3dMesh) cubeMesh
@@ -18,6 +18,11 @@ program CUBE2USG
 
     call read_textRecord(filename, field_name)
     num_record = size(field_name)
+
+    print *, 'Case Name ?'
+    read(5,'(A)') casefname
+    call read_textRecord(casefname, caseName)
+    nc_max = size(caseName)
     
     print *, 'UnstructuredGRID_FileName ?'
     read(5,*) USG_fname
@@ -27,38 +32,42 @@ program CUBE2USG
     num_cell = USG%get_numCell()
 
     cubeMesh = read_plot3d_multigrid('mesh.g')   !Gファイル読み込み
-
-    do fileID = 1, num_record
-        F_fname = field_name(fileID)
-        if(fileID==1) then 
-            call cubeMesh%read_plot3d_function(F_fname, update=.false.)   !Fファイル読み込み（初回時）
-        else
-            call cubeMesh%read_plot3d_function(F_fname, update=.true.)   !Fファイル読み込み（更新）
-        end if
     
-        if (.not.allocated(vtkCell2cubeNode)) call solve_correspondence
+    do nc = 1, nc_max
+
+        do fileID = 1, num_record
+            F_fname = trim(caseName(nc))//'/output/'//trim(field_name(fileID))
+
+            if(fileID==1) then 
+                call cubeMesh%read_plot3d_function(F_fname, update=.false.)   !Fファイル読み込み（初回時）
+            else
+                call cubeMesh%read_plot3d_function(F_fname, update=.true.)   !Fファイル読み込み（更新）
+            end if
+
+            if (.not.allocated(vtkCell2cubeNode)) call solve_correspondence
+
+            if (.not.allocated(velocity)) allocate(velocity(3, num_cell))
+
+            block
+                integer cellID
+                character(:), allocatable :: fname_base
+
+                do cellID = 1, num_cell
+                    velocity(:, cellID) = cubeMesh%get_velocity(vtkCell2cubeNode(cellID))
+                end do
+
+                fname_base = F_fname(:len_trim(F_fname)-2)
+
+                !流速場配列をバイナリ出力
+                call output_array_asBinary(fname=fname_base//'.array', array=velocity)
+
+                !確認用に、ひとつだけVTKファイル出力
+                if(fileID==1) call USG%output(fname_base//'.vtk', cellVector=velocity, vectorName='Velocity')
+
+            end block
         
-        if (.not.allocated(velocity)) allocate(velocity(3, num_cell))
-        
-        block
-            integer cellID
-            character(:), allocatable :: fname_base
+        end do
 
-            do cellID = 1, num_cell
-                velocity(:, cellID) = cubeMesh%get_velocity(vtkCell2cubeNode(cellID))
-            end do
-
-            fname_base = F_fname(:len_trim(F_fname)-2)
-
-            !流速場配列をバイナリ出力
-            call output_array_asBinary(fname=fname_base//'.array', array=velocity)
-
-            !確認用に、ひとつだけVTKファイル出力
-            if(fileID==1) call USG%output(fname_base//'.vtk', cellVector=velocity, vectorName='Velocity')
-
-        end block
-
-    
     end do
 
     contains
