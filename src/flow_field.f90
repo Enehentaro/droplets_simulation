@@ -1,192 +1,139 @@
 module flow_field
     use unstructuredGrid_mod
-    use CUBE_mod
     implicit none
 
     integer INTERVAL_FLOW                           !気流データ出力間隔
-    integer LoopS, LoopF, OFFSET
+    integer LoopHead, LoopTail, OFFSET
     double precision DT_FLOW
-    integer STEPinFLOW, NextUpdate
+    integer, private :: STEPinFLOW, NextUpdate
 
-    character PATH_FlowDIR*99, HEAD_AIR*20, FNAME_FMT*30 !気流データへの相対パス,ファイル名接頭文字,ファイル名形式
-    integer, private :: FNAME_DIGITS !ファイル名の整数部桁数
-    
-    logical unstructuredGrid
+    character(:), allocatable, private :: FullFileName
+    character(:), allocatable, private :: FileNameFormat
 
-    real, private :: MAX_CDN(3), MIN_CDN(3)         !節点座標の上限および下限
-
-    type reference_cell_t
-        integer :: ID = 0, nodeID(3) = 0
-    end type
-
-    integer, private :: num_refCellSearchFalse, num_refCellSearch
+    type(UnstructuredGridAdjacencySolved) mainMesh
 
     contains
-    !***********************************************************************
-    subroutine check_FILE_GRID
-        integer i, i_
 
-        unstructuredGrid = .true.
+    subroutine set_FileNameFormat(PATH2FlowFile)
+        use path_operator_m
+        character(*), intent(in) :: PATH2FlowFile
+        character(:), allocatable :: PATH2FlowDir, prefix, suffix, FileName
+        integer i_integerPart, i_, i_dot
+        integer num_digit !ファイル名の整数部桁数
 
-        i = index(FNAME_FMT, '0')
-        i_ = index(FNAME_FMT, '_', back=.true.)
-        if(i_ > i) i = i_ + 1
-        HEAD_AIR = FNAME_FMT(: i-1)             !ファイル名の接頭文字(最初のゼロの手前まで)
-        FNAME_DIGITS = index(FNAME_FMT, '.') - i   !ファイル名の整数部桁数(最初のゼロの位置からドットまでの文字数)
+        FullFileName = PATH2FlowFile
 
-        i = len_trim(FNAME_FMT)
-        if(FNAME_FMT(i-1 : i) == '.f') then
-            unstructuredGrid = .false.
-            print*, 'FILE_GRID : [CUBE] ', trim(FNAME_FMT)
+        call get_DirFromPath(PATH2FlowFile, PATH2FlowDir, FileName)
 
-        else
-            call check_FILE_TYPE(FNAME_FMT)
+        i_integerPart = index(FileName, '0')   !ひとまず最初のゼロの位置を整数部位置とする
+        i_ = index(FileName, '_', back=.true.)  !アンダーバーの位置取得
+        if(i_ > i_integerPart) i_integerPart = i_ + 1   !アンダーバーの位置がゼロの位置より後ろの場合、アンダーバー以降を整数部位置とする
 
-        end if
+        prefix = FileName(: i_integerPart - 1)             !ファイル名の接頭部(整数部位置の手前まで)
 
-    end subroutine check_FILE_GRID
+        i_dot = index(FileName, '.')   !ドットの位置
+        num_digit = i_dot - i_integerPart   !ファイル名の整数部桁数(整数部位置からドットまでの文字数)
 
-    function get_digits_format() result(format)
-        character(2*(FNAME_DIGITS/10 +1) + 2) format
+        suffix = FileName(i_dot : )
 
-        if(FNAME_DIGITS <= 9) then
-            write(format,'("i", i1, ".", i1)') FNAME_DIGITS, FNAME_DIGITS
-        else
-            write(format,'("i", i2, ".", i2)') FNAME_DIGITS, FNAME_DIGITS
-        end if
+        block
+            character(2*(num_digit/10 +1) + 2) digitsFormat
 
-    end function get_digits_format
-
-    subroutine preprocess_onFlowField
-        use adhesion_onSTL_m
-        use adjacent_information
-        logical success
-
-        if(unstructuredGrid) then
-            call read_adjacency(PATH_FlowDIR, success)
-            if(success) then
-                call read_boundaries(PATH_FlowDIR)
-
+            if(suffix=='.fld') then
+                digitsFormat = 'i0'
             else
-                call solve_adjacentInformation
-                call output_boundaries(PATH_FlowDIR)
-                call output_adjacency(PATH_FlowDIR)
-
+                write(digitsFormat,'("i", i0, ".", i0)') num_digit, num_digit
             end if
 
-        else
-            call read_faceShape(PATH_FlowDIR)
-            call set_faceShape
-        end if
+            FileNameFormat = '("'//PATH2FlowDir//prefix//'",'//trim(digitsFormat)//',"'//suffix//'")'
 
-        num_refCellSearchFalse = 0
-        num_refCellSearch = 0
+            print*, 'FileNameFormat : ', FileNameFormat
 
-    end subroutine preprocess_onFlowField
+        end block
 
-    subroutine read_steadyFlowData
-        character(:), allocatable :: FNAME
+    end subroutine
 
-        if(unstructuredGrid) then
-            FNAME = trim(PATH_FlowDIR)//trim(FNAME_FMT)
-            call read_unstructuredGrid(FNAME)
-            call set_gravity_center
+    function get_requiredFlowFieldFileName() result(FileName)
+        character(:), allocatable :: FileName
+
+        if(INTERVAL_FLOW <= 0) then
+            FileName = FullFileName
 
         else
-            FNAME = trim(PATH_FlowDIR)//trim(FNAME_FMT)
-            call read_CUBE_data(FNAME, trim(PATH_FlowDIR))
+            block
+                character(255) str
+
+                write(str, FileNameFormat) get_FileNumber()
+                FileName = trim(str)
+
+            end block
 
         end if
-            
-    end subroutine read_steadyFlowData
-
-    subroutine read_unsteadyFlowData
-        integer FNUM
-        character(99) FNAME
-        character(:),allocatable :: digits_fmt
-
-        FNUM = get_FileNumber()
-        digits_fmt = get_digits_format()
-
-        if(unstructuredGrid) then
-            FNAME = trim(PATH_FlowDIR)//trim(HEAD_AIR)
-            call read_unstructuredGrid(FNAME, digits_fmt, FNUM)
-            call set_gravity_center
-
-        else
-            write(FNAME,'("'//trim(PATH_FlowDIR)//trim(HEAD_AIR)//'",'//digits_fmt//',".f")') FNUM
-            call read_CUBE_data(FNAME, trim(PATH_FlowDIR))
-
-        end if
-
-        NextUpdate = STEPinFLOW + INTERVAL_FLOW
-            
-    end subroutine read_unsteadyFlowData
-
-    subroutine set_MinMaxCDN
-        real min_max(6)
-
-        if(unstructuredGrid) then
-            MAX_CDN(1) = maxval(NODEs(:)%coordinate(1))
-            MAX_CDN(2) = maxval(NODEs(:)%coordinate(2))
-            MAX_CDN(3) = maxval(NODEs(:)%coordinate(3))
-            print*, 'MAX_coordinates=', MAX_CDN(:)
-                
-            MIN_CDN(1) = minval(NODEs(:)%coordinate(1))
-            MIN_CDN(2) = minval(NODEs(:)%coordinate(2))
-            MIN_CDN(3) = minval(NODEs(:)%coordinate(3))
-            print*, 'MIN_coordinates=', MIN_CDN(:)
-
-        else
-            min_max = get_minMax_CUBE()
-
-            MIN_CDN(:) = min_max(1:3)
-            MAX_CDN(:) = min_max(4:6)
-        end if
-            
-
-    end subroutine set_MinMaxCDN
-
-    function get_areaMinMax() result(MinMax)
-        real MinMax(3,2)
-
-        MinMax(:,1) = MIN_CDN
-        MinMax(:,2) = MAX_CDN
 
     end function
 
-    subroutine search_refCELL(X, reference_cell, stat)
-        real, intent(in) :: X(3)
-        integer, intent(inout) :: reference_cell
-        logical, optional :: stat
+    subroutine create_FlowField(time, PATH2FlowFile, DeltaT_FLOW, timeOFFSET, outputINTERVAL_FLOW, flowLoopHead, flowLoopTail, &
+                                 meshFile)
+        double precision, intent(in) :: time, DeltaT_FLOW
+        integer, intent(in) :: timeOFFSET, outputINTERVAL_FLOW, flowLoopHead, flowLoopTail
+        character(*), intent(in) :: PATH2FlowFile
+        character(*), intent(in), optional :: meshFile
 
-        num_refCellSearch = num_refCellSearch + 1
+        call set_FileNameFormat(PATH2FlowFile)
 
-        reference_cell = nearer_cell(X, reference_cell)
-        if(present(stat)) stat = .True.
+        INTERVAL_FLOW = outputINTERVAL_FLOW
 
-        if (.not.nearcell_check(X(:), reference_cell)) then
-            reference_cell = nearest_cell(X)
-            if(present(stat)) stat = .false.
-            num_refCellSearchFalse = num_refCellSearchFalse + 1
+        if(INTERVAL_FLOW <= 0) then
+            print*, 'AirFlow is Steady'
+
+        else
+            print*, 'Interval of AirFlow =', INTERVAL_FLOW
+
+            OFFSET = timeOFFSET
+            print*, 'OFFSET =', OFFSET
+
+            LoopHead = flowLoopHead
+            LoopTail = flowLoopTail
+            if(LoopTail - LoopHead > 0) then
+                print*, 'Loop is from', LoopHead, 'to', LoopTail
+            elseif(LoopTail - LoopHead == 0) then 
+                print*, 'After', LoopTail, ', Checkout SteadyFlow'
+            end if
+
+            DT_FLOW = DeltaT_FLOW
+            print*, 'Delta_Time inFLOW =', DT_FLOW
+
+            call set_STEPinFLOW(time)
+
         end if
-    
-    end subroutine search_refCELL
 
-    subroutine search_refCELL_onCUBE(X, reference_cell)
-        real, intent(in) :: X(3)
-        type(reference_cell_t), intent(inout) :: reference_cell
-
-        num_refCellSearch = num_refCellSearch + 1
-
-        reference_cell%nodeID(:) = nearer_node(X, reference_cell%nodeID, reference_cell%ID)
-        if (.not.nearNode_check(X, reference_cell%nodeID, reference_cell%ID)) then
-            reference_cell%ID = get_cube_contains(X)    
-            reference_cell%nodeID(:) = nearest_node(X, reference_cell%ID)
-            num_refCellSearchFalse = num_refCellSearchFalse + 1
+        if(present(meshFile)) then
+            mainMesh = UnstructuredGridAdjacencySolved_(get_requiredFlowFieldFileName(), meshFile)
+        else
+            mainMesh = UnstructuredGridAdjacencySolved_(get_requiredFlowFieldFileName())
         end if
 
-    end subroutine search_refCELL_onCUBE
+        call calc_NextUpdate
+
+    end subroutine
+
+    subroutine update_FlowField
+
+        call mainMesh%updateWithFlowFieldFile(get_requiredFlowFieldFileName())
+
+        call calc_NextUpdate
+            
+    end subroutine
+
+    logical function isUpdateTiming()
+
+        if(STEPinFLOW >= NextUpdate .and. INTERVAL_FLOW > 0) then
+            isUpdateTiming = .true.
+        else
+            isUpdateTiming = .false.
+        end if
+
+    end function
 
     subroutine set_STEPinFLOW(time)
         DOUBLE PRECISION, intent(in) :: time
@@ -195,31 +142,43 @@ module flow_field
 
     end subroutine
 
+    subroutine calc_NextUpdate
+        integer i
+
+        i = 0
+        do while(i*INTERVAL_FLOW + OFFSET <= STEPinFLOW)
+            i = i + 1
+        end do
+        NextUpdate = i*INTERVAL_FLOW + OFFSET
+
+    end subroutine
+
     integer function get_FileNumber()
 
         get_FileNumber = OFFSET
-        ! do while(get_FileNumber + INTERVAL_FLOW <= STEPinFLOW)  !後退評価
-        do while(get_FileNumber <= STEPinFLOW)    !前進評価
+        do while(get_FileNumber < STEPinFLOW)
             get_FileNumber = get_FileNumber + INTERVAL_FLOW
         end do
 
+        get_FileNumber = get_FileNumber + INTERVAL_FLOW   !前進評価
+
         call clamp_STEP(get_FileNumber)
 
-    end function get_FileNumber
+    end function
 
     subroutine clamp_STEP(STEP)
         integer, intent(inout) :: STEP
         integer Lamda, Delta
         
-        if(STEP >= LoopF) then
-            Lamda = LoopF - LoopS
+        if(STEP >= LoopTail) then
+            Lamda = LoopTail - LoopHead
 
             if(Lamda > 0) then
-                Delta = mod(STEP - LoopS, Lamda)
-                STEP = LoopS + Delta
+                Delta = mod(STEP - LoopHead, Lamda)
+                STEP = LoopHead + Delta
 
             else if(Lamda == 0) then
-                STEP = LoopF
+                STEP = LoopTail
                 INTERVAL_FLOW = -1
                 print*, '**Checkout SteadyFlow**'
             end if
@@ -227,27 +186,11 @@ module flow_field
 
     end subroutine clamp_STEP
 
-    integer function refCellSearchInfo(name)
-        character(*), intent(in) :: name
+    function get_defaultFlowFileName() result(fname)
+        character(:), allocatable :: fname
 
-        select case(name)
-            case('NumFalse')
-                refCellSearchInfo = num_refCellSearchFalse
-            case('FalseRate')
-                refCellSearchInfo = 100 * num_refCellSearchFalse / (num_refCellSearch + 1)
-            case default
-                print*, 'ERROR refCellSearchInfo : ', name
-                stop
-        end select
+        fname = FullFileName
 
     end function
-
-    subroutine deallocation_flow
-        if(unstructuredGrid) then
-            call deallocation_unstructuredGRID
-        else
-            call deallocation_CUBE
-        end if
-    end subroutine deallocation_flow
     
 end module flow_field

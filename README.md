@@ -1,39 +1,44 @@
 # Droplets Simulation
-Simulation of Virus Droplets Behavior in AFDET
+Simulation of Virus-Laden Droplets Behavior in AFDET
 
 ## 使い方
   ※この branch は **GNU Fortran, Windows** 用です。間違っても master branch に`merge`しないでください。
   コンパイルに`make`コマンドを使います（makeのインストールが必要）。
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
-  2. ケースディレクトリ内の条件ファイル(condition.txt, initial_position.csv)を編集。
+  2. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集。
   3. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
   4. `.\droplet.exe`で実行。ケース名を入力して計算開始。
 
-## 条件ファイル(condition.txt)解説
-  - **リスタート位置**
+## 条件ファイル(condition.nml, initial_position.csv)解説
+  ### condition.nml
+  - **リスタート位置 num_restart**
     - 通常は`0`を指定
     - `1以上`にすると、その値に対応するbackupファイルが読み込まれ、そこからリスタートが始まる
-    - `-1`にすると、InitialDistribution.buという名前のファイルが読み込まれ、それを飛沫初期分布とする。全く同じ初期分布から計算を始めたいときに使う。なお、InitialDistribution.buは、通常実行時にbackupディレクトリに最初に出力されるので、それをケースディレクトリに配置する必要がある。
-  - **気流データファイル名**
-    - 実行ディレクトリからのパスを指定（ケースディレクトリ基準ではないので注意）（改善の余地あり）
+    - `-1`にすると、backupファイル(.bu)が読み込まれ、それを初期飛沫分布とする。backupファイル名は自由に指定可能。
+  - **飛沫周期発生 periodicGeneration**
+    - 1秒当たりの発生飛沫数（整数）を指定
+    - 初期配置飛沫をすべてNonActiveにしたのち、順次Activateしていくので、初期配置数が飛沫数の上限となる
+  - **気流データファイル名 path2FlowFile**
+    - 実行ディレクトリからの相対パス、もしくは絶対パスを指定
     - 現在可能な流れ場ファイル：
       - VTK
       - INP
       - FLD
-      - PLOT3D
-  - **ステップ数オフセット**
+    - CUBE格子(PLOT3D)は、予め非構造格子に変換してから計算してください。
+    - .arrayファイルを指定する場合、別途メッシュファイルが必要なので、`meshFile = ***`と指定する
+  - **ステップ数オフセット OFFSET**
     - 飛沫計算を、流体連番ファイルの途中の番号から始めたいときに指定
-  - **気流データを周期的に用いる場合の先頭と末尾**
+  - **気流データを周期的に用いる場合の先頭と末尾 LoopHead, LoopTail**
     - 任意の区間の流体連番ファイルを繰り返し用いるときに指定（例えば呼吸のサイクル）
-    - `(末尾)＝(先頭)` とすると、そのステップ数到達後は流れ場の更新が起こらなくなる
-    - `(末尾)＜(先頭)` とすれば、特殊な処理は起こらず、流体連番ファイルが順番に読み込まれる
-
-## main.f90
-  飛沫計算メインプログラム。前処理プログラムは取り込まれました。実行時にファイルの有無から判断して、必要であれば前処理が勝手に行われます。
+    - `(先頭) = (末尾)` とすると、そのステップ数到達後は流れ場の更新が起こらなくなる
+    - `(先頭) > (末尾)` とすれば、特殊な処理は起こらず、流体連番ファイルが順番に読み込まれる
+  ### initial_position.csv
+  - 初期飛沫の配置帯（直方体）を設定する
+  - 左から順に、直方体の中心座標(x,y,z), 直方体の幅(x,y,z)
+  - 改行すれば配置帯を複数設定できる
 
 ## 外部サブルーチン「dropletManagement」
-  dropletManager.f90内で定義されているサブルーチン「dropletManagement」は、毎ステップ呼び出される外部サブルーチンです。
-  自由に処理を追加することができます（例えば任意の範囲内にいる飛沫数のカウントなど）。 ご利用ください。
+  廃止しました。ボックス等で任意の場所の飛沫数をカウントしたい場合はdropletCount.f90を適宜書き換えて実行してください。
 
 ## 方程式
 
@@ -43,8 +48,20 @@ Simulation of Virus Droplets Behavior in AFDET
   プログラム内では、上式を無次元化・離散化した次式を解いている。  
 <img src="https://latex.codecogs.com/gif.latex?\bar{\mathbf{v}}^{n&plus;1}&space;=&space;\frac{\bar{\mathbf{v}}^{n}&space;&plus;&space;(\bar{\mathbf{g}}&space;&plus;&space;C\bar{\mathbf{u}}_a)\Delta&space;\bar{t}}{1&plus;C\Delta&space;\bar{t}}" />
 
-## おまけ機能(optionディレクトリ内のTXTファイル)
-  - **case_list.txt**
-    - ここにケース名を複数列挙し、実行時に`option/case_list.txt`と入力すると、複数ケースを連続実行できる
-  - **stl_list.txt**
-    - CUBE格子用。ここにCUBE格子作成時に用いたSTLファイル名を列挙し、このファイルとSTLファイル一式をCUBE格子のあるディレクトリに置くことで、CUBE格子に対して飛沫計算ができる。
+## サブプログラム
+  `make [subProgramName]`で実行ファイルを作成できる。
+  - CUBE2USG
+    - CUBE格子を、非構造格子に変換できる
+  - droplet2CSV
+    - 飛沫計算結果を再度読み込み、統計データ（浮遊数推移など）をCSVファイルに書き出す
+  - dropletCount
+    - 飛沫計算結果を再度読み込み、カウントボックスを通過した飛沫数を調べる。optionディレクトリ内の"boxList.csv"を、ケースディレクトリに配置する必要がある。
+  - initialTranslate
+    - 飛沫の初期配置データを読み込み、任意の座標への回転、平行移動を行う。**by Konishi**
+
+## おまけ機能
+  - **複数ケース連続実行**
+    - 実行時にTXTファイル名を入力すると、そのファイルに列挙された複数ケースを連続実行できる
+  - **basicSetting.nml**
+    - optionディレクトリ内にある。付着判定のオンオフや、飛沫間合体の設定が可能。初期半径分布ファイルの指定も可能。
+
