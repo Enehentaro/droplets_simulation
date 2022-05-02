@@ -15,9 +15,6 @@ module dropletMotionSimulation
     character(:), allocatable :: start_date
     real start_time
 
-<<<<<<< HEAD
-    logical, private :: startFlag = .false.
-=======
     character(:), allocatable :: case_dir
 
     logical :: startFlag = .false.
@@ -31,7 +28,6 @@ module dropletMotionSimulation
     type(DropletGroup) mainDroplet
 
     type(DropletEquationSolver), target :: dropletSolver
->>>>>>> origin
 
     type(DropletGenerator) dropGenerator
 
@@ -45,9 +41,6 @@ module dropletMotionSimulation
         character(*), intent(in) :: case_name
         type(conditionValue_t) condVal
 
-<<<<<<< HEAD
-        call read_and_set_condition(num_droplet=num_initialDroplet)
-=======
         case_dir = case_name
         call create_CaseDirectory
 
@@ -57,7 +50,6 @@ module dropletMotionSimulation
         outputInterval = condVal%outputInterval
         print*, 'n_end =',n_end
         print*, 'output interval =', outputInterval
->>>>>>> origin
 
         dropletSolver = DropletEquationSolver_( &
                             condVal%dt, condVal%L, condVal%U, &
@@ -104,66 +96,6 @@ module dropletMotionSimulation
 
         call checkpoint
 
-<<<<<<< HEAD
-    subroutine read_and_set_condition(num_droplet)
-        use filename_mod
-        use path_operator_m
-        double precision dt, L, U
-        double precision :: direction_g(3)
-        character(99) path2FlowFile
-        integer i, n_unit
-        integer, optional, intent(out) :: num_droplet
-        real T, RH
-
-        OPEN(newunit=n_unit, FILE=case_dir//'/'//conditionFName, STATUS='OLD')
-            read(n_unit,'()')
-            read(n_unit,*) num_restart
-            read(n_unit,'()')
-            read(n_unit,*) n_end
-            read(n_unit,'()')
-            read(n_unit,*) dt
-            read(n_unit,'()')
-            read(n_unit,*) outputInterval
-            read(n_unit,'()')
-            read(n_unit,*) T
-            read(n_unit,*) RH
-            read(n_unit,'()')
-            if(present(num_droplet)) then
-                read(n_unit,*) num_droplet
-            else
-                read(n_unit, '()')
-            end if
-            read(n_unit,'()')
-            read(n_unit,*) (direction_g(i), i=1,3)
-            
-            read(n_unit,'()')
-
-            read(n_unit,'()')
-            read(n_unit,'(A)') path2FlowFile
-            read(n_unit,'()')
-            read(n_unit,*) DT_FLOW
-            read(n_unit,'()')
-            read(n_unit,*) OFFSET
-            read(n_unit,'()')
-            read(n_unit,*) INTERVAL_FLOW
-            read(n_unit,'()')
-            read(n_unit,*) LoopS
-            read(n_unit,*) LoopF
-            read(n_unit,'()')
-            read(n_unit,*) L
-            read(n_unit,*) U
-
-        CLOSE(n_unit)
-
-        if(num_restart > 0) then
-            print*, 'Restart from', num_restart
-        else if(num_restart == -1) then
-            print*, 'InitialDistributon is Specified.'
-        end if
-
-        print*, 'n_end =',n_end
-        print*, 'output interval =', outputInterval
-=======
         if(allocated(condVal%meshFile)) then
             call create_FlowField( &                !流れ場の取得
                 dropletSolver%TimeStep2RealTime(step=n_start, dimension=.false.), &
@@ -171,7 +103,6 @@ module dropletMotionSimulation
                 condVal%LoopHead, condVal%LoopTail, &
                 condVal%meshFile &
             )
->>>>>>> origin
 
         else
             call create_FlowField( &                !流れ場の取得
@@ -505,19 +436,9 @@ module dropletMotionSimulation
 
     end subroutine
 
-<<<<<<< HEAD
-    subroutine create_CaseDirectory(dir)
-=======
     subroutine create_CaseDirectory
->>>>>>> origin
         use path_operator_m
-        character(*), intent(in) :: dir
-
-<<<<<<< HEAD
-        case_dir = dir
-
-=======
->>>>>>> origin
+       
         call make_directory(case_dir//'/VTK')
         call make_directory(case_dir//'/backup')
         

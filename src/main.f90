@@ -22,11 +22,6 @@ PROGRAM MAIN
       call case_check(num_case=nc_max) 
 
       DO nc = 1, nc_max                         !実行数だけループ（通常1回）
-<<<<<<< HEAD
-
-            call create_CaseDirectory(get_caseName())                     !ディレクトリ作成
-=======
->>>>>>> origin
             
             call simulationSetUp(get_caseName())          !SetUp
 

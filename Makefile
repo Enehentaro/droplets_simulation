@@ -1,18 +1,10 @@
-# GNU Fortran on Windows
+# GNUWin Fortran on Windows
 
-<<<<<<< HEAD
-TARGET = droplet_Kishi
-
-FC = gfortran
-FCFLAGS = -O0 -fbacktrace -g
-=======
 MAINTARGET = droplet
 
-FC = ifort
+FC = gfortran
 
-FCFLAGS = -traceback -CB -g -O0 -fpe0
-# FCFLAGS = -qopenmp
->>>>>>> origin
+FCFLAGS = # -O0 -fbacktrace -g
 
 TARGET1 = CUBE2USG
 TARGET2 = droplet2CSV
@@ -63,8 +55,4 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 all: $(MAINTARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
 
 clean:
-<<<<<<< HEAD
-	del /Q ${OBJDIR} $(TARGET).exe $(TARGET1).exe $(TARGET2).exe
-=======
-	$(RM) $(MAINTARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) -r $(OBJDIR)
->>>>>>> origin
+	del /Q ${OBJDIR} *.exe
