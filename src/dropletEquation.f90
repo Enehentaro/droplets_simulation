@@ -10,7 +10,7 @@ module dropletEquation_m
         ! integer, public, target :: timeStep = 0   !構造体の要素はtarget属性にできないぽい
 
         contains
-        procedure, public :: repValue => representativeValue
+        procedure :: repValue => representativeValue
         procedure TimeStep2RealTime
     end type
 
@@ -32,9 +32,10 @@ module dropletEquation_m
         procedure set_gravity_acceleration, set_dropletEnvironment, dropletEnvironment
         procedure set_coeff_drdt, set_minimumRadiusRatio
         procedure next_position, next_velocity
-        procedure, public :: get_radiusLowerLimitRatio
+        procedure get_radiusLowerLimitRatio
 
-        procedure, public :: evaporatin_eq, solve_motionEquation
+        procedure :: evaporationEq => evaporatinEquation
+        procedure solve_motionEquation
 
     end type
 
@@ -165,10 +166,11 @@ module dropletEquation_m
 
     end function
 
-    double precision function evaporatin_eq(self, radius)
+    !蒸発方程式。半径変化量を返す。
+    function evaporatinEquation(self, radius) result(dr)
         class(DropletEquationSolver) self
         double precision, intent(in) :: radius
-        double precision drdt1,dr1, drdt2,dr2, r_approxi
+        double precision drdt1,dr1, drdt2,dr2, r_approxi, dr
         !========= 飛沫半径の変化の計算　(2次精度ルンゲクッタ（ホイン）) ===========================
     
         drdt1 = self%coeff_drdt / radius
@@ -179,7 +181,7 @@ module dropletEquation_m
         drdt2 = self%coeff_drdt / r_approxi
         dr2 = drdt2 * self%dt
 
-        evaporatin_eq = radius + (dr1 + dr2)*0.5d0
+        dr = (dr1 + dr2)*0.5d0
 
     end function
 

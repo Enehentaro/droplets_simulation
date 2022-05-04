@@ -281,7 +281,7 @@ module dropletMotionSimulation
 
             if(mainDroplet%droplet(vn)%isFloating())then
 
-                call evaporation(mainDroplet%droplet(vn))    !蒸発方程式関連の処理
+                call evaporationProcess(mainDroplet%droplet(vn))    !蒸発方程式関連の処理
                 call motionCalculation(mainDroplet%droplet(vn))     !運動方程式関連の処理
             
             else 
@@ -298,16 +298,16 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine evaporation(droplet) !CALCULATE droplet evaporation
+    subroutine evaporationProcess(droplet) !CALCULATE droplet evaporation
         use virusDroplet_m
         type(virusDroplet_t) droplet
-        double precision radius_n
+        double precision dr
       
         if (.not.droplet%isEvaporating()) return  !半径が最小になったものを除く
     
-        radius_n = dropletSolver%evaporatin_eq(droplet%get_radius())
+        dr = dropletSolver%evaporationEq(droplet%get_radius())  !半径変化量
         
-        call droplet%updateRadius(radius_n)
+        call droplet%evaporation(dr)
       
     end subroutine
 

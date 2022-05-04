@@ -30,11 +30,7 @@ program CUBE2USG
 
     do fileID = 1, num_record
         F_fname = field_name(fileID)
-        if(fileID==1) then 
-            call cubeMesh%read_plot3d_function(F_fname, update=.false.)   !Fファイル読み込み（初回時）
-        else
-            call cubeMesh%read_plot3d_function(F_fname, update=.true.)   !Fファイル読み込み（更新）
-        end if
+        call cubeMesh%read_plot3d_function(F_fname)   !Fファイル読み込み
     
         if (.not.allocated(vtkCell2cubeNode)) call solve_correspondence
         
@@ -58,7 +54,6 @@ program CUBE2USG
 
         end block
 
-    
     end do
 
     contains

@@ -424,10 +424,9 @@ module plot3d_operator
 
     !メッシュクラスメソッド
     !保存量ファイル（.f）を読み込み、メッシュクラスに格納する
-    subroutine read_plot3d_function(self, fName, update)
+    subroutine read_plot3d_function(self, fName)
         class(Plot3dMesh) self
         character(*), intent(in) :: fName
-        logical, intent(in) :: update
         integer num_cube
         integer n_unit, i,j,k,l, i_cube
         real, allocatable :: min_f(:), max_f(:)
@@ -449,12 +448,10 @@ module plot3d_operator
 
             print*, 'nf=', minval(nf(:)), maxval(nf(:))
 
-            if(.not.update) then
-
+            if(.not.allocated(self%cubes(1)%f)) then
                 do i_cube = 1, num_cube
                     allocate(self%cubes(i_cube)%f(ni(i_cube), nj(i_cube), nk(i_cube), nf(i_cube)))
                 end do
-
             end if
 
             do i_cube = 1, num_cube

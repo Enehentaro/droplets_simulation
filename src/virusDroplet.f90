@@ -1,5 +1,4 @@
 module virusDroplet_m
-    use dropletEquation_m
     implicit none
     private
 
@@ -14,7 +13,7 @@ module virusDroplet_m
         procedure :: isFloating => isDropletFloating
         procedure :: coalescenceID => dropletCoalescneceID
         procedure :: set_status => set_dropletStatus
-        procedure stop_droplet, isEvaporating, updateRadius, get_radius
+        procedure stop_droplet, isEvaporating, evaporation, get_radius
 
     end type
 
@@ -82,11 +81,11 @@ module virusDroplet_m
 
     end function
 
-    subroutine updateRadius(self, new_radius)
+    subroutine evaporation(self, dr)
         class(virusDroplet_t) self
-        double precision, intent(in) :: new_radius
+        double precision, intent(in) :: dr
 
-        self%radius = max(new_radius, self%radius_min)
+        self%radius = max(self%radius + dr, self%radius_min)
 
     end subroutine
 
