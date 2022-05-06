@@ -141,7 +141,7 @@ program CUBE2USG
                 
             end if
 
-            allocate(vtkCell2cubeNode(0 : num_cell_ - 1))
+            allocate(vtkCell2cubeNode(num_cell_))
             do i = 1, num_cell_
                 read(n_unit, *) vtkCell2cubeNode(i)%cubeID, vtkCell2cubeNode(i)%nodeID(:)
             end do
