@@ -2,12 +2,16 @@ program translate
     !全飛沫を、center(x,y)中心にphi[rad]だけ回転させ(z方向には回転しない),全飛沫の中心center(x,y,z)をcenter_translated(X,Y,Z)に移動させるサンプルコード
     use virusDroplet_m
     implicit none
+    character(15) infected_person
     integer i
     type(dropletGroup) dGroup
     double precision vec(2)
-    double precision, parameter :: center(3) = [4.73d0, 2.18d0, 1.255d0], PI = acos(-1.d0), phi = PI*0.5d0
+    double precision, parameter :: center(3) = [4.73d0, 2.18d0, 1.255d0], PI = acos(-1.d0), phi = PI*0.d0
     double precision center_displacement(3)
-    double precision, parameter :: center_translated(3) = [3.285d0, 3.13d0, 1.255d0]
+    double precision, parameter :: center_translated(3) = [0.955d0, 0.54d0, 1.255d0]
+
+    print*, 'Who is infected ?'
+    read(5, '(A)') infected_person
 
     vec = 0.0d0
     center_displacement = 0.0d0
@@ -30,7 +34,7 @@ program translate
         dGroup%droplet(i)%position(3) = dGroup%droplet(i)%position(3) + center_displacement(3)
     end do
 
-    call dGroup%output_backup('InitialDistribution_new.bu')  !BUファイル出力
-    call dGroup%output_VTK('InitialDistribution_new.vtk')                !確認VTKファイル出力
+    call dGroup%output_backup('InitialDistribution_'//trim(infected_person)//'.bu')  !BUファイル出力
+    call dGroup%output_VTK('InitialDistribution_'//trim(infected_person)//'.vtk')                !確認VTKファイル出力
     
 end program translate
