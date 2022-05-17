@@ -1,0 +1,8 @@
+*.o
+*.mod
+.vscode
+
+obj/
+bin/
+
+/*.txt
