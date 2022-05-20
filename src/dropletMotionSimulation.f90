@@ -200,6 +200,8 @@ module dropletMotionSimulation
             call mainMesh%search_refCELL(real(dGroup%droplet(j)%position(:)), dGroup%droplet(j)%refCellID, stat=success)
             if(.not.success) dGroup%droplet(j+1:)%refCellID = dGroup%droplet(j)%refCellID
         end do
+        
+        call mainMesh%sort()
 
     end subroutine
    
