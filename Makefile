@@ -55,4 +55,4 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 all: $(TARGET) $(TARGET1) $(TARGET2) $(TARGET3)
 
 clean:
-	$(RM) -r ${OBJDIR} *.exe
+	$(RM) -r ${OBJDIR} *.exe $(SRCDIR)/*.mod
