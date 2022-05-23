@@ -640,7 +640,7 @@ module unstructuredGrid_mod
 
         !遠くのセルを参照していないかどうかのチェック
         !参照セルとの距離がセル閾値未満であればOK（この条件は経験則でしかない）
-        if (distance < self%CELLs(NCN)%threshold) then
+        if (distance < 2.0d0*self%CELLs(NCN)%threshold) then
             nearcell_check = .True.
         else
             nearcell_check = .False.

@@ -6,9 +6,9 @@ program translate
     integer i
     type(dropletGroup) dGroup
     double precision vec(2)
-    double precision, parameter :: center(3) = [4.73d0, 2.18d0, 1.255d0], PI = acos(-1.d0), phi = PI*0.d0
+    double precision, parameter :: center(3) = [4.73d0, 2.18d0, 1.255d0], PI = acos(-1.d0), phi = PI*0.5d0
     double precision center_displacement(3)
-    double precision, parameter :: center_translated(3) = [0.955d0, 0.54d0, 1.255d0]
+    double precision, parameter :: center_translated(3) = [2.97d0, 4.73d0, 1.255d0]
 
     print*, 'Who is infected ?'
     read(5, '(A)') infected_person
