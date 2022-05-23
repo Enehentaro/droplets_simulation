@@ -317,7 +317,7 @@ module vtkMesh_operator_m
                 nodeID = self%cell_array(i-1)%nodeID(k)
                 x(:) = x(:) + self%node_array(nodeID)%coordinate(:)
             end do
-            center(:,k) = x(:) / real(num_node)
+            center(:,i) = x(:) / real(num_node)
         end do
 
     end function
