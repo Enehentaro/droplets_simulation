@@ -29,7 +29,7 @@ program dropletCount
         call condVal%read(trim(caseName))
         ! baseParam = BasicParameter_(condVal%dt, condVal%L, condVal%U)
     
-        box_array = get_box_array(trim(caseName), condVal%num_drop)
+        box_array = get_boxCounterArray_fromCSV(trim(caseName)//'boxList.csv', condVal%num_drop)
     
         num_box = size(box_array)
     

@@ -4,7 +4,7 @@ module boxOperator_m
 
     private
 
-    type(boxCounter), allocatable, public :: box_array(:)
+    type(box_t), allocatable, public :: box_array(:)
 
     type, public :: boxResult_t
         real flowVelocity(3)
@@ -14,8 +14,9 @@ module boxOperator_m
 
     contains
 
-    subroutine setup_boxArray
-        box_array = get_box_array('.', 0)
+    subroutine setup_boxArray(boxListFNAME)
+        character(*), intent(in) :: boxListFNAME
+        box_array = get_boxArray_fromCSV(boxListFNAME)
     end subroutine
 
     subroutine output_flowCSV(fname, bResult)
@@ -90,7 +91,7 @@ program boxFlowField
     type(boxResult_t), allocatable :: bResult(:)
     type(UnstructuredGrid) mesh
 
-    call setup_boxArray
+    call setup_boxArray("boxList.csv")
 
     num_box = size(box_array)
 

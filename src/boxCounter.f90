@@ -1,27 +1,27 @@
 module boxCounter_m
     implicit none
 
-    type boxCounter
+    type box_t
         real center(3), width(3), min_cdn(3), max_cdn(3)
+    end type
+
+    type, extends(box_t) :: boxCounter
         logical, allocatable :: Flag(:)
-
         contains
-
         procedure add_Flag
         procedure get_FlagID
     end type
 
     contains
 
-    function get_box_array(dir, num_Flag) result(new_box_array)
+    function get_boxArray_fromCSV(fname) result(new_box_array)
         use simpleFile_reader
-        type(boxCounter), allocatable :: new_box_array(:)
-        character(*), intent(in) :: dir
-        integer, intent(in) :: num_Flag
+        type(box_t), allocatable :: new_box_array(:)
+        character(*), intent(in) :: fname
         double precision, allocatable :: boxSize_mat(:,:)
         integer i, num_box
 
-        call read_CSV(filename=dir//'/boxList.csv', matrix=boxSize_mat, header=.true.)
+        call read_CSV(filename=fname, matrix=boxSize_mat, header=.true.)
 
         num_box = size(boxSize_mat, dim=2)
 
@@ -39,7 +39,23 @@ module boxCounter_m
                     stop
             end if
 
-            allocate(new_box_array(i)%Flag(num_Flag), source=.false.)
+        end do
+
+    end function
+
+    function get_boxCounterArray_fromCSV(fname, num_Flag) result(boxCounter_array)
+        type(box_t), allocatable :: box_array(:)
+        type(boxCounter), allocatable :: boxCounter_array(:)
+        character(*), intent(in) :: fname
+        integer, intent(in) :: num_Flag
+        integer i, num_box
+
+        box_array =  get_boxArray_fromCSV(fname)
+        num_box = size(box_array)
+
+        do i = 1, num_box
+            boxCounter_array(i)%box_t = box_array(i)
+            allocate(boxCounter_array(i)%Flag(num_Flag), source=.false.)
         end do
 
     end function
