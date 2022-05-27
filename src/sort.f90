@@ -1,6 +1,6 @@
 module sort_m
     implicit none
-    private
+    ! private
 
     contains
 
