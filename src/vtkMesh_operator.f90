@@ -12,17 +12,31 @@ module vtkMesh_operator_m
     end type
 
     type, public :: vtkMesh
-        type(node_onVTK_t), allocatable :: node_array(:)
-        type(cell_onVTK_t), allocatable :: cell_array(:)
+        type(node_onVTK_t), private, allocatable :: node_array(:)
+        type(cell_onVTK_t), private, allocatable :: cell_array(:)
 
         contains
 
-        procedure allocation_node, allocation_cell
+        procedure, private :: allocation_node, allocation_cell
         procedure :: read => read_vtkMesh
         procedure :: output => output_vtkMesh
+        procedure get_numCell, get_numNode, get_nodeCoordinate, get_cellVertices, get_cellCenter
+        procedure set_nodeCoordinate, set_cellVertices
+
     end type
 
+    public vtkMesh_
+
     contains
+
+    type(vtkMesh) function vtkMesh_(cdn, vertices, types)
+        real, intent(in) :: cdn(:,:)
+        integer, intent(in) :: vertices(:,:), types(:)
+
+        call vtkMesh_%set_nodeCoordinate(cdn)
+        call vtkMesh_%set_cellVertices(vertices, types)
+
+    end function
 
     subroutine read_vtkMesh(self, FNAME, action, cellScalar, cellVector)
         class(vtkMesh) self
@@ -40,7 +54,7 @@ module vtkMesh_operator_m
 
         print*, 'READ_VTK:', FNAME
             
-        open(newunit=n_unit,FILE=FNAME, STATUS='OLD')
+        open(newunit=n_unit,FILE=FNAME, status='old', action='read')
             if(dataOnly) then
                 do while(index(AAA, 'CELL_DATA')==0)
                     read(n_unit, '(A)') AAA
@@ -206,5 +220,106 @@ module vtkMesh_operator_m
         if(allocated(self%cell_array))  deallocate(self%cell_array)
         allocate(self%cell_array(0 : num_cell-1))        
     end subroutine
+
+    integer function get_numNode(self)
+        class(vtkMesh), intent(in) :: self
+        get_numNode = size(self%node_array)
+    end function
+
+    integer function get_numCell(self)
+        class(vtkMesh), intent(in) :: self
+        get_numCell = size(self%cell_array)
+    end function
+
+    function get_nodeCoordinate(self) result(cdn)
+        class(vtkMesh), intent(in) :: self
+        real, allocatable :: cdn(:,:)
+        integer k, num_node
+
+        num_node = size(self%node_array)
+        allocate(cdn(3, num_node))
+
+        do k = 1, num_node
+            cdn(:,k) = self%node_array(k-1)%coordinate(:)
+        end do
+
+    end function
+
+    subroutine get_cellVertices(self, vertices, types)
+        class(vtkMesh), intent(in) :: self
+        integer, allocatable, intent(out) :: vertices(:,:), types(:)
+        integer i, num_cell, num_node
+
+        num_cell = size(self%cell_array)
+        allocate(vertices(6, num_cell))
+        allocate(types(num_cell))
+
+        do i = 1, num_cell
+            num_node = size(self%cell_array(i-1)%nodeID)
+            vertices(1:num_node, i) = self%cell_array(i-1)%nodeID(:) + 1
+            types(i) = self%cell_array(i-1)%n_TYPE
+        end do
+
+    end subroutine
+
+    subroutine set_nodeCoordinate(self, cdn)
+        class(vtkMesh) self
+        real, intent(in) :: cdn(:,:)
+        integer k, num_node
+
+        num_node = size(cdn, dim=2)
+        call self%allocation_node(num_node)
+
+        do k = 1, num_node
+            self%node_array(k-1)%coordinate(:) = cdn(:,k) 
+        end do
+
+    end subroutine
+
+    subroutine set_cellVertices(self, vertices, types)
+        class(vtkMesh) self
+        integer, intent(in) :: vertices(:,:), types(:)
+        integer i, num_cell, num_node
+
+        num_cell = size(vertices, dim=2)
+        call self%allocation_cell(num_cell)
+
+        do i = 1, num_cell
+            select case(types(i))
+                case(10)!tetra
+                    num_node = 4
+                case(11)!hexa
+                    num_node = 8
+                case(13)!prism
+                    num_node = 6
+                case(14)!pyramid
+                    num_node = 5
+            end select
+            self%cell_array(i-1)%nodeID = vertices(1:num_node, i) - 1
+            self%cell_array(i-1)%n_TYPE = types(i)
+        end do
+
+    end subroutine
+
+    function get_cellCenter(self) result(center)
+        class(vtkMesh), intent(in) :: self
+        real, allocatable :: center(:,:)
+        real x(3)
+        integer i, k, num_node, num_cell, nodeID
+
+        num_cell = size(self%cell_array)
+        allocate(center(3, num_cell))
+
+        do i = 1, num_cell
+            x(:) = 0.0
+            num_node = size(self%cell_array(i-1)%nodeID)
+            do k = 1, num_node
+                nodeID = self%cell_array(i-1)%nodeID(k)
+                x(:) = x(:) + self%node_array(nodeID)%coordinate(:)
+            end do
+            center(:,i) = x(:) / real(num_node)
+        end do
+
+    end function
     
 end module vtkMesh_operator_m

@@ -2,14 +2,13 @@
 Simulation of Virus Droplets Behavior in AFDET
 
 ## 使い方
-
   ※このブランチは **GNU Fortran, GNU Make** 用です。`master`ブランチへは絶対にマージしないでください。
   コンパイルに`make`コマンドを使います（`GNU make`のインストールが必要）。
 
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
   2. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集。
   3. Makefileのあるディレクトリで `make` コマンド（コンパイル）。
-  4. `.\droplet.exe`で実行。ケース名を入力して計算開始。
+  4. `.\bin\droplet.exe`で実行。ケース名を入力して計算開始。
 
 ## 条件ファイル(condition.nml, initial_position.csv)解説
   ### condition.nml
@@ -44,11 +43,19 @@ Simulation of Virus Droplets Behavior in AFDET
 
 ## 方程式
 
-  解くべき方程式は次の通り。  
-<img src="https://latex.codecogs.com/gif.latex?m&space;\frac{d&space;\mathbf{v}}{dt}&space;=&space;m&space;\mathbf{g}&space;&plus;&space;C_D&space;\cdot&space;\frac{1}{2}\rho_a&space;S&space;\left&space;|&space;\mathbf{u}_a&space;-&space;\mathbf{v}&space;\right&space;|(\mathbf{u}_a&space;-&space;\mathbf{v})" />
+  ### 飛沫の蒸発方程式
 
-  プログラム内では、上式を無次元化・離散化した次式を解いている。  
-<img src="https://latex.codecogs.com/gif.latex?\bar{\mathbf{v}}^{n&plus;1}&space;=&space;\frac{\bar{\mathbf{v}}^{n}&space;&plus;&space;(\bar{\mathbf{g}}&space;&plus;&space;C\bar{\mathbf{u}}_a)\Delta&space;\bar{t}}{1&plus;C\Delta&space;\bar{t}}" />
+  $$ \frac{dr}{dt} \space = \space -\left(1-\frac{RH}{100}\right) \cdot \frac{D e_{s}(T)}{\rho_{w} R_{v} T r} $$
+  
+  プログラム内では、２次精度ルンゲクッタ法で解いている。
+  
+  ### 飛沫の運動方程式
+
+$$ m \frac{d \mathbf{v}}{dt} \space = \space m \mathbf{g} \space + \space C_D (\mathbf{v}) \space \cdot \space \frac{1}{2} \rho_a S \left | \mathbf{u}_a - \mathbf{v} \right | (\mathbf{u}_a - \mathbf{v}) $$
+
+  プログラム内では、上式を無次元化・離散化した次式を解いている。
+    
+$$ \bar{\mathbf{v}}^{n + 1} \space = \space \frac{\bar{\mathbf{v}}^{n} \space + \space (\bar{\mathbf{g}} \space + \space C \bar{\mathbf{u}}_a)\Delta \bar{t}}{1 \space + \space C\Delta \bar{t}} \quad \left ( C \space = \space \frac{3 \rho_a}{8 \rho_w} \frac{C_D ( \mathbf{v}^{n} ) \left | \bar{\mathbf{u}}_a - \bar{\mathbf{v}}^{n} \right |}{\bar{r}^{n+1}} \right ) $$
 
 ## サブプログラム
   `make [subProgramName]`で実行ファイルを作成できる。

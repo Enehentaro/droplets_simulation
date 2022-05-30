@@ -6,55 +6,57 @@ FC = gfortran
 
 FCFLAGS = #-O0 -fbacktrace -g
 
-TARGET1 = CUBE2USG
-TARGET2 = droplet2CSV
-TARGET3 = dropletCount
-TARGET4 = initialTranslate
+#プログラム名配列
+PROGRAMS = droplet CUBE2USG droplet2CSV dropletCount initialTranslate boxFlow
 
-COMMONOBJ = filename_mod.o simpleFile_reader.o path_operator.o vector.o terminalControler.o caseName.o conditionValue.o \
-    	dropletEquation.o virusDroplet.o
-	
-MAINOBJ = $(COMMONOBJ) SCTfile_reader.o vtkMesh_operator.o adjacency_solver.o unstructured_grid.o flow_field.o \
-			dropletGenerator.o dropletMotionSimulation.o main.o
+#頻繁に使うファイル
+COMMONOBJ = filename_mod simpleFile_reader path_operator vector terminalControler caseName conditionValue \
+    	dropletEquation virusDroplet timeKeeper
 
-TARGET1OBJ = simpleFile_reader.o vtkMesh_operator.o plot3d_operator.o CUBE_mod.o CUBE2USG.o
-TARGET2OBJ = $(COMMONOBJ) droplet2CSV.o
-TARGET3OBJ = $(COMMONOBJ) vtkMesh_operator.o boxCounter.o dropletCount.o
-TARGET4OBJ = $(COMMONOBJ) initial_translate.o
+#プログラムコンパイルに必要な依存ファイル配列
+#配列の名前は、プログラム名＋"_OBJ"
+#左から順にコンパイルするので、記述順に注意
+droplet_OBJ = $(COMMONOBJ) SCTfile_reader vtkMesh_operator adjacency_solver unstructured_grid flow_field \
+			dropletGenerator dropletMotionSimulation main
+CUBE2USG_OBJ = $(COMMONOBJ) vtkMesh_operator plot3d_operator CUBE2USG
+droplet2CSV_OBJ = $(COMMONOBJ) droplet2CSV
+dropletCount_OBJ = $(COMMONOBJ) vtkMesh_operator boxCounter dropletCount
+initialTranslate_OBJ = $(COMMONOBJ) initial_translate
+boxFlow_OBJ = $(COMMONOBJ) SCTfile_reader vtkMesh_operator adjacency_solver unstructured_grid flow_field \
+				boxCounter boxFlowField
+        
+#ディレクトリ指定
+SRCDIR = src
+OBJDIR = obj
+BINDIR = bin
+MODDIR = $(OBJDIR)
 
-SRCDIR    = src
-OBJDIR    = obj
-MAINOBJECTS   = $(addprefix $(OBJDIR)/, $(MAINOBJ))
-TARGET1OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET1OBJ))
-TARGET2OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET2OBJ))
-TARGET3OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET3OBJ))
-TARGET4OBJECTS   = $(addprefix $(OBJDIR)/, $(TARGET4OBJ))
-MODDIR = ${OBJDIR}
-
-$(MAINTARGET): $(MAINOBJECTS)
-	$(FC) $^ $(FCFLAGS) -o $@
-
-$(TARGET1): $(TARGET1OBJECTS)
-	$(FC) $^ $(FCFLAGS) -o $@
-
-$(TARGET2): $(TARGET2OBJECTS)
-	$(FC) $^ $(FCFLAGS) -o $@
-
-$(TARGET3): $(TARGET3OBJECTS)
-	$(FC) $^ $(FCFLAGS) -o $@
-
-$(TARGET4): $(TARGET4OBJECTS)
-	$(FC) $^ $(FCFLAGS) -o $@
-
-$(OBJDIR)/%.o: $(SRCDIR)/%.f90
-	@if [ ! -d $(OBJDIR) ]; then \
-		echo ";; mkdir $(OBJDIR)"; mkdir $(OBJDIR); \
+#ディレクトリが存在しなければ作成する関数
+define mkdirIfNotExist
+	@if [ ! -d ${1} ]; then \
+		mkdir -p ${1}; \
 	fi
+endef
 
+#ルール（レシピ？）を記述するための関数
+#分割コンパイルされたオブジェクトをリンクし、実行ファイルをbinディレクトリに出力
+define makeRule
+${1}: ${2}
+	$(call mkdirIfNotExist,$(BINDIR))
+	$(FC) ${2} $(FCFLAGS) -o $(BINDIR)/${1}
+endef
+
+#これが一番重要
+#プログラム名配列が展開され、各プログラムのルールを記述する関数が呼ばれる
+$(foreach prg,${PROGRAMS},$(eval $(call makeRule,$(prg),$(addprefix $(OBJDIR)/,$(addsuffix .o,$($(prg)_OBJ))))))
+
+#オブジェクトファイルのレシピ
+#ソースコードを分割コンパイルし、オブジェクトファイルをobjディレクトリに作成
+$(OBJDIR)/%.o: $(SRCDIR)/%.f90
+	$(call mkdirIfNotExist,$(OBJDIR))
 	$(FC) $< -o $@ -c -I $(MODDIR) -J $(MODDIR) $(FCFLAGS)
 
-all: $(MAINTARGET) $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
+all: $(PROGRAMS)
 
 clean:
-
-	$(RM) *.exe src/*.mod -r $(OBJDIR)
+	$(RM) *.exe src/*.mod -r $(OBJDIR) $(BINDIR)
