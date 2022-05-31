@@ -1,5 +1,5 @@
 # Droplets Simulation
-Simulation of Virus Droplets Behavior in AFDET
+Simulation of Virus-Laden Droplets Behavior in AFDET
 
 ## 使い方
   ※環境は **Intel Fortran, Linux** を想定しています。その他の環境では適宜書き換えが必要です。
@@ -16,7 +16,7 @@ Simulation of Virus Droplets Behavior in AFDET
     - 通常は`0`を指定
     - `1以上`にすると、その値に対応するbackupファイルが読み込まれ、そこからリスタートが始まる
     - `-1`にすると、backupファイル(.bu)が読み込まれ、それを初期飛沫分布とする。backupファイル名は自由に指定可能。
-  - **飛沫周期発生 preriodicGeneration**
+  - **飛沫周期発生 periodicGeneration**
     - 1秒当たりの発生飛沫数（整数）を指定
     - 初期配置飛沫をすべてNonActiveにしたのち、順次Activateしていくので、初期配置数が飛沫数の上限となる
   - **気流データファイル名 path2FlowFile**
