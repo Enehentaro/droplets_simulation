@@ -2,5 +2,7 @@
 *.mod
 .vscode
 
-/droplet*
+obj/
+bin/
+
 /*.txt

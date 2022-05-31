@@ -1,17 +1,19 @@
 module virusDroplet_m
-    use dropletEquation_m
     implicit none
     private
 
     type, public :: virusDroplet_t
         double precision :: position(3), velocity(3)=0.d0
-        double precision radius, radius_min, initialRadius, deadline
-        integer :: status=0, coalesID=0, refCellID=0, adhesBoundID=0
-        ! type(reference_cell_t) refCELL
+        double precision, private :: radius, radius_min, initialRadius, deadline
+        integer, private :: status=0
+        integer :: coalesID=0, refCellID=0, adhesBoundID=0
 
         contains
 
-        procedure stop_droplet
+        procedure :: isFloating => isDropletFloating
+        procedure :: coalescenceID => dropletCoalescneceID
+        procedure :: set_status => set_dropletStatus
+        procedure stop_droplet, isEvaporating, evaporation, get_radius
 
     end type
 
@@ -33,6 +35,10 @@ module virusDroplet_m
         procedure :: IDinState => dropletIDinState
         procedure :: getArea => get_dropletGroupArea
 
+        procedure set_initialRadius, set_radiusLowerLimit
+        procedure :: set_status => set_dropletGroupStatus
+        procedure :: set_deadline => set_virusDeadline
+
         procedure survival_check
         procedure coalescence_check
         ! procedure :: calculation => Calculation_Droplets
@@ -45,7 +51,85 @@ module virusDroplet_m
 
     contains
 
-    !====================ここからメソッド====================
+    logical function isDropletFloating(self)
+        class(virusDroplet_t), intent(in) :: self
+
+        if(self%status==0) then
+            isDropletFloating = .true.
+        else
+            isDropletFloating = .false.
+        end if
+
+    end function
+
+
+    double precision function get_radius(self)
+        class(virusDroplet_t), intent(in) :: self
+
+        get_radius = self%radius
+
+    end function
+
+    logical function isEvaporating(self)
+        class(virusDroplet_t), intent(in) :: self
+
+        if(self%radius > self%radius_min) then
+            isEvaporating = .true.
+        else
+            isEvaporating = .false.
+        end if
+
+    end function
+
+    subroutine evaporation(self, dr)
+        class(virusDroplet_t) self
+        double precision, intent(in) :: dr
+
+        self%radius = max(self%radius + dr, self%radius_min)
+
+    end subroutine
+
+    integer function dropletCoalescneceID(self)
+        class(virusDroplet_t), intent(in) :: self
+
+        dropletCoalescneceID = self%coalesID
+
+    end function
+
+    subroutine set_dropletStatus(self, status)
+        class(virusDroplet_t) self
+        character(*), intent(in) :: status
+
+        self%status = get_statusNumber(status)
+
+    end subroutine
+
+    integer function get_statusNumber(name)
+        character(*), intent(in) :: name
+
+        select case(name)
+            case('floating')
+                get_statusNumber = 0
+
+            case('adhesion')
+                get_statusNumber = 1
+
+            case('death')
+                get_statusNumber = -1
+
+            case('coalescence')
+                get_statusNumber = -2
+
+            case('nonActive')
+                get_statusNumber = -99
+
+            case default
+                print*, '**ERROR [statusNumber] : ', name, ' is not found.**'
+                stop
+
+        end select
+
+    end function
 
     subroutine survival_check(self, time)
         ! use terminalControler_m
@@ -92,21 +176,8 @@ module virusDroplet_m
             case('total')
                 dropletCounter = size(self%droplet)
 
-            case('adhesion')
-                dropletCounter = count(self%droplet(:)%status >= 1)
-
-            case('floating')
-                dropletCounter = count(self%droplet(:)%status == 0)
-
-            case('death')
-                dropletCounter = count(self%droplet(:)%status == -1)
-
-            case('coalescence')
-                dropletCounter = count(self%droplet(:)%status == -2)
-
             case default
-                print*, '**ERROR [dropletCounter] : ', name, ' is not found.**'
-                stop
+                dropletCounter = count(self%droplet(:)%status == get_statusNumber(name))
 
         end select
 
@@ -187,15 +258,16 @@ module virusDroplet_m
 
     function dropletIDinState(self, status) result(ID_array)
         class(DropletGroup) self
-        integer, intent(in) :: status
+        character(*), intent(in) :: status
         integer, allocatable :: ID_array(:)
-        integer i, cnt
+        integer i, cnt, statusNumber
 
         cnt = 0
-        allocate(ID_array(count(self%droplet(:)%status==status)))
+        statusNumber = get_statusNumber(status)
+        allocate(ID_array(count(self%droplet(:)%status==statusNumber)))
         
         do i = 1, size(self%droplet)
-            if(self%droplet(i)%status == status) then
+            if(self%droplet(i)%status == statusNumber) then
 
                 cnt = cnt + 1
                 ID_array(cnt) = i
@@ -405,15 +477,13 @@ module virusDroplet_m
 
     end subroutine
 
-    !====================メソッドここまで====================
-
     function read_backup(fname) result(dGroup_read)
         character(*), intent(in) :: fname
         type(DropletGroup) dGroup_read
         integer i, n_unit, num_drop
     
         print*, 'READ : ', trim(fname)
-        open(newunit=n_unit, form='unformatted', file=fname, status='old')
+        open(newunit=n_unit, form='unformatted', file=fname, status='old', action='read')
             read(n_unit) num_drop
 
             allocate(dGroup_read%droplet(num_drop))
@@ -423,7 +493,7 @@ module virusDroplet_m
             end do
         close(n_unit)
     
-    end function read_backup
+    end function
     
     function read_droplet_VTK(fname) result(dGroup_read)
         implicit none
@@ -434,7 +504,7 @@ module virusDroplet_m
         character(10) str
     
         print*, 'READ : ', fname
-        open(newunit=n_unit, file=fname, status='old')
+        open(newunit=n_unit, file=fname, status='old', action='read')
             read(n_unit,'()')
             read(n_unit,'()')
             read(n_unit,'()')
@@ -497,6 +567,44 @@ module virusDroplet_m
             self%status = status
         else
             self%status = 1
+        end if
+
+    end subroutine
+
+    subroutine set_initialRadius(self, radius)
+        class(DropletGroup) self
+        double precision, intent(in) :: radius(:)
+
+        self%droplet(:)%initialRadius = radius(:)
+        self%droplet(:)%radius = self%droplet(:)%initialRadius
+
+    end subroutine
+
+    subroutine set_radiusLowerLimit(self, lowerLimitRatio)
+        class(DropletGroup) self
+        double precision, intent(in) :: lowerLimitRatio
+
+        self%droplet(:)%radius_min = self%droplet(:)%initialRadius*lowerLimitRatio
+
+    end subroutine
+
+    subroutine set_virusDeadline(self, deadline)
+        class(DropletGroup) self
+        double precision, intent(in) :: deadline(:)
+
+        self%droplet(:)%deadline = deadline(:)
+
+    end subroutine
+
+    subroutine set_dropletGroupStatus(self, status, ID)
+        class(DropletGroup) self
+        integer, intent(in) :: status
+        integer, intent(in), optional :: ID(:)
+
+        if(present(ID)) then
+            self%droplet(ID)%status = status
+        else
+            self%droplet(:)%status = status
         end if
 
     end subroutine

@@ -23,7 +23,8 @@ MODULE adjacencySolver_m
     subroutine set_halfFaceArray(self, cellVertices)
         class(AdjacencySolver) self
         integer, intent(in) :: cellVertices(:,:)
-        INTEGER II,JJJ, j, n, n_type(size(cellVertices, dim=2)), JJJMX, num_halfFace, num_cell
+        INTEGER II,JJJ, j, n, JJJMX, num_halfFace, num_cell
+        integer, allocatable :: n_type(:)
         integer, parameter :: num_halfFace_perCELL(3) = [4,5,5]
         integer, parameter :: IDtrans(4,5,3) = reshape([ &
                                 1,2,3,0, 2,3,4,0, 3,4,1,0, 4,1,2,0, 0,0,0,0,&                       !テトラ
@@ -36,6 +37,7 @@ MODULE adjacencySolver_m
             stop
         end if
 
+        allocate(n_type(num_cell))
         DO II = 1, num_cell
             select case(count(cellVertices(:,II)==0))
                 case(2) !ゼロの数が2個：頂点数が4個：テトラ
@@ -116,7 +118,7 @@ MODULE adjacencySolver_m
         checkCounter = 0
         call set_formatTC('("DIVIDE halfFace [ #group : ",i6," / ",i6," ]")')
         do groupID = 1, num_group  !面をグループに分ける
-            call print_sameLine([groupID, num_group])
+            call print_progress([groupID, num_group])
             faceID_array(:) = 0
             faceCounter = 1
             do faceID = 1, num_halfFace
@@ -141,7 +143,7 @@ MODULE adjacencySolver_m
         call set_formatTC('("CHECK halfFace [ #group : ",i6," / ",i6," ]")')
         !$omp parallel do private(faceID1,faceID2, match, k,l, num_face,numNode) reduction(+:num_BoundFaces)
         do groupID = 1, num_group
-            call print_sameLine([groupID, num_group])
+            call print_progress([groupID, num_group])
             num_face = size(faceGroup(groupID)%faceID)
 
             face1 : do i = 1, num_face
@@ -199,11 +201,13 @@ MODULE adjacencySolver_m
     subroutine find_boundFaceInformation(self, cellBoundFaces, boundFaceVertices)
         class(AdjacencySolver) self
         INTEGER II,JJJ,JB
-        integer cellBoundFaces(:,:), NoB(size(cellBoundFaces, dim=2))
+        integer cellBoundFaces(:,:)
+        integer, allocatable :: NoB(:)
         integer, allocatable, intent(out) :: boundFaceVertices(:,:)
-  
+
+        allocate(NoB(size(cellBoundFaces, dim=2)), source=0)
         allocate(boundFaceVertices(3, self%num_BoundFace), source=0)
-        NoB = 0
+
         JB = 0
         DO JJJ = 1, size(self%halfFaceArray)
             IF (self%halfFaceArray(JJJ)%ownerID(2) /= 0) cycle   !境界面以外はスルー
@@ -220,7 +224,10 @@ MODULE adjacencySolver_m
         
     subroutine find_adjacentCellID(self, adjacentCellArray)
         class(AdjacencySolver) self
-        integer II, JJJ, adjacentCellArray(:,:), num_adjacent(size(adjacentCellArray))
+        integer II, JJJ, adjacentCellArray(:,:)
+        integer, allocatable :: num_adjacent(:)
+
+        allocate(num_adjacent(size(adjacentCellArray)), source=0)
 
         do JJJ = 1, size(self%halfFaceArray)
             if (self%halfFaceArray(JJJ)%ownerID(2) <= 0) cycle !境界面はスルー

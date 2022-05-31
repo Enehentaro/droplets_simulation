@@ -9,6 +9,7 @@ module dropletGenerator_m
     end type
 
     type SequentialArray
+        private
         integer index
         real, allocatable :: array(:)
 
@@ -16,6 +17,7 @@ module dropletGenerator_m
 
         procedure set_SequentialArray
         procedure :: get_value => get_valueFromSequentialArray
+        procedure :: get_valueArray => get_valueArrayFromSequentialArray
 
     end type
 
@@ -39,12 +41,8 @@ module dropletGenerator_m
         procedure set_dropletPlacementBox
 
         procedure calc_initialPosition
-        procedure set_initialRadius
-        procedure set_virusDeadline
 
     end type
-
-    integer, parameter :: nonActive = -99
 
     ! public BasicParameter, DropletEquationSolver, BasicParameter_, DropletEquationSolver_
     public DropletGroup, DropletGenerator_
@@ -74,6 +72,7 @@ module dropletGenerator_m
         class(DropletGenerator) self
         integer, intent(in) :: num_droplet
         double precision, intent(in) :: nowTime
+        double precision, allocatable :: initialRadius(:), deadline(:)
 
         if(num_droplet <= 0) return 
 
@@ -81,47 +80,32 @@ module dropletGenerator_m
 
         call self%calc_initialPosition(generateDroplet)
 
-        call self%set_initialRadius(generateDroplet)
+        initialRadius = self%initialRadiusArray%get_valueArray(num_droplet) * 1.d-6 !マイクロメートル換算
+        initialRadius = initialRadius / self%equation%repValue('length') !無次元化
+        call generateDroplet%set_initialRadius(initialRadius)
+        call generateDroplet%set_radiusLowerLimit(self%equation%get_radiusLowerLimitRatio())
 
-        generateDroplet%droplet(:)%radius = generateDroplet%droplet(:)%initialRadius
-        generateDroplet%droplet(:)%radius_min = self%equation%get_minimumRadius( &
-                                                        generateDroplet%droplet(:)%initialRadius ) !最小半径の計算
+        deadline = self%deadlineArray%get_valueArray(num_droplet) / self%equation%repValue('time') !無次元化
+        deadline = deadline + nowTime
+        call generateDroplet%set_deadline(deadline)
 
-        call self%set_virusDeadline(generateDroplet, nowTime)
-
-        if(self%generateRate > 0) generateDroplet%droplet(:)%status = nonActive
+        if(self%generateRate > 0) then
+            block
+                integer i
+                do i = 1, num_droplet
+                    call generateDroplet%droplet(i)%set_status('nonActive')
+                end do
+            end block
+        end if
 
     end function
 
-    subroutine set_initialRadius(self, dGroup)
-        class(DropletGenerator) self
-        type(DropletGroup) dGroup
-        double precision initialRadius
-        integer i
-
-        do i = 1, size(dGroup%droplet)
-            initialRadius = self%initialRadiusArray%get_value() * 1.d-6 !マイクロメートル換算
-            dGroup%droplet(i)%initialRadius = initialRadius / self%equation%repValue('length') !無次元化
-        end do
-
-        ! block
-        !     real, allocatable :: category(:)
-        !     integer, allocatable :: frequency(:)
-        !     call check_category(real(dGroup%droplet(:)%initialRadius), category, frequency)
-        !     print*, category
-        !     print*, frequency
-        ! end block
-
-    end subroutine
-
     subroutine calc_initialPosition(self, dGroup)
-        class(DropletGenerator) self
+        class(DropletGenerator), intent(in) :: self
         type(DropletGroup) dGroup
         integer kx,ky,kz, num_perEdge, num_perBox, k, k_end, cnt
         integer i_box, num_box, num_drop
         double precision :: standard(3), delta(3), width(3)!, randble(3)
-        
-        num_drop = size(dGroup%droplet)
 
         if(.not.allocated(self%pBox_array)) then
             print*, 'ERROR : InitialPositionBox is not Set.'
@@ -129,6 +113,7 @@ module dropletGenerator_m
         end if
         num_box = size(self%pBox_array)
 
+        num_drop = size(dGroup%droplet)
         num_perBox = num_drop / num_box
         
         ! print*, 'calc_initialPosition'
@@ -202,20 +187,6 @@ module dropletGenerator_m
 
     end subroutine
 
-    subroutine set_virusDeadline(self, dGroup, nowTime)
-        class(DropletGenerator) self
-        type(DropletGroup) dGroup
-        double precision, intent(in) :: nowTime
-        double precision deadline
-        integer i
-
-        do i = 1, size(dGroup%droplet)
-            deadline = self%deadlineArray%get_value() / self%equation%repValue('time') !無次元化
-            dGroup%droplet(i)%deadline = deadline + nowTime
-        end do
-
-    end subroutine
-
     subroutine set_dropletPlacementBox(self, positionDir)
         use simpleFile_reader
         use filename_mod, only : IniPositionFName
@@ -256,9 +227,11 @@ module dropletGenerator_m
         logical, intent(out) :: stat
 
         stat = .false.
+        if(self%generateRate == 0) return
+        
         required_generation = int(dble(self%generateRate)*nowTime * self%equation%repValue('time'))  !このステップ終了までに生成されているべき数
 
-        num_generated = count(dGroup%droplet(:)%status /= nonActive)  !今までに生成された数
+        num_generated = dGroup%counter('total') - dGroup%counter('nonActive')  !今までに生成された数
         if(num_generated == size(dGroup%droplet)) return        !生成され尽くした場合リターン
 
         num_nowGenerate = required_generation - num_generated !今このステップで生成されるべき数
@@ -272,7 +245,7 @@ module dropletGenerator_m
             num_box = size(self%pBox_array)
 
             if(num_nowGenerate >= num_box) then
-                nonActiveID_array = dGroup%IDinState(nonActive)
+                nonActiveID_array = dGroup%IDinState('nonActive')
 
                 if(required_generation < size(dGroup%droplet)) then
                     nonActive_perBox = size(nonActiveID_array) / num_box
@@ -280,13 +253,11 @@ module dropletGenerator_m
 
                     do i_box = 1, num_box
                         generateEnd = min(nonActive_perBox*(i_box-1) + generate_perBox, nonActive_perBox*i_box)
-
-                        dGroup%droplet(nonActiveID_array(nonActive_perBox*(i_box-1) +1 : generateEnd))%status = 0
-
+                        call dGroup%set_status(0, nonActiveID_array(nonActive_perBox*(i_box-1) +1 : generateEnd))
                     end do
 
                 else  !この時刻までに生成されているべき数が総飛沫数未満でない　＝＞　全て生成されるべき
-                    dGroup%droplet(nonActiveID_array(:))%status = 0
+                    call dGroup%set_status(0, nonActiveID_array(:))
 
                 end if
 
@@ -317,6 +288,20 @@ module dropletGenerator_m
 
         self%index = self%index + 1
         if(self%index > size(self%array)) self%index = 1
+
+    end function
+
+    function get_valueArrayFromSequentialArray(self, arraySize) result(array)
+        class(SequentialArray) self
+        integer, intent(in) :: arraySize
+        real, allocatable :: array(:)
+        integer i
+
+        allocate(array(arraySize))
+
+        do i = 1, arraySize
+            array(i) = self%get_value()
+        end do
 
     end function
 

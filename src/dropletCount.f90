@@ -17,6 +17,9 @@ program dropletCount
     type boxResult_t
         integer num_droplet
         real volume, RoI
+        ! addition
+        integer adherent_droplet
+        integer float_droplet
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
@@ -33,21 +36,31 @@ program dropletCount
     
         num_box = size(box_array)
     
-        do n = 0, condVal%stepEnd, condVal%outputInterval
-            if(n==0) then
-                fname = trim(caseName)//'/backup/InitialDistribution.bu'
-            else
-                write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
-            end if
+        ! do n = 0, condVal%stepEnd, condVal%outputInterval
+        !     if(n==0) then
+        !         fname = trim(caseName)//'/backup/InitialDistribution.bu'
+        !     else
+        !         write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
+        !     end if
     
-            mainDroplet = read_backup(fname)
+        !     mainDroplet = read_backup(fname)
+    
+        !     do i_box = 1, num_box
+        !         id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
+        !         call box_array(i_box)%add_Flag(id_array)
+        !     end do
+    
+        ! end do
+
+        ! addition
+        fname = trim(caseName)//'/backup/backup_6000000.bu'
+        
+        mainDroplet = read_backup(fname)
     
             do i_box = 1, num_box
                 id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
                 call box_array(i_box)%add_Flag(id_array)
-            end do
-    
-        end do
+            end do        
     
         allocate(bResult(num_box))
 
@@ -56,6 +69,9 @@ program dropletCount
             dGroup%droplet = mainDroplet%droplet(id_array)
             bResult(i_box)%num_droplet = size(dGroup%droplet)
             bResult(i_box)%volume = real(dGroup%totalVolume() *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
+            ! addition
+            bResult(i_box)%adherent_droplet= count(dGroup%droplet(:)%status == 1)
+            bResult(i_box)%float_droplet= count(dGroup%droplet(:)%status == 0)
         end do
 
         bResult(:)%RoI = RateOfInfection(bResult(:)%volume) !1分間あたりの感染確率を計算
@@ -77,11 +93,14 @@ program dropletCount
         print*, 'output: ', csvFName
 
         open(newunit=n_unit, file=csvFName, status='replace')
-        
-            write(n_unit, '("x,y,z,num_drop,volume[ml],RoI")')
+
+            ! addition
+            write(n_unit, '("x,y,z,num_drop,volume[ml],RoI,adherent_drop,float_drop")')
             
             do i = 1, size(box_array)
-                write(n_unit,'(*(g0:,","))') box_array(i)%center, bResult(i)%num_droplet, bResult(i)%volume, bResult(i)%RoI
+                ! addition
+                write(n_unit,'(*(g0:,","))') box_array(i)%center, bResult(i)%num_droplet, bResult(i)%volume, bResult(i)%RoI,&
+                bResult(i)%adherent_droplet, bResult(i)%float_droplet
             end do
 
         close(n_unit)
@@ -96,20 +115,24 @@ program dropletCount
                                             0.0,0.0,0.0, 1.0,0.0,0.0, 0.0,1.0,0.0, 1.0,1.0,0.0, &
                                             0.0,0.0,1.0, 1.0,0.0,1.0, 0.0,1.0,1.0, 1.0,1.0,1.0], shape(trans))
                                         
-        call mesh%allocation_node(num_box*8)
-        call mesh%allocation_cell(num_box)
-
+        real, allocatable :: xyz(:,:)
+        integer, allocatable :: vertices(:,:), types(:)
+                                        
+        allocate(xyz(3, num_box*8))
+        allocate(vertices(8, num_box), types(num_box))
         do i = 1, num_box
 
             do j = 1, 8
-                k = 8*(i-1) + j - 1
-                mesh%node_array(k)%coordinate(:) = box_array(i)%min_cdn(:) + box_array(i)%width(:)*trans(:,j)
+                k = j + 8*(i-1)
+                xyz(:,k) = box_array(i)%min_cdn(:) + box_array(i)%width(:)*trans(:,j)
+                vertices(j,i) = k
             end do
 
-            mesh%cell_array(i-1)%nodeID = [(8*(i-1) + j - 1, j = 1, 8)]
-            mesh%cell_array(i-1)%n_TYPE = 11
+            types(i) = 11
 
         end do
+
+        mesh = vtkMesh_(xyz, vertices, types)
 
         call mesh%output(trim(caseName)//'/Box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
 
