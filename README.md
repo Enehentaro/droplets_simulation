@@ -45,7 +45,7 @@ Simulation of Virus-Laden Droplets Behavior in AFDET
 
   ### 飛沫の蒸発方程式
 
-  $$ \frac{dr}{dt} \space = \space -\left(1-\frac{RH}{100}\right) \cdot \frac{D e_{s}(T)}{\rho_{w} R_{v} T r} $$
+  $$ \frac{dr}{dt} \space = \space -\left(1-\frac{RH}{100}\right) \cdot \frac{D e_{s}(T)}{\rho_{w} R_{v} T} \cdot \frac{1}{r} $$
   
   プログラム内では、２次精度ルンゲクッタ法で解いている。
   
