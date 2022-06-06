@@ -30,8 +30,8 @@ module unstructuredGrid_mod
         procedure nearest_cell, nearcell_check, get_MinMaxCDN
 
         procedure, private :: setupWithFlowFieldFile
-        procedure, private :: set_gravity_center, set_MinMaxCDN, point2cellVelocity
-        procedure, private :: read_VTK, read_array, read_INP, read_FLD
+        procedure :: set_gravity_center, set_MinMaxCDN, point2cellVelocity
+        procedure :: read_VTK, read_array, read_INP, read_FLD
 
         !=====================================================================
 
@@ -444,7 +444,6 @@ module unstructuredGrid_mod
                 vector(:) = vector(:) + self%NODEs(nodeID)%coordinate(:)
             end do
             self%CELLs(II)%center(:) = vector(:) / real(num_node)
-            
             self%CELLs(II)%threshold = 0.0
             do n = 1, num_node
                 nodeID = self%CELLs(II)%nodeID(n)
