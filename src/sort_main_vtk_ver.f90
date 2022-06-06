@@ -11,8 +11,6 @@ program sortMain_vtk_ver
     integer:: i,iimx,k,kkmx
     character(50) vtkFName,before_outputFName,after_outputFName
     real,allocatable::sample(:),after_sample(:)
-    integer :: ios
-
 
     vtkFName = "Test/sample.vtk"
     before_outputFName = "Test/before_output.txt"
