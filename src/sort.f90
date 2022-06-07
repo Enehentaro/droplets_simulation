@@ -71,7 +71,7 @@ module sort_m
             array_sorted(i) = array(1)
             allocate(temp_array(num_node-i))
 
-            do j = 2, num_node+1-i  !入力配列の最上親ノードを抜き取って1つずらした配列作成
+            do j = 2, num_node_heap  !入力配列の最上親ノードを抜き取って1つずらした配列作成
                 temp_array(j-1) = array(j)
             end do
             
