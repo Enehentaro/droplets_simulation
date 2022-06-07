@@ -2,9 +2,17 @@ module sort_m
     implicit none
     ! private
 
+    type, public :: SortProcess
+        contains
+        procedure swap_node
+        procedure compare_children
+        procedure heap_sort
+    end type
+
     contains
 
-    subroutine swap_node(parent, child)
+    subroutine swap_node(self, parent, child)
+        class(SortProcess) self
         real, intent(inout) :: parent, child
         real temp   !一時的に格納する変数
 
@@ -14,7 +22,8 @@ module sort_m
 
     end subroutine
 
-    function compare_children(child_1st, child_2nd) result(child)
+    function compare_children(self, child_1st, child_2nd) result(child)
+        class(SortProcess) self
         real, intent(in) :: child_1st, child_2nd
         real child
 
@@ -26,9 +35,11 @@ module sort_m
     
     end function
     
-    subroutine heap_sort(array, array_sorted)
+    subroutine heap_sort(self, array, array_sorted, cellID)
+        class(SortProcess) self 
         real, intent(inout), allocatable :: array(:)
         real, intent(out), allocatable :: array_sorted(:)
+        integer, intent(out), allocatable :: cellID(:)
         real, allocatable :: temp_array(:)  !配列の要素を減らすための一時的な配列
         real parent, child, child_1st, child_2nd
         integer i, j, node, num_node, num_node_heap
@@ -36,6 +47,8 @@ module sort_m
         num_node = size(array)
         num_node_heap = num_node    !初めは要素全体のノード数とヒープ構造のノード数が同じ
         allocate(array_sorted(num_node))
+        allocate(cellID(num_node))
+
         do i = 1, num_node  !ソート後の配列に格納するループ
 
             if (mod(num_node_heap,2) == 0) then  !要素数の偶奇判定(偶数のときだけ特別な処理)
@@ -43,7 +56,7 @@ module sort_m
                 child = array(num_node_heap)
 
                 if(parent < child) then !要素数が偶数のとき末端のノードだけ2分木にならないのでその処理
-                    call swap_node(parent, child)
+                    call self%swap_node(parent, child)
                     array(num_node_heap/2) = parent
                     array(num_node_heap) = child
                 end if
@@ -56,9 +69,9 @@ module sort_m
                 parent = array(int(node/2))
                 child_1st = array(node-1)
                 child_2nd = array(node)
-                child = compare_children(child_1st, child_2nd)
+                child = self%compare_children(child_1st, child_2nd)
                 if(parent < child) then
-                    call swap_node(parent, child)
+                    call self%swap_node(parent, child)
                     array(int(node/2)) = parent
                     if (parent == child_1st) then   !parentは入れ替え後なのでもとはchild
                         array(node-1) = child
@@ -83,6 +96,8 @@ module sort_m
             deallocate(temp_array)
 
             num_node_heap = size(array)
+
+            cellID(i) = i
 
         end do
 

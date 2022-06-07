@@ -5,13 +5,13 @@ program sortMain_vtk_ver
     implicit none 
 
     type(UnstructuredGrid) grid
-    !type(vtkMesh) mesh
+    type(SortProcess) sort
 
     integer :: n_unit 
     integer :: i, iimx, k, kkmx
     character(50) vtkFName, before_outputFName, after_outputFName
     real, allocatable :: sample(:), after_sample(:)
-    ! integer, allocatable :: cellID(:)
+    integer, allocatable :: cellID(:)
 
     vtkFName = "Test/sample.vtk"
     before_outputFName = "Test/before_output.txt"
@@ -25,7 +25,7 @@ program sortMain_vtk_ver
 
     open(newunit = n_unit, file = before_outputFName, status = 'replace')
         do i = 1, iimx
-            write (n_unit,'(I3)', advance='no') i
+            write(n_unit,'(I3)', advance='no') i
             write(n_unit,'(f12.5)') grid%CELLs(i)%center(1)
         end do
     close(n_unit)
@@ -33,11 +33,11 @@ program sortMain_vtk_ver
     allocate(sample(size(grid%CElls)))
     sample(:) = grid%CElls(:)%center(1) 
 
-    call heap_sort(sample, after_sample)
+    call sort%heap_sort(sample, after_sample, cellID)
 
     open(newunit = n_unit, file = after_outputFName, status = 'replace')
         do i = 1, iimx 
-            ! write (n_unit,'(I3)', advance='no') cellID(i)
+            write(n_unit,'(I3)', advance='no') cellID(i)
             write(n_unit,'(f12.5)') after_sample(i)
         end do
     close(n_unit)
