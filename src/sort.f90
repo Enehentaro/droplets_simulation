@@ -19,15 +19,15 @@ module sort_m
 
     end subroutine
 
-    function get_largerID(array, ID1, ID2) result(larger_ID)
+    function get_smallerID(array, ID1, ID2) result(smaller_ID)
         real,intent(in) :: array(:)
         integer, intent(in) :: ID1, ID2
-        integer larger_ID
+        integer smaller_ID
 
-        if (array(ID1) > array(ID2)) then
-            larger_ID = ID1
+        if (array(ID1) < array(ID2)) then
+            smaller_ID = ID1
         else
-            larger_ID = ID2
+            smaller_ID = ID2
         end if
     
     end function
@@ -38,9 +38,9 @@ module sort_m
 
         type(content), allocatable :: calc_array(:)
         type(content), allocatable :: temp_array(:)  !配列の要素を減らすための一時的な配列
-        type(content) parent, child, larger_child, child_1st, child_2nd
+        type(content) parent, child, smaller_child, child_1st, child_2nd
         integer i, j, node, num_node_heap
-        integer parentID, largerChildID
+        integer parentID, smallerChildID
 
         num_node_heap = size(array_origin)   !初めは要素全体のノード数とヒープ構造のノード数が同じ
         allocate(calc_array(size(array_origin)))
@@ -57,7 +57,7 @@ module sort_m
                 parent = calc_array(num_node_heap/2)
                 child = calc_array(num_node_heap)
 
-                if(parent%axis < child%axis) then !要素数が偶数のとき末端のノードだけ2分木にならないのでその処理
+                if(parent%axis > child%axis) then !要素数が偶数のとき末端のノードだけ2分木にならないのでその処理
                     call swap_content(calc_array, num_node_heap/2, num_node_heap)
                 end if
 
@@ -67,10 +67,10 @@ module sort_m
                 
             do node = num_node_heap, 3, -2   !ヒープソート一回分のループ
                 parentID = int(node/2)
-                largerChildID = get_largerID(calc_array(:)%axis, node-1, node)
+                smallerChildID = get_smallerID(calc_array(:)%axis, node-1, node)
 
-                if(calc_array(parentID)%axis < calc_array(largerChildID)%axis) then
-                    call swap_content(calc_array, parentID, largerChildID)
+                if(calc_array(parentID)%axis > calc_array(smallerChildID)%axis) then
+                    call swap_content(calc_array, parentID, smallerChildID)
                 end if
             end do
 

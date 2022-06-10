@@ -21,7 +21,8 @@ dropletCount_OBJ = $(COMMONOBJ) vtkMesh_operator boxCounter dropletCount
 initialTranslate_OBJ = $(COMMONOBJ) initial_translate
 boxFlow_OBJ = $(COMMONOBJ) SCTfile_reader vtkMesh_operator adjacency_solver unstructured_grid flow_field \
 				boxCounter boxFlowField
-sort_main_vtk_ver_OBJ = $(COMMONOBJ) SCTfile_reader vtkMesh_operator adjacency_solver unstructured_grid sort sort_main_vtk_ver	
+sort_main_vtk_ver_OBJ = $(COMMONOBJ) SCTfile_reader vtkMesh_operator adjacency_solver unstructured_grid \
+				sort kdTree sort_main_vtk_ver	
         
 #ディレクトリ指定
 SRCDIR = src
