@@ -2,7 +2,7 @@ module sort_m
     implicit none
 
     type content
-        integer originID
+        integer cellID
         real axis
     end type content
 
@@ -47,7 +47,7 @@ module sort_m
         allocate(array_sorted(size(array_origin)))
         
         do i = 1, size(array_origin)
-            calc_array(i)%originID = array_origin(i)%originID
+            calc_array(i)%cellID = array_origin(i)%cellID
             calc_array(i)%axis = array_origin(i)%axis
         end do
 

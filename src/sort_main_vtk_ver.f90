@@ -23,13 +23,13 @@ program sortMain_vtk_ver
     allocate(sample(size(grid%CElls)))
 
     do i = 1, iimx
-        sample(i)%originID = i
+        sample(i)%cellID = i
         sample(i)%axis = grid%CELLs(i)%center(1)
     end do
 
     open(newunit = n_unit, file = before_outputFName, status = 'replace')
         do i = 1, iimx
-            write(n_unit,'(I3)', advance='no') sample(i)%originID
+            write(n_unit,'(I3)', advance='no') sample(i)%cellID
             write(n_unit,'(f12.5)') sample(i)%axis
         end do
     close(n_unit)
@@ -38,7 +38,7 @@ program sortMain_vtk_ver
 
     open(newunit = n_unit, file = after_outputFName, status = 'replace')
         do i = 1, iimx 
-            write(n_unit,'(I0)', advance='no') after_sample(i)%originID
+            write(n_unit,'(I0)', advance='no') after_sample(i)%cellID
             write(n_unit,'(f12.5)') after_sample(i)%axis
         end do
     close(n_unit)
