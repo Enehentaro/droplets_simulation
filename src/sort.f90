@@ -2,63 +2,65 @@ module sort_m
     implicit none
     ! private
 
-    type, public :: SortProcess
-        contains
-        procedure swap_node
-        procedure compare_children
-        procedure heap_sort
-    end type
+    type content
+        integer originID
+        real axis
+    end type content
 
     contains
 
-    subroutine swap_node(self, parent, child)
-        class(SortProcess) self
-        real, intent(inout) :: parent, child
-        real temp   !一時的に格納する変数
+    subroutine swap_content(array, ID1, ID2)
+        integer, intent(in) :: ID1, ID2
+        type(content), intent(inout) :: array(:)
+        type(content) temp !一時的に格納する変数
 
-        temp = parent
-        parent = child
-        child = temp
+        temp = array(ID1)
+        array(ID1) = array(ID2)
+        array(ID2) = temp
 
     end subroutine
 
-    function compare_children(self, child_1st, child_2nd) result(child)
-        class(SortProcess) self
-        real, intent(in) :: child_1st, child_2nd
-        real child
+    function get_largerID(array, ID1, ID2) result(larger_ID)
+        real,intent(in) :: array(:)
+        integer, intent(in) :: ID1, ID2
+        integer larger_ID
 
-        if (child_1st < child_2nd) then
-            child = child_2nd
+        if (array(ID1) > array(ID2)) then
+            larger_ID = ID1
         else
-            child = child_1st
+            larger_ID = ID2
         end if
     
     end function
     
-    subroutine heap_sort(self, array, array_sorted, cellID)
-        class(SortProcess) self 
-        real, intent(inout), allocatable :: array(:)
-        real, intent(out), allocatable :: array_sorted(:)
-        integer, intent(out), allocatable :: cellID(:)
-        real, allocatable :: temp_array(:)  !配列の要素を減らすための一時的な配列
-        real parent, child, child_1st, child_2nd
-        integer i, j, node, num_node, num_node_heap
+    subroutine heap_sort(array_origin, ID_origin, array_sorted)
+        real, intent(in) :: array_origin(:)
+        type(content), intent(out), allocatable :: array_sorted(:)
+        integer, intent(in) :: ID_origin(:)
+        type(content), allocatable :: pre_array(:)
 
-        num_node = size(array)
+        type(content), allocatable :: temp_array(:)  !配列の要素を減らすための一時的な配列
+        type(content) parent, child, larger_child, child_1st, child_2nd
+        integer i, j, node, num_node, num_node_heap
+        integer parentID, largerChildID
+
+        num_node = size(array_origin)
         num_node_heap = num_node    !初めは要素全体のノード数とヒープ構造のノード数が同じ
+        allocate(pre_array(num_node))
+        do i = 1, num_node
+            pre_array(i)%originID = ID_origin(i)
+            pre_array(i)%axis = array_origin(i)
+        end do
         allocate(array_sorted(num_node))
-        allocate(cellID(num_node))
 
         do i = 1, num_node  !ソート後の配列に格納するループ
 
             if (mod(num_node_heap,2) == 0) then  !要素数の偶奇判定(偶数のときだけ特別な処理)
-                parent = array(num_node_heap/2)
-                child = array(num_node_heap)
+                parent = pre_array(num_node_heap/2)
+                child = pre_array(num_node_heap)
 
-                if(parent < child) then !要素数が偶数のとき末端のノードだけ2分木にならないのでその処理
-                    call self%swap_node(parent, child)
-                    array(num_node_heap/2) = parent
-                    array(num_node_heap) = child
+                if(parent%axis < child%axis) then !要素数が偶数のとき末端のノードだけ2分木にならないのでその処理
+                    call swap_content(pre_array, num_node_heap/2, num_node_heap)
                 end if
 
                 num_node_heap = num_node_heap-1   !末端の1分木の分だけ比較に使用するヒープ構造の要素数を減らす
@@ -66,38 +68,32 @@ module sort_m
             end if
                 
             do node = num_node_heap, 3, -2   !ヒープソート一回分のループ
-                parent = array(int(node/2))
-                child_1st = array(node-1)
-                child_2nd = array(node)
-                child = self%compare_children(child_1st, child_2nd)
-                if(parent < child) then
-                    call self%swap_node(parent, child)
-                    array(int(node/2)) = parent
-                    if (parent == child_1st) then   !parentは入れ替え後なのでもとはchild
-                        array(node-1) = child
-                    else
-                        array(node) = child
-                    end if
+
+                parentID = int(node/2)
+
+                largerChildID = get_largerID(pre_array(:)%axis, node-1, node)
+
+                if(pre_array(parentID)%axis < pre_array(largerChildID)%axis) then
+                    call swap_content(pre_array, parentID, largerChildID)
                 end if
+
             end do
 
-            array_sorted(i) = array(1)
-            allocate(temp_array(num_node-i))
+            array_sorted(i) = pre_array(1)
+            allocate(temp_array(size(pre_array)-1))
 
-            do j = 2, num_node_heap  !入力配列の最上親ノードを抜き取って1つずらした配列作成
-                temp_array(j-1) = array(j)
+            do j = 2, size(pre_array)  !入力配列の最上親ノードを抜き取って1つずらした配列作成
+                temp_array(j-1) = pre_array(j)
             end do
-            
-            deallocate(array)
-            allocate(array(num_node-i))
 
-            array = temp_array
+            deallocate(pre_array)
+            allocate(pre_array(num_node-i))
+
+            pre_array = temp_array
 
             deallocate(temp_array)
 
-            num_node_heap = size(array)
-
-            cellID(i) = i
+            num_node_heap = size(pre_array)
 
         end do
 
