@@ -15,12 +15,12 @@ program sortMain_vtk_ver
 
     vtkFName = "Test/sample.vtk"
             
-    call grid%read_VTK(vtkFName,meshOnly=.true.)
-    call grid%set_gravity_center()
+    grid = UnstructuredGrid_(vtkFName)
 
     iimx = size(grid%CELLs)
     kkmx = size(grid%NODEs)
     allocate(before(size(grid%CElls)))
+    allocate(after(size(grid%CElls)))
 
     do i = 1, iimx
         before(i)%originID = i
