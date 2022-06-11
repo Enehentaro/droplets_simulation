@@ -1,17 +1,81 @@
 module sort_m
     implicit none
+    private
 
-    type content
-        integer cellID
-        real axis
-    end type content
+    type, public :: content_t
+        integer originID
+        real value
+    end type
+
+    !ヒープ木クラス
+    type HeapTree
+        !実態は単なる配列だがツリー構造を表現している
+        !要素 i に注目すると、親ノードは要素 i/2(少数切り捨て) であり、子ノードは要素 2i, 2i+1 である
+        type(content_t), allocatable :: node(:)
+
+        contains
+
+        procedure heaplification, pop_from_root
+        
+    end type
+
+    public heap_sort
 
     contains
 
+    !ヒープ木のコンストラクタ
+    type(HeapTree) function HeapTree_(array)
+        type(content_t), intent(in) :: array(:)
+
+        HeapTree_%node = array
+        call HeapTree_%heaplification()
+
+    end function
+
+    !ヒープ化（親子の大小関係解決）メソッド
+    subroutine heaplification(self)
+        class(HeapTree) self
+        integer num_node
+        integer parentID, child1ID, child2ID, featuredChildID
+
+        num_node = size(self%node)
+            
+        do parentID = num_node/2, 1, -1 !子を持つノードに対してのみ下からループ
+
+            child1ID = parentID*2
+            child2ID = parentID*2 + 1
+
+            if(child2ID <= num_node) then !第2子が存在する（配列サイズ内）の場合
+
+                featuredChildID = get_smallerID(self%node(:)%value, child1ID, child2ID)
+
+            else
+
+                featuredChildID = child1ID  !第2子が存在しない（配列サイズ外）の場合
+
+            end if
+
+            if(self%node(parentID)%value > self%node(featuredChildID)%value) call swap_content(self%node, parentID, featuredChildID)
+
+        end do
+
+    end subroutine
+
+    !ルートノードを返し、インスタンスからルートノードを除去する
+    function pop_from_root(self) result(root)
+        class(HeapTree) self
+        type(content_t) root
+
+        root = self%node(1)
+
+        self%node = self%node(2:)
+
+    end function
+
     subroutine swap_content(array, ID1, ID2)
         integer, intent(in) :: ID1, ID2
-        type(content), intent(inout) :: array(:)
-        type(content) temp !一時的に格納する変数
+        type(content_t), intent(inout) :: array(:)
+        type(content_t) temp !一時的に格納する変数
 
         temp = array(ID1)
         array(ID1) = array(ID2)
@@ -33,63 +97,23 @@ module sort_m
     end function
     
     subroutine heap_sort(array_origin, array_sorted)
-        type(content), intent(in) :: array_origin(:)
-        type(content), intent(out), allocatable :: array_sorted(:)
+        type(content_t), intent(in) :: array_origin(:)
+        type(content_t), intent(out) :: array_sorted(:)
+        type(HeapTree) heap_tree
+        integer i
+        integer arraySize
 
-        type(content), allocatable :: calc_array(:)
-        type(content), allocatable :: temp_array(:)  !配列の要素を減らすための一時的な配列
-        type(content) parent, child, smaller_child, child_1st, child_2nd
-        integer i, j, node, num_node_heap
-        integer parentID, smallerChildID
+        arraySize = size(array_origin)
+        if(size(array_sorted) /= arraySize) then
+            print '("SORT ERROR")'
+            stop
+        end if
 
-        num_node_heap = size(array_origin)   !初めは要素全体のノード数とヒープ構造のノード数が同じ
-        allocate(calc_array(size(array_origin)))
-        allocate(array_sorted(size(array_origin)))
-        
-        do i = 1, size(array_origin)
-            calc_array(i)%cellID = array_origin(i)%cellID
-            calc_array(i)%axis = array_origin(i)%axis
-        end do
+        heap_tree = HeapTree_(array_origin)
 
-        do i = 1, size(array_origin)  !ソート後の配列に格納するループ
-
-            if (mod(num_node_heap,2) == 0) then  !要素数の偶奇判定(偶数のときだけ特別な処理)
-                parent = calc_array(num_node_heap/2)
-                child = calc_array(num_node_heap)
-
-                if(parent%axis > child%axis) then !要素数が偶数のとき末端のノードだけ2分木にならないのでその処理
-                    call swap_content(calc_array, num_node_heap/2, num_node_heap)
-                end if
-
-                num_node_heap = num_node_heap-1   !末端の1分木の分だけ比較に使用するヒープ構造の要素数を減らす
-            
-            end if
-                
-            do node = num_node_heap, 3, -2   !ヒープソート一回分のループ
-                parentID = int(node/2)
-                smallerChildID = get_smallerID(calc_array(:)%axis, node-1, node)
-
-                if(calc_array(parentID)%axis > calc_array(smallerChildID)%axis) then
-                    call swap_content(calc_array, parentID, smallerChildID)
-                end if
-            end do
-
-            array_sorted(i) = calc_array(1)
-            allocate(temp_array(size(calc_array)-1))
-
-            do j = 2, size(calc_array)  !入力配列の最上親ノードを抜き取って1つずらした配列作成
-                temp_array(j-1) = calc_array(j)
-            end do
-
-            deallocate(calc_array)
-            allocate(calc_array(size(array_origin)-i))
-
-            calc_array = temp_array
-
-            deallocate(temp_array)
-
-            num_node_heap = size(calc_array)
-
+        do i = 1, arraySize  !ソート後の配列に格納するループ
+            array_sorted(i) = heap_tree%pop_from_root()
+            call heap_tree%heaplification()
         end do
 
     end subroutine
