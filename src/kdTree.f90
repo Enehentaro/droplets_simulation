@@ -3,45 +3,52 @@ module kdTree_m
     use sort_m
     implicit none
 
-    contains
+    ! type node
+    !     integer :: parent_ID = 0, child_ID_1 = 0, child_ID_2 = 0 ,cell_ID = 0 
+    ! end type 
 
-    subroutine cellDivider(grid, after, leftChild, kdTree_cell, rightChild)
-        type(unstructuredGrid), intent(in) :: grid
-        type(content_t), intent(in) :: after(:)
-        type(content_t), intent(out), allocatable :: leftChild(:)
-        type(content_t), intent(out), allocatable :: rightChild(:)
-        type(content_t), intent(out), allocatable :: kdTree_cell(:)
-        integer i, centerID, left_size, right_size
+    ! integer ID_counter = 1
 
-        allocate(kdTree_cell(size(after)))
-        
-        centerID = int(size(after)/2)+1
-        kdTree_cell(1)%originID = after(centerID)%originID
-        kdTree_cell(1)%value = grid%CELLs(after(centerID)%originID)%center(1)
+    ! contains
 
-        left_size = centerID-1
-        allocate(leftChild(left_size))
-        do i = 1, left_size
-            leftChild(i)%originID = after(i)%originID
-            leftChild(i)%value = grid%CELLs(after(i)%originID)%center(1)
-        end do
+    ! call heap_sort()
+    ! node_tree(1)%cell_ID = !ヒープソートの1回目の結果の中央値    
 
-        if(mod(size(after),2) == 0) then
-            right_size = centerID-2
-            allocate(rightChild(right_size))
-            do i = 1, right_size
-                rightChild(i)%originID = after(i+centerID)%originID
-                rightChild(i)%value = grid%CELLs(after(i+centerID)%originID)%center(1)
-            end do   
-        else
-            right_size = centerID-1
-            allocate(rightChild(right_size))
-            do i = 1, right_size
-                rightChild(i)%originID = after(i+centerID)%originID
-                rightChild(i)%value = grid%CELLs(after(i+centerID)%originID)%center(1)
-            end do
-        end if
+    ! do i = 1, num_ID-1
+    !     parent_ID = i
 
-    end subroutine
+    !     pre_leftChild(:) =
+    !     pre_rightChild(:) =
+
+    !     if(size(pre_leftChild) >= 1) then 
+    !         call heap_sort(pre_leftChild, leftchild)
+    !         ID_counter = ID_counter + 1
+    !         child_ID_1 = ID_counter
+    !     end if
+
+    !     if(size(pre_rightChild) >= 1) then
+    !         call heap_sort(pre_rightChild, rightchild)
+    !         ID_counter = ID_counter + 1
+    !         child_ID_2 = ID_counter
+    !     end if
+
+    !     node_tree(child_ID_1)%cell_ID = !上記の中央値
+    !     node_tree(child_ID_2)%cell_ID = !上記の中央値
+    !     call solve_relation(node_tree,parent_ID,child_ID_1,child_ID_2)
+
+    ! end do
+
+
+    ! subroutine solve_relation(array,parent_ID,child_ID_1,child_ID_2)
+    !     type(nonde):: array(:) 
+    !     integer :: parent_ID,child_ID_1,child_ID_2
+
+    !     array(parent_ID)%child_ID_1 = child_ID_1 
+    !     array(parent_ID)%child_ID_2 = child_ID_2 
+
+    !     array(child_ID_1)%parent_ID = parent_ID 
+    !     array(child_ID_2)%parent_ID = parent_ID 
+
+    ! end subroutine solve_relation
 
 end module
