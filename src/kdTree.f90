@@ -114,6 +114,18 @@ module kdTree_m
             child_ID_2 = ID_counter
         end if
 
+        open(newunit = n_unit, file = "Test/sort_child.txt", status = 'replace')
+            do i = 1, size(leftChild) 
+                write(n_unit,'(I0)', advance='no') leftChild(i)%originID
+                write(n_unit,'(3(f12.5))') leftChild(i)%coordinate(1), leftChild(i)%coordinate(2), leftChild(i)%coordinate(3)
+            end do
+            write(n_unit,'(A)')
+            do i = 1, size(rightChild)
+                write(n_unit,'(I0)', advance='no') rightChild(i)%originID
+                write(n_unit,'(3(f12.5))') rightChild(i)%coordinate(1), rightChild(i)%coordinate(2), rightChild(i)%coordinate(3)
+            end do
+        close(n_unit)
+
         child_centerID = int(size(leftChild)/2)+1
         node_tree(child_ID_1)%cell_ID = leftchild(child_centerID)%originID ! 左子ノードの中央値
         node_tree(child_ID_2)%cell_ID = rightchild(child_centerID)%originID ! 右子ノードの中央値
