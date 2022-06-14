@@ -85,7 +85,7 @@ module kdTree_m
             end do
         end if
 
-        open(newunit = n_unit, file = "Test/first_divide.txt", status = 'replace')
+        open(newunit = n_unit, file = "Test_check/first_divide.txt", status = 'replace')
             do i = 1, size(pre_leftChild) 
                 write(n_unit,'(I0)', advance='no') pre_leftChild(i)%originID
                 write(n_unit,'(3(f12.5))') pre_leftChild(i)%coordinate(1), pre_leftChild(i)%coordinate(2), pre_leftChild(i)%coordinate(3)
@@ -114,7 +114,7 @@ module kdTree_m
             child_ID_2 = ID_counter
         end if
 
-        open(newunit = n_unit, file = "Test/sort_child.txt", status = 'replace')
+        open(newunit = n_unit, file = "Test_check/sort_child.txt", status = 'replace')
             do i = 1, size(leftChild) 
                 write(n_unit,'(I0)', advance='no') leftChild(i)%originID
                 write(n_unit,'(3(f12.5))') leftChild(i)%coordinate(1), leftChild(i)%coordinate(2), leftChild(i)%coordinate(3)

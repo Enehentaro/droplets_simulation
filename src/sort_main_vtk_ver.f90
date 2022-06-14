@@ -21,6 +21,8 @@ program sortMain_vtk_ver
     allocate(before(size(grid%CElls)))
     allocate(after(size(grid%CElls)))
 
+    call system('mkdir -p -v Test_check')
+
     do i = 1, iimx
         before(i)%originID = i
         before(i)%coordinate(1) = grid%CELLs(i)%center(1)
@@ -28,7 +30,7 @@ program sortMain_vtk_ver
         before(i)%coordinate(3) = grid%CELLs(i)%center(3)
     end do
 
-    open(newunit = n_unit, file = "Test/before.txt", status = 'replace')
+    open(newunit = n_unit, file = "Test_check/before.txt", status = 'replace')
         do i = 1, iimx
             write(n_unit,'(I3)', advance='no') before(i)%originID
             write(n_unit,'(3(f12.5))') before(i)%coordinate(1), before(i)%coordinate(2), before(i)%coordinate(3)
