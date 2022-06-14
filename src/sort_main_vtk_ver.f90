@@ -31,7 +31,7 @@ program sortMain_vtk_ver
     open(newunit = n_unit, file = "Test/before.txt", status = 'replace')
         do i = 1, iimx
             write(n_unit,'(I3)', advance='no') before(i)%originID
-            write(n_unit,'(f12.5)') before(i)%coordinate(1)
+            write(n_unit,'(3(f12.5))') before(i)%coordinate(1), before(i)%coordinate(2), before(i)%coordinate(3)
         end do
     close(n_unit)
 
