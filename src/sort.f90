@@ -5,6 +5,7 @@ module sort_m
     type, public :: content_t
         integer originID
         real value
+        real coordinate(3)
     end type
 
     !ヒープ木クラス
@@ -12,6 +13,7 @@ module sort_m
         !実体は単なる配列だがツリー構造を表現している
         !要素 i に注目すると、親ノードは要素 i/2(小数切り捨て) であり、子ノードは要素 2i, 2i + 1 である
         type(content_t), allocatable :: node(:)
+        integer depth
 
         contains
 
@@ -24,10 +26,12 @@ module sort_m
     contains
 
     !ヒープ木のコンストラクタ
-    type(HeapTree) function HeapTree_(array)
+    type(HeapTree) function HeapTree_(array, depth)
         type(content_t), intent(in) :: array(:)
+        integer, intent(in) :: depth
 
         HeapTree_%node = array
+        HeapTree_%depth = depth
         call HeapTree_%heaplification()
 
     end function
@@ -39,6 +43,7 @@ module sort_m
         integer parentID, child1ID, child2ID, featuredChildID
 
         num_node = size(self%node)
+        self%node(:)%value = self%node(:)%coordinate(self%depth)
             
         do parentID = num_node/2, 1, -1 !子を持つノードに対してのみ下からループ
 
@@ -96,8 +101,9 @@ module sort_m
     
     end function
     
-    subroutine heap_sort(array_origin, array_sorted)
+    subroutine heap_sort(array_origin, depth, array_sorted)
         type(content_t), intent(in) :: array_origin(:)
+        integer, intent(in) :: depth
         type(content_t), intent(out) :: array_sorted(:)
         type(HeapTree) heap_tree
         integer i
@@ -109,7 +115,7 @@ module sort_m
             stop
         end if
 
-        heap_tree = HeapTree_(array_origin)
+        heap_tree = HeapTree_(array_origin, depth)
 
         do i = 1, arraySize  !ソート後の配列に格納するループ
             array_sorted(i) = heap_tree%pop_from_root()
