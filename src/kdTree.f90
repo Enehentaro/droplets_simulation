@@ -4,66 +4,173 @@ module kdTree_m
     implicit none
 
     type nodeTree_t
-        integer :: parent_ID = 0, child_ID_1 = 0, child_ID_2 = 0 ,cell_ID = 0 
+        integer :: parent_ID = 0, child_ID_1 = 0, child_ID_2 = 0 ,cell_ID = 0
+        type(content_t), allocatable :: left_array(:), right_array(:)
     end type
 
-    integer :: ID_counter = 1
+    ! integer :: ID_counter = 1
 
     contains
 
     subroutine create_kdtree(before)
         type(content_t), intent(in) :: before(:)
+        type(content_t), allocatable :: after(:)
         type(nodeTree_t), allocatable :: node_tree(:)
         type(content_t), allocatable :: pre_leftChild(:), pre_rightChild(:), leftChild(:), rightChild(:)
-        integer centerID, left_size, right_size
+        integer centerID, switch, left_size, right_size, i, arraySize, n, num_loop
+        integer child1ID, child2ID
+        integer :: depth = 1
+        integer :: parentID = 1
+        logical :: left_flag = .true.
 
-        call kdtree_setup(before, leftChild, rightChild)    
+        n = int(log10(dble(size(before)+1)) / log10(2.0))
+        num_loop = 2**n - 1
+        allocate(node_tree(2*num_loop+1))
 
-        ! do i = 1, num_ID-1
-        !     parent_ID = i
+        switch = mod(depth-1,3)+1
+        call heap_sort(before, switch, after)
 
-        !     pre_leftChild(:) = 
-        !     pre_rightChild(:) = 
+        centerID = int(size(after)/2)+1
+        node_tree(1)%cell_ID = after(centerID)%originID ! ヒープソートの1回目の結果の中央値 
 
-        !     if(size(pre_leftChild) >= 1) then 
-        !         call heap_sort(pre_leftChild, leftchild)
-        !         ID_counter = ID_counter + 1
-        !         child_ID_1 = ID_counter
-        !     end if
+        call split_cell(after(:), pre_leftChild, pre_rightChild)
+        depth = depth + 1
 
-        !     if(size(pre_rightChild) >= 1) then
-        !         call heap_sort(pre_rightChild, rightchild)
-        !         ID_counter = ID_counter + 1
-        !         child_ID_2 = ID_counter
-        !     end if
+        switch = mod(depth-1,3)+1
 
-        !     node_tree(child_ID_1)%cell_ID = !上記の中央値
-        !     node_tree(child_ID_2)%cell_ID = !上記の中央値
-        !     call solve_relation(node_tree,parent_ID,child_ID_1,child_ID_2)
+        if(size(pre_leftChild) >= 1) then 
+            call heap_sort(pre_leftChild, switch, leftChild)
+            deallocate(pre_leftChild)
+            child1ID = 2*parentID
+            allocate(node_tree(1)%left_array(size(leftChild)))
+            node_tree(1)%left_array(:) = leftChild(:)
+        end if
 
-        ! end do
+        if(size(pre_rightChild) >= 1) then
+            call heap_sort(pre_rightChild, switch, rightchild)
+            deallocate(pre_rightChild)
+            child2ID = 2*parentID + 1
+            allocate(node_tree(1)%right_array(size(rightChild)))
+            node_tree(1)%right_array(:) = rightChild(:)
+        end if
+
+        centerID = int(size(leftChild)/2)+1
+        node_tree(child1ID)%cell_ID = leftChild(centerID)%originID
+        deallocate(leftChild)
+        centerID = int(size(rightChild)/2)+1
+        node_tree(child2ID)%cell_ID = rightChild(centerID)%originID
+        deallocate(rightChild)
+
+        call solve_relation(node_tree,parentID,child1ID,child2ID)
+
+        depth = 3
+
+        ! deallocate(before)
+        deallocate(after)
+        print*, parentID
+        print*, size(node_tree(parentID)%left_array)
+        print*, size(node_tree(parentID)%right_array)
+
+        do i = 2, num_loop
+            parentID = i
+            
+            if(left_flag) then
+
+                print*, "parentID = ", parentID
+
+                left_flag = .false.
+                if(size(node_tree(i/2)%left_array) /= 1) then
+
+                    call split_cell(node_tree(i/2)%left_array, pre_leftChild, pre_rightChild)
+
+                    switch = mod(depth-1,3)+1
+
+                    call heap_sort(pre_leftChild, switch, leftChild)
+                    deallocate(pre_leftChild)
+                    child1ID = 2*parentID
+                    allocate(node_tree(parentID)%left_array(size(leftChild)))
+                    node_tree(parentID)%left_array(:) = leftChild(:)
+                    print*, "child1ID = ", child1ID
+
+                    call heap_sort(pre_rightChild, switch, rightchild)
+                    deallocate(pre_rightChild)
+                    child2ID = 2*parentID + 1
+                    allocate(node_tree(parentID)%right_array(size(rightChild)))
+                    node_tree(parentID)%right_array(:) = rightChild(:)
+                    print*, "child2ID = ", child2ID
+                    
+                    centerID = int(size(leftChild)/2)+1
+                    node_tree(child1ID)%cell_ID = leftChild(centerID)%originID
+                    deallocate(leftChild)
+                    centerID = int(size(rightChild)/2)+1
+                    node_tree(child2ID)%cell_ID = rightChild(centerID)%originID
+                    deallocate(rightChild)
+
+                    call solve_relation(node_tree,parentID,child1ID,child2ID)
+
+                    print*, "parentID = ", parentID
+                    print*, size(node_tree(parentID)%left_array)
+                    print*, size(node_tree(parentID)%right_array)
+
+                end if
+                
+            else
+
+                print*, "parentID = ", parentID
+                left_flag = .true.
+                if(size(node_tree(int(i/2))%right_array) /= 1) then
+
+                    call split_cell(node_tree(int(i/2))%right_array, pre_leftChild, pre_rightChild)
+                    switch = mod(depth-1,3)+1
+
+                    call heap_sort(pre_leftChild, switch, leftChild)
+                    deallocate(pre_leftChild)
+                    child1ID = 2*parentID
+                    allocate(node_tree(parentID)%left_array(size(leftChild)))
+                    node_tree(parentID)%left_array(:) = leftChild(:)
+                    print*, "child1ID = ", child1ID
+
+                    call heap_sort(pre_rightChild, switch, rightchild)
+                    deallocate(pre_rightChild)
+                    child2ID = 2*parentID + 1
+                    allocate(node_tree(parentID)%right_array(size(rightChild)))
+                    node_tree(parentID)%right_array(:) = rightChild(:)
+                    print*, "child2ID = ", child2ID
+                    
+                    centerID = int(size(leftChild)/2)+1
+                    node_tree(child1ID)%cell_ID = leftChild(centerID)%originID
+                    deallocate(leftChild)
+                    centerID = int(size(rightChild)/2)+1
+                    node_tree(child2ID)%cell_ID = rightChild(centerID)%originID
+                    deallocate(rightChild)
+
+                    call solve_relation(node_tree,parentID,child1ID,child2ID)
+
+                    print*, "parentID = ", parentID
+                    print*, size(node_tree(parentID)%left_array)
+                    print*, size(node_tree(parentID)%right_array)
+
+                    deallocate(node_tree(int(i/2))%left_array)
+                    deallocate(node_tree(int(i/2))%right_array)
+
+                end if
+
+            end if
+
+            if(i == 2**(depth-1)-1) then
+                depth = depth + 1
+            end if
+
+        end do
 
     end subroutine
 
-    subroutine kdtree_setup(before, leftChild, rightChild)
-        type(content_t), intent(in) :: before(:)
-        type(content_t), intent(out), allocatable :: leftChild(:), rightChild(:)
-        type(content_t), allocatable :: after(:)
-        type(nodeTree_t), allocatable :: node_tree(:)
-        type(content_t), allocatable :: pre_leftChild(:), pre_rightChild(:)
-        integer centerID, child_centerID, left_size, right_size, child_ID_1, child_ID_2
-        integer i, n_unit
-        integer :: parent_ID = 1
-        integer :: depth = 1
+    subroutine split_cell(after, pre_leftChild, pre_rightChild)
+        type(content_t), intent(in) :: after(:)
+        type(content_t), intent(out), allocatable :: pre_leftChild(:), pre_rightChild(:)
+        integer left_size, right_size, i, centerID
 
-        allocate(after(size(before)))
-        call heap_sort(before(:), depth, after(:))
-        
-        allocate(node_tree(size(after)))
         centerID = int(size(after)/2)+1
-
-        node_tree(1)%cell_ID = after(centerID)%originID ! ヒープソートの1回目の結果の中央値
-        
         left_size = centerID-1
         allocate(pre_leftChild(left_size))
         do i = 1, left_size
@@ -76,7 +183,7 @@ module kdTree_m
             allocate(pre_rightChild(right_size))
             do i = 1, right_size
                 pre_rightChild(i) = after(i+centerID)
-            end do   
+            end do
         else
             right_size = centerID-1
             allocate(pre_rightChild(right_size))
@@ -84,52 +191,6 @@ module kdTree_m
                 pre_rightChild(i) = after(i+centerID)
             end do
         end if
-
-        open(newunit = n_unit, file = "Test_check/first_divide.txt", status = 'replace')
-            do i = 1, size(pre_leftChild) 
-                write(n_unit,'(I0)', advance='no') pre_leftChild(i)%originID
-                write(n_unit,'(3(f12.5))') pre_leftChild(i)%coordinate(1), pre_leftChild(i)%coordinate(2), pre_leftChild(i)%coordinate(3)
-            end do
-            write(n_unit,'(A)')
-            write(n_unit,'(I0)') node_tree(1)%cell_ID
-            write(n_unit,'(A)')
-            do i = 1, size(pre_rightChild)
-                write(n_unit,'(I0)', advance='no') pre_rightChild(i)%originID
-                write(n_unit,'(3(f12.5))') pre_rightChild(i)%coordinate(1), pre_rightChild(i)%coordinate(2), pre_rightChild(i)%coordinate(3)
-            end do
-        close(n_unit)
-
-        depth = depth + 1
-
-        if(size(pre_leftChild) >= 1) then
-            allocate(leftChild(size(pre_leftChild)))
-            call heap_sort(pre_leftChild, depth, leftchild)
-            ID_counter = ID_counter + 1
-            child_ID_1 = ID_counter
-        end if
-        if(size(pre_rightChild) >= 1) then
-            allocate(rightChild(size(pre_rightChild)))
-            call heap_sort(pre_rightChild, depth, rightchild)
-            ID_counter = ID_counter + 1
-            child_ID_2 = ID_counter
-        end if
-
-        open(newunit = n_unit, file = "Test_check/sort_child.txt", status = 'replace')
-            do i = 1, size(leftChild) 
-                write(n_unit,'(I0)', advance='no') leftChild(i)%originID
-                write(n_unit,'(3(f12.5))') leftChild(i)%coordinate(1), leftChild(i)%coordinate(2), leftChild(i)%coordinate(3)
-            end do
-            write(n_unit,'(A)')
-            do i = 1, size(rightChild)
-                write(n_unit,'(I0)', advance='no') rightChild(i)%originID
-                write(n_unit,'(3(f12.5))') rightChild(i)%coordinate(1), rightChild(i)%coordinate(2), rightChild(i)%coordinate(3)
-            end do
-        close(n_unit)
-
-        child_centerID = int(size(leftChild)/2)+1
-        node_tree(child_ID_1)%cell_ID = leftchild(child_centerID)%originID ! 左子ノードの中央値
-        node_tree(child_ID_2)%cell_ID = rightchild(child_centerID)%originID ! 右子ノードの中央値
-        call solve_relation(node_tree,parent_ID,child_ID_1,child_ID_2)
 
     end subroutine
 

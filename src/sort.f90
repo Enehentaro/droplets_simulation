@@ -13,7 +13,7 @@ module sort_m
         !実体は単なる配列だがツリー構造を表現している
         !要素 i に注目すると、親ノードは要素 i/2(小数切り捨て) であり、子ノードは要素 2i, 2i + 1 である
         type(content_t), allocatable :: node(:)
-        integer depth
+        integer switch
 
         contains
 
@@ -26,12 +26,12 @@ module sort_m
     contains
 
     !ヒープ木のコンストラクタ
-    type(HeapTree) function HeapTree_(array, depth)
+    type(HeapTree) function HeapTree_(array, switch)
         type(content_t), intent(in) :: array(:)
-        integer, intent(in) :: depth
+        integer, intent(in) :: switch
 
         HeapTree_%node = array
-        HeapTree_%depth = depth
+        HeapTree_%switch = switch
         call HeapTree_%heaplification()
 
     end function
@@ -43,7 +43,7 @@ module sort_m
         integer parentID, child1ID, child2ID, featuredChildID
 
         num_node = size(self%node)
-        self%node(:)%value = self%node(:)%coordinate(self%depth)
+        self%node(:)%value = self%node(:)%coordinate(self%switch)
             
         do parentID = num_node/2, 1, -1 !子を持つノードに対してのみ下からループ
 
@@ -100,22 +100,24 @@ module sort_m
         end if
     
     end function
-    
-    subroutine heap_sort(array_origin, depth, array_sorted)
+
+    ! switch = 1 なら x, switch = 2 なら y, switch = 3 なら z
+    subroutine heap_sort(array_origin, switch, array_sorted)
         type(content_t), intent(in) :: array_origin(:)
-        integer, intent(in) :: depth
-        type(content_t), intent(out) :: array_sorted(:)
+        integer, intent(in) :: switch
+        type(content_t), intent(out), allocatable :: array_sorted(:)
         type(HeapTree) heap_tree
         integer i
         integer arraySize
 
         arraySize = size(array_origin)
-        if(size(array_sorted) /= arraySize) then
-            print '("SORT ERROR")'
-            stop
-        end if
+        allocate(array_sorted(arraySize))
+        ! if(size(array_sorted) /= arraySize) then
+        !     print '("SORT ERROR")'
+        !     stop
+        ! end if
 
-        heap_tree = HeapTree_(array_origin, depth)
+        heap_tree = HeapTree_(array_origin, switch)
 
         do i = 1, arraySize  !ソート後の配列に格納するループ
             array_sorted(i) = heap_tree%pop_from_root()

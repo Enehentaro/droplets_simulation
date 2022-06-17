@@ -19,7 +19,6 @@ program sortMain_vtk_ver
     iimx = size(grid%CELLs)
     kkmx = size(grid%NODEs)
     allocate(before(size(grid%CElls)))
-    allocate(after(size(grid%CElls)))
 
     call system('mkdir -p -v Test_check')
 
