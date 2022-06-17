@@ -15,7 +15,9 @@ module sort_m
 
         contains
 
-        procedure heaplification, pop_from_root
+        procedure totalHeaplification, partialHeaplification
+        procedure pop_from_root
+        procedure get_featuredChildID
         
     end type
 
@@ -28,34 +30,64 @@ module sort_m
         type(content_t), intent(in) :: array(:)
 
         HeapTree_%node = array
-        call HeapTree_%heaplification()
+        call HeapTree_%totalHeaplification()
 
     end function
 
-    !ヒープ化（親子の大小関係解決）メソッド
-    subroutine heaplification(self)
+    !全体ヒープ化（親子の大小関係解決）メソッド
+    subroutine totalHeaplification(self)
         class(HeapTree) self
         integer num_node
         integer parentID, child1ID, child2ID, featuredChildID
 
         num_node = size(self%node)
             
-        do parentID = num_node/2, 1, -1 !子を持つノードに対してのみ下からループ
+        do parentID = num_node/2, 1, -1 !子を持つノードに対してのみ下（葉の方）からループ
 
             child1ID = parentID*2
             child2ID = parentID*2 + 1
 
-            if(child2ID <= num_node) then !第2子が存在する（配列サイズ内）の場合
-
-                featuredChildID = get_smallerID(self%node(:)%value, child1ID, child2ID)
-
-            else
-
-                featuredChildID = child1ID  !第2子が存在しない（配列サイズ外）の場合
-
-            end if
+            featuredChildID = self%get_featuredChildID(child1ID, child2ID)
 
             if(self%node(parentID)%value > self%node(featuredChildID)%value) call swap_content(self%node, parentID, featuredChildID)
+
+        end do
+
+    end subroutine
+
+    !入れ替えの起こった部分だけヒープ化（親子の大小関係解決）メソッド
+    subroutine partialHeaplification(self)
+        class(HeapTree) self
+        integer num_node, i
+        type(content_t) endNode
+        integer parentID, child1ID, child2ID, featuredChildID
+
+        num_node = size(self%node)
+
+        !末端ノードを根ノードに移動させ、全体をずらす
+        endNode = self%node(num_node)
+        do i = num_node, 2, -1
+            self%node(i) = self%node(i-1)
+        end do
+        self%node(1) = endNode
+        ! self%node = [self%node(num_node), self%node( : num_node-1 )]    !この書き方では遅い
+
+        parentID = 1
+
+        do
+
+            child1ID = parentID*2
+            if(child1ID > num_node) exit    !第一子すら存在しなければループ終了
+            child2ID = parentID*2 + 1
+
+            featuredChildID = self%get_featuredChildID(child1ID, child2ID)
+
+            if(self%node(parentID)%value > self%node(featuredChildID)%value) then
+                call swap_content(self%node, parentID, featuredChildID)
+                parentID = featuredChildID
+            else
+                exit    !入れ替えが起こらなければループ終了
+            end if
 
         end do
 
@@ -82,6 +114,23 @@ module sort_m
         array(ID2) = temp
 
     end subroutine
+
+    function get_featuredChildID(self, child1ID, child2ID) result(featuredChildID)
+        class(HeapTree) self
+        integer, intent(in) :: child1ID, child2ID
+        integer featuredChildID
+        
+        if(child2ID <= size(self%node)) then 
+            !第2子が存在する（配列サイズ内）場合
+            featuredChildID = get_smallerID(self%node(:)%value, child1ID, child2ID)
+
+        else
+            !第2子が存在しない（配列サイズ外）場合
+            featuredChildID = child1ID  
+
+        end if
+    
+    end function
 
     function get_smallerID(array, ID1, ID2) result(smaller_ID)
         real,intent(in) :: array(:)
@@ -113,7 +162,8 @@ module sort_m
 
         do i = 1, arraySize  !ソート後の配列に格納するループ
             array_sorted(i) = heap_tree%pop_from_root()
-            call heap_tree%heaplification()
+            ! call heap_tree%totalHeaplification()
+            call heap_tree%partialHeaplification()
         end do
 
     end subroutine

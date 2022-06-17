@@ -1,7 +1,8 @@
 module kdTree_m
-    use unstructuredGrid_mod
-    use sort_m
+    ! use unstructuredGrid_mod
+    ! use sort_m
     implicit none
+    private
 
     ! type node
     !     integer :: parent_ID = 0, child_ID_1 = 0, child_ID_2 = 0 ,cell_ID = 0 
