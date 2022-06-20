@@ -1,27 +1,17 @@
-add_library(src
-    caseName.f90
-    dropletGenerator.f90
-    timeKeeper.f90
-    SCTfile_reader.f90
-    conditionValue.f90
-    dropletMotionSimulation.f90
-    path_operator.f90
-    unstructured_grid.f90
-    adjacency_solver.f90
-    filename_mod.f90
-    plot3d_operator.f90
-    vector.f90
-    boxCounter.f90
-    flow_field.f90
-    simpleFile_reader.f90
-    virusDroplet.f90
-    dropletEquation.f90
-    terminalControler.f90
-    vtkMesh_operator.f90
-)
-
-#    main.f90         CUBE2USG.f90      boxFlowField.f90      dropletCount.f90      droplet2CSV.f90   initial_translate.f90  
-
 add_executable(main main.f90)
+target_link_libraries(main lib)
 
-target_link_libraries(main src)
+add_executable(CUBE2USG CUBE2USG.f90)
+target_link_libraries(CUBE2USG lib)
+
+add_executable(boxFlowField boxFlowField.f90)
+target_link_libraries(boxFlowField lib)
+
+add_executable(dropletCount dropletCount.f90)
+target_link_libraries(dropletCount lib)
+
+add_executable(droplet2CSV droplet2CSV.f90)
+target_link_libraries(droplet2CSV lib)
+
+add_executable(initial_translate initial_translate.f90)
+target_link_libraries(initial_translate lib)

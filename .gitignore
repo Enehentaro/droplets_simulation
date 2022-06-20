@@ -11,5 +11,6 @@ Makefile
 CMakeFiles/
 *.cmake
 *.a
+*.out
 
 .vscode
