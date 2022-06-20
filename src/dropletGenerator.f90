@@ -89,14 +89,7 @@ module dropletGenerator_m
         deadline = deadline + nowTime
         call generateDroplet%set_deadline(deadline)
 
-        if(self%generateRate > 0) then
-            block
-                integer i
-                do i = 1, num_droplet
-                    call generateDroplet%droplet(i)%set_status('nonActive')
-                end do
-            end block
-        end if
+        if(self%generateRate > 0) call generateDroplet%set_status('nonActive')
 
     end function
 
@@ -253,11 +246,11 @@ module dropletGenerator_m
 
                     do i_box = 1, num_box
                         generateEnd = min(nonActive_perBox*(i_box-1) + generate_perBox, nonActive_perBox*i_box)
-                        call dGroup%set_status(0, nonActiveID_array(nonActive_perBox*(i_box-1) +1 : generateEnd))
+                        call dGroup%set_status('floating', nonActiveID_array(nonActive_perBox*(i_box-1) +1 : generateEnd))
                     end do
 
                 else  !この時刻までに生成されているべき数が総飛沫数未満でない　＝＞　全て生成されるべき
-                    call dGroup%set_status(0, nonActiveID_array(:))
+                    call dGroup%set_status('floating', nonActiveID_array(:))
 
                 end if
 
