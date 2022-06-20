@@ -1,5 +1,5 @@
 # Droplets Simulation
-Simulation of Virus Droplets Behavior in AFDET
+Simulation of Virus-Laden Droplets Behavior in AFDET
 
 ## 使い方
   ※環境は **Intel Fortran, Linux** を想定しています。その他の環境では適宜書き換えが必要です。
@@ -15,8 +15,10 @@ Simulation of Virus Droplets Behavior in AFDET
   - **リスタート位置 num_restart**
     - 通常は`0`を指定
     - `1以上`にすると、その値に対応するbackupファイルが読み込まれ、そこからリスタートが始まる
-    - `-1`にすると、backupファイル(.bu)が読み込まれ、それを初期飛沫分布とする。backupファイル名は自由に指定可能。
-  - **飛沫周期発生 preriodicGeneration**
+  - **初期分布ファイル名 initialDistributionFName**
+    - 指定したbackupファイル(.bu)が読み込まれ、それを飛沫初期分布とする
+    - 初期分布を固定したくない場合はコメントアウトすること
+  - **飛沫周期発生 periodicGeneration**
     - 1秒当たりの発生飛沫数（整数）を指定
     - 初期配置飛沫をすべてNonActiveにしたのち、順次Activateしていくので、初期配置数が飛沫数の上限となる
   - **気流データファイル名 path2FlowFile**
@@ -38,16 +40,22 @@ Simulation of Virus Droplets Behavior in AFDET
   - 左から順に、直方体の中心座標(x,y,z), 直方体の幅(x,y,z)
   - 改行すれば配置帯を複数設定できる
 
-## 外部サブルーチン「dropletManagement」
-  廃止しました。ボックス等で任意の場所の飛沫数をカウントしたい場合はdropletCount.f90を適宜書き換えて実行してください。
 
 ## 方程式
 
-  解くべき方程式は次の通り。  
-<img src="https://latex.codecogs.com/gif.latex?m&space;\frac{d&space;\mathbf{v}}{dt}&space;=&space;m&space;\mathbf{g}&space;&plus;&space;C_D&space;\cdot&space;\frac{1}{2}\rho_a&space;S&space;\left&space;|&space;\mathbf{u}_a&space;-&space;\mathbf{v}&space;\right&space;|(\mathbf{u}_a&space;-&space;\mathbf{v})" />
+  ### 飛沫の蒸発方程式
 
-  プログラム内では、上式を無次元化・離散化した次式を解いている。  
-<img src="https://latex.codecogs.com/gif.latex?\bar{\mathbf{v}}^{n&plus;1}&space;=&space;\frac{\bar{\mathbf{v}}^{n}&space;&plus;&space;(\bar{\mathbf{g}}&space;&plus;&space;C\bar{\mathbf{u}}_a)\Delta&space;\bar{t}}{1&plus;C\Delta&space;\bar{t}}" />
+  $$ \frac{dr}{dt} \space = \space -\left(1-\frac{RH}{100}\right) \cdot \frac{D e_{s}(T)}{\rho_{w} R_{v} T} \cdot \frac{1}{r} $$
+  
+  プログラム内では、２次精度ルンゲクッタ法で解いている。
+  
+  ### 飛沫の運動方程式
+
+$$ m \frac{d \mathbf{v}}{dt} \space = \space m \mathbf{g} \space + \space C_D (\mathbf{v}) \space \cdot \space \frac{1}{2} \rho_a S \left | \mathbf{u}_a - \mathbf{v} \right | (\mathbf{u}_a - \mathbf{v}) $$
+
+  プログラム内では、上式を無次元化・離散化した次式を解いている。
+    
+$$ \bar{\mathbf{v}}^{n + 1} \space = \space \frac{\bar{\mathbf{v}}^{n} \space + \space (\bar{\mathbf{g}} \space + \space C \bar{\mathbf{u}}_a)\Delta \bar{t}}{1 \space + \space C\Delta \bar{t}} \quad \left ( C \space = \space \frac{3 \rho_a}{8 \rho_w} \frac{C_D ( \mathbf{v}^{n} ) \left | \bar{\mathbf{u}}_a - \bar{\mathbf{v}}^{n} \right |}{\bar{r}^{n+1}} \right ) $$
 
 ## サブプログラム
   `make [subProgramName]`で実行ファイルを作成できる。
