@@ -1,8 +1,14 @@
 *.o
 *.mod
-.vscode
 
 obj/
 bin/
 
-/*.txt
+cl.txt
+
+CMakeCache.txt
+Makefile
+CMakeFiles/
+*.cmake
+
+.vscode
