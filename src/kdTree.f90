@@ -68,7 +68,6 @@ module kdTree_m
 
         depth = 3
 
-        ! deallocate(before)
         deallocate(after)
         print*, parentID
         print*, size(node_tree(child1ID)%array)
@@ -78,10 +77,13 @@ module kdTree_m
             parentID = i
 
             print*, "parentID = ", parentID
+            print*, "parent_arraySize = ", size(node_tree(parentID)%array)
 
             if(size(node_tree(parentID)%array) /= 1) then
 
                 call split_cell(node_tree(parentID)%array, pre_leftChild, pre_rightChild)
+                print*, "pre_leftSize = ", size(pre_leftChild)
+                print*, "pre_rightSize = ", size(pre_rightChild)
 
                 switch = mod(depth-1,3)+1
 
@@ -92,7 +94,10 @@ module kdTree_m
                     child1ID = ID_counter
                     allocate(node_tree(child1ID)%array(size(leftChild)))
                     node_tree(child1ID)%array(:) = leftChild(:)
-                    print*, "child1ID = ", child1ID
+
+                    centerID = int(size(leftChild)/2)+1
+                    node_tree(child1ID)%cell_ID = leftChild(centerID)%originID
+                    deallocate(leftChild)
                 end if
 
                 if(size(pre_rightChild) >= 1) then
@@ -102,20 +107,18 @@ module kdTree_m
                     child2ID = ID_counter
                     allocate(node_tree(child2ID)%array(size(rightChild)))
                     node_tree(child2ID)%array(:) = rightChild(:)
-                    print*, "child2ID = ", child2ID
+                    
+                    centerID = int(size(rightChild)/2)+1
+                    node_tree(child2ID)%cell_ID = rightChild(centerID)%originID
+                    deallocate(rightChild)
+                else
+                    child2ID = child1ID
                 end if
-                
-                centerID = int(size(leftChild)/2)+1
-                node_tree(child1ID)%cell_ID = leftChild(centerID)%originID
-                deallocate(leftChild)
-                centerID = int(size(rightChild)/2)+1
-                node_tree(child2ID)%cell_ID = rightChild(centerID)%originID
-                deallocate(rightChild)
-
+            
                 call solve_relation(node_tree,parentID,child1ID,child2ID)
 
-                ! print*, "parentID = ", parentID
-                print*, "parent_arraySize = ", size(node_tree(parentID)%array)
+                print*, "child1ID = ", node_tree(parentID)%child_ID_1
+                print*, "child2ID = ", node_tree(parentID)%child_ID_2
                 print*, "child1_arraySize = ", size(node_tree(child1ID)%array)
                 print*, "child2_arraySize = ", size(node_tree(child2ID)%array)
 
@@ -161,15 +164,20 @@ module kdTree_m
     end subroutine
 
     subroutine solve_relation(array,parent_ID,child_ID_1,child_ID_2)
-        type(nodeTree_t):: array(:) 
-        integer :: parent_ID,child_ID_1,child_ID_2
+        type(nodeTree_t) :: array(:) 
+        integer, intent(in) :: parent_ID,child_ID_1,child_ID_2
 
-        array(parent_ID)%child_ID_1 = child_ID_1 
-        array(parent_ID)%child_ID_2 = child_ID_2 
+        if(child_ID_1 == child_ID_2) then
+            array(parent_ID)%child_ID_1 = child_ID_1
+            array(parent_ID)%child_ID_2 = -1
+            array(child_ID_1)%parent_ID = parent_ID
+        else
+            array(parent_ID)%child_ID_1 = child_ID_1 
+            array(parent_ID)%child_ID_2 = child_ID_2 
 
-        array(child_ID_1)%parent_ID = parent_ID 
-        array(child_ID_2)%parent_ID = parent_ID 
-
+            array(child_ID_1)%parent_ID = parent_ID 
+            array(child_ID_2)%parent_ID = parent_ID 
+        end if
     end subroutine
 
 end module
