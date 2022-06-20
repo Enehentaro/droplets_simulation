@@ -5,10 +5,10 @@ module kdTree_m
 
     type nodeTree_t
         integer :: parent_ID = 0, child_ID_1 = 0, child_ID_2 = 0 ,cell_ID = 0
-        type(content_t), allocatable :: left_array(:), right_array(:)
+        type(content_t), allocatable :: array(:)
     end type
 
-    ! integer :: ID_counter = 1
+    integer :: ID_counter = 1
 
     contains
 
@@ -17,15 +17,16 @@ module kdTree_m
         type(content_t), allocatable :: after(:)
         type(nodeTree_t), allocatable :: node_tree(:)
         type(content_t), allocatable :: pre_leftChild(:), pre_rightChild(:), leftChild(:), rightChild(:)
-        integer centerID, switch, left_size, right_size, i, arraySize, n, num_loop
-        integer child1ID, child2ID
-        integer :: depth = 1
-        integer :: parentID = 1
-        logical :: left_flag = .true.
+        integer centerID, switch, left_size, right_size, i, arraySize
+        integer parentID, child1ID, child2ID
+        integer depth
+        ! logical :: left_flag = .true.
 
-        n = int(log10(dble(size(before)+1)) / log10(2.0))
-        num_loop = 2**n - 1
-        allocate(node_tree(2*num_loop+1))
+        depth = 1
+        parentID = 1
+
+        arraySize = size(before)
+        allocate(node_tree(arraySize))
 
         switch = mod(depth-1,3)+1
         call heap_sort(before, switch, after)
@@ -41,17 +42,19 @@ module kdTree_m
         if(size(pre_leftChild) >= 1) then 
             call heap_sort(pre_leftChild, switch, leftChild)
             deallocate(pre_leftChild)
-            child1ID = 2*parentID
-            allocate(node_tree(1)%left_array(size(leftChild)))
-            node_tree(1)%left_array(:) = leftChild(:)
+            ID_counter = ID_counter + 1
+            child1ID = ID_counter
+            allocate(node_tree(child1ID)%array(size(leftChild)))
+            node_tree(child1ID)%array(:) = leftChild(:)
         end if
 
         if(size(pre_rightChild) >= 1) then
             call heap_sort(pre_rightChild, switch, rightchild)
             deallocate(pre_rightChild)
-            child2ID = 2*parentID + 1
-            allocate(node_tree(1)%right_array(size(rightChild)))
-            node_tree(1)%right_array(:) = rightChild(:)
+            ID_counter = ID_counter + 1
+            child2ID = ID_counter
+            allocate(node_tree(child2ID)%array(size(rightChild)))
+            node_tree(child2ID)%array(:) = rightChild(:)
         end if
 
         centerID = int(size(leftChild)/2)+1
@@ -68,92 +71,55 @@ module kdTree_m
         ! deallocate(before)
         deallocate(after)
         print*, parentID
-        print*, size(node_tree(parentID)%left_array)
-        print*, size(node_tree(parentID)%right_array)
+        print*, size(node_tree(child1ID)%array)
+        print*, size(node_tree(child2ID)%array)
 
-        do i = 2, num_loop
+        do i = 2, arraySize
             parentID = i
-            
-            if(left_flag) then
 
-                print*, "parentID = ", parentID
+            print*, "parentID = ", parentID
 
-                left_flag = .false.
-                if(size(node_tree(i/2)%left_array) /= 1) then
+            if(size(node_tree(parentID)%array) /= 1) then
 
-                    call split_cell(node_tree(i/2)%left_array, pre_leftChild, pre_rightChild)
+                call split_cell(node_tree(parentID)%array, pre_leftChild, pre_rightChild)
 
-                    switch = mod(depth-1,3)+1
+                switch = mod(depth-1,3)+1
 
+                if(size(pre_leftChild) >= 1) then 
                     call heap_sort(pre_leftChild, switch, leftChild)
                     deallocate(pre_leftChild)
-                    child1ID = 2*parentID
-                    allocate(node_tree(parentID)%left_array(size(leftChild)))
-                    node_tree(parentID)%left_array(:) = leftChild(:)
+                    ID_counter = ID_counter + 1
+                    child1ID = ID_counter
+                    allocate(node_tree(child1ID)%array(size(leftChild)))
+                    node_tree(child1ID)%array(:) = leftChild(:)
                     print*, "child1ID = ", child1ID
+                end if
 
+                if(size(pre_rightChild) >= 1) then
                     call heap_sort(pre_rightChild, switch, rightchild)
                     deallocate(pre_rightChild)
-                    child2ID = 2*parentID + 1
-                    allocate(node_tree(parentID)%right_array(size(rightChild)))
-                    node_tree(parentID)%right_array(:) = rightChild(:)
+                    ID_counter = ID_counter + 1
+                    child2ID = ID_counter
+                    allocate(node_tree(child2ID)%array(size(rightChild)))
+                    node_tree(child2ID)%array(:) = rightChild(:)
                     print*, "child2ID = ", child2ID
-                    
-                    centerID = int(size(leftChild)/2)+1
-                    node_tree(child1ID)%cell_ID = leftChild(centerID)%originID
-                    deallocate(leftChild)
-                    centerID = int(size(rightChild)/2)+1
-                    node_tree(child2ID)%cell_ID = rightChild(centerID)%originID
-                    deallocate(rightChild)
-
-                    call solve_relation(node_tree,parentID,child1ID,child2ID)
-
-                    print*, "parentID = ", parentID
-                    print*, size(node_tree(parentID)%left_array)
-                    print*, size(node_tree(parentID)%right_array)
-
                 end if
                 
-            else
+                centerID = int(size(leftChild)/2)+1
+                node_tree(child1ID)%cell_ID = leftChild(centerID)%originID
+                deallocate(leftChild)
+                centerID = int(size(rightChild)/2)+1
+                node_tree(child2ID)%cell_ID = rightChild(centerID)%originID
+                deallocate(rightChild)
 
-                print*, "parentID = ", parentID
-                left_flag = .true.
-                if(size(node_tree(int(i/2))%right_array) /= 1) then
+                call solve_relation(node_tree,parentID,child1ID,child2ID)
 
-                    call split_cell(node_tree(int(i/2))%right_array, pre_leftChild, pre_rightChild)
-                    switch = mod(depth-1,3)+1
+                ! print*, "parentID = ", parentID
+                print*, "parent_arraySize = ", size(node_tree(parentID)%array)
+                print*, "child1_arraySize = ", size(node_tree(child1ID)%array)
+                print*, "child2_arraySize = ", size(node_tree(child2ID)%array)
 
-                    call heap_sort(pre_leftChild, switch, leftChild)
-                    deallocate(pre_leftChild)
-                    child1ID = 2*parentID
-                    allocate(node_tree(parentID)%left_array(size(leftChild)))
-                    node_tree(parentID)%left_array(:) = leftChild(:)
-                    print*, "child1ID = ", child1ID
-
-                    call heap_sort(pre_rightChild, switch, rightchild)
-                    deallocate(pre_rightChild)
-                    child2ID = 2*parentID + 1
-                    allocate(node_tree(parentID)%right_array(size(rightChild)))
-                    node_tree(parentID)%right_array(:) = rightChild(:)
-                    print*, "child2ID = ", child2ID
-                    
-                    centerID = int(size(leftChild)/2)+1
-                    node_tree(child1ID)%cell_ID = leftChild(centerID)%originID
-                    deallocate(leftChild)
-                    centerID = int(size(rightChild)/2)+1
-                    node_tree(child2ID)%cell_ID = rightChild(centerID)%originID
-                    deallocate(rightChild)
-
-                    call solve_relation(node_tree,parentID,child1ID,child2ID)
-
-                    print*, "parentID = ", parentID
-                    print*, size(node_tree(parentID)%left_array)
-                    print*, size(node_tree(parentID)%right_array)
-
-                    deallocate(node_tree(int(i/2))%left_array)
-                    deallocate(node_tree(int(i/2))%right_array)
-
-                end if
+                deallocate(node_tree(parentID)%array)
 
             end if
 
