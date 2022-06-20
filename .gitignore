@@ -10,5 +10,6 @@ CMakeCache.txt
 Makefile
 CMakeFiles/
 *.cmake
+*.a
 
 .vscode
