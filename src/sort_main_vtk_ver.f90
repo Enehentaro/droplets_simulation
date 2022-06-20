@@ -7,6 +7,9 @@ program sortMain_vtk_ver
 
     type(UnstructuredGrid) grid
     type(content_t), allocatable :: before(:), after(:)
+    type(nodeTree_t), allocatable :: node_tree(:)
+    real droplet_position(3)
+    integer nearest_ID
 
     integer n_unit 
     integer i, iimx, k, kkmx
@@ -36,6 +39,12 @@ program sortMain_vtk_ver
         end do
     close(n_unit)
 
-    call create_kdtree(before)
+    call create_kdtree(before, node_tree)
+
+    do i = 1, 113
+        print*, i
+        droplet_position(:) = before(node_tree(i)%cell_ID)%coordinate(:)
+        call search_kdtree(before, node_tree, droplet_position, nearest_ID)
+    end do
 
 end program sortMain_vtk_ver

@@ -12,15 +12,14 @@ module kdTree_m
 
     contains
 
-    subroutine create_kdtree(before)
+    subroutine create_kdtree(before, node_tree)
         type(content_t), intent(in) :: before(:)
         type(content_t), allocatable :: after(:)
-        type(nodeTree_t), allocatable :: node_tree(:)
+        type(nodeTree_t), intent(out), allocatable :: node_tree(:)
         type(content_t), allocatable :: pre_leftChild(:), pre_rightChild(:), leftChild(:), rightChild(:)
         integer centerID, switch, left_size, right_size, i, arraySize
         integer parentID, child1ID, child2ID
         integer depth
-        ! logical :: left_flag = .true.
 
         depth = 1
         parentID = 1
@@ -30,6 +29,8 @@ module kdTree_m
 
         switch = mod(depth-1,3)+1
         call heap_sort(before, switch, after)
+
+        node_tree(1)%array = after(:)
 
         centerID = int(size(after)/2)+1
         node_tree(1)%cell_ID = after(centerID)%originID ! ヒープソートの1回目の結果の中央値 
@@ -69,21 +70,13 @@ module kdTree_m
         depth = 3
 
         deallocate(after)
-        print*, parentID
-        print*, size(node_tree(child1ID)%array)
-        print*, size(node_tree(child2ID)%array)
 
         do i = 2, arraySize
             parentID = i
 
-            print*, "parentID = ", parentID
-            print*, "parent_arraySize = ", size(node_tree(parentID)%array)
-
             if(size(node_tree(parentID)%array) /= 1) then
 
                 call split_cell(node_tree(parentID)%array, pre_leftChild, pre_rightChild)
-                print*, "pre_leftSize = ", size(pre_leftChild)
-                print*, "pre_rightSize = ", size(pre_rightChild)
 
                 switch = mod(depth-1,3)+1
 
@@ -116,11 +109,6 @@ module kdTree_m
                 end if
             
                 call solve_relation(node_tree,parentID,child1ID,child2ID)
-
-                print*, "child1ID = ", node_tree(parentID)%child_ID_1
-                print*, "child2ID = ", node_tree(parentID)%child_ID_2
-                print*, "child1_arraySize = ", size(node_tree(child1ID)%array)
-                print*, "child2_arraySize = ", size(node_tree(child2ID)%array)
 
                 deallocate(node_tree(parentID)%array)
 
@@ -169,7 +157,7 @@ module kdTree_m
 
         if(child_ID_1 == child_ID_2) then
             array(parent_ID)%child_ID_1 = child_ID_1
-            array(parent_ID)%child_ID_2 = -1
+            array(parent_ID)%child_ID_2 = child_ID_1
             array(child_ID_1)%parent_ID = parent_ID
         else
             array(parent_ID)%child_ID_1 = child_ID_1 
@@ -178,6 +166,28 @@ module kdTree_m
             array(child_ID_1)%parent_ID = parent_ID 
             array(child_ID_2)%parent_ID = parent_ID 
         end if
+    end subroutine
+
+    subroutine search_kdtree(before,node_tree, droplet_position, nearest_ID)
+        type(content_t),intent(in),allocatable :: before(:) 
+        type(nodeTree_t), intent(in), allocatable :: node_tree(:)
+        real, intent(in) :: droplet_position(3)
+        integer nearest_ID ,depth ,switch ,n ,parentID 
+
+        parentID = 1 
+        depth = 1 
+
+        do while (size(node_tree(parentID)%array) > 1)
+            switch = mod(depth-1,3)+1
+            depth = depth + 1
+            if(droplet_position(switch) <= before(node_tree(parentID)%cell_ID)%coordinate(switch)) then 
+                parentID = node_tree(parentID)%child_ID_1
+            else 
+                parentID = node_tree(parentID)%child_ID_2
+            end if
+        end do
+        print*, 'parentID =', parentID 
+
     end subroutine
 
 end module

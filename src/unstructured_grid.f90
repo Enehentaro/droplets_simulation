@@ -39,7 +39,6 @@ module unstructuredGrid_mod
         procedure nearer_cell
         procedure adhesionCheckOnBound
         procedure refCellSearchInfo, search_refCELL
-        procedure sort
 
         procedure, private :: AdjacencySolvingProcess
         procedure, private :: read_adjacency, read_boundaries, solve_adacencyOnUnstructuredGrid
@@ -591,29 +590,6 @@ module unstructuredGrid_mod
         ! print*, distance(nearest_cell)
         
     end function
-
-    subroutine sort(self)
-        use path_operator_m
-        class(UnstructuredGrid) self
-        integer n_unit
-        integer II, IIMX
-        character(:), allocatable :: txtFName, Dir
-        character(150) testFile
-
-        testFile = '/home/master/Documents/SAX/AF010001.vtk'
-        call get_DirFromPath(testFile,Dir)
-        
-        txtFName = Dir//'position.txt'
-
-        IIMX = size(self%CELLs)
-            
-        open(newunit = n_unit, file = txtFName, status = 'replace')
-
-        do II = 1, IIMX
-            write(n_unit,*) self%CELLs(II)%center(1)
-        end do
-        
-    end subroutine sort
 
     integer function nearer_cell(self, X, NCN)  !近セルの探索（隣接セルから）
         class(UnstructuredGrid) self
