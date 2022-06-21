@@ -1,6 +1,5 @@
 module kdTree_m
-    ! use unstructuredGrid_mod
-    ! use sort_m
+    use sort_m
     implicit none
     private
 
@@ -15,7 +14,7 @@ module kdTree_m
 
     subroutine create_kdtree(before, node_tree)
         type(content_t), intent(in) :: before(:)
-        type(content_t), allocatable :: after(:)
+        type(content_t) after(size(before))
         type(nodeTree_t), intent(out), allocatable :: node_tree(:)
         type(content_t), allocatable :: pre_leftChild(:), pre_rightChild(:), leftChild(:), rightChild(:)
         integer centerID, switch, left_size, right_size, i, arraySize
@@ -29,7 +28,7 @@ module kdTree_m
         allocate(node_tree(arraySize))
 
         switch = mod(depth-1,3)+1
-        call heap_sort(before, switch, after)
+        call heap_sort(before, after)
 
         node_tree(1)%array = after(:)
 
