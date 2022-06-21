@@ -116,7 +116,7 @@ module unstructuredGrid_mod
 
         select case(extensionOf(FNAME))
             case('vtk')
-                call self%read_VTK(FNAME, meshOnly=.true.)
+                call self%read_VTK(FNAME, meshOnly=.false.)
 
             case('inp')
                 call self%read_INP(FNAME)   !INPを読み込む(SHARP用)

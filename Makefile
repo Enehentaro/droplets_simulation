@@ -26,7 +26,7 @@ boxFlow_OBJ = $(COMMONOBJ) SCTfile_reader vtkMesh_operator adjacency_solver unst
 SRCDIR = src
 OBJDIR = obj
 BINDIR = bin
-MODDIR = $(OBJDIR)
+MODDIR = fortran-modules
 
 
 #ディレクトリが存在しなければ作成する関数
@@ -52,6 +52,7 @@ $(foreach prg,${PROGRAMS},$(eval $(call makeRule,$(prg),$(addprefix $(OBJDIR)/,$
 #ソースコードを分割コンパイルし、オブジェクトファイルをobjディレクトリに作成
 $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 	$(call mkdirIfNotExist,$(OBJDIR))
+	$(call mkdirIfNotExist,$(MODDIR))
 	$(FC) $< -o $@ -c -module $(MODDIR) $(FCFLAGS)
 
 
