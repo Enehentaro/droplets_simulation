@@ -1,4 +1,4 @@
-!井田の悪あがきです。
+!井田の悪あがきです。これを実用化するつもりは今の所ありません。
 module kdTree_IDA_m
     use sort_m
     implicit none

@@ -23,6 +23,7 @@ module sort_m
     end type
 
     public heap_sort
+    public real2content
 
     contains
 
@@ -169,5 +170,17 @@ module sort_m
         end do
 
     end subroutine
+
+    function real2content(real_array) result(content_array)
+        real, intent(in) :: real_array(:)
+        type(content_t) content_array(size(real_array))
+        integer i
+
+        do i = 1, size(real_array)
+            content_array(i)%originID = i
+            content_array(i)%value = real_array(i)
+        end do
+
+    end function
 
 end module sort_m

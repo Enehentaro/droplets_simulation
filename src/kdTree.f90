@@ -3,190 +3,130 @@ module kdTree_m
     implicit none
     private
 
-    type nodeTree_t
-        integer :: parent_ID = 0, child_ID_1 = 0, child_ID_2 = 0 ,cell_ID = 0
-        type(content_t), allocatable :: array(:)
+    type, public :: node_in_kdTree_t
+        private
+        integer :: parent_ID = 0, child_ID_1 = 0, child_ID_2 = 0, cell_ID = 0
+        integer depth
+        integer, allocatable :: ID_array(:)
     end type
 
-    integer :: ID_counter = 1
+    public create_kdtree, search_kdtree
 
     contains
 
-    subroutine create_kdtree(before, node_tree)
-        type(content_t), intent(in) :: before(:)
-        type(content_t) after(size(before))
-        type(nodeTree_t), intent(out), allocatable :: node_tree(:)
-        type(content_t), allocatable :: pre_leftChild(:), pre_rightChild(:), leftChild(:), rightChild(:)
-        integer centerID, switch, left_size, right_size, i, arraySize
+    subroutine create_kdtree(xyz_origin, kdTree)
+        real, intent(in) :: xyz_origin(:,:)
+        type(content_t), allocatable :: x_origin(:), y_origin(:), z_origin(:)
+        type(node_in_kdTree_t), intent(out), allocatable :: kdTree(:)
+        type(content_t), allocatable :: array_pre(:), array_sorted(:)
+        integer, allocatable :: leftChildIDArray(:), rightChildIDArray(:)
+        integer centerID, i, num_node
         integer parentID, child1ID, child2ID
-        integer depth
+        integer depth, ID_counter
 
-        depth = 1
-        parentID = 1
+        ID_counter = 1
 
-        arraySize = size(before)
-        allocate(node_tree(arraySize))
+        num_node = size(xyz_origin, dim=2)
+        allocate(kdTree(num_node))
 
-        switch = mod(depth-1,3)+1
-        call heap_sort(before, after)
+        x_origin = real2content(xyz_origin(1,:))
+        y_origin = real2content(xyz_origin(2,:))
+        z_origin = real2content(xyz_origin(3,:))
 
-        node_tree(1)%array = after(:)
+        kdTree(1)%ID_array = x_origin(:)%originID
+        kdTree(1)%depth = 0
 
-        centerID = int(size(after)/2)+1
-        node_tree(1)%cell_ID = after(centerID)%originID ! ヒープソートの1回目の結果の中央値 
-
-        call split_cell(after(:), pre_leftChild, pre_rightChild)
-        depth = depth + 1
-
-        switch = mod(depth-1,3)+1
-
-        if(size(pre_leftChild) >= 1) then 
-            call heap_sort(pre_leftChild, switch, leftChild)
-            deallocate(pre_leftChild)
-            ID_counter = ID_counter + 1
-            child1ID = ID_counter
-            allocate(node_tree(child1ID)%array(size(leftChild)))
-            node_tree(child1ID)%array(:) = leftChild(:)
-        end if
-
-        if(size(pre_rightChild) >= 1) then
-            call heap_sort(pre_rightChild, switch, rightchild)
-            deallocate(pre_rightChild)
-            ID_counter = ID_counter + 1
-            child2ID = ID_counter
-            allocate(node_tree(child2ID)%array(size(rightChild)))
-            node_tree(child2ID)%array(:) = rightChild(:)
-        end if
-
-        centerID = int(size(leftChild)/2)+1
-        node_tree(child1ID)%cell_ID = leftChild(centerID)%originID
-        deallocate(leftChild)
-        centerID = int(size(rightChild)/2)+1
-        node_tree(child2ID)%cell_ID = rightChild(centerID)%originID
-        deallocate(rightChild)
-
-        call solve_relation(node_tree,parentID,child1ID,child2ID)
-
-        depth = 3
-
-        deallocate(after)
-
-        do i = 2, arraySize
+        do i = 1, num_node
             parentID = i
 
-            if(size(node_tree(parentID)%array) /= 1) then
+            depth = kdTree(i)%depth
 
-                call split_cell(node_tree(parentID)%array, pre_leftChild, pre_rightChild)
+            select case(mod(depth, 3))
+            case(0)
+                array_pre = x_origin(kdTree(i)%ID_array)
+            case(1)
+                array_pre = y_origin(kdTree(i)%ID_array)
+            case(2)
+                array_pre = z_origin(kdTree(i)%ID_array)
+            end select
 
-                switch = mod(depth-1,3)+1
+            array_sorted = array_pre !←配列サイズを揃えるため
+            call heap_sort(array_pre, array_sorted)
 
-                if(size(pre_leftChild) >= 1) then 
-                    call heap_sort(pre_leftChild, switch, leftChild)
-                    deallocate(pre_leftChild)
-                    ID_counter = ID_counter + 1
-                    child1ID = ID_counter
-                    allocate(node_tree(child1ID)%array(size(leftChild)))
-                    node_tree(child1ID)%array(:) = leftChild(:)
+            centerID = int(size(array_sorted)/2)+1
+            kdTree(i)%cell_ID = array_sorted(centerID)%originID ! ヒープソートの1回目の結果の中央値
+            leftChildIDArray = array_sorted(:centerID-1)%originID
+            rightChildIDArray = array_sorted(centerID+1:)%originID
 
-                    centerID = int(size(leftChild)/2)+1
-                    node_tree(child1ID)%cell_ID = leftChild(centerID)%originID
-                    deallocate(leftChild)
-                end if
-
-                if(size(pre_rightChild) >= 1) then
-                    call heap_sort(pre_rightChild, switch, rightchild)
-                    deallocate(pre_rightChild)
-                    ID_counter = ID_counter + 1
-                    child2ID = ID_counter
-                    allocate(node_tree(child2ID)%array(size(rightChild)))
-                    node_tree(child2ID)%array(:) = rightChild(:)
-                    
-                    centerID = int(size(rightChild)/2)+1
-                    node_tree(child2ID)%cell_ID = rightChild(centerID)%originID
-                    deallocate(rightChild)
-                else
-                    child2ID = child1ID
-                end if
-            
-                call solve_relation(node_tree,parentID,child1ID,child2ID)
-
-                deallocate(node_tree(parentID)%array)
-
+            if(size(leftChildIDArray) >= 1) then 
+                ID_counter = ID_counter + 1
+                child1ID = ID_counter
+                kdtree(child1ID)%ID_array = leftChildIDArray
+                call create_relation(kdTree, parentID, child1ID, 'left')
             end if
 
-            if(i == 2**(depth-1)-1) then
-                depth = depth + 1
+            if(size(rightChildIDArray) >= 1) then
+                ID_counter = ID_counter + 1
+                child2ID = ID_counter
+                kdTree(child2ID)%ID_array = rightChildIDArray
+                call create_relation(kdTree, parentID, child2ID, 'right')
             end if
 
         end do
 
     end subroutine
 
-    subroutine split_cell(after, pre_leftChild, pre_rightChild)
-        type(content_t), intent(in) :: after(:)
-        type(content_t), intent(out), allocatable :: pre_leftChild(:), pre_rightChild(:)
-        integer left_size, right_size, i, centerID
+    subroutine create_relation(array, parent_ID, child_ID, lr)
+        type(node_in_kdTree_t) :: array(:) 
+        integer, intent(in) :: parent_ID, child_ID
+        character(*), intent(in) :: lr
 
-        centerID = int(size(after)/2)+1
-        left_size = centerID-1
-        allocate(pre_leftChild(left_size))
-        do i = 1, left_size
-            pre_leftChild(i) = after(i)
-        end do
+        array(child_ID)%parent_ID = parent_ID
+        array(child_ID)%depth = array(parent_ID)%depth + 1
 
-        ! 右子ノードサイズの偶奇で場合分け
-        if(mod(size(after),2) == 0) then
-            right_size = centerID-2
-            allocate(pre_rightChild(right_size))
-            do i = 1, right_size
-                pre_rightChild(i) = after(i+centerID)
-            end do
-        else
-            right_size = centerID-1
-            allocate(pre_rightChild(right_size))
-            do i = 1, right_size
-                pre_rightChild(i) = after(i+centerID)
-            end do
-        end if
+        select case(lr)
+        case('left')
+            array(parent_ID)%child_ID_1 = child_ID
+        case('right')
+            array(parent_ID)%child_ID_2 = child_ID
+        case default
+            print '("relation ERROR")'
+            stop
+        end select
 
     end subroutine
 
-    subroutine solve_relation(array,parent_ID,child_ID_1,child_ID_2)
-        type(nodeTree_t) :: array(:) 
-        integer, intent(in) :: parent_ID,child_ID_1,child_ID_2
-
-        if(child_ID_1 == child_ID_2) then
-            array(parent_ID)%child_ID_1 = child_ID_1
-            array(parent_ID)%child_ID_2 = child_ID_1
-            array(child_ID_1)%parent_ID = parent_ID
-        else
-            array(parent_ID)%child_ID_1 = child_ID_1 
-            array(parent_ID)%child_ID_2 = child_ID_2 
-
-            array(child_ID_1)%parent_ID = parent_ID 
-            array(child_ID_2)%parent_ID = parent_ID 
-        end if
-    end subroutine
-
-    subroutine search_kdtree(before,node_tree, droplet_position, nearest_ID)
-        type(content_t),intent(in),allocatable :: before(:) 
-        type(nodeTree_t), intent(in), allocatable :: node_tree(:)
+    subroutine search_kdtree(xyz, kdTree, droplet_position, nearest_ID)
+        real, intent(in) :: xyz(:,:) 
+        type(node_in_kdTree_t), intent(in), allocatable :: kdTree(:)
         real, intent(in) :: droplet_position(3)
-        integer nearest_ID ,depth ,switch ,n ,parentID 
+        integer depth, switch, parentID, nextChildID
+        integer, intent(out) :: nearest_ID
 
         parentID = 1 
-        depth = 1 
 
-        do while (size(node_tree(parentID)%array) > 1)
-            switch = mod(depth-1,3)+1
-            depth = depth + 1
-            if(droplet_position(switch) <= before(node_tree(parentID)%cell_ID)%coordinate(switch)) then 
-                parentID = node_tree(parentID)%child_ID_1
+        do
+            depth = kdTree(parentID)%depth
+            switch = mod(depth,3)+1
+            if(droplet_position(switch) <= xyz(switch, kdTree(parentID)%cell_ID)) then 
+                nextChildID = kdTree(parentID)%child_ID_1
             else 
-                parentID = node_tree(parentID)%child_ID_2
+                nextChildID = kdTree(parentID)%child_ID_2
             end if
+
+            if(nextChildID == 0) then
+                exit
+            else
+                parentID = nextChildID
+            end if
+
         end do
-        print*, 'parentID =', parentID 
+
+        nearest_ID = kdTree(parentID)%cell_ID
+
+        print*, droplet_position
+        print*, xyz(:, nearest_ID)
+        print*, 'parentID =', parentID
 
     end subroutine
 

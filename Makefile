@@ -61,4 +61,4 @@ $(OBJDIR)/%.o: $(SRCDIR)/%.f90
 all: $(PROGRAMS)
 
 clean:
-	$(RM) -r $(OBJDIR) $(BINDIR)
+	$(RM) -r $(OBJDIR) $(BINDIR) $(MODDIR)
