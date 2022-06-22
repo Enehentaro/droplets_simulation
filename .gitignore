@@ -1,16 +1,17 @@
 *.o
 *.mod
 
-obj/
 bin/
 
-cl.txt
 
-CMakeCache.txt
+# for CMake
+*.txt
+!CMakeLists.txt
 Makefile
 CMakeFiles/
 *.cmake
 *.a
 *.out
+
 
 .vscode
