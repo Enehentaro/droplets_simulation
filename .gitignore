@@ -3,9 +3,10 @@
 
 bin/
 
+/*.txt
+
 
 # for CMake
-*.txt
 !CMakeLists.txt
 Makefile
 CMakeFiles/
