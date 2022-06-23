@@ -15,7 +15,7 @@ module kdTree_m
     contains
 
     subroutine create_kdtree(xyz_origin, kdTree)
-        real, intent(in) :: xyz_origin(:,:) !セル重心座標配列
+        real, intent(in) :: xyz_origin(:,:) !セル重心座標配列(3, num_cell)
         type(content_t), allocatable :: x_origin(:), y_origin(:), z_origin(:)
         type(node_in_kdTree_t), intent(out), allocatable :: kdTree(:)
         type(content_t), allocatable :: array_pre(:), array_sorted(:)
@@ -54,6 +54,8 @@ module kdTree_m
 
             array_sorted = array_pre !←配列サイズを揃えるため
             call heap_sort(array_pre, array_sorted)
+            print '(*(i0, x))', array_sorted(:)%originID
+            ! print '(*(g0, x))', array_sorted(:)%value
 
             centerID = int(size(array_sorted)/2)+1
             kdTree(i)%cell_ID = array_sorted(centerID)%originID     !ヒープソート結果の中央値
@@ -75,6 +77,9 @@ module kdTree_m
             end if
 
         end do
+
+        ! call print_tree(kdTree, xyz_origin)
+        ! call saveAsDOT(kdTree, xyz_origin)
 
     end subroutine
 
@@ -101,7 +106,7 @@ module kdTree_m
     !ただ根ノードから葉ノードまで一方的に下っているだけなので、未完成
     subroutine search_kdtree(xyz, kdTree, droplet_position, nearest_ID)
         real, intent(in) :: xyz(:,:) 
-        type(node_in_kdTree_t), intent(in), allocatable :: kdTree(:)
+        type(node_in_kdTree_t), intent(in) :: kdTree(:)
         real, intent(in) :: droplet_position(3)
         integer depth, switch, parentID, nextChildID
         integer, intent(out) :: nearest_ID
@@ -130,6 +135,61 @@ module kdTree_m
         print*, droplet_position
         print*, xyz(:, nearest_ID)
         print*, 'parentID =', parentID
+
+    end subroutine
+
+    subroutine print_tree(kdTree, xyz)
+        type(node_in_kdTree_t), intent(in) :: kdTree(:)
+        real, intent(in) :: xyz(:,:)
+        integer i
+
+        print '("=======================================================")'
+        do i = 1, size(kdTree)
+            print*, 'ID_in_tree:', i
+            print*, 'parentID:', kdTree(i)%parent_ID
+            print*, 'childrenID:', kdTree(i)%child_ID_1, kdTree(i)%child_ID_2
+            print*, 'cell:', kdTree(i)%cell_ID, xyz(:, kdTree(i)%cell_ID)
+            print '("=======================================================")'
+        end do
+
+    end subroutine
+
+    subroutine saveAsDOT(kdTree, xyz)
+        type(node_in_kdTree_t), intent(in) :: kdTree(:)
+        real, intent(in) :: xyz(:,:)
+        integer n_unit
+        integer i
+        character(1), parameter :: str = '"'
+
+        open(newunit=n_unit, file='Test_check/kdTree.dot')
+        write(n_unit, '(A)') 'graph {'
+
+        write(n_unit, '(4x, A)') 'node ['
+        write(n_unit, '(2(4x), A)') 'shape = record,'
+        write(n_unit, '(4x, A)') '];'
+          
+        write(n_unit, '()')
+
+        ! node define
+        do i = 1, size(kdTree)
+            write(n_unit, '(4x, i0, "[label = ", A, i0, "|", i0, "|", 3(f10.5), A, "];")') &
+                i, str, i, kdTree(i)%cell_ID, xyz(:, kdTree(i)%cell_ID), str
+        end do
+
+        write(n_unit, '()')
+
+        ! edge define
+        do i = 1, size(kdTree)
+            if(kdTree(i)%child_ID_1 /= 0) then
+                write(n_unit, '(4x, i0, " -- ", i0, ";")') i, kdTree(i)%child_ID_1
+            end if
+            if(kdTree(i)%child_ID_2 /= 0) then
+                write(n_unit, '(4x, i0, " -- ", i0, ";")') i, kdTree(i)%child_ID_2
+            end if
+        end do
+
+
+        write(n_unit, '(A)') '}'
 
     end subroutine
 

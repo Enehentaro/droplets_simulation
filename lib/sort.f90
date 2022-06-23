@@ -59,6 +59,7 @@ module sort_m
     end subroutine
 
     !入れ替えの起こった部分だけヒープ化（親子の大小関係解決）メソッド
+    !現在バグってます
     subroutine partialHeaplification(self)
         class(HeapTree) self
         integer num_node, i
@@ -165,8 +166,8 @@ module sort_m
 
         do i = 1, arraySize  !ソート後の配列に格納するループ
             array_sorted(i) = heap_tree%pop_from_root()
-            ! call heap_tree%totalHeaplification()
-            call heap_tree%partialHeaplification()
+            call heap_tree%totalHeaplification()
+            ! call heap_tree%partialHeaplification()
         end do
 
     end subroutine

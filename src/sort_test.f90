@@ -1,7 +1,7 @@
 program sort_test
     use sort_m
     implicit none
-    integer, parameter :: arraySize = 1000
+    integer, parameter :: arraySize = 100
     type(content_t) array(arraySize), array_sorted(arraySize)
     integer i
     real ct1, ct2
