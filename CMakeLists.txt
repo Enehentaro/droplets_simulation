@@ -1,3 +1,6 @@
+# How to use:
+# $ cmake -D CMAKE_Fortran_COMPILER=ifort -D CMAKE_BUILD_TYPE=debug
+
 cmake_minimum_required(VERSION 3.0)
 
 enable_language(Fortran)
@@ -12,12 +15,10 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
 endif()
 #gfortran
 if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
-    set(CMAKE_Fortran_FLAGS         "-O3 -p -mcmodel=medium")
-    set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -Wall -fbacktrace")
+    set(CMAKE_Fortran_FLAGS         "-O3 -mcmodel=medium")
+    set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -fbacktrace") #  -Wall
     set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -march=native")
 endif()
-
-# $cmake -D CMAKE_Fortran_COMPILER=ifort -D CMAKE_BUILD_TYPE=debug 
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin)
 

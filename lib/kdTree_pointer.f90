@@ -1,5 +1,5 @@
 !井田の悪あがきです。これを実用化するつもりは今の所ありません。
-module kdTree_IDA_m
+module kdTree_pointer_m
     use sort_m
     implicit none
     private
@@ -182,7 +182,7 @@ module kdTree_IDA_m
 end module
 
 program kdTree_test
-    use kdTree_IDA_m
+    use kdTree_pointer_m
     use sort_m
     implicit none
     integer, parameter :: arraySize = 20

@@ -201,7 +201,7 @@ module dropletMotionSimulation
             if(.not.success) dGroup%droplet(j+1:)%refCellID = dGroup%droplet(j)%refCellID
         end do
         
-        call mainMesh%sort()
+        ! call mainMesh%sort()
 
     end subroutine
    
