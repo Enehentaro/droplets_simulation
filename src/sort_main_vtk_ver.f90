@@ -13,7 +13,7 @@ program sortMain_vtk_ver
     integer i, iimx, kkmx
     character(50) vtkFName
 
-    vtkFName = "Test/sample.vtk"
+    vtkFName = "Test/sample2.vtk"
             
     grid = UnstructuredGrid_(vtkFName)
 
@@ -36,7 +36,7 @@ program sortMain_vtk_ver
 
     call create_kdtree(xyz, kdTree)
 
-    do i = 1, 113
+    do i = 1, 63
         print*, i
         droplet_position(:) = xyz(:, i)
         call search_kdtree(xyz, kdTree, droplet_position, nearest_ID)
