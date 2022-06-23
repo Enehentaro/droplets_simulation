@@ -172,7 +172,7 @@ module kdTree_m
 
         ! node define
         do i = 1, size(kdTree)
-            write(n_unit, '(4x, i0, "[label = ", A, "{", i0, "|{", i0, "|", 3(f10.5), "}}", A, "];")') &
+            write(n_unit, '(4x, i0, "[label = ", A, "{", i0, "| cell ID : ", i0, "|", 3(f10.5), "}", A, "];")') &
                 i, dq, i, kdTree(i)%cell_ID, xyz(:, kdTree(i)%cell_ID), dq
         end do
 
