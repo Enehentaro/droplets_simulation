@@ -80,7 +80,6 @@ module vtkMesh_operator_m
                     read(str, *) IIH
                     allocate(self%cell_array(II)%nodeID(IIH))
                     read(str, *) IIH, self%cell_array(II)%nodeID(:)
-                    self%cell_array(II)%nodeID(:) = self%cell_array(II)%nodeID(:)
                 END DO
 
                 read(n_unit,'()')

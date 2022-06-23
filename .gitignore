@@ -1,8 +1,18 @@
 *.o
 *.mod
-.vscode
 
-obj/
 bin/
 
 /*.txt
+
+
+# for CMake
+!CMakeLists.txt
+Makefile
+CMakeFiles/
+*.cmake
+*.a
+*.out
+
+
+.vscode
