@@ -79,7 +79,7 @@ module kdTree_m
         end do
 
         ! call print_tree(kdTree, xyz_origin)
-        ! call saveAsDOT(kdTree, xyz_origin)
+        call saveAsDOT(kdTree, xyz_origin)
 
     end subroutine
 
@@ -159,7 +159,7 @@ module kdTree_m
         real, intent(in) :: xyz(:,:)
         integer n_unit
         integer i
-        character(1), parameter :: str = '"'
+        character(1), parameter :: dq = '"'
 
         open(newunit=n_unit, file='Test_check/kdTree.dot')
         write(n_unit, '(A)') 'graph {'
@@ -172,8 +172,8 @@ module kdTree_m
 
         ! node define
         do i = 1, size(kdTree)
-            write(n_unit, '(4x, i0, "[label = ", A, i0, "|", i0, "|", 3(f10.5), A, "];")') &
-                i, str, i, kdTree(i)%cell_ID, xyz(:, kdTree(i)%cell_ID), str
+            write(n_unit, '(4x, i0, "[label = ", A, "{", i0, "|{", i0, "|", 3(f10.5), "}}", A, "];")') &
+                i, dq, i, kdTree(i)%cell_ID, xyz(:, kdTree(i)%cell_ID), dq
         end do
 
         write(n_unit, '()')
