@@ -17,8 +17,7 @@ module sort_m
         contains
 
         procedure totalHeaplification, partialHeaplification
-        procedure pop_from_root
-        procedure get_featuredChildID
+        procedure get_featuredChildID, rebuild_tree
         
     end type
 
@@ -59,22 +58,13 @@ module sort_m
     end subroutine
 
     !入れ替えの起こった部分だけヒープ化（親子の大小関係解決）メソッド
-    !現在バグってます
+    !こっちのほうが速いと思うが、現在バグってます
     subroutine partialHeaplification(self)
         class(HeapTree) self
-        integer num_node, i
-        type(content_t) endNode
         integer parentID, child1ID, child2ID, featuredChildID
+        integer num_node
 
         num_node = size(self%node)
-
-        !末端ノードを根ノードに移動させ、全体をずらす
-        endNode = self%node(num_node)
-        do i = num_node, 2, -1
-            self%node(i) = self%node(i-1)
-        end do
-        self%node(1) = endNode
-        ! self%node = [self%node(num_node), self%node( : num_node-1 )]    !この書き方では遅い
 
         parentID = 1
 
@@ -97,16 +87,18 @@ module sort_m
 
     end subroutine
 
-    !ルートノードを返し、インスタンスからルートノードを除去する
-    function pop_from_root(self) result(root)
+    !ノード配列の大きさをひとつ減らし、末端ノードを根ノードに代入
+    subroutine rebuild_tree(self)
         class(HeapTree) self
-        type(content_t) root
+        type(content_t) pre_array(size(self%node))
+        integer new_size
 
-        root = self%node(1)
+        pre_array = self%node
+        new_size = size(pre_array) - 1
+        self%node = pre_array(:new_size)
+        self%node(1) = pre_array(new_size + 1)
 
-        self%node = self%node(2:)
-
-    end function
+    end subroutine
 
     subroutine swap_content(array, ID1, ID2)
         integer, intent(in) :: ID1, ID2
@@ -165,9 +157,13 @@ module sort_m
         heap_tree = HeapTree_(array_origin)
 
         do i = 1, arraySize  !ソート後の配列に格納するループ
-            array_sorted(i) = heap_tree%pop_from_root()
+            array_sorted(i) = heap_tree%node(1)
+
+            call heap_tree%rebuild_tree()
+
             call heap_tree%totalHeaplification()
             ! call heap_tree%partialHeaplification()
+
         end do
 
     end subroutine

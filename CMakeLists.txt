@@ -16,7 +16,7 @@ endif()
 #gfortran
 if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
     set(CMAKE_Fortran_FLAGS         "-O3 -mcmodel=medium")
-    set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -fbacktrace") #  -Wall
+    set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -fbacktrace") #  -p -Wall
     set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -march=native")
 endif()
 
