@@ -2,7 +2,6 @@
 Simulation of Virus-Laden Droplets Behavior in AFDET
 
 ## 使い方
-  ※環境は **Intel Fortran, Linux** を想定しています。その他の環境では適宜書き換えが必要です。
   ビルドに`cmake`コマンドを使います（CMakeのインストールが必要）。
   CMakeLists.txtのあるディレクトリが、作業ディレクトリ（実行ディレクトリ）です。
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
