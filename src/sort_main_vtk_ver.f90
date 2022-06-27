@@ -5,7 +5,7 @@ program sortMain_vtk_ver
 
     type(UnstructuredGrid) grid
     real, allocatable :: xyz(:,:)
-    type(node_in_kdTree_t), allocatable :: kdTree(:)
+    type(kdTree) kd_tree
     real droplet_position(3)
     integer nearest_ID
 
@@ -34,12 +34,12 @@ program sortMain_vtk_ver
         end do
     close(n_unit)
 
-    call create_kdtree(xyz, kdTree)
+    kd_tree = kdTree_(xyz)
 
     do i = 1, 63
         print*, i
         droplet_position(:) = xyz(:, i)
-        call search_kdtree(xyz, kdTree, droplet_position, nearest_ID)
+        call kd_tree%search(xyz, droplet_position, nearest_ID)
     end do
 
 end program sortMain_vtk_ver
