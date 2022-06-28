@@ -2,12 +2,11 @@
 Simulation of Virus-Laden Droplets Behavior in AFDET
 
 ## 使い方
-  ※環境は **Intel Fortran, Linux** を想定しています。その他の環境では適宜書き換えが必要です。
   ビルドに`cmake`コマンドを使います（CMakeのインストールが必要）。
   CMakeLists.txtのあるディレクトリが、作業ディレクトリ（実行ディレクトリ）です。
-  1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
-  2. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集。
-  3. `cmake .` コマンドで依存関係解決
+  1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）
+  2. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集
+  3. `cmake .` コマンドで依存関係解決(Makefileの出力)
   4. `make`コマンドでコンパイル
   5. `./bin/main`で実行。ケース名を入力して計算開始。
 
@@ -73,4 +72,8 @@ $$ \bar{\mathbf{v}}^{n + 1} \space = \space \frac{\bar{\mathbf{v}}^{n} \space + 
     - 実行時にTXTファイル名を入力すると、そのファイルに列挙された複数ケースを連続実行できる
   - **basicSetting.nml**
     - optionディレクトリ内にある。付着判定のオンオフや、飛沫間合体の設定が可能。初期半径分布ファイルの指定も可能。
-
+    
+## CTest
+  - コンパイル後、`ctest`コマンドでCTestが実行可能
+  - CTestの実行ディレクトリは、`/test/`（`ctest`コマンドを打つメインディレクトリとは異なる）
+  - テスト用プログラムはすべて`/test/`で管理しよう
