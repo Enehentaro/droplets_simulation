@@ -54,7 +54,7 @@ module kdTree_m
 
             array_sorted = array_pre !←配列サイズを揃えるため
             call heap_sort(array_pre, array_sorted)
-            print '(*(i0, x))', array_sorted(:)%originID
+            ! print '(*(i0, x))', array_sorted(:)%originID
             ! print '(*(g0, x))', array_sorted(:)%value
 
             centerID = int(size(array_sorted)/2)+1
@@ -110,6 +110,8 @@ module kdTree_m
         real, intent(in) :: droplet_position(3)
         integer depth, switch, parentID, nextChildID
         integer, intent(out) :: nearest_ID
+        real mindist
+        logical, allocatable :: NotYetCompared(:)
 
         parentID = 1 
 
@@ -129,30 +131,71 @@ module kdTree_m
             end if
 
         end do
+        
+        allocate(NotYetCompared(size(kdTree)))
+        NotYetCompared(:) = .true.
 
-        nearest_ID = kdTree(parentID)%cell_ID
+        mindist = norm2(xyz(:,kdTree(parentID)%cell_ID)-droplet_position(:))
+        NotYetCompared(parentID) = .false.
 
-        print*, droplet_position
-        print*, xyz(:, nearest_ID)
-        print*, 'parentID =', parentID
+        ! print*, 'parentID =', parentID
+        ! print*, NotYetCompared
 
-    end subroutine
+        do
+            parentID = kdTree(parentID)%parent_ID
+            NotYetCompared(parentID) = .false.
+            depth = kdTree(parentID)%depth
+            switch = mod(depth,3)+1
+            ! print*, 'switch = ', switch
+            ! print*, 'parentID =', parentID
+            ! print*, 'xyz(:,kdTree(parentID)%cell_ID) =', xyz(:,kdTree(parentID)%cell_ID)
+            ! print*, 'droplet_position =', droplet_position
+            ! print*, 'kdTree(parentID)%child_ID_1 =', kdTree(parentID)%child_ID_1
+            ! print*, 'mindist =', mindist
+            ! print*, 'abs(xyz(switch,kdTree(parentID)%cell_ID)-droplet_position(switch)) =', &
+            !         abs(xyz(switch,kdTree(parentID)%cell_ID)-droplet_position(switch))
 
-    subroutine print_tree(kdTree, xyz)
-        type(node_in_kdTree_t), intent(in) :: kdTree(:)
-        real, intent(in) :: xyz(:,:)
-        integer i
+            if(mindist <= abs(xyz(switch,kdTree(parentID)%cell_ID)-droplet_position(switch))) then
+                if(NotYetCompared(kdTree(parentID)%child_ID_1)) then
+                    NotYetCompared(kdTree(parentID)%child_ID_1) = .false.
+                else
+                    NotYetCompared(kdTree(parentID)%child_ID_2) = .false.
+                end if
+            else
+                if(NotYetCompared(kdTree(parentID)%child_ID_1)) then
+                    ! mindist = min(mindist, norm2(xyz(:, kdTree(parentID)%cell_ID)-droplet_position(:)),&
+                    ! norm2(xyz(:, kdTree(parentID)%child_ID_1)-droplet_position(:)))
+                    ! NotYetCompared(kdTree(parentID)%child_ID_1) = .false.
+                else
+                    ! mindist = min(mindist, norm2(xyz(:, kdTree(parentID)%cell_ID)-droplet_position(:)),&
+                    ! norm2(xyz(:, kdTree(parentID)%child_ID_2)-droplet_position(:)))
+                    ! NotYetCompared(kdTree(parentID)%child_ID_2) = .false.
+                end if
+            end if
 
-        print '("=======================================================")'
-        do i = 1, size(kdTree)
-            print*, 'ID_in_tree:', i
-            print*, 'parentID:', kdTree(i)%parent_ID
-            print*, 'childrenID:', kdTree(i)%child_ID_1, kdTree(i)%child_ID_2
-            print*, 'cell:', kdTree(i)%cell_ID, xyz(:, kdTree(i)%cell_ID)
-            print '("=======================================================")'
+            print*, NotYetCompared
+            
+            stop
+
         end do
 
     end subroutine
+
+    ! subroutine print_tree(kdTree, xyz)
+    !     type(node_in_kdTree_t), intent(in) :: kdTree(:)
+    !     real, intent(in) :: xyz(:,:)
+    !     integer i
+
+    !     print '("=======================================================")'
+    !     do i = 1, size(kdTree)
+    !         print*, 'ID_in_tree:', i
+    !         print*, 'parentID:', kdTree(i)%parent_ID
+    !         print*, 'childrenID:', kdTree(i)%child_ID_1, kdTree(i)%child_ID_2
+    !         print*, 'cell:', kdTree(i)%cell_ID, xyz(:, kdTree(i)%cell_ID)
+    !         print '("=======================================================")'
+    !     end do
+
+    ! end subroutine
 
     subroutine saveAsDOT(kdTree, xyz)
         type(node_in_kdTree_t), intent(in) :: kdTree(:)
