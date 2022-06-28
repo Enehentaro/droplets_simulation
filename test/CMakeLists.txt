@@ -8,7 +8,7 @@ function(ADDTEST name)
 
     ### テストの登録
     add_test(NAME ${name}
-        COMMAND $<TARGET_FILE:${name}> ${CMAKE_CURRENT_BINARY_DIR}
+        COMMAND $<TARGET_FILE:${name}>
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         )
 
