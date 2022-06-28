@@ -3,16 +3,15 @@ program sortMain_vtk_ver
     use path_operator_m
     use unstructuredGrid_mod
     implicit none 
-
     type(UnstructuredGrid) grid
     real, allocatable :: xyz(:,:)
     type(kdTree) kd_tree
     real droplet_position(3)
     integer nearest_ID
-
     integer n_unit 
     integer i, iimx, kkmx
     character(50) vtkFName
+    character(10), parameter :: output_dir = 'Test_check'
 
     vtkFName = "sample2.vtk"
             
@@ -22,13 +21,13 @@ program sortMain_vtk_ver
     kkmx = size(grid%NODEs)
     allocate(xyz(3, size(grid%CElls)))
 
-    call make_directory('Test_check')
+    call make_directory(output_dir)
 
     do i = 1, iimx
         xyz(:, i) = grid%CELLs(i)%center(:)
     end do
 
-    open(newunit = n_unit, file = "Test_check/before.txt", status = 'replace')
+    open(newunit = n_unit, file = output_dir//"/before.txt", status = 'replace')
         do i = 1, iimx
             ! write(n_unit,'(I3)', advance='no') before(i)%originID
             write(n_unit,'(3(f12.5))') xyz(:, i)
@@ -36,6 +35,7 @@ program sortMain_vtk_ver
     close(n_unit)
 
     kd_tree = kdTree_(xyz)
+    call kd_tree%saveAsDOT(xyz, output_dir//'/kdTree.dot')
 
     do i = 1, 63
         print*, i
