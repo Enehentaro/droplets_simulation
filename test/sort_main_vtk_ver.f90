@@ -1,5 +1,6 @@
 program sortMain_vtk_ver
     use kdTree_m
+    use path_operator_m
     use unstructuredGrid_mod
     implicit none 
 
@@ -13,7 +14,7 @@ program sortMain_vtk_ver
     integer i, iimx, kkmx
     character(50) vtkFName
 
-    vtkFName = "Test/sample2.vtk"
+    vtkFName = "sample2.vtk"
             
     grid = UnstructuredGrid_(vtkFName)
 
@@ -21,7 +22,7 @@ program sortMain_vtk_ver
     kkmx = size(grid%NODEs)
     allocate(xyz(3, size(grid%CElls)))
 
-    call system('mkdir -p -v Test_check')
+    call make_directory('Test_check')
 
     do i = 1, iimx
         xyz(:, i) = grid%CELLs(i)%center(:)

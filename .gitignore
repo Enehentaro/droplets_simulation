@@ -15,5 +15,8 @@ CMakeFiles/
 *.out
 /build
 
+# for CTest
+Testing/
+
 
 .vscode
