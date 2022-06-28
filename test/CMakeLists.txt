@@ -1,8 +1,9 @@
+#テスト登録用関数
 function(ADDTEST name)
     ### テスト用プログラムのビルド設定
     add_executable(${name} ${name}.f90)
 
-    # モジュールを参照するときは，ここにtarget_link_librariesやset_target_propertiesを追加する
+    # モジュール参照
     target_link_libraries(${name} lib)
 
     ### テストの登録
@@ -13,4 +14,5 @@ function(ADDTEST name)
 
 endfunction(ADDTEST)
 
+ADDTEST(sort_test)
 ADDTEST(sort_main_vtk_ver)
