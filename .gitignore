@@ -8,15 +8,7 @@ bin/
 
 # for CMake
 !CMakeLists.txt
-Makefile
-CMakeFiles/
-*.cmake
-*.a
-*.out
 /build
-
-# for CTest
-Testing/
 
 
 .vscode
