@@ -1,5 +1,6 @@
 # How to use:
-# $ cmake -D CMAKE_Fortran_COMPILER=ifort -D CMAKE_BUILD_TYPE=debug
+# $ cd build
+# $ cmake .. -G "MinGW Makefiles" -D CMAKE_Fortran_COMPILER=ifort -D CMAKE_BUILD_TYPE=debug
 
 cmake_minimum_required(VERSION 3.0)
 
