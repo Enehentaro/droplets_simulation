@@ -443,7 +443,6 @@ module unstructuredGrid_mod
                 vector(:) = vector(:) + self%NODEs(nodeID)%coordinate(:)
             end do
             self%CELLs(II)%center(:) = vector(:) / real(num_node)
-            
             self%CELLs(II)%threshold = 0.0
             do n = 1, num_node
                 nodeID = self%CELLs(II)%nodeID(n)

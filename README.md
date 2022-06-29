@@ -3,12 +3,13 @@ Simulation of Virus-Laden Droplets Behavior in AFDET
 
 ## 使い方
   ※環境は **Intel Fortran, Linux** を想定しています。その他の環境では適宜書き換えが必要です。
-  コンパイルに`make`コマンドを使います（makeのインストールが必要）。
-  Makefileのあるディレクトリが、作業ディレクトリ（実行ディレクトリ）です。
+  ビルドに`cmake`コマンドを使います（CMakeのインストールが必要）。
+  CMakeLists.txtのあるディレクトリが、作業ディレクトリ（実行ディレクトリ）です。
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
   2. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集。
-  3. `make` コマンドでコンパイル。
-  4. `./bin/droplet`で実行。ケース名を入力して計算開始。
+  3. `cmake .` コマンドで依存関係解決
+  4. `make`コマンドでコンパイル
+  5. `./bin/main`で実行。ケース名を入力して計算開始。
 
 ## 条件ファイル(condition.nml, initial_position.csv)解説
   ### condition.nml
@@ -58,7 +59,6 @@ $$ m \frac{d \mathbf{v}}{dt} \space = \space m \mathbf{g} \space + \space C_D (\
 $$ \bar{\mathbf{v}}^{n + 1} \space = \space \frac{\bar{\mathbf{v}}^{n} \space + \space (\bar{\mathbf{g}} \space + \space C \bar{\mathbf{u}}_a)\Delta \bar{t}}{1 \space + \space C\Delta \bar{t}} \quad \left ( C \space = \space \frac{3 \rho_a}{8 \rho_w} \frac{C_D ( \mathbf{v}^{n} ) \left | \bar{\mathbf{u}}_a - \bar{\mathbf{v}}^{n} \right |}{\bar{r}^{n+1}} \right ) $$
 
 ## サブプログラム
-  `make [subProgramName]`で実行ファイルを作成できる。
   - CUBE2USG
     - CUBE格子を、非構造格子に変換できる
   - droplet2CSV
