@@ -120,7 +120,7 @@ module kdTree_m
         logical, allocatable :: NotYetCompared(:)
         integer, allocatable :: childlist(:)
 
-        parentID = 1 
+        parentID = 1
 
         do
             depth = self%node(parentID)%depth
@@ -150,7 +150,7 @@ module kdTree_m
         ! print*, NotYetCompared
         print*, 'mindist =', mindist
 
-        do
+        do while (parentID /= 1)
             parentID = self%node(parentID)%parent_ID
             NotYetCompared(parentID) = .false.
             depth = self%node(parentID)%depth
@@ -165,12 +165,14 @@ module kdTree_m
 
             if(mindist <= abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch))) then
                 if(NotYetCompared(self%node(parentID)%child_ID_1)) then
+                    print*, 'before_parentID =', parentID
                     call self%create_childlist(parentID, 'left', childlist)
                     do i = 1, size(childlist)
                         NotYetCompared(childlist(i)) = .false.
                     end do
                 else
                     call self%create_childlist(parentID, 'right', childlist)
+                    print*, 'before_parentID =', parentID
                     do i = 1, size(childlist)
                         NotYetCompared(childlist(i)) = .false.
                     end do
@@ -189,10 +191,8 @@ module kdTree_m
 
             print*, NotYetCompared
 
-            if(parentID == 1) then
-                exit
-            end if
-            
+            print*, "after_parentID =", parentID
+            ! if (parentID == 22) stop
             stop
 
         end do
@@ -201,85 +201,66 @@ module kdTree_m
 
     subroutine create_childlist(self, parentID, lr, childlist)
         class(kdTree) self
-        integer, intent(inout) :: parentID
+        integer, intent(in) :: parentID
         character(*), intent(in) :: lr
         integer, allocatable, intent(out) :: childlist(:)
-        integer num_ID, origin_parentID, leftID, rightID, i
+        integer, allocatable :: tmp_childlist(:)
+        integer counter, origin_parentID, leftID, rightID, i, tmp_parentID
 
-        origin_parentID = parentID
-        num_ID = 1
+        tmp_parentID = parentID
+        
+        allocate(tmp_childlist(size(self%node)))
+        tmp_childlist = 0
+        tmp_childlist(1) = tmp_parentID
 
-        ! 親IDに付随する子IDすべてを格納する配列サイズの決定
         select case(lr)
             case('left')
                 if(self%node(parentID)%child_ID_1 /= 0) then
-                    parentID = self%node(parentID)%child_ID_1
-                    num_ID = num_ID + 1
+                    tmp_childlist(2) = self%node(tmp_parentID)%child_ID_1
+                    tmp_parentID = tmp_childlist(2)
                 end if
             case('right')
-                if(self%node(parentID)%child_ID_2 /= 0) then
-                    parentID = self%node(parentID)%child_ID_2
-                    num_ID = num_ID + 1
+                if(self%node(tmp_parentID)%child_ID_2 /= 0) then
+                    tmp_childlist(2) = self%node(tmp_parentID)%child_ID_2
+                    tmp_parentID = tmp_childlist(2)
                 end if
         end select
 
-        leftID = parentID
-        rightID = parentID
+        print*, "tmp_childlist", tmp_childlist
+        print*, "tmp_parentID", tmp_parentID
 
-        do
-            leftID = self%node(leftID)%child_ID_1
-            if(leftID /= 0) then
-                num_ID = num_ID + 1
-            end if
+        leftID = tmp_parentID
+        rightID = tmp_parentID
 
-            rightID = self%node(rightID)%child_ID_2
-            if(rightID == 0) then
-                exit
-            else
-                num_ID = num_ID + 1
-            end if
+        ! do
+        !     if(leftID /= 0) then
+        !         tmp_childlist(i) = self%node(leftID)%child_ID_1
+        !         leftID = tmp_childlist(i)
+        !     end if
+
+        !     if(rightID == 0) then
+        !         exit
+        !     else
+        !         tmp_childlist(i+1) = self%node(rightID)%child_ID_2
+        !         rightID = tmp_childlist(i+1)
+        !     end if
+        ! end do
+
+        counter = 0
+        do i = 1, size(tmp_childlist)
+            if(tmp_childlist(i)==0) exit
+            counter = counter + 1
         end do
 
-        ! 親ID及び子IDをchildlistに格納
-        allocate(childlist(num_ID))
-        childlist(1) = origin_parentID
+        allocate(childlist(counter))
 
-        select case(lr)
-            case('left')
-                if(self%node(origin_parentID)%child_ID_1 /= 0) then
-                    childlist(2) = self%node(origin_parentID)%child_ID_1
-                    parentID = self%node(origin_parentID)%child_ID_1
-                end if
-            case('right')
-                if(self%node(origin_parentID)%child_ID_2 /= 0) then
-                    childlist(2) = self%node(origin_parentID)%child_ID_2
-                    parentID = self%node(origin_parentID)%child_ID_2
-                end if
-        end select
+        do i = 1, counter
+            childlist(i) = tmp_childlist(i)
+        end do
 
-        leftID = parentID
-        rightID = parentID
-
-        if(num_ID >= 3) then
-            do i = 3, num_ID
-                leftID = self%node(leftID)%child_ID_1
-                if(leftID /= 0) then
-                    childlist(i) = self%node(leftID)%child_ID_1
-                end if
-
-                rightID = self%node(rightID)%child_ID_2
-                if(rightID == 0) then
-                    exit
-                else
-                    childlist(i) = self%node(rightID)%child_ID_2
-                end if
-            end do
-        end if
-
-        print*, childlist(1),childlist(2)
-
-        stop
-
+        deallocate(tmp_childlist)
+        
+        print*, "childlist", childlist
 
     end subroutine
 
