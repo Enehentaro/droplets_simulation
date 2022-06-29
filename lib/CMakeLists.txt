@@ -31,7 +31,8 @@ if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
     )
 elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
     target_compile_options(lib PRIVATE
-        $<$<CONFIG:Debug>: -O0 -Wall -fcheck=all -fbacktrace>
+        # $<$<CONFIG:Debug>: -O0 -Wall -fcheck=all -fbacktrace>
+        $<$<CONFIG:Debug>: -O0 -fcheck=all -fbacktrace>
         $<$<CONFIG:Release>: -O2>
     )
 endif()
