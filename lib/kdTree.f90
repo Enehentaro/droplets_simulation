@@ -14,7 +14,7 @@ module kdTree_m
         private
         type(node_in_kdTree_t), allocatable :: node(:)
         contains
-        procedure set_relation, saveAsDOT
+        procedure set_relation, saveAsDOT, create_childlist
         procedure :: search => search_kdtree
     end type
 
@@ -115,10 +115,11 @@ module kdTree_m
         class(kdTree), intent(in) :: self
         real, intent(in) :: xyz(:,:) 
         real, intent(in) :: droplet_position(3)
-        integer depth, switch, parentID, nextChildID
+        integer depth, switch, parentID, nextChildID, i
         integer, intent(out) :: nearest_ID
         real mindist
         logical, allocatable :: NotYetCompared(:)
+        integer, allocatable :: childlist(:)
 
         parentID = 1 
 
@@ -138,14 +139,17 @@ module kdTree_m
             end if
 
         end do
+
+        nearest_ID = self%node(parentID)%cell_ID
         
         allocate(NotYetCompared(size(self%node)))
         NotYetCompared(:) = .true.
 
-        mindist = norm2(xyz(:,self%node(parentID)%cell_ID)-droplet_position(:))
+        mindist = norm2(xyz(:,nearest_ID)-droplet_position(:))
         NotYetCompared(parentID) = .false.
         ! print*, 'parentID =', parentID
         ! print*, NotYetCompared
+        print*, 'mindist =', mindist
 
         do
             parentID = self%node(parentID)%parent_ID
@@ -157,15 +161,20 @@ module kdTree_m
             ! print*, 'xyz(:,self%node(parentID)%cell_ID) =', xyz(:,self%node(parentID)%cell_ID)
             ! print*, 'droplet_position =', droplet_position
             ! print*, 'self%node(parentID)%child_ID_1 =', self%node(parentID)%child_ID_1
-            ! print*, 'mindist =', mindist
             ! print*, 'abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch)) =', &
             !         abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch))
 
             if(mindist <= abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch))) then
                 if(NotYetCompared(self%node(parentID)%child_ID_1)) then
-                    NotYetCompared(self%node(parentID)%child_ID_1) = .false.
+                    call self%create_childlist(parentID, 'left', childlist)
+                    do i = 1, size(childlist)
+                        NotYetCompared(childlist(i)) = .false.
+                    end do
                 else
-                    NotYetCompared(self%node(parentID)%child_ID_2) = .false.
+                    call self%create_childlist(parentID, 'right', childlist)
+                    do i = 1, size(childlist)
+                        NotYetCompared(childlist(i)) = .false.
+                    end do
                 end if
             else
                 if(NotYetCompared(self%node(parentID)%child_ID_1)) then
@@ -180,10 +189,98 @@ module kdTree_m
             end if
 
             print*, NotYetCompared
+
+            if(parentID == 1) then
+                exit
+            end if
             
             stop
 
         end do
+
+    end subroutine
+
+    subroutine create_childlist(self, parentID, lr, childlist)
+        class(kdTree) self
+        integer, intent(inout) :: parentID
+        character(*), intent(in) :: lr
+        integer, allocatable, intent(out) :: childlist(:)
+        integer num_ID, origin_parentID, leftID, rightID, i
+
+        origin_parentID = parentID
+        num_ID = 1
+
+        ! 親IDに付随する子IDすべてを格納する配列サイズの決定
+        select case(lr)
+            case('left')
+                if(self%node(parentID)%child_ID_1 /= 0) then
+                    parentID = self%node(parentID)%child_ID_1
+                    num_ID = num_ID + 1
+                end if
+            case('right')
+                if(self%node(parentID)%child_ID_2 /= 0) then
+                    parentID = self%node(parentID)%child_ID_2
+                    num_ID = num_ID + 1
+                end if
+        end select
+
+        leftID = parentID
+        rightID = parentID
+
+        do
+            leftID = self%node(leftID)%child_ID_1
+            if(leftID /= 0) then
+                num_ID = num_ID + 1
+            end if
+
+            rightID = self%node(rightID)%child_ID_2
+            if(rightID == 0) then
+                exit
+            else
+                num_ID = num_ID + 1
+            end if
+        end do
+
+        ! 親ID及び子IDをchildlistに格納
+        allocate(childlist(num_ID))
+        childlist(1) = origin_parentID
+
+        select case(lr)
+            case('left')
+                if(self%node(origin_parentID)%child_ID_1 /= 0) then
+                    childlist(2) = self%node(origin_parentID)%child_ID_1
+                    parentID = self%node(origin_parentID)%child_ID_1
+                end if
+            case('right')
+                if(self%node(origin_parentID)%child_ID_2 /= 0) then
+                    childlist(2) = self%node(origin_parentID)%child_ID_2
+                    parentID = self%node(origin_parentID)%child_ID_2
+                end if
+        end select
+
+        leftID = parentID
+        rightID = parentID
+
+        if(num_ID >= 3) then
+            do i = 3, num_ID
+                leftID = self%node(leftID)%child_ID_1
+                if(leftID /= 0) then
+                    childlist(i) = self%node(leftID)%child_ID_1
+                end if
+
+                rightID = self%node(rightID)%child_ID_2
+                if(rightID == 0) then
+                    exit
+                else
+                    childlist(i) = self%node(rightID)%child_ID_2
+                end if
+            end do
+        end if
+
+        print*, childlist(1),childlist(2)
+
+        stop
+
 
     end subroutine
 
