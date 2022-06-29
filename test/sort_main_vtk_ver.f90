@@ -11,9 +11,9 @@ program sortMain_vtk_ver
     integer n_unit 
     integer i, iimx, kkmx
     character(50) vtkFName
-    character(10), parameter :: output_dir = 'Test_check'
+    character(10), parameter :: output_dir = 'test_check'
 
-    vtkFName = "sample2.vtk"
+    vtkFName = "test/sample2.vtk"
             
     grid = UnstructuredGrid_(vtkFName)
 
