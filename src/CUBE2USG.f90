@@ -119,6 +119,7 @@ program CUBE2USG
 
     !節点情報対応付けファイルを読み込むサブルーチン
     subroutine read_nodeInfo(success)
+        use array_m
         logical, intent(out) :: success
         integer n_unit, i, num_cell_, num_cube, cubeShape(3)
         character dummy*10
@@ -170,21 +171,5 @@ program CUBE2USG
         end if
 
     end subroutine
-
-    !配列が等しいかどうかを判定する関数
-    logical function isEqual(a, b)
-        integer, intent(in) :: a(:), b(:)
-        integer i
-
-        isEqual = .true.
-
-        do i = 1, size(a)
-            if(a(i)/=b(i)) then
-                isEqual = .false.
-                return
-            end if
-        end do
-
-    end function
     
 end program CUBE2USG

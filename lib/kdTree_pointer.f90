@@ -30,7 +30,7 @@ module kdTree_pointer_m
     !kdツリークラス
     type, public :: kdTree
         private
-        type(node_in_kdTree), pointer :: root=>null(), end=>null()
+        type(node_in_kdTree), pointer :: root=>null()
         type(NodeList) leaf_list
         contains
         procedure :: addChildren => addChildrenToKdTree

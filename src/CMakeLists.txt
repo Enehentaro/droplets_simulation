@@ -15,6 +15,3 @@ target_link_libraries(droplet2CSV lib)
 
 add_executable(initial_translate initial_translate.f90)
 target_link_libraries(initial_translate lib)
-
-add_executable(sort_main_vtk_ver sort_main_vtk_ver.f90)
-target_link_libraries(sort_main_vtk_ver lib)

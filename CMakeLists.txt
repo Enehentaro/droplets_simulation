@@ -24,5 +24,9 @@ set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/fortran-modules)
 
+enable_testing()
+
 add_subdirectory(lib)
 add_subdirectory(src)
+
+add_subdirectory(test)
