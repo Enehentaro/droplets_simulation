@@ -146,8 +146,7 @@ module kdTree_m
 
         mindist = norm2(xyz(:,nearest_ID)-droplet_position(:))
         NotYetCompared(parentID) = .false.
-        ! print*, 'parentID =', parentID
-        ! print*, NotYetCompared
+
         print*, 'mindist =', mindist
 
         do while (parentID /= 1)
@@ -155,13 +154,6 @@ module kdTree_m
             NotYetCompared(parentID) = .false.
             depth = self%node(parentID)%depth
             switch = mod(depth,3)+1
-            ! print*, 'switch = ', switch
-            ! print*, 'parentID =', parentID
-            ! print*, 'xyz(:,self%node(parentID)%cell_ID) =', xyz(:,self%node(parentID)%cell_ID)
-            ! print*, 'droplet_position =', droplet_position
-            ! print*, 'self%node(parentID)%child_ID_1 =', self%node(parentID)%child_ID_1
-            ! print*, 'abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch)) =', &
-            !         abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch))
 
             if(mindist <= abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch))) then
                 if(NotYetCompared(self%node(parentID)%child_ID_1)) then
@@ -179,21 +171,16 @@ module kdTree_m
                 end if
             else
                 if(NotYetCompared(self%node(parentID)%child_ID_1)) then
-                    ! mindist = min(mindist, norm2(xyz(:, kdTree(parentID)%cell_ID)-droplet_position(:)),&
-                    ! norm2(xyz(:, kdTree(parentID)%child_ID_1)-droplet_position(:)))
-                    ! NotYetCompared(kdTree(parentID)%child_ID_1) = .false.
+
                 else
-                    ! mindist = min(mindist, norm2(xyz(:, kdTree(parentID)%cell_ID)-droplet_position(:)),&
-                    ! norm2(xyz(:, kdTree(parentID)%child_ID_2)-droplet_position(:)))
-                    ! NotYetCompared(kdTree(parentID)%child_ID_2) = .false.
+
                 end if
             end if
 
             print*, NotYetCompared
 
             print*, "after_parentID =", parentID
-            ! if (parentID == 22) stop
-            stop
+            if (parentID == 5) stop
 
         end do
 
@@ -226,25 +213,17 @@ module kdTree_m
                 end if
         end select
 
-        print*, "tmp_childlist", tmp_childlist
-        print*, "tmp_parentID", tmp_parentID
-
         leftID = tmp_parentID
         rightID = tmp_parentID
 
-        ! do
-        !     if(leftID /= 0) then
-        !         tmp_childlist(i) = self%node(leftID)%child_ID_1
-        !         leftID = tmp_childlist(i)
-        !     end if
+        counter = 2
 
-        !     if(rightID == 0) then
-        !         exit
-        !     else
-        !         tmp_childlist(i+1) = self%node(rightID)%child_ID_2
-        !         rightID = tmp_childlist(i+1)
-        !     end if
-        ! end do
+        do
+            tmp_childlist(2*counter-1) = self%node(tmp_childlist(counter))%child_ID_1
+            tmp_childlist(2*counter) = self%node(tmp_childlist(counter))%child_ID_2
+            if(tmp_childlist(2*counter) == 0) exit
+            counter = counter + 1           
+        end do
 
         counter = 0
         do i = 1, size(tmp_childlist)
