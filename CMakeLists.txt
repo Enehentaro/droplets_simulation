@@ -7,18 +7,18 @@ enable_language(Fortran)
 
 project(droplet Fortran)
 
-#ifort
-if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-    set(CMAKE_Fortran_FLAGS         "-O3 -p -mcmodel=medium -shared-intel")
-    set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -fpe0 -g -warn all -check all -standf95 -traceback")
-    set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -march=native")
-endif()
-#gfortran
-if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
-    set(CMAKE_Fortran_FLAGS         "-O3 -mcmodel=medium")
-    set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -fbacktrace") #  -p -Wall
-    set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -march=native")
-endif()
+# #ifort
+# if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+#     set(CMAKE_Fortran_FLAGS         "-O3 -p -mcmodel=medium -shared-intel")
+#     set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -fpe0 -g -warn all -check all -standf95 -traceback")
+#     set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -march=native")
+# endif()
+# #gfortran
+# if(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+#     set(CMAKE_Fortran_FLAGS         "-O3 -mcmodel=medium")
+#     set(CMAKE_Fortran_FLAGS_DEBUG   "-O0 -g -fbacktrace") #  -p -Wall
+#     set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -march=native")
+# endif()
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
