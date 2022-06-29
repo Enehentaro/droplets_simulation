@@ -118,7 +118,7 @@ module kdTree_m
         integer, intent(out) :: nearest_ID
         real mindist
         logical, allocatable :: NotYetCompared(:)
-        integer, allocatable :: childlist(:)
+        integer, allocatable :: childIDlist(:)
 
         parentID = 1
 
@@ -149,7 +149,7 @@ module kdTree_m
 
         print*, 'mindist =', mindist
 
-        do while (parentID /= 1)
+        do
             parentID = self%node(parentID)%parent_ID
             NotYetCompared(parentID) = .false.
             depth = self%node(parentID)%depth
@@ -158,15 +158,15 @@ module kdTree_m
             if(mindist <= abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch))) then
                 if(NotYetCompared(self%node(parentID)%child_ID_1)) then
                     print*, 'before_parentID =', parentID
-                    call self%create_childlist(parentID, 'left', childlist)
-                    do i = 1, size(childlist)
-                        NotYetCompared(childlist(i)) = .false.
+                    call self%create_childlist(parentID, 'left', childIDlist)
+                    do i = 1, size(childIDlist)
+                        NotYetCompared(childIDlist(i)) = .false.
                     end do
                 else
-                    call self%create_childlist(parentID, 'right', childlist)
+                    call self%create_childlist(parentID, 'right', childIDlist)
                     print*, 'before_parentID =', parentID
-                    do i = 1, size(childlist)
-                        NotYetCompared(childlist(i)) = .false.
+                    do i = 1, size(childIDlist)
+                        NotYetCompared(childIDlist(i)) = .false.
                     end do
                 end if
             else
@@ -180,66 +180,76 @@ module kdTree_m
             print*, NotYetCompared
 
             print*, "after_parentID =", parentID
-            if (parentID == 5) stop
+
+            if(parentID == 1) stop
 
         end do
 
     end subroutine
 
-    subroutine create_childlist(self, parentID, lr, childlist)
+    subroutine create_childlist(self, parentID, lr, childIDlist)
         class(kdTree) self
         integer, intent(in) :: parentID
         character(*), intent(in) :: lr
-        integer, allocatable, intent(out) :: childlist(:)
-        integer, allocatable :: tmp_childlist(:)
-        integer counter, origin_parentID, leftID, rightID, i, tmp_parentID
+        integer, allocatable, intent(out) :: childIDlist(:)
+        integer, allocatable :: tmp_childIDlist(:)
+        integer cnt, storage_cnt, origin_parentID, leftID, rightID, i, tmp_parentID
 
         tmp_parentID = parentID
-        
-        allocate(tmp_childlist(size(self%node)))
-        tmp_childlist = 0
-        tmp_childlist(1) = tmp_parentID
+        ! tmp_childIDlist:親IDと親IDに付随する子供ID全てを一時的に格納する配列
+        ! とりあえずtmp_childIDlistの配列の要素数をノード数と合わせる 
+        allocate(tmp_childIDlist(size(self%node)))
+        tmp_childIDlist = 0
+        tmp_childIDlist(1) = tmp_parentID
 
+        ! NotYetComparedがtrueの方の子供IDをtmp_childIDlist(2)に格納
         select case(lr)
             case('left')
                 if(self%node(parentID)%child_ID_1 /= 0) then
-                    tmp_childlist(2) = self%node(tmp_parentID)%child_ID_1
-                    tmp_parentID = tmp_childlist(2)
+                    tmp_childIDlist(2) = self%node(tmp_parentID)%child_ID_1
+                    tmp_parentID = tmp_childIDlist(2)
                 end if
             case('right')
                 if(self%node(tmp_parentID)%child_ID_2 /= 0) then
-                    tmp_childlist(2) = self%node(tmp_parentID)%child_ID_2
-                    tmp_parentID = tmp_childlist(2)
+                    tmp_childIDlist(2) = self%node(tmp_parentID)%child_ID_2
+                    tmp_parentID = tmp_childIDlist(2)
                 end if
         end select
 
-        leftID = tmp_parentID
-        rightID = tmp_parentID
-
-        counter = 2
-
+        ! tmp_childIDlist(2)に付随する子供ID全てを格納(左の子供ID＝0 or 左の子供ID＝0の場合も含む)
+        ! 左の子供ID＝右の子供ID＝0となったタイミングでループ脱出
+        cnt = 2
         do
-            tmp_childlist(2*counter-1) = self%node(tmp_childlist(counter))%child_ID_1
-            tmp_childlist(2*counter) = self%node(tmp_childlist(counter))%child_ID_2
-            if(tmp_childlist(2*counter) == 0) exit
-            counter = counter + 1           
+            tmp_childIDlist(2*cnt-1) = self%node(tmp_childIDlist(cnt))%child_ID_1
+            tmp_childIDlist(2*cnt) = self%node(tmp_childIDlist(cnt))%child_ID_2
+            if(tmp_childIDlist(2*cnt-1) == 0 .and. tmp_childIDlist(2*cnt) == 0) exit
+            cnt = cnt + 1           
         end do
 
-        counter = 0
-        do i = 1, size(tmp_childlist)
-            if(tmp_childlist(i)==0) exit
-            counter = counter + 1
+        ! 子供ID=0を含まないchildIDlistのサイズを決定
+        cnt = 0
+        do i = 1, size(tmp_childIDlist)
+            if(tmp_childIDlist(i) == 0 .and. tmp_childIDlist(i+1) == 0) exit
+            if(tmp_childIDlist(i) /= 0) then
+                cnt = cnt + 1
+            end if
         end do
 
-        allocate(childlist(counter))
+        allocate(childIDlist(cnt))
 
-        do i = 1, counter
-            childlist(i) = tmp_childlist(i)
+        ! childIDlistに左詰めで0以外の子供IDを格納していく
+        storage_cnt = 1
+        do i = 1, cnt
+            if(tmp_childIDlist(i) == 0 .and. tmp_childIDlist(i+1) == 0) exit
+            if(tmp_childIDlist(i) /= 0) then
+                childIDlist(storage_cnt) = tmp_childIDlist(i)
+                storage_cnt = storage_cnt + 1
+            end if
         end do
 
-        deallocate(tmp_childlist)
+        deallocate(tmp_childIDlist)
         
-        print*, "childlist", childlist
+        print*, "childIDlist", childIDlist
 
     end subroutine
 
