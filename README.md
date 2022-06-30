@@ -2,13 +2,19 @@
 Simulation of Virus-Laden Droplets Behavior in AFDET
 
 ## 使い方
+  
+  ### 依存関係解決・コンパイル
   ビルドに`cmake`コマンドを使います（CMakeのインストールが必要）。
-  CMakeLists.txtのあるディレクトリが、作業ディレクトリ（実行ディレクトリ）です。
+  1. `$ mkdir build`でビルドディレクトリ作成
+  1. `$ cd build`で移動
+  1. `$ cmake ..`で依存関係解決（一部の環境(Windows等)では、`-G "MinGW Makefiles"`でGenerator指定）
+  1. `$ make`でコンパイル
+  
+  ### 実行
+  ルートディレクトリ（README.mdのあるディレクトリ）での作業
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）
-  2. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集
-  3. `cmake .` コマンドで依存関係解決(Makefileの出力)
-  4. `make`コマンドでコンパイル
-  5. `./bin/main`で実行。ケース名を入力して計算開始。
+  1. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集 
+  1. `./build/bin/main`で実行。ケース名を入力して計算開始。
 
 ## 条件ファイル(condition.nml, initial_position.csv)解説
   ### condition.nml
@@ -74,6 +80,6 @@ $$ \bar{\mathbf{v}}^{n + 1} \space = \space \frac{\bar{\mathbf{v}}^{n} \space + 
     - optionディレクトリ内にある。付着判定のオンオフや、飛沫間合体の設定が可能。初期半径分布ファイルの指定も可能。
     
 ## CTest
-  - コンパイル後、`ctest`コマンドでCTestが実行可能
-  - CTestの実行ディレクトリは、`/test/`（`ctest`コマンドを打つメインディレクトリとは異なる）
+  - コンパイル後、`$ ctest`でCTestが実行可能（buildディレクトリにて）
+  - CTestの実行ディレクトリは、`/test/`になる（buildディレクトリではない）
   - テスト用プログラムはすべて`/test/`で管理しよう

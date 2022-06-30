@@ -1,4 +1,4 @@
-# How to use:
+# How to use memo:
 # $ cd build
 # $ cmake .. -G "MinGW Makefiles" -D CMAKE_Fortran_COMPILER=ifort -D CMAKE_BUILD_TYPE=debug
 
@@ -23,7 +23,7 @@ project(droplet Fortran)
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
-set(CMAKE_Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/fortran-modules)
+set(CMAKE_Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/mod)
 
 enable_testing()
 
