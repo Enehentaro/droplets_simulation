@@ -2,4 +2,4 @@
 /*.stl
 !CMakeLists.txt
 
-Test_check
+test_check

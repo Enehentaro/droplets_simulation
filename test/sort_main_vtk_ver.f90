@@ -10,10 +10,10 @@ program sortMain_vtk_ver
     integer nearest_ID
     integer n_unit 
     integer i, iimx, kkmx
-    character(50) vtkFName
+    character(:), allocatable :: vtkFName
     character(10), parameter :: output_dir = 'test_check'
 
-    vtkFName = "test/sample2.vtk"
+    vtkFName = "sample2.vtk"
             
     grid = UnstructuredGrid_(vtkFName)
 
