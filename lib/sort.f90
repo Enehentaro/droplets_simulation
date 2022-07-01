@@ -95,8 +95,13 @@ module sort_m
 
         pre_array = self%node
         new_size = size(pre_array) - 1
-        self%node = pre_array(:new_size)
-        self%node(1) = pre_array(new_size + 1)
+
+        if(new_size >= 1) then
+            self%node = pre_array(:new_size)
+            self%node(1) = pre_array(new_size + 1)
+        else
+            deallocate(self%node)
+        end if
 
     end subroutine
 
