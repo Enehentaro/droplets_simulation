@@ -7,14 +7,14 @@ module kdTree_m
         private
         integer :: parent_ID = 0, child_ID_1 = 0, child_ID_2 = 0, cell_ID = 0
         integer depth
-        integer, allocatable :: ID_array(:)
+        integer, allocatable :: cellID_array(:)
     end type
 
     type, public :: kdTree
         private
         type(node_in_kdTree_t), allocatable :: node(:)
         contains
-        procedure set_relation, saveAsDOT, create_childlist
+        procedure set_relation, saveAsDOT, get_selfAndHalfChildren
         procedure :: search => search_kdtree
     end type
 
@@ -41,7 +41,7 @@ module kdTree_m
         y_origin = real2content(xyz_origin(2,:))
         z_origin = real2content(xyz_origin(3,:))
 
-        kdTree_%node(1)%ID_array = x_origin(:)%originID
+        kdTree_%node(1)%cellID_array = x_origin(:)%originID
         kdTree_%node(1)%depth = 0 !最初は深さゼロ
 
         do i = 1, num_node
@@ -52,11 +52,11 @@ module kdTree_m
             !各軸を切り替えながら、コンテンツ配列から要素を抽出
             select case(mod(depth, 3))
             case(0)
-                array_pre = x_origin(kdTree_%node(i)%ID_array)
+                array_pre = x_origin(kdTree_%node(i)%cellID_array)
             case(1)
-                array_pre = y_origin(kdTree_%node(i)%ID_array)
+                array_pre = y_origin(kdTree_%node(i)%cellID_array)
             case(2)
-                array_pre = z_origin(kdTree_%node(i)%ID_array)
+                array_pre = z_origin(kdTree_%node(i)%cellID_array)
             end select
 
             array_sorted = array_pre !←配列サイズを揃えるため
@@ -72,14 +72,14 @@ module kdTree_m
             if(size(leftChildIDArray) >= 1) then 
                 ID_counter = ID_counter + 1
                 child1ID = ID_counter
-                kdTree_%node(child1ID)%ID_array = leftChildIDArray
+                kdTree_%node(child1ID)%cellID_array = leftChildIDArray
                 call kdTree_%set_relation(parentID, child1ID, 'left')
             end if
 
             if(size(rightChildIDArray) >= 1) then
                 ID_counter = ID_counter + 1
                 child2ID = ID_counter
-                kdTree_%node(child2ID)%ID_array = rightChildIDArray
+                kdTree_%node(child2ID)%cellID_array = rightChildIDArray
                 call kdTree_%set_relation(parentID, child2ID, 'right')
             end if
 
@@ -114,11 +114,11 @@ module kdTree_m
         class(kdTree), intent(in) :: self
         real, intent(in) :: xyz(:,:) 
         real, intent(in) :: droplet_position(3)
-        integer depth, switch, parentID, nextChildID, i
+        integer depth, switch, parentID, nextChildID, i, leftChildID
         integer, intent(out) :: nearest_ID
         real mindist
         logical, allocatable :: NotYetCompared(:)
-        integer, allocatable :: childIDlist(:)
+        integer, allocatable :: childCellIDarray(:)
 
         parentID = 1
 
@@ -140,35 +140,35 @@ module kdTree_m
         end do
 
         nearest_ID = self%node(parentID)%cell_ID
+        print*, "parentID=",parentID
         
         allocate(NotYetCompared(size(self%node)))
         NotYetCompared(:) = .true.
 
         mindist = norm2(xyz(:,nearest_ID)-droplet_position(:))
-        NotYetCompared(parentID) = .false.
+        NotYetCompared(self%node(parentID)%cell_ID) = .false.
 
         print*, 'mindist =', mindist
 
         do
+            ! 親IDの親で更新
             parentID = self%node(parentID)%parent_ID
-            NotYetCompared(parentID) = .false.
             depth = self%node(parentID)%depth
             switch = mod(depth,3)+1
+            print*,"switch=",switch
+            print*,"droplet_position(switch)=",droplet_position(switch)
 
             if(mindist <= abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch))) then
-                if(NotYetCompared(self%node(parentID)%child_ID_1)) then
-                    print*, 'before_parentID =', parentID
-                    call self%create_childlist(parentID, 'left', childIDlist)
-                    do i = 1, size(childIDlist)
-                        NotYetCompared(childIDlist(i)) = .false.
-                    end do
+                print*, 'before_parentID =', parentID
+                leftChildID = self%node(parentID)%child_ID_1
+                if(NotYetCompared(self%node(leftChildID)%cell_ID)) then
+                    call self%get_selfAndHalfChildren(parentID, 'left', childCellIDarray)
                 else
-                    call self%create_childlist(parentID, 'right', childIDlist)
-                    print*, 'before_parentID =', parentID
-                    do i = 1, size(childIDlist)
-                        NotYetCompared(childIDlist(i)) = .false.
-                    end do
+                    call self%get_selfAndHalfChildren(parentID, 'right', childCellIDarray)
                 end if
+                do i = 1, size(childCellIDarray)
+                    NotYetCompared(childCellIDarray(i)) = .false.
+                end do
             else
                 if(NotYetCompared(self%node(parentID)%child_ID_1)) then
 
@@ -187,69 +187,35 @@ module kdTree_m
 
     end subroutine
 
-    subroutine create_childlist(self, parentID, lr, childIDlist)
+    subroutine get_selfAndHalfChildren(self, topParentID, lr, selfAndHalfChildren)
         class(kdTree) self
-        integer, intent(in) :: parentID
+        integer, intent(in) :: topParentID
         character(*), intent(in) :: lr
-        integer, allocatable, intent(out) :: childIDlist(:)
-        integer, allocatable :: tmp_childIDlist(:)
-        integer cnt, storage_cnt, origin_parentID, leftID, rightID, i, tmp_parentID
+        integer, allocatable, intent(out) :: selfAndHalfChildren(:)
+        integer, allocatable :: selfAndAllChildren(:), halfChildren(:)
+        integer childID, cnt, i
 
-        tmp_parentID = parentID
-        ! tmp_childIDlist:親IDと親IDに付随する子供ID全てを一時的に格納する配列
-        ! とりあえずtmp_childIDlistの配列の要素数をノード数と合わせる 
-        allocate(tmp_childIDlist(size(self%node)))
-        tmp_childIDlist = 0
-        tmp_childIDlist(1) = tmp_parentID
-
-        ! NotYetComparedがtrueの方の子供IDをtmp_childIDlist(2)に格納
+        selfAndAllChildren = self%node(topParentID)%cellID_array
         select case(lr)
             case('left')
-                if(self%node(parentID)%child_ID_1 /= 0) then
-                    tmp_childIDlist(2) = self%node(tmp_parentID)%child_ID_1
-                    tmp_parentID = tmp_childIDlist(2)
-                end if
+                childID = self%node(topParentID)%child_ID_2
             case('right')
-                if(self%node(tmp_parentID)%child_ID_2 /= 0) then
-                    tmp_childIDlist(2) = self%node(tmp_parentID)%child_ID_2
-                    tmp_parentID = tmp_childIDlist(2)
-                end if
+                childID = self%node(topParentID)%child_ID_1
         end select
 
-        ! tmp_childIDlist(2)に付随する子供ID全てを格納(左の子供ID＝0 or 左の子供ID＝0の場合も含む)
-        ! 左の子供ID＝右の子供ID＝0となったタイミングでループ脱出
-        cnt = 2
-        do
-            tmp_childIDlist(2*cnt-1) = self%node(tmp_childIDlist(cnt))%child_ID_1
-            tmp_childIDlist(2*cnt) = self%node(tmp_childIDlist(cnt))%child_ID_2
-            if(tmp_childIDlist(2*cnt-1) == 0 .and. tmp_childIDlist(2*cnt) == 0) exit
-            cnt = cnt + 1           
-        end do
+        if(childID == 0) return
 
-        ! 子供ID=0を含まないchildIDlistのサイズを決定
+        halfChildren = self%node(childID)%cellID_array
+        allocate(selfAndHalfChildren(&
+            size(selfAndAllChildren) - size(halfChildren)))
+
         cnt = 0
-        do i = 1, size(tmp_childIDlist)
-            if(tmp_childIDlist(i) == 0 .and. tmp_childIDlist(i+1) == 0) exit
-            if(tmp_childIDlist(i) /= 0) then
-                cnt = cnt + 1
+        do i = 1, size(selfAndAllChildren)
+            if(.not.any(selfAndAllChildren(i)==halfChildren)) then
+                cnt = cnt +1
+                selfAndHalfChildren(cnt) = selfAndAllChildren(i)
             end if
         end do
-
-        allocate(childIDlist(cnt))
-
-        ! childIDlistに左詰めで0以外の子供IDを格納していく
-        storage_cnt = 1
-        do i = 1, cnt
-            if(tmp_childIDlist(i) == 0 .and. tmp_childIDlist(i+1) == 0) exit
-            if(tmp_childIDlist(i) /= 0) then
-                childIDlist(storage_cnt) = tmp_childIDlist(i)
-                storage_cnt = storage_cnt + 1
-            end if
-        end do
-
-        deallocate(tmp_childIDlist)
-        
-        print*, "childIDlist", childIDlist
 
     end subroutine
 
