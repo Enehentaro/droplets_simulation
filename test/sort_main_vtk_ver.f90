@@ -38,7 +38,7 @@ program sortMain_vtk_ver
     call kd_tree%saveAsDOT(xyz, output_dir//'/kdTree.dot')
 
     do i = 1, 63
-        print*, i
+        print*, "cellID =",i
         droplet_position(:) = xyz(:, i)
         call kd_tree%search(xyz, droplet_position, nearest_ID)
     end do

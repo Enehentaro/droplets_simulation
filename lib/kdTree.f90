@@ -139,51 +139,60 @@ module kdTree_m
 
         end do
 
+        ! このnearest_IDは最近傍末端ノードのcellID
         nearest_ID = self%node(parentID)%cell_ID
-        print*, "parentID=",parentID
         
+        ! 比較済みか未比較かを判別するlogical配列を用意
+        ! 最初はすべて比較していないのでtrueで初期化
         allocate(NotYetCompared(size(self%node)))
         NotYetCompared(:) = .true.
 
         mindist = norm2(xyz(:,nearest_ID)-droplet_position(:))
+        ! 末端ノードとの比較が終わったのでfalse
         NotYetCompared(self%node(parentID)%cell_ID) = .false.
 
-        print*, 'mindist =', mindist
-
         do
-            ! 親IDの親で更新
+            ! 注目する親ノードIDを更新
             parentID = self%node(parentID)%parent_ID
             depth = self%node(parentID)%depth
             switch = mod(depth,3)+1
-            print*,"switch=",switch
-            print*,"droplet_position(switch)=",droplet_position(switch)
+            
+            leftChildID = self%node(parentID)%child_ID_1
 
+            ! 注目している親の左の子をまだ比較していないならtrue
+            if(NotYetCompared(self%node(leftChildID)%cell_ID)) then
+                ! 注目する親とそれに付随する左の子すべてのcellIDを返す
+                call self%get_selfAndHalfChildren(parentID, 'left', childCellIDarray)
+            else
+                ! 注目する親とそれに付随する右の子すべてのcellIDを返す
+                call self%get_selfAndHalfChildren(parentID, 'right', childCellIDarray)
+            end if
+
+            ! (末端ノード-飛沫座標)<=(末端ノードの親の注目(switch)座標-飛沫の注目(switch)座標)
             if(mindist <= abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch))) then
-                print*, 'before_parentID =', parentID
-                leftChildID = self%node(parentID)%child_ID_1
-                if(NotYetCompared(self%node(leftChildID)%cell_ID)) then
-                    call self%get_selfAndHalfChildren(parentID, 'left', childCellIDarray)
-                else
-                    call self%get_selfAndHalfChildren(parentID, 'right', childCellIDarray)
-                end if
+                ! 注目している親と左or右のすべての子をfalse
                 do i = 1, size(childCellIDarray)
                     NotYetCompared(childCellIDarray(i)) = .false.
                 end do
             else
-                if(NotYetCompared(self%node(parentID)%child_ID_1)) then
-
-                else
-
-                end if
+                do i = 1, size(childCellIDarray)
+                    ! (注目している親および左or右のすべての子-飛沫座標)を比較
+                    if(norm2(xyz(:,childCellIDarray(i))-droplet_position(:)) <= mindist) then
+                        mindist = norm2(xyz(:,childCellIDarray(i))-droplet_position(:))
+                        nearest_ID = childCellIDarray(i)
+                    end if
+                    NotYetCompared(childCellIDarray(i)) = .false.
+                end do
             end if
 
-            print*, NotYetCompared
-
-            print*, "after_parentID =", parentID
-
-            if(parentID == 1) stop
+            if(parentID == 1) then
+                exit
+            end if
 
         end do
+
+        print*, "mindist =", mindist
+        print*, "nearest_ID =", nearest_ID
 
     end subroutine
 
@@ -195,7 +204,10 @@ module kdTree_m
         integer, allocatable :: selfAndAllChildren(:), halfChildren(:)
         integer childID, cnt, i
 
+        ! 親IDとそれに付随するすべての子のcellIDを格納
         selfAndAllChildren = self%node(topParentID)%cellID_array
+
+        ! leftの場合、これから比較するのは左側で、全体から取り除くべき子供は右側
         select case(lr)
             case('left')
                 childID = self%node(topParentID)%child_ID_2
@@ -205,12 +217,15 @@ module kdTree_m
 
         if(childID == 0) return
 
+        ! 取り除く子供すべてをhalfChildrenに格納
         halfChildren = self%node(childID)%cellID_array
         allocate(selfAndHalfChildren(&
             size(selfAndAllChildren) - size(halfChildren)))
 
         cnt = 0
         do i = 1, size(selfAndAllChildren)
+            ! any文はself..(i)の値がhalf..に存在すればtrueを返す
+            ! つまり、全体のcellIDの内、これから比較を行うべきcellIDのみif文内の処理を行う
             if(.not.any(selfAndAllChildren(i)==halfChildren)) then
                 cnt = cnt +1
                 selfAndHalfChildren(cnt) = selfAndAllChildren(i)
