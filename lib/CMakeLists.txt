@@ -20,7 +20,6 @@ add_library(lib
     vtkMesh_operator.f90
     sort.f90
     kdTree.f90
-    kdTree_pointer.f90
     array.f90
 )
 
