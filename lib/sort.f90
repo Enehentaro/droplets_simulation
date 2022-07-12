@@ -16,7 +16,7 @@ module sort_m
 
         contains
 
-        procedure totalHeaplification, partialHeaplification
+        procedure totalHeaplification!, partialHeaplification
         procedure get_featuredChildID, rebuild_tree
         
     end type
@@ -59,49 +59,39 @@ module sort_m
 
     !入れ替えの起こった部分だけヒープ化（親子の大小関係解決）メソッド
     !こっちのほうが速いと思うが、現在バグってます
-    subroutine partialHeaplification(self)
-        class(HeapTree) self
-        integer parentID, child1ID, child2ID, featuredChildID
-        integer num_node
+    ! subroutine partialHeaplification(self)
+    !     class(HeapTree) self
+    !     integer parentID, child1ID, child2ID, featuredChildID
+    !     integer num_node
 
-        num_node = size(self%node)
+    !     num_node = size(self%node)
 
-        parentID = 1
+    !     parentID = 1
 
-        do
+    !     do
 
-            child1ID = parentID*2
-            if(child1ID > num_node) exit    !第一子すら存在しなければループ終了
-            child2ID = parentID*2 + 1
+    !         child1ID = parentID*2
+    !         if(child1ID > num_node) exit    !第一子すら存在しなければループ終了
+    !         child2ID = parentID*2 + 1
 
-            featuredChildID = self%get_featuredChildID(child1ID, child2ID)
+    !         featuredChildID = self%get_featuredChildID(child1ID, child2ID)
 
-            if(self%node(parentID)%value > self%node(featuredChildID)%value) then
-                call swap_content(self%node, parentID, featuredChildID)
-                parentID = featuredChildID
-            else
-                exit    !入れ替えが起こらなければループ終了
-            end if
+    !         if(self%node(parentID)%value > self%node(featuredChildID)%value) then
+    !             call swap_content(self%node, parentID, featuredChildID)
+    !             parentID = featuredChildID
+    !         else
+    !             exit    !入れ替えが起こらなければループ終了
+    !         end if
 
-        end do
+    !     end do
 
-    end subroutine
+    ! end subroutine
 
-    !ノード配列の大きさをひとつ減らし、末端ノードを根ノードに代入
+    !根ノードを除去し、ノード配列を左詰めにする。
     subroutine rebuild_tree(self)
         class(HeapTree) self
-        type(content_t) pre_array(size(self%node))
-        integer new_size
 
-        pre_array = self%node
-        new_size = size(pre_array) - 1
-
-        if(new_size >= 1) then
-            self%node = pre_array(:new_size)
-            self%node(1) = pre_array(new_size + 1)
-        else
-            deallocate(self%node)
-        end if
+        self%node = self%node(2:)
 
     end subroutine
 
@@ -175,8 +165,10 @@ module sort_m
 
     function real2content(real_array) result(content_array)
         real, intent(in) :: real_array(:)
-        type(content_t) content_array(size(real_array))
+        type(content_t), allocatable :: content_array(:)
         integer i
+
+        allocate(content_array(size(real_array)))
 
         do i = 1, size(real_array)
             content_array(i)%originID = i

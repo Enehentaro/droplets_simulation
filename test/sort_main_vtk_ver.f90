@@ -13,7 +13,7 @@ program sortMain_vtk_ver
     character(:), allocatable :: vtkFName
     character(10), parameter :: output_dir = 'test_check'
 
-    vtkFName = "/home/master/ダウンロード/testVTK/test_20000grids.vtk"!"sample2.vtk"
+    vtkFName = "sample.vtk"
             
     call grid%setupWithFlowFieldFile(vtkFName)
 
@@ -37,7 +37,7 @@ program sortMain_vtk_ver
     kd_tree = kdTree_(xyz)
     call kd_tree%saveAsDOT(xyz, output_dir//'/kdTree.dot')
 
-    do i = 1, 63
+    do i = 1, iimx
         print*, "cellID =",i
         droplet_position(:) = xyz(:, i)
         call kd_tree%search(xyz, droplet_position, nearest_ID)
