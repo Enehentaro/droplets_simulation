@@ -7,7 +7,10 @@ Simulation of Virus-Laden Droplets Behavior in AFDET
   ビルドに`cmake`コマンドを使います（[CMakeのインストール](https://qiita.com/ijknabla/items/05270ae5e597705d0dae#cmake-%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)が必要）。
   1. `$ mkdir build`でビルドディレクトリ作成
   1. `$ cd build`で移動
-  1. `$ cmake ..`で依存関係解決（一部の環境(Windows等)では、`-G "MinGW Makefiles"`でGenerator指定）
+  1. `$ cmake ..`で依存関係解決
+      - 一部の環境(Windows等)では、`-G "MinGW Makefiles"`でGenerator指定
+      - `-D CMAKE_Fortran_COMPILER=[ifort/gfortran]`でコンパイラ指定
+      - `-D CMAKE_BUILD_TYPE=debug`でデバッグ用コンパイルオプション付与
   1. `$ make`でコンパイル
   
   ### 実行
