@@ -90,15 +90,18 @@ module sort_m
     !ノード配列の大きさをひとつ減らし、末端ノードを根ノードに代入
     subroutine rebuild_tree(self)
         class(HeapTree) self
-        type(content_t) pre_array(size(self%node))
+        type(content_t), allocatable :: pre_array(:)
         integer new_size
 
+        allocate(pre_array(size(self%node)))
         pre_array = self%node
+        deallocate(self%node)
         new_size = size(pre_array) - 1
+        allocate(self%node(new_size))
 
         if(new_size >= 1) then
-            self%node = pre_array(:new_size)
-            self%node(1) = pre_array(new_size + 1)
+            self%node = pre_array(2:new_size + 1)
+            ! self%node(1) = pre_array(new_size + 1)
         else
             deallocate(self%node)
         end if
@@ -175,8 +178,10 @@ module sort_m
 
     function real2content(real_array) result(content_array)
         real, intent(in) :: real_array(:)
-        type(content_t) content_array(size(real_array))
+        type(content_t), allocatable :: content_array(:)
         integer i
+
+        allocate(content_array(size(real_array)))
 
         do i = 1, size(real_array)
             content_array(i)%originID = i
