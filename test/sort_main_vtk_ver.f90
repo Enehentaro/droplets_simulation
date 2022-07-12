@@ -13,9 +13,9 @@ program sortMain_vtk_ver
     character(:), allocatable :: vtkFName
     character(10), parameter :: output_dir = 'test_check'
 
-    vtkFName = "sample2.vtk"
+    vtkFName = "/home/master/ダウンロード/testVTK/test_20000grids.vtk"!"sample2.vtk"
             
-    grid = UnstructuredGrid_(vtkFName)
+    call grid%setupWithFlowFieldFile(vtkFName)
 
     iimx = size(grid%CELLs)
     kkmx = size(grid%NODEs)

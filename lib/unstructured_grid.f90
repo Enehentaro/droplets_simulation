@@ -29,13 +29,12 @@ module unstructuredGrid_mod
 
         procedure nearest_cell, nearcell_check, get_MinMaxCDN
 
-        procedure, private :: setupWithFlowFieldFile
         procedure, private :: set_gravity_center, set_MinMaxCDN, point2cellVelocity
         procedure, private :: read_VTK, read_array, read_INP, read_FLD
 
         !=====================================================================
 
-        procedure updateWithFlowFieldFile
+        procedure setupWithFlowFieldFile, updateWithFlowFieldFile
         procedure nearer_cell
         procedure adhesionCheckOnBound
         procedure refCellSearchInfo, search_refCELL
