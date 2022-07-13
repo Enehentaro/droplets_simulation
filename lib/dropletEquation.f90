@@ -34,7 +34,7 @@ module dropletEquation_m
         procedure next_position, next_velocity
         procedure get_radiusLowerLimitRatio
 
-        procedure :: evaporationEq => evaporatinEquation
+        procedure :: evaporationEq => evaporationEquation
         procedure solve_motionEquation
 
     end type
@@ -167,7 +167,7 @@ module dropletEquation_m
     end function
 
     !蒸発方程式。半径変化量を返す。
-    function evaporatinEquation(self, radius) result(dr)
+    function evaporationEquation(self, radius) result(dr)
         class(DropletEquationSolver) self
         double precision, intent(in) :: radius
         double precision drdt1,dr1, drdt2,dr2, r_approxi, dr

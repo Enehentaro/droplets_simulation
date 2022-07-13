@@ -71,7 +71,6 @@ module unstructuredGrid_mod
         class(UnstructuredGrid) self
         character(*), intent(in) :: FNAME
         character(*), intent(in), optional :: meshFile
-        character(:), allocatable :: extension
 
         select case(extensionOf(FNAME))
             case('vtk')
@@ -85,9 +84,9 @@ module unstructuredGrid_mod
 
                 if(.not.allocated(self%CELLs)) then !まだ未割り当てのとき
                     block
-                        character(:), allocatable :: topolpgyFNAME
-                        topolpgyFNAME = FNAME( : index(FNAME, '_', back=.true.)) // '0' // '.fld' !ゼロ番にアクセス
-                        call self%read_FLD(topolpgyFNAME, findTopology= .true., findVelocity = .false.)
+                        character(:), allocatable :: topologyFNAME
+                        topologyFNAME = FNAME( : index(FNAME, '_', back=.true.)) // '0' // '.fld' !ゼロ番にアクセス
+                        call self%read_FLD(topologyFNAME, findTopology= .true., findVelocity = .false.)
                     end block
 
                     call self%read_FLD(FNAME, findTopology= .false., findVelocity = .true.)
@@ -98,7 +97,7 @@ module unstructuredGrid_mod
                 call self%read_Array(FNAME)
 
             case default
-                print*,'FILE_EXTENSION NG : ', extension
+                print*,'FILE_EXTENSION NG : ', FNAME
                 STOP
                     
         end select
@@ -111,7 +110,6 @@ module unstructuredGrid_mod
     subroutine updateWithFlowFieldFile(self, FNAME)
         class(UnstructuredGrid) self
         character(*), intent(in) :: FNAME
-        character(:), allocatable :: extension
 
         select case(extensionOf(FNAME))
             case('vtk')
@@ -127,7 +125,7 @@ module unstructuredGrid_mod
                 call self%read_Array(FNAME)
 
             case default
-                print*,'FILE_EXTENSION NG : ', extension
+                print*,'FILE_EXTENSION NG : ', FNAME
                 STOP
                     
         end select
