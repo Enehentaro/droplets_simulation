@@ -95,13 +95,15 @@ module sort_m
 
         allocate(pre_array(size(self%node)))
         pre_array = self%node
-        deallocate(self%node)
         new_size = size(pre_array) - 1
-        allocate(self%node(new_size))
+        ! deallocate(self%node)
+        ! allocate(self%node(new_size))
 
         if(new_size >= 1) then
-            self%node = pre_array(2:new_size + 1)
+            ! self%node = pre_array(2:new_size + 1)
             ! self%node(1) = pre_array(new_size + 1)
+            self%node = pre_array(:new_size)
+            self%node(1) = pre_array(new_size + 1)
         else
             deallocate(self%node)
         end if
