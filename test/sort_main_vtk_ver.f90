@@ -16,9 +16,9 @@ program sortMain_vtk_ver
     integer nearestID, j
     real, allocatable :: distance(:)
 
-    vtkFName = "sample2.vtk"
+    vtkFName = "sample.vtk"
             
-    grid = UnstructuredGrid_(vtkFName)
+    call grid%setupWithFlowFieldFile(vtkFName)
 
     iimx = size(grid%CELLs)
     kkmx = size(grid%NODEs)
