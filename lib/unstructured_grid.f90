@@ -29,13 +29,12 @@ module unstructuredGrid_mod
 
         procedure nearest_cell, nearcell_check, get_MinMaxCDN
 
-        procedure, private :: setupWithFlowFieldFile
         procedure, private :: set_gravity_center, set_MinMaxCDN, point2cellVelocity
         procedure, private :: read_VTK, read_array, read_INP, read_FLD
 
         !=====================================================================
 
-        procedure updateWithFlowFieldFile
+        procedure setupWithFlowFieldFile, updateWithFlowFieldFile
         procedure nearer_cell
         procedure adhesionCheckOnBound
         procedure refCellSearchInfo, search_refCELL
@@ -72,7 +71,6 @@ module unstructuredGrid_mod
         class(UnstructuredGrid) self
         character(*), intent(in) :: FNAME
         character(*), intent(in), optional :: meshFile
-        character(:), allocatable :: extension
 
         select case(extensionOf(FNAME))
             case('vtk')
@@ -86,9 +84,9 @@ module unstructuredGrid_mod
 
                 if(.not.allocated(self%CELLs)) then !まだ未割り当てのとき
                     block
-                        character(:), allocatable :: topolpgyFNAME
-                        topolpgyFNAME = FNAME( : index(FNAME, '_', back=.true.)) // '0' // '.fld' !ゼロ番にアクセス
-                        call self%read_FLD(topolpgyFNAME, findTopology= .true., findVelocity = .false.)
+                        character(:), allocatable :: topologyFNAME
+                        topologyFNAME = FNAME( : index(FNAME, '_', back=.true.)) // '0' // '.fld' !ゼロ番にアクセス
+                        call self%read_FLD(topologyFNAME, findTopology= .true., findVelocity = .false.)
                     end block
 
                     call self%read_FLD(FNAME, findTopology= .false., findVelocity = .true.)
@@ -99,7 +97,7 @@ module unstructuredGrid_mod
                 call self%read_Array(FNAME)
 
             case default
-                print*,'FILE_EXTENSION NG : ', extension
+                print*,'FILE_EXTENSION NG : ', FNAME
                 STOP
                     
         end select
@@ -112,7 +110,6 @@ module unstructuredGrid_mod
     subroutine updateWithFlowFieldFile(self, FNAME)
         class(UnstructuredGrid) self
         character(*), intent(in) :: FNAME
-        character(:), allocatable :: extension
 
         select case(extensionOf(FNAME))
             case('vtk')
@@ -128,7 +125,7 @@ module unstructuredGrid_mod
                 call self%read_Array(FNAME)
 
             case default
-                print*,'FILE_EXTENSION NG : ', extension
+                print*,'FILE_EXTENSION NG : ', FNAME
                 STOP
                     
         end select
@@ -443,7 +440,6 @@ module unstructuredGrid_mod
                 vector(:) = vector(:) + self%NODEs(nodeID)%coordinate(:)
             end do
             self%CELLs(II)%center(:) = vector(:) / real(num_node)
-            
             self%CELLs(II)%threshold = 0.0
             do n = 1, num_node
                 nodeID = self%CELLs(II)%nodeID(n)

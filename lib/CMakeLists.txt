@@ -18,4 +18,20 @@ add_library(lib
     dropletEquation.f90
     terminalControler.f90
     vtkMesh_operator.f90
+    sort.f90
+    kdTree.f90
+    array.f90
 )
+
+if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+    target_compile_options(lib PRIVATE
+        $<$<CONFIG:Debug>:-O0 -warn all -check all -traceback>
+        $<$<CONFIG:Release>:-O2 -fPIC>
+    )
+elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+    target_compile_options(lib PRIVATE
+        # $<$<CONFIG:Debug>: -O0 -Wall -fcheck=all -fbacktrace>
+        $<$<CONFIG:Debug>: -O0 -fcheck=all -fbacktrace>
+        $<$<CONFIG:Release>: -O2>
+    )
+endif()

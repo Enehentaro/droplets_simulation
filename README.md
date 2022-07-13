@@ -2,13 +2,23 @@
 Simulation of Virus-Laden Droplets Behavior in AFDET
 
 ## 使い方
-  ビルドに`cmake`コマンドを使います（CMakeのインストールが必要）。
-  CMakeLists.txtのあるディレクトリが、作業ディレクトリ（実行ディレクトリ）です。
-  1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）。
-  2. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集。
-  3. `cmake .` コマンドで依存関係解決
-  4. `make`コマンドでコンパイル
-  5. `./bin/main`で実行。ケース名を入力して計算開始。
+  
+  ### 依存関係解決・コンパイル
+  ビルドに`cmake`コマンドを使います（[CMakeのインストール](https://qiita.com/ijknabla/items/05270ae5e597705d0dae#cmake-%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)が必要）。
+  1. `$ mkdir build`でビルドディレクトリ作成
+  1. `$ cd build`で移動
+  1. `$ cmake ..`で依存関係解決
+      - 一部の環境(Windows等)では、`-G "MinGW Makefiles"`でGenerator指定
+      - `-D CMAKE_Fortran_COMPILER=[ifort/gfortran]`でコンパイラ指定
+      - `-D CMAKE_BUILD_TYPE=debug`でデバッグ用コンパイルオプション付与
+  1. `$ make`でコンパイル
+  
+  ### 実行
+  ルートディレクトリ（README.mdのあるディレクトリ）での作業
+  1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）
+  1. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集 
+  1. `./build/bin/main`で実行。ケース名を入力して計算開始。
+
 
 ## 条件ファイル(condition.nml, initial_position.csv)解説
   ### condition.nml
@@ -72,4 +82,8 @@ $$ \bar{\mathbf{v}}^{n + 1} \space = \space \frac{\bar{\mathbf{v}}^{n} \space + 
     - 実行時にTXTファイル名を入力すると、そのファイルに列挙された複数ケースを連続実行できる
   - **basicSetting.nml**
     - optionディレクトリ内にある。付着判定のオンオフや、飛沫間合体の設定が可能。初期半径分布ファイルの指定も可能。
-
+    
+## CTest
+  - コンパイル後、`$ ctest`でCTestが実行可能（buildディレクトリにて）
+  - CTestの実行ディレクトリは、`test/`になる（buildディレクトリではない）
+  - テスト用プログラムはすべて`test/`で管理しよう
