@@ -104,7 +104,7 @@ module kdTree_m
             self%node(parent_ID)%child_ID_2 = child_ID
         case default
             print '("relation ERROR")'
-            stop
+            ERROR STOP
         end select
 
     end subroutine

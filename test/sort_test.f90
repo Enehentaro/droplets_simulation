@@ -22,8 +22,8 @@ program sort_test
         array = real2content(tmp)
         call heap_sort(array, array_sorted)
 
-        ! if(.not.isEqual(array_sorted(:)%value, array_correct)) error stop
-        if(.not.all(array_sorted(:)%value == array_correct)) error stop
+        ! if(.not.isEqual(array_sorted(:)%value, array_correct)) ERROR STOP
+        if(.not.all(array_sorted(:)%value == array_correct)) ERROR STOP
 
         do i = 1, size(array_sorted)
             print '(2(i6, x, f20.16, 4x, "|"))', array(i)%originID, array(i)%value, array_sorted(i)%originID, array_sorted(i)%value

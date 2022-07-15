@@ -17,8 +17,8 @@ module flow_field
         private
 
         procedure, public :: update => update_FlowField
-        procedure, public ::  get_defaultFlowFileName
-        procedure, public ::  set_STEPinFLOW, isUpdateTiming
+        procedure, public ::  get_defaultFlowFileName, isUpdateTiming
+        procedure, public ::  set_time => set_timeSTEPinFLOW
 
         procedure set_FileNameFormat, calc_NextUpdate, get_FileNumber, clamp_STEP
         procedure :: get_requiredFileName => get_requiredFlowFieldFileName
@@ -122,7 +122,7 @@ module flow_field
             FlowField_%DT = DeltaT_FLOW
             print*, 'Delta_Time inFLOW =', FlowField_%DT
 
-            call FlowField_%set_STEPinFLOW(time)
+            call FlowField_%set_time(time)
 
         end if
 
@@ -158,7 +158,7 @@ module flow_field
 
     end function
 
-    subroutine set_STEPinFLOW(self, time)
+    subroutine set_timeSTEPinFLOW(self, time)
         class(FlowField) self
         DOUBLE PRECISION, intent(in) :: time
 

@@ -20,7 +20,7 @@ module path_operator_m
 
             case default
                 print*, 'OS ERROR : ', OS
-                stop
+                ERROR STOP
                 
         end select
 

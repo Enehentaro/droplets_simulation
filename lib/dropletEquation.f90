@@ -206,7 +206,7 @@ module dropletEquation_m
 
         if(radius_d <= 0.d0) then
             print*, '**ZeroRadius ERROR**', radius_d
-            stop
+            ERROR STOP
         end if
 
         speed_r = norm2(vel_a(:) - vel_d(:))    !相対速度の大きさ
@@ -284,7 +284,7 @@ module dropletEquation_m
 
             case default
                 print*, 'RepresentativeValueERROR : ', name
-                stop
+                ERROR STOP
 
         end select
 

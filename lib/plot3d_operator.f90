@@ -148,7 +148,7 @@ module plot3d_operator
         end do
 
         print*, 'ERROR : The Point is Out of Area.', cdn
-        stop
+        ERROR STOP
 
     end function
 
@@ -439,7 +439,7 @@ module plot3d_operator
             read(n_unit) num_cube   ;print*, 'num_cube=', num_cube
             if(num_cube /= size(self%cubes)) then
                 print*, 'ERROR:the number of cube is not macth', num_cube, size(self%cubes)
-                stop
+                ERROR STOP
             end if
 
             allocate(ni(num_cube), nj(num_cube), nk(num_cube), nf(num_cube))

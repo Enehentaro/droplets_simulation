@@ -146,7 +146,7 @@ module sort_m
         arraySize = size(array_origin)
         if(size(array_sorted) /= arraySize) then
             print '("SORT ERROR")'
-            stop
+            ERROR STOP
         end if
 
         heap_tree = HeapTree_(array_origin)

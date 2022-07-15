@@ -175,7 +175,7 @@ module dropletMotionSimulation
 
         if((flow_field%INTERVAL_FLOW <= 0).or.(timeStep==n_end)) return
 
-        call flow_field%set_STEPinFLOW(TimeOnSimu())
+        call flow_field%set_time(TimeOnSimu())
 
         if(flow_field%isUpdateTiming()) then
             call flow_field%update()   !流れ場の更新
@@ -437,7 +437,7 @@ module dropletMotionSimulation
                         exit
 
                     case('n')
-                        stop
+                        ERROR STOP
 
                 end select
 

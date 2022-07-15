@@ -102,7 +102,7 @@ module dropletGenerator_m
 
         if(.not.allocated(self%pBox_array)) then
             print*, 'ERROR : InitialPositionBox is not Set.'
-            stop
+            ERROR STOP
         end if
         num_box = size(self%pBox_array)
 

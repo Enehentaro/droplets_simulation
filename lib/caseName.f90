@@ -28,7 +28,7 @@ module caseName_m
             inquire(file=trim(case_array(i))//'/'//conditionFName, exist=existance)
             if(.not.existance) then
                 print*, 'Case:[ ', trim(case_array(i)), ' ] is not found.'
-                stop
+                ERROR STOP
             end if
         end do
 

@@ -98,7 +98,7 @@ module unstructuredGrid_mod
 
             case default
                 print*,'FILE_EXTENSION NG : ', FNAME
-                STOP
+                ERROR STOP
                     
         end select
 
@@ -126,7 +126,7 @@ module unstructuredGrid_mod
 
             case default
                 print*,'FILE_EXTENSION NG : ', FNAME
-                STOP
+                ERROR STOP
                     
         end select
 
@@ -246,7 +246,7 @@ module unstructuredGrid_mod
 
         if(size(self%CELLS) /= size(velocity, dim=2)) then
             print*, 'SIZE ERROR:', size(self%CELLS), size(velocity, dim=2)
-            stop
+            ERROR STOP
         end if
 
         do II = 1, size(self%CELLS)
@@ -385,7 +385,7 @@ module unstructuredGrid_mod
     
                 if(iihex>0) then
                     print*, 'Hexahedron is not yet supported.', iihex
-                    stop
+                    ERROR STOP
                 end if
     
                 allocate(self%CELLs(iimx))
@@ -675,7 +675,7 @@ module unstructuredGrid_mod
                 refCellSearchInfo = 100 * self%num_refCellSearchFalse / (self%num_refCellSearch + 1)
             case default
                 print*, 'ERROR refCellSearchInfo : ', name
-                stop
+                ERROR STOP
         end select
 
     end function
