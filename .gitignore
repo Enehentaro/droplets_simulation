@@ -1,6 +1,11 @@
 *.o
 *.mod
+*.bat
+*.txt
 .vscode
+
+obj/
+bin/
 
 *.exe
 *-*/
