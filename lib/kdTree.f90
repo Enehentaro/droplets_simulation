@@ -169,25 +169,19 @@ module kdTree_m
                     ! 注目する親とそれに付随する左の子すべてのcellIDを返す
                     allocate(cellIDarray(size(self%node(leftChildID)%cellID_array)+1))
                     cellIDarray(1) = self%node(parentID)%cell_ID
-                    do i = 1, size(self%node(leftChildID)%cellID_array)
-                        cellIDarray(i+1) = self%node(leftChildID)%cellID_array(i)
-                    end do
+                    cellIDarray(2:) = self%node(leftChildID)%cellID_array
                 else
                     ! 注目する親とそれに付随する右の子すべてのcellIDを返す
                     allocate(cellIDarray(size(self%node(rightChildID)%cellID_array)+1))
                     cellIDarray(1) = self%node(parentID)%cell_ID
-                    do i = 1, size(self%node(rightChildID)%cellID_array)
-                        cellIDarray(i+1) = self%node(rightChildID)%cellID_array(i)
-                    end do
+                    cellIDarray(2:) = self%node(rightChildID)%cellID_array
                 end if
             end if
 
             ! (末端ノード-飛沫座標)<=(末端ノードの親の注目(switch)座標-飛沫の注目(switch)座標)
             if(mindist <= abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch))) then
                 ! 注目している親と左or右のすべての子をfalse
-                do i = 1, size(cellIDarray)
-                    NotYetCompared(cellIDarray(i)) = .false.
-                end do
+                NotYetCompared(cellIDarray) = .false.
             else
                 do i = 1, size(cellIDarray)
                     ! (注目している親および左or右のすべての子-飛沫座標)を比較
@@ -206,6 +200,8 @@ module kdTree_m
             end if
 
         end do
+
+        deallocate(NotYetCompared)
 
         print*, "mindist =", mindist
         print*, "nearest_ID =", nearest_ID
