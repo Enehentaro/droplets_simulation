@@ -1,49 +1,62 @@
 module array_m
     implicit none
-    private
-
-    interface isEqual
-        module procedure isEqual_int, isEqual_real
-    end interface
-
-    public isEqual
-    public FisherYates_shuffle
 
     contains
 
-    !配列が等しいかどうかを判定する関数
-    function isEqual_int(a, b) result(isEqual_)
-        integer, intent(in) :: a(:), b(:)
-        logical isEqual_
-        integer i
+    subroutine output_2dArray_asBinary(fname, array)
+        character(*), intent(in)  :: fname
+        real, intent(in) :: array(:,:)
+        integer n_unit
 
-        isEqual_ = .true.
+        print*, 'output_bin2dArray : ', fname
 
-        do i = 1, size(a)
-            if(a(i)/=b(i)) then
-                isEqual_ = .false.
-                return
-            end if
-        end do
+        open(newunit=n_unit, file=fname, form='unformatted', status='replace')
 
-    end function
+            write(n_unit) shape(array)
 
-    !配列が等しいかどうかを判定する関数
-    function isEqual_real(a, b) result(isEqual_)
-        real, intent(in) :: a(:), b(:)
-        logical isEqual_
-        integer i
+            write(n_unit) array
 
-        isEqual_ = .true.
+        close(n_unit)
 
-        do i = 1, size(a)
-            if(a(i)/=b(i)) then
-                isEqual_ = .false.
-                return
-            end if
-        end do
+    end subroutine
 
-    end function
+    subroutine read_2dArray_asBinary(fname, array)
+        character(*), intent(in)  :: fname
+        real, allocatable, intent(out) :: array(:,:)
+        integer n_unit, arrayShape(2)
+
+        print*, 'read_bin2dArray : ', fname
+
+        open(newunit=n_unit, file=fname, form='unformatted', status='old', action='read')
+
+            read(n_unit) arrayShape(:)
+
+            allocate(array(arrayShape(1), arrayShape(2)))
+
+            read(n_unit) array
+
+        close(n_unit)
+
+    end subroutine
+
+    subroutine read_1dArray_real(fname, array)
+        character(*), intent(in)  :: fname
+        real, allocatable, intent(out) :: array(:)
+        integer n_unit, size
+
+        print*, 'read_1darray : ', fname
+
+        open(newunit=n_unit, file=fname, status='old', action='read')
+
+            read(n_unit, *) size
+
+            allocate(array(size))
+
+            read(n_unit, *) array
+
+        close(n_unit)
+
+    end subroutine
 
     function FisherYates_shuffle(a) result(b)
         real, intent(in) :: a(:)

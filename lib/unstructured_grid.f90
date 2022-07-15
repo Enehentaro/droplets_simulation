@@ -236,13 +236,13 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine read_Array(self, FNAME)
-        use simpleFile_reader
+        use array_m
         class(UnstructuredGrid) self
         character(*), intent(in) :: FNAME
         real, allocatable :: velocity(:,:)
         integer II
 
-        call read_array_asBinary(FNAME, velocity)
+        call read_2dArray_asBinary(FNAME, velocity)
 
         if(size(self%CELLS) /= size(velocity, dim=2)) then
             print*, 'SIZE ERROR:', size(self%CELLS), size(velocity, dim=2)

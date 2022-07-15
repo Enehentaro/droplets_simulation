@@ -264,11 +264,11 @@ module dropletGenerator_m
     end subroutine
 
     subroutine set_SequentialArray(self, filename)
-        use simpleFile_reader
+        use array_m
         class(SequentialArray) self
         character(*), intent(in) :: filename
 
-        call read_array_real(filename, self%array)
+        call read_1dArray_real(filename, self%array)
 
         self%index = 1
 

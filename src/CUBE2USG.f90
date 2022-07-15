@@ -5,6 +5,7 @@ program CUBE2USG
     use plot3d_operator
     use vtkMesh_operator_m
     use simpleFile_reader
+    use array_m
     implicit none
     character(100) F_fname, USG_fname, casefname
     character(50),parameter :: filename = 'name.txt'
@@ -55,7 +56,7 @@ program CUBE2USG
                 fname_base = F_fname(:len_trim(F_fname)-2)
 
                 !流速場配列をバイナリ出力
-                call output_array_asBinary(fname=fname_base//'.array', array=velocity)
+                call output_2dArray_asBinary(fname=fname_base//'.array', array=velocity)
 
                 !確認用に、ひとつだけVTKファイル出力
                 if(fileID==1) call USG%output(fname_base//'.vtk', cellVector=velocity, vectorName='Velocity')
@@ -134,7 +135,7 @@ program CUBE2USG
             read(n_unit, *) dummy, num_cell_
 
             if((num_cell_/=num_cell).or.(num_cube/=cubeMesh%get_numCube()).or.&
-                .not.isEqual(cubeShape, cubeMesh%get_cubeShape())) then
+                .not.all(cubeShape==cubeMesh%get_cubeShape())) then
 
                 print*, 'SizeERROR:', num_cell_, num_cell, num_cube, cubeMesh%get_numCube()
                 success = .false.
