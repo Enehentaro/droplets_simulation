@@ -160,6 +160,8 @@ module kdTree_m
             leftChildID = self%node(parentID)%child_ID_1
             rightChildID = self%node(parentID)%child_ID_2
 
+            ! 右もしくは左の子が存在しない場合の処理。存在しないときの子ノードIDは0となる
+            ! self%node(0)%cell_IDは存在しないので、除外する。
             if(leftChildID == 0 .or. rightChildID == 0) then
                 allocate(cellIDarray(1))
                 cellIDarray(1) = self%node(parentID)%cell_ID
