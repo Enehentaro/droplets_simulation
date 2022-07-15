@@ -9,14 +9,12 @@ program sortMain_vtk_ver
     real droplet_position(3)
     integer nearest_ID
     integer n_unit 
-    integer i, iimx, kkmx
+    integer i, iimx, kkmx, nearestID
     character(:), allocatable :: vtkFName
     character(10), parameter :: output_dir = 'test_check'
     real kdTree_startTime, kdTree_endTime, fullSearch_startTime, fullSearch_endTime
-    integer nearestID, j
-    real, allocatable :: distance(:)
 
-    vtkFName = "sample.vtk"
+    vtkFName = "sample2.vtk"
             
     call grid%setupWithFlowFieldFile(vtkFName)
 
@@ -49,15 +47,11 @@ program sortMain_vtk_ver
     call cpu_time(kdTree_endTime)
 
     call cpu_time(fullSearch_startTime)
-        allocate(distance(iimx))
-        do j = 1, iimx
-            droplet_position(:) = xyz(:, j)
-            do i = 1, iimx
-                distance(i) = norm2(xyz(:, i) - droplet_position(:))
-            end do
-            nearestID = minloc(distance, dim = 1)
-            print*, "nearestID =", nearestID 
-        end do
+    do i = 1, iimx
+        droplet_position(:) = xyz(:, j)
+        nearestID = grid%nearest_cell(droplet_position(:))
+        print*, "nearestID=", nearestID
+    end do
     call cpu_time(fullSearch_endTime)
 
     print*, "kdTree_elapsedTime =",kdTree_endTime - kdTree_startTime, "sec"
