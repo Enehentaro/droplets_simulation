@@ -173,7 +173,7 @@ module dropletMotionSimulation
 
     subroutine check_FlowFieldUpdate
 
-        if((flow_field%INTERVAL_FLOW <= 0).or.(timeStep==n_end)) return
+        if(timeStep==n_end) return
 
         call flow_field%set_time(TimeOnSimu())
 

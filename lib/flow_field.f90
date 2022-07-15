@@ -5,7 +5,7 @@ module flow_field
 
     type, public, extends(UnstructuredGrid) :: FlowField
         private
-        integer, public :: INTERVAL_FLOW                             !気流データ出力間隔
+        integer INTERVAL                             !気流データ出力間隔
         integer LoopHead, LoopTail, OFFSET
         double precision DT
         integer STEP, NextUpdate
@@ -73,7 +73,7 @@ module flow_field
         class(FlowField) self
         character(:), allocatable :: FileName
 
-        if(self%INTERVAL_FLOW   <= 0) then
+        if(self%INTERVAL   <= 0) then
             FileName = self%FullFileName
 
         else
@@ -90,36 +90,35 @@ module flow_field
     end function
 
     type(FlowField) function FlowField_(&
-        time, PATH2FlowFile, DeltaT_FLOW, timeOFFSET, outputINTERVAL_FLOW  , flowLoopHead, flowLoopTail, &
-        meshFile)
+        time, PATH2FlowFile, DeltaT, OFFSET, outputINTERVAL, LoopHead, LoopTail, meshFile)
         
-        double precision, intent(in) :: time, DeltaT_FLOW
-        integer, intent(in) :: timeOFFSET, outputINTERVAL_FLOW  , flowLoopHead, flowLoopTail
+        double precision, intent(in) :: time, DeltaT
+        integer, intent(in) :: OFFSET, outputINTERVAL, LoopHead, LoopTail
         character(*), intent(in) :: PATH2FlowFile
         character(*), intent(in), optional :: meshFile
 
         call FlowField_%set_FileNameFormat(PATH2FlowFile)
 
-        FlowField_%INTERVAL_FLOW  = outputINTERVAL_FLOW
+        FlowField_%INTERVAL  = outputINTERVAL
 
-        if(FlowField_%INTERVAL_FLOW   <= 0) then
+        if(FlowField_%INTERVAL   <= 0) then
             print*, 'AirFlow is Steady'
 
         else
-            print*, 'Interval of AirFlow =', FlowField_%INTERVAL_FLOW  
+            print*, 'Interval of AirFlow =', FlowField_%INTERVAL 
 
-            FlowField_%OFFSET = timeOFFSET
+            FlowField_%OFFSET = OFFSET
             print*, 'OFFSET =', FlowField_%OFFSET
 
-            FlowField_%LoopHead = flowLoopHead
-            FlowField_%LoopTail = flowLoopTail
+            FlowField_%LoopHead = LoopHead
+            FlowField_%LoopTail = LoopTail
             if(FlowField_%LoopTail - FlowField_%LoopHead > 0) then
                 print*, 'Loop is from', FlowField_%LoopHead, 'to', FlowField_%LoopTail
             elseif(FlowField_%LoopTail - FlowField_%LoopHead == 0) then 
                 print*, 'After', FlowField_%LoopTail, ', Checkout SteadyFlow'
             end if
 
-            FlowField_%DT = DeltaT_FLOW
+            FlowField_%DT = DeltaT
             print*, 'Delta_Time inFLOW =', FlowField_%DT
 
             call FlowField_%set_time(time)
@@ -150,7 +149,7 @@ module flow_field
     logical function isUpdateTiming(self)
         class(FlowField) self
 
-        if(self%STEP >= self%NextUpdate .and. self%INTERVAL_FLOW   > 0) then
+        if(self%STEP >= self%NextUpdate .and. self%INTERVAL > 0) then
             isUpdateTiming = .true.
         else
             isUpdateTiming = .false.
@@ -171,10 +170,10 @@ module flow_field
         integer i
 
         i = 0
-        do while(i*self%INTERVAL_FLOW   + self%OFFSET <= self%STEP)
+        do while(i*self%INTERVAL + self%OFFSET <= self%STEP)
             i = i + 1
         end do
-        self%NextUpdate = i*self%INTERVAL_FLOW   + self%OFFSET
+        self%NextUpdate = i*self%INTERVAL + self%OFFSET
 
     end subroutine
 
@@ -183,10 +182,10 @@ module flow_field
 
         get_FileNumber = self%OFFSET
         do while(get_FileNumber < self%STEP)
-            get_FileNumber = get_FileNumber + self%INTERVAL_FLOW  
+            get_FileNumber = get_FileNumber + self%INTERVAL
         end do
 
-        get_FileNumber = get_FileNumber + self%INTERVAL_FLOW     !前進評価
+        get_FileNumber = get_FileNumber + self%INTERVAL     !前進評価
 
         call self%clamp_STEP(get_FileNumber)
 
@@ -206,7 +205,7 @@ module flow_field
 
             else if(Lamda == 0) then
                 STEP = self%LoopTail
-                self%INTERVAL_FLOW   = -1
+                self%INTERVAL = -1
                 print*, '**Checkout SteadyFlow**'
             end if
 
