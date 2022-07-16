@@ -14,7 +14,7 @@ module kdTree_m
         private
         type(node_in_kdTree_t), allocatable :: node(:)
         contains
-        procedure set_relation, saveAsDOT, get_selfAndHalfChildren
+        procedure set_relation, saveAsDOT
         procedure :: search => search_kdtree
     end type
 
@@ -114,11 +114,11 @@ module kdTree_m
         class(kdTree), intent(in) :: self
         real, intent(in) :: xyz(:,:) 
         real, intent(in) :: droplet_position(3)
-        integer depth, switch, parentID, nextChildID, i, leftChildID
+        integer depth, switch, parentID, nextChildID, i, leftChildID, rightChildID
         integer, intent(out) :: nearest_ID
         real mindist
         logical, allocatable :: NotYetCompared(:)
-        integer, allocatable :: childCellIDarray(:)
+        integer, allocatable :: cellIDarray(:)
 
         parentID = 1
 
@@ -158,32 +158,44 @@ module kdTree_m
             switch = mod(depth,3)+1
             
             leftChildID = self%node(parentID)%child_ID_1
+            rightChildID = self%node(parentID)%child_ID_2
 
-            ! 注目している親の左の子をまだ比較していないならtrue
-            if(NotYetCompared(self%node(leftChildID)%cell_ID)) then
-                ! 注目する親とそれに付随する左の子すべてのcellIDを返す
-                call self%get_selfAndHalfChildren(parentID, 'left', childCellIDarray)
+            ! 右もしくは左の子が存在しない場合の処理。存在しないときの子ノードIDは0となる
+            ! self%node(0)%cell_IDは存在しないので、除外する。
+            if(leftChildID == 0 .or. rightChildID == 0) then
+                allocate(cellIDarray(1))
+                cellIDarray(1) = self%node(parentID)%cell_ID
             else
-                ! 注目する親とそれに付随する右の子すべてのcellIDを返す
-                call self%get_selfAndHalfChildren(parentID, 'right', childCellIDarray)
+                ! 注目している親の左の子をまだ比較していないならtrue
+                if(NotYetCompared(self%node(leftChildID)%cell_ID)) then
+                    ! 注目する親とそれに付随する左の子すべてのcellIDを返す
+                    allocate(cellIDarray(size(self%node(leftChildID)%cellID_array)+1))
+                    cellIDarray(1) = self%node(parentID)%cell_ID
+                    cellIDarray(2:) = self%node(leftChildID)%cellID_array
+                else
+                    ! 注目する親とそれに付随する右の子すべてのcellIDを返す
+                    allocate(cellIDarray(size(self%node(rightChildID)%cellID_array)+1))
+                    cellIDarray(1) = self%node(parentID)%cell_ID
+                    cellIDarray(2:) = self%node(rightChildID)%cellID_array
+                end if
             end if
 
             ! (末端ノード-飛沫座標)<=(末端ノードの親の注目(switch)座標-飛沫の注目(switch)座標)
             if(mindist <= abs(xyz(switch,self%node(parentID)%cell_ID)-droplet_position(switch))) then
                 ! 注目している親と左or右のすべての子をfalse
-                do i = 1, size(childCellIDarray)
-                    NotYetCompared(childCellIDarray(i)) = .false.
-                end do
+                NotYetCompared(cellIDarray) = .false.
             else
-                do i = 1, size(childCellIDarray)
+                do i = 1, size(cellIDarray)
                     ! (注目している親および左or右のすべての子-飛沫座標)を比較
-                    if(norm2(xyz(:,childCellIDarray(i))-droplet_position(:)) <= mindist) then
-                        mindist = norm2(xyz(:,childCellIDarray(i))-droplet_position(:))
-                        nearest_ID = childCellIDarray(i)
+                    if(norm2(xyz(:,cellIDarray(i))-droplet_position(:)) <= mindist) then
+                        mindist = norm2(xyz(:,cellIDarray(i))-droplet_position(:))
+                        nearest_ID = cellIDarray(i)
                     end if
-                    NotYetCompared(childCellIDarray(i)) = .false.
+                    NotYetCompared(cellIDarray(i)) = .false.
                 end do
             end if
+
+            deallocate(cellIDarray)
 
             if(parentID == 1) then
                 exit
@@ -191,48 +203,53 @@ module kdTree_m
 
         end do
 
+        deallocate(NotYetCompared)
+
         print*, "mindist =", mindist
         print*, "nearest_ID =", nearest_ID
 
     end subroutine
 
-    subroutine get_selfAndHalfChildren(self, topParentID, lr, selfAndHalfChildren)
-        class(kdTree) self
-        integer, intent(in) :: topParentID
-        character(*), intent(in) :: lr
-        integer, allocatable, intent(out) :: selfAndHalfChildren(:)
-        integer, allocatable :: selfAndAllChildren(:), halfChildren(:)
-        integer childID, cnt, i
+    ! subroutine get_selfAndHalfChildren(self, topParentID, lr, selfAndHalfChildren)
+    !     class(kdTree) self
+    !     integer, intent(in) :: topParentID
+    !     character(*), intent(in) :: lr
+    !     integer, allocatable, intent(out) :: selfAndHalfChildren(:)
+    !     integer, allocatable :: selfAndAllChildren(:), halfChildren(:)
+    !     integer childID, cnt, i
 
-        ! 親IDとそれに付随するすべての子のcellIDを格納
-        selfAndAllChildren = self%node(topParentID)%cellID_array
+    !     ! 親IDとそれに付随するすべての子のcellIDを格納
+    !     selfAndAllChildren = self%node(topParentID)%cellID_array
 
-        ! leftの場合、これから比較するのは左側で、全体から取り除くべき子供は右側
-        select case(lr)
-            case('left')
-                childID = self%node(topParentID)%child_ID_2
-            case('right')
-                childID = self%node(topParentID)%child_ID_1
-        end select
+    !     ! leftの場合、これから比較するのは左側で、全体から取り除くべき子供は右側
+    !     select case(lr)
+    !         case('left')
+    !             childID = self%node(topParentID)%child_ID_2
+    !         case('right')
+    !             childID = self%node(topParentID)%child_ID_1
+    !     end select
 
-        if(childID == 0) return
+    !     if(childID == 0) return
 
-        ! 取り除く子供すべてをhalfChildrenに格納
-        halfChildren = self%node(childID)%cellID_array
-        allocate(selfAndHalfChildren(&
-            size(selfAndAllChildren) - size(halfChildren)))
+    !     ! 取り除く子供すべてをhalfChildrenに格納
+    !     halfChildren = self%node(childID)%cellID_array
+    !     allocate(selfAndHalfChildren(&
+    !         size(selfAndAllChildren) - size(halfChildren)))
 
-        cnt = 0
-        do i = 1, size(selfAndAllChildren)
-            ! any文はself..(i)の値がhalf..に存在すればtrueを返す
-            ! つまり、全体のcellIDの内、これから比較を行うべきcellIDのみif文内の処理を行う
-            if(.not.any(selfAndAllChildren(i)==halfChildren)) then
-                cnt = cnt +1
-                selfAndHalfChildren(cnt) = selfAndAllChildren(i)
-            end if
-        end do
+    !     cnt = 0
+    !     do i = 1, size(selfAndAllChildren)
+    !         ! any文はself..(i)の値がhalf..に存在すればtrueを返す
+    !         ! つまり、全体のcellIDの内、これから比較を行うべきcellIDのみif文内の処理を行う
+    !         if(.not.any(selfAndAllChildren(i)==halfChildren)) then
+    !             cnt = cnt +1
+    !             selfAndHalfChildren(cnt) = selfAndAllChildren(i)
+    !         end if
+    !     end do
 
-    end subroutine
+    !     deallocate(selfAndAllChildren)
+    !     deallocate(halfChildren)
+
+    ! end subroutine
 
     subroutine saveAsDOT(self, xyz, fname)
         class(kdTree), intent(in) :: self
