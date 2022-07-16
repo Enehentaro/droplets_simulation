@@ -1,5 +1,5 @@
-!流れ場ファイルの読み込みテスト
-!VTK,FLD,ARRAYをそれぞれ定常・非定常の計6通りテスト
+!セル重心計算サブルーチンが2箇所に存在し、統一しようとしたものの絡まってしまったので断念
+!ふたつのサブルーチン結果が一致するかをテストすることで齟齬が起きないよう対処（その場しのぎ）
 program cellCenterCalc_test
     use unstructuredGrid_m
     use vtkMesh_operator_m
