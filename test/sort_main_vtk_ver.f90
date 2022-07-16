@@ -44,7 +44,7 @@ program sortMain_vtk_ver
 
     call cpu_time(fullSearch_startTime)
     do i = 1, iimx
-        droplet_position(:) = xyz(:, j)
+        droplet_position(:) = xyz(:, i)
         nearestID = grid%nearest_cell(droplet_position(:))
         print*, "nearestID=", nearestID
     end do
