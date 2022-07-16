@@ -58,6 +58,17 @@ module array_m
 
     end subroutine
 
+    function mean_2dArray(array) result(mean)
+        real, intent(in) :: array(:,:)
+        real mean(size(array, dim=2))
+        integer i
+
+        do i = 1, size(array, dim=1)
+            mean(i) = sum(array(i, :)) / size(array, dim=2)
+        end do
+
+    end function
+
     function FisherYates_shuffle(a) result(b)
         real, intent(in) :: a(:)
         real b(size(a)), rand, tmp

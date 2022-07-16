@@ -1,5 +1,5 @@
-/*.txt
-/*.stl
+*.txt
+*.stl
 !CMakeLists.txt
 
 test_check

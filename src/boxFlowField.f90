@@ -1,7 +1,7 @@
 program boxFlowField
     use conditionValue_m
     use boxCounter_m
-    use unstructuredGrid_mod
+    use unstructuredGrid_m
     use terminalControler_m
     implicit none
     integer i_box, num_box, nc
@@ -41,7 +41,7 @@ program boxFlowField
                 call print_progress([i_box, num_box])
                 ! i_cell = mesh%nearest_cell(box_array(i_box)%center)
                 call mesh%search_refCELL(box_array(i_box)%center, i_cell)
-                bResult(i_box)%flowVelocity = mesh%CELLs(i_cell)%flowVelocity
+                bResult(i_box)%flowVelocity = mesh%get_flowVelocityInCELL(i_cell)
             end do
 
         end block

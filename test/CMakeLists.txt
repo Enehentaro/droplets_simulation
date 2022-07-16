@@ -16,3 +16,4 @@ endfunction(ADDTEST)
 
 ADDTEST(sort_test)
 ADDTEST(sort_main_vtk_ver)
+ADDTEST(cellCenterCalc_test)

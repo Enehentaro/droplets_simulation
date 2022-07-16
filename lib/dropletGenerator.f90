@@ -102,7 +102,7 @@ module dropletGenerator_m
 
         if(.not.allocated(self%pBox_array)) then
             print*, 'ERROR : InitialPositionBox is not Set.'
-            ERROR STOP
+            error stop
         end if
         num_box = size(self%pBox_array)
 
@@ -182,7 +182,7 @@ module dropletGenerator_m
 
     subroutine set_dropletPlacementBox(self, positionDir)
         use simpleFile_reader
-        use filename_mod, only : IniPositionFName
+        use filename_m, only : IniPositionFName
         class(DropletGenerator) self
         character(*), intent(in) :: positionDir
         integer i_box, num_box

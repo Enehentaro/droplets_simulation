@@ -208,7 +208,7 @@ module dropletMotionSimulation
     end subroutine
    
     subroutine adhesion_check(dGroup)
-        use unstructuredGrid_mod
+        use unstructuredGrid_m
         type(DropletGroup) dGroup
         integer i
 
@@ -255,7 +255,7 @@ module dropletMotionSimulation
     end subroutine
                       
     subroutine dropletOnBoundary(dGroup) !境界面の移動に合わせて付着飛沫も移動
-        use unstructuredGrid_mod
+        use unstructuredGrid_m
         type(DropletGroup) dGroup
         integer vn, JB
 
@@ -268,7 +268,8 @@ module dropletMotionSimulation
             JB = dGroup%droplet(vn)%adhesBoundID
             if (JB > 0) then
                 dGroup%droplet(vn)%position(:) &
-                    = dGroup%droplet(vn)%position(:) + flow_field%BoundFACEs(JB)%moveVector(:) !面重心の移動量と同じだけ移動
+                    = dGroup%droplet(vn)%position(:) &
+                    + flow_field%get_movementVectorOfBoundarySurface(JB) !面重心の移動量と同じだけ移動
             end if
         
         end do
@@ -323,7 +324,7 @@ module dropletMotionSimulation
         type(virusDroplet_t) droplet
         double precision velAir(3)
 
-        velAir(:) = flow_field%CELLs(droplet%refCellID)%flowVelocity(:)
+        velAir(:) = flow_field%get_flowVelocityInCELL(droplet%refCellID)
     
         call dropletSolver%solve_motionEquation(droplet%position(:), droplet%velocity(:), velAir(:), droplet%get_radius())
 
@@ -332,7 +333,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine output_mainDroplet(initial)
-        use filename_mod, only : IniDistributionFName
+        use filename_m, only : IniDistributionFName
         logical, intent(in) :: initial
         character(255) fname
 
@@ -437,7 +438,7 @@ module dropletMotionSimulation
                         exit
 
                     case('n')
-                        ERROR STOP
+                        error stop
 
                 end select
 

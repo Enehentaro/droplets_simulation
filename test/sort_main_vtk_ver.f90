@@ -1,7 +1,7 @@
 program sortMain_vtk_ver
     use kdTree_m
     use path_operator_m
-    use unstructuredGrid_mod
+    use unstructuredGrid_m
     implicit none 
     type(UnstructuredGrid) grid
     real, allocatable :: xyz(:,:)
@@ -9,7 +9,7 @@ program sortMain_vtk_ver
     real droplet_position(3)
     integer nearest_ID
     integer n_unit 
-    integer i, iimx, kkmx
+    integer i, iimx!, kkmx
     character(:), allocatable :: vtkFName
     character(10), parameter :: output_dir = 'test_check'
 
@@ -17,15 +17,11 @@ program sortMain_vtk_ver
             
     call grid%setupWithFlowFieldFile(vtkFName)
 
-    iimx = size(grid%CELLs)
-    kkmx = size(grid%NODEs)
-    allocate(xyz(3, size(grid%CElls)))
+    iimx = grid%get_info('cell')
 
     call make_directory(output_dir)
 
-    do i = 1, iimx
-        xyz(:, i) = grid%CELLs(i)%center(:)
-    end do
+    xyz = grid%get_cellCenters()
 
     open(newunit = n_unit, file = output_dir//"/before.txt", status = 'replace')
         do i = 1, iimx

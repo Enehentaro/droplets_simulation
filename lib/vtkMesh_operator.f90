@@ -20,7 +20,7 @@ module vtkMesh_operator_m
         procedure, private :: allocation_node, allocation_cell
         procedure :: read => read_vtkMesh
         procedure :: output => output_vtkMesh
-        procedure get_numCell, get_numNode, get_nodeCoordinate, get_cellVertices, get_cellCenter
+        procedure get_numCell, get_numNode, get_nodeCoordinate, get_cellVertices, get_cellCenters
         procedure set_nodeCoordinate, set_cellVertices
 
     end type
@@ -300,14 +300,14 @@ module vtkMesh_operator_m
 
     end subroutine
 
-    function get_cellCenter(self) result(center)
+    function get_cellCenters(self) result(centers)
         class(vtkMesh), intent(in) :: self
-        real, allocatable :: center(:,:)
+        real, allocatable :: centers(:,:)
         real x(3)
         integer i, k, num_node, num_cell, nodeID
 
         num_cell = size(self%cell_array)
-        allocate(center(3, num_cell))
+        allocate(centers(3, num_cell))
 
         do i = 1, num_cell
             x(:) = 0.0
@@ -316,7 +316,7 @@ module vtkMesh_operator_m
                 nodeID = self%cell_array(i-1)%nodeID(k)
                 x(:) = x(:) + self%node_array(nodeID)%coordinate(:)
             end do
-            center(:,i) = x(:) / real(num_node)
+            centers(:,i) = x(:) / real(num_node)
         end do
 
     end function

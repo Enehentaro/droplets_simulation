@@ -104,7 +104,7 @@ program CUBE2USG
         call set_formatTC('("SEARCH vtkcell2cubenode [ ",f6.2," % ] ", f8.1, " sec is left.")')
 
         allocate(vtkCell2cubeNode(num_cell))
-        cellCenter = USG%get_cellCenter()
+        cellCenter = USG%get_cellCenters()
         do i = 1, num_cell
 
             progress_percent = real(i*100) / real(num_cell-1)

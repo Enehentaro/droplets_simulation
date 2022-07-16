@@ -1,47 +1,51 @@
-module unstructuredGrid_mod
+module unstructuredGrid_m
     implicit none
     private
 
     type node_t
         real coordinate(3)
-    end type node_t
+    end type
 
     type boundaryTriangle_t
         integer nodeID(3)
         real center(3), normalVector(3), moveVector(3)
-    end type boundaryTriangle_t
+    end type
 
     type cell_t
         character(5) typeName
         integer, allocatable :: nodeID(:), boundFaceID(:), adjacentCellID(:)
         real center(3), flowVelocity(3), threshold
-    end type cell_t
+    end type
 
     type, public :: UnstructuredGrid
+        private
         type(node_t), allocatable :: NODEs(:)
         type(cell_t), allocatable :: CELLs(:)
         type(boundaryTriangle_t), allocatable :: BoundFACEs(:)
 
-        real, private :: MIN_CDN(3), MAX_CDN(3)
-        integer, private :: num_refCellSearchFalse = 0, num_refCellSearch = 0
+        real MIN_CDN(3), MAX_CDN(3)
+        integer :: num_refCellSearchFalse = 0, num_refCellSearch = 0
 
         contains
+        private
 
-        procedure nearest_cell, nearcell_check, get_MinMaxCDN
+        procedure, public :: nearest_cell, nearcell_check, get_MinMaxCDN
+        procedure, public :: get_flowVelocityInCELL, get_cellCenters, get_movementVectorOfBoundarySurface
+        procedure, public :: get_info => get_meshInformation
 
-        procedure, private :: set_gravity_center, set_MinMaxCDN, point2cellVelocity
-        procedure, private :: read_VTK, read_array, read_INP, read_FLD
+        procedure set_cellCenter, set_cellThreshold, set_MinMaxCDN, point2cellVelocity
+        procedure, public :: read_VTK, read_array, read_INP, read_FLD
 
         !=====================================================================
 
-        procedure setupWithFlowFieldFile, updateWithFlowFieldFile
+        procedure, public :: setupWithFlowFieldFile, updateWithFlowFieldFile
         procedure nearer_cell
-        procedure adhesionCheckOnBound
-        procedure refCellSearchInfo, search_refCELL
+        procedure, public :: adhesionCheckOnBound
+        procedure, public :: refCellSearchInfo, search_refCELL
 
-        procedure, private :: AdjacencySolvingProcess
-        procedure, private :: read_adjacency, read_boundaries, solve_adacencyOnUnstructuredGrid
-        procedure, private :: output_boundaries, output_adjacency, boundary_setting, output_STL
+        procedure AdjacencySolvingProcess
+        procedure read_adjacency, read_boundaries, solve_adacencyOnUnstructuredGrid
+        procedure output_boundaries, output_adjacency, boundary_setting, output_STL
 
     end type
 
@@ -98,12 +102,13 @@ module unstructuredGrid_mod
 
             case default
                 print*,'FILE_EXTENSION NG : ', FNAME
-                ERROR STOP
+                error stop
                     
         end select
 
         call self%set_MinMaxCDN()
-        call self%set_gravity_center()
+        call self%set_cellCenter()
+        call self%set_cellThreshold()
 
     end subroutine
 
@@ -126,12 +131,13 @@ module unstructuredGrid_mod
 
             case default
                 print*,'FILE_EXTENSION NG : ', FNAME
-                ERROR STOP
+                error stop
                     
         end select
 
         call self%set_MinMaxCDN()
-        call self%set_gravity_center()
+        call self%set_cellCenter()
+        call self%set_cellThreshold()
 
         call self%boundary_setting(first=.false.)
             
@@ -182,6 +188,44 @@ module unstructuredGrid_mod
         MinMax(:,2) = self%MAX_CDN
 
     end function
+
+    subroutine set_cellCenter(self) !セル重心の算出
+        class(UnstructuredGrid) self
+        integer II,IIMX, n, num_node, nodeID
+        real vector(3)
+
+        IIMX = size(self%CELLs)
+        DO II = 1, IIMX
+            num_node = size(self%CELLs(II)%nodeID)
+            vector(:) = 0.0
+            do n = 1, num_node
+                nodeID = self%CELLs(II)%nodeID(n)
+                vector(:) = vector(:) + self%NODEs(nodeID)%coordinate(:)
+            end do
+            self%CELLs(II)%center(:) = vector(:) / real(num_node)
+        END DO
+
+    end subroutine
+
+    subroutine set_cellThreshold(self) !セル閾値の算出
+        class(UnstructuredGrid) self
+        integer II,IIMX, n, num_node, nodeID
+        real x, vector(3)
+
+        IIMX = size(self%CELLs)
+        DO II = 1, IIMX
+            num_node = size(self%CELLs(II)%nodeID)
+            x = 0.0
+            do n = 1, num_node
+                nodeID = self%CELLs(II)%nodeID(n)
+                vector(:) = self%NODEs(nodeID)%coordinate(:) - self%CELLs(II)%center(:)
+                x = max(x, norm2(vector)) 
+            end do
+            self%CELLs(II)%threshold = x
+            ! print*, self%CELLs(II)%threshold
+        END DO
+
+    end subroutine
 
     subroutine read_VTK(self, FNAME, meshOnly)
         use vtkMesh_operator_m
@@ -246,7 +290,7 @@ module unstructuredGrid_mod
 
         if(size(self%CELLS) /= size(velocity, dim=2)) then
             print*, 'SIZE ERROR:', size(self%CELLS), size(velocity, dim=2)
-            ERROR STOP
+            error stop
         end if
 
         do II = 1, size(self%CELLS)
@@ -385,7 +429,7 @@ module unstructuredGrid_mod
     
                 if(iihex>0) then
                     print*, 'Hexahedron is not yet supported.', iihex
-                    ERROR STOP
+                    error stop
                 end if
     
                 allocate(self%CELLs(iimx))
@@ -424,37 +468,8 @@ module unstructuredGrid_mod
           
     end subroutine
 
-    subroutine set_gravity_center(self) !セル重心およびセル閾値の算出
-        class(UnstructuredGrid) self
-        integer II,IIMX, n, num_node, nodeID
-        real vector(3)
-
-        IIMX = size(self%CELLs)
-
-        !$omp parallel do private(num_node, nodeID, vector)
-        DO II = 1, IIMX
-            vector(:) = 0.0
-            num_node = size(self%CELLs(II)%nodeID)
-            do n = 1, num_node
-                nodeID = self%CELLs(II)%nodeID(n)
-                vector(:) = vector(:) + self%NODEs(nodeID)%coordinate(:)
-            end do
-            self%CELLs(II)%center(:) = vector(:) / real(num_node)
-            self%CELLs(II)%threshold = 0.0
-            do n = 1, num_node
-                nodeID = self%CELLs(II)%nodeID(n)
-                vector(:) = self%NODEs(nodeID)%coordinate(:) - self%CELLs(II)%center(:)
-                self%CELLs(II)%threshold = max(self%CELLs(II)%threshold, norm2(vector)) 
-            end do
-            ! print*, self%CELLs(II)%threshold
-        
-        END DO
-        !$omp end parallel do
-
-    end subroutine
-
     subroutine read_adjacency(self, path, success)
-        use filename_mod, only : adjacencyFileName
+        use filename_m, only : adjacencyFileName
         class(UnstructuredGrid) self
         character(*), intent(in) :: path
         logical, intent(out) :: success
@@ -501,7 +516,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine output_adjacency(self, path)
-        use filename_mod, only : adjacencyFileName
+        use filename_m, only : adjacencyFileName
         class(UnstructuredGrid) self
         character(*), intent(in) :: path
         integer II, n_unit, num_cells, NCMAX
@@ -531,7 +546,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine read_boundaries(self, path)
-        use filename_mod, only : boundaryFileName
+        use filename_m, only : boundaryFileName
         class(UnstructuredGrid) self
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
@@ -550,7 +565,7 @@ module unstructuredGrid_mod
     end subroutine
 
     subroutine output_boundaries(self, path)
-        use filename_mod, only : boundaryFileName
+        use filename_m, only : boundaryFileName
         class(UnstructuredGrid) self
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
@@ -675,7 +690,7 @@ module unstructuredGrid_mod
                 refCellSearchInfo = 100 * self%num_refCellSearchFalse / (self%num_refCellSearch + 1)
             case default
                 print*, 'ERROR refCellSearchInfo : ', name
-                ERROR STOP
+                error stop
         end select
 
     end function
@@ -844,28 +859,28 @@ module unstructuredGrid_mod
 
     end subroutine
 
-    integer function get_mesh_info(self, name)
+    integer function get_meshInformation(self, name)
         class(UnstructuredGrid) self
         character(*), intent(in) :: name
         
         select case(name)
             case('node')
-                get_mesh_info = size(self%NODEs)
+                get_meshInformation = size(self%NODEs)
 
             case('cell')
-                get_mesh_info = size(self%CELLs)
+                get_meshInformation = size(self%CELLs)
 
             case('tetra')
-                get_mesh_info = count(self%CELLs(:)%typeName == 'tetra')
+                get_meshInformation = count(self%CELLs(:)%typeName == 'tetra')
 
             case('prism')
-                get_mesh_info = count(self%CELLs(:)%typeName == 'prism')
+                get_meshInformation = count(self%CELLs(:)%typeName == 'prism')
 
             case('pyramid')
-                get_mesh_info = count(self%CELLs(:)%typeName == 'pyrmd')
+                get_meshInformation = count(self%CELLs(:)%typeName == 'pyrmd')
 
             case default
-                get_mesh_info = -1
+                error stop
 
         end select
 
@@ -878,16 +893,35 @@ module unstructuredGrid_mod
         extension = FileName(index(FileName, '.', back=.true.)+1 : )
 
     end function
-      
-    ! subroutine deallocation_unstructuredGRID
-    !     use vtkMesh_operator_m
-
-    !     print*,  '**Deallocation** : unstructuredGRID'
-
-    !     deallocate(CELLs)
-    !     deallocate(NODEs)
-    !     deallocate(BoundFACEs)
-
-    ! end subroutine
     
-end module unstructuredGrid_mod
+    function get_flowVelocityInCELL(self, ID) result(velocity)
+        class(UnstructuredGrid), intent(in) :: self
+        integer, intent(in) :: ID
+        real velocity(3)
+
+        velocity = self%CELLs(ID)%flowVelocity
+
+    end function
+    
+    function get_cellCenters(self) result(centers)
+        class(UnstructuredGrid), intent(in) :: self
+        real, allocatable :: centers(:,:)
+        integer i
+
+        allocate(centers(3, size(self%CELLs)))
+        do i = 1, size(self%CELLs)
+            centers(:,i) = self%CELLs(i)%center
+        end do
+
+    end function
+
+    function get_movementVectorOfBoundarySurface(self, ID) result(vector)
+        class(UnstructuredGrid), intent(in) :: self
+        integer, intent(in) :: ID
+        real vector(3)
+
+        vector = self%BoundFACEs(ID)%moveVector(:)
+
+    end function
+    
+end module unstructuredGrid_m
