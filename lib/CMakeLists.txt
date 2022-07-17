@@ -21,6 +21,7 @@ add_library(lib
     sort.f90
     kdTree.f90
     array.f90
+    unstructuredElement.f90
 )
 
 if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)

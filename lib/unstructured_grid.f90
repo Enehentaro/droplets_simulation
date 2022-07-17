@@ -1,9 +1,11 @@
 module unstructuredGrid_m
+    use unstructuredElement_m
     implicit none
     private
 
-    type node_t
-        real coordinate(3)
+    type, extends(cell_t) :: cell_inFlow_t
+        integer, allocatable :: boundFaceID(:), adjacentCellID(:)
+        real center(3), flowVelocity(3), threshold
     end type
 
     type boundaryTriangle_t
@@ -11,16 +13,10 @@ module unstructuredGrid_m
         real center(3), normalVector(3), moveVector(3)
     end type
 
-    type cell_t
-        character(5) typeName
-        integer, allocatable :: nodeID(:), boundFaceID(:), adjacentCellID(:)
-        real center(3), flowVelocity(3), threshold
-    end type
-
-    type, public :: UnstructuredGrid
+    type, public :: FlowFieldUnstructuredGrid
         private
         type(node_t), allocatable :: NODEs(:)
-        type(cell_t), allocatable :: CELLs(:)
+        type(cell_inFlow_t), allocatable :: CELLs(:)
         type(boundaryTriangle_t), allocatable :: BoundFACEs(:)
 
         real MIN_CDN(3), MAX_CDN(3)
@@ -29,9 +25,10 @@ module unstructuredGrid_m
         contains
         private
 
-        procedure, public :: nearest_cell, nearcell_check, get_MinMaxCDN
-        procedure, public :: get_flowVelocityInCELL, get_cellCenters, get_movementVectorOfBoundarySurface
-        procedure, public :: get_info => get_meshInformation
+        procedure, public :: nearest_cell, nearcell_check, get_MinMaxOfGrid
+        procedure, public :: get_flowVelocityInCELL, get_movementVectorOfBoundarySurface
+        procedure, public :: get_cellCenterOf,  get_allOfCellCenters
+        procedure, public :: get_info => get_gridInformation
 
         procedure set_cellCenter, set_cellThreshold, set_MinMaxCDN, point2cellVelocity
         procedure, public :: read_VTK, read_array, read_INP, read_FLD
@@ -44,35 +41,35 @@ module unstructuredGrid_m
         procedure, public :: refCellSearchInfo, search_refCELL
 
         procedure AdjacencySolvingProcess
-        procedure read_adjacency, read_boundaries, solve_adacencyOnUnstructuredGrid
+        procedure read_adjacency, read_boundaries, solve_adacencyOnFlowFieldUnstructuredGrid
         procedure output_boundaries, output_adjacency, boundary_setting, output_STL
 
     end type
 
-    public UnstructuredGrid_
+    public FlowFieldUnstructuredGrid_
 
     contains
 
-    type(UnstructuredGrid) function UnstructuredGrid_(FlowFieldFile, meshFile)
+    type(FlowFieldUnstructuredGrid) function FlowFieldUnstructuredGrid_(FlowFieldFile, meshFile)
         use path_operator_m
         character(*), intent(in) :: FlowFieldFile
         character(*), intent(in), optional :: meshFile
         character(:), allocatable :: Dir
 
         if(present(meshFile)) then
-            call UnstructuredGrid_%setupWithFlowFieldFile(FlowFieldFile, meshFile)
+            call FlowFieldUnstructuredGrid_%setupWithFlowFieldFile(FlowFieldFile, meshFile)
             call get_DirFromPath(meshFile, Dir)
         else
-            call UnstructuredGrid_%setupWithFlowFieldFile(FlowFieldFile)
+            call FlowFieldUnstructuredGrid_%setupWithFlowFieldFile(FlowFieldFile)
             call get_DirFromPath(FlowFieldFile, Dir)
         end if
 
-        call UnstructuredGrid_%AdjacencySolvingProcess(Dir)    !流れ場の前処理
+        call FlowFieldUnstructuredGrid_%AdjacencySolvingProcess(Dir)    !流れ場の前処理
 
     end function
 
     subroutine setupWithFlowFieldFile(self, FNAME, meshFile)
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: FNAME
         character(*), intent(in), optional :: meshFile
 
@@ -113,7 +110,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine updateWithFlowFieldFile(self, FNAME)
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: FNAME
 
         select case(extensionOf(FNAME))
@@ -144,7 +141,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine AdjacencySolvingProcess(self, dir)
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: dir
         logical success
 
@@ -153,7 +150,7 @@ module unstructuredGrid_m
             call self%read_boundaries(dir)
 
         else
-            call self%solve_adacencyOnUnstructuredGrid()
+            call self%solve_adacencyOnFlowFieldUnstructuredGrid()
             call self%output_boundaries(dir)
             call self%output_adjacency(dir)
 
@@ -165,32 +162,28 @@ module unstructuredGrid_m
 
     end subroutine
 
-    subroutine set_MinMaxCDN(self)
-        class(UnstructuredGrid) self
+    subroutine set_MinMaxCDN(self) !節点群の座標最大最小の算出
+        class(FlowFieldUnstructuredGrid) self
+        real MinMax(3,2)
 
-        self%MAX_CDN(1) = maxval(self%NODEs(:)%coordinate(1))
-        self%MAX_CDN(2) = maxval(self%NODEs(:)%coordinate(2))
-        self%MAX_CDN(3) = maxval(self%NODEs(:)%coordinate(3))
-        print*, 'MAX_coordinates=', self%MAX_CDN(:)
-            
-        self%MIN_CDN(1) = minval(self%NODEs(:)%coordinate(1))
-        self%MIN_CDN(2) = minval(self%NODEs(:)%coordinate(2))
-        self%MIN_CDN(3) = minval(self%NODEs(:)%coordinate(3))
-        print*, 'MIN_coordinates=', self%MIN_CDN(:)
+        MinMax = get_MinMaxCDN(self%NODEs)
+
+        self%MIN_CDN = MinMax(:,1)
+        self%MAX_CDN = MinMax(:,2)
 
     end subroutine
 
-    function get_MinMaxCDN(self) result(MinMax)
-        class(UnstructuredGrid) self
-        real MinMax(3,2)
+    subroutine get_MinMaxOfGrid(self, MIN_CDN, MAX_CDN) !節点群の座標最大最小を返す
+        class(FlowFieldUnstructuredGrid) self
+        real, intent(out) :: MIN_CDN(3), MAX_CDN(3)
 
-        MinMax(:,1) = self%MIN_CDN
-        MinMax(:,2) = self%MAX_CDN
+        MIN_CDN = self%MIN_CDN
+        MAX_CDN = self%MAX_CDN
 
-    end function
+    end subroutine
 
     subroutine set_cellCenter(self) !セル重心の算出
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         integer II,IIMX, n, num_node, nodeID
         real vector(3)
 
@@ -208,7 +201,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine set_cellThreshold(self) !セル閾値の算出
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         integer II,IIMX, n, num_node, nodeID
         real x, vector(3)
 
@@ -228,44 +221,26 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine read_VTK(self, FNAME, meshOnly)
-        use vtkMesh_operator_m
-        class(UnstructuredGrid) self
-        type(vtkMesh) mesh
+        use VTK_operator_m
+        class(FlowFieldUnstructuredGrid) self
+        type(UnstructuredGrid_inVTK) vtk_mesh
         character(*), intent(in) :: FNAME
         logical, intent(in) :: meshOnly
-        real, allocatable :: cdn(:,:)
-        integer, allocatable :: vertices(:,:), types(:)
         real, allocatable :: velocity(:,:)
-        integer II,KK, KKMX, IIMX
+        integer II, IIMX
 
         if(meshOnly) then
-            call mesh%read(FNAME)
+            call vtk_mesh%read(FNAME)
         else
-            call mesh%read(FNAME, cellVector=velocity)
+            call vtk_mesh%read(FNAME, cellVector=velocity)
         end if
 
-        KKMX = mesh%get_numNode()
-        if(.not.allocated(self%NODEs)) allocate(self%NODEs(KKMX))
-        cdn = mesh%get_nodeCoordinate()
-        do KK = 1, KKMX
-            self%NODEs(KK)%coordinate(:) = cdn(:,KK)
-        end do
+        self%NODEs = vtk_mesh%node_array
         
-        IIMX = mesh%get_numCell()
+        IIMX = size(vtk_mesh%cell_array)
         if(.not.allocated(self%CELLs)) allocate(self%CELLs(IIMX))
-        call mesh%get_cellVertices(vertices, types)
         do II = 1, IIMX
-            select case(types(II))
-                case(10)
-                    self%CELLs(II)%nodeID = vertices(1:4, II)
-                    self%CELLs(II)%typeName = 'tetra'
-                case(13)
-                    self%CELLs(II)%nodeID = vertices(1:6, II)
-                    self%CELLs(II)%typeName = 'prism'
-                case(14)
-                    self%CELLs(II)%nodeID = vertices(1:5, II)
-                    self%CELLs(II)%typeName = 'pyrmd'
-            end select
+            self%CELLs(II)%nodeID = vtk_mesh%cell_array(II)%nodeID
         end do
 
         if(.not.meshOnly) then
@@ -281,7 +256,7 @@ module unstructuredGrid_m
 
     subroutine read_Array(self, FNAME)
         use array_m
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: FNAME
         real, allocatable :: velocity(:,:)
         integer II
@@ -305,7 +280,7 @@ module unstructuredGrid_m
 
     subroutine read_INP(self, FNAME)
         !  INPファイルを読み込み、節点データを要素データに変換する
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: FNAME
         INTEGER II,II2,KK,AAmax, IIMX2, AA, n_unit
         integer KKMX, IIMX
@@ -384,13 +359,10 @@ module unstructuredGrid_m
                 select case(CELL_TYPE2(II))
                     case(0)
                         self%CELLs(II)%nodeID = ICN2(1:4, II)
-                        self%CELLs(II)%typeName = 'tetra'
                     case(1)
                         self%CELLs(II)%nodeID = ICN2(1:6, II)
-                        self%CELLs(II)%typeName = 'prism'
                     case(2)
                         self%CELLs(II)%nodeID = ICN2(1:5, II)
-                        self%CELLs(II)%typeName = 'pyrmd'
                 end select
             end do
         end if
@@ -401,7 +373,7 @@ module unstructuredGrid_m
 
     subroutine read_FLD(self, FNAME, findTopology, findVelocity)
         use SCT_file_reader_m
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         type(sct_grid_t) grid
         integer ii, iitet, iiwed, iipyr, iihex, iimx, iicnt
         integer kk, kkmx
@@ -442,17 +414,14 @@ module unstructuredGrid_m
                 iicnt = 1
                 do ii = 1, iitet
                     self%CELLs(iicnt)%nodeID = tetras(:,ii)
-                    self%CELLs(iicnt)%typeName = 'tetra'
                     iicnt = iicnt + 1
                 end do
                 do ii = 1, iiwed
                     self%CELLs(iicnt)%nodeID = wedges(:,ii)
-                    self%CELLs(iicnt)%typeName = 'prism'
                     iicnt = iicnt + 1
                 end do
                 do ii = 1, iipyr
                     self%CELLs(iicnt)%nodeID = pyramids(:,ii)
-                    self%CELLs(iicnt)%typeName = 'pyrmd'
                     iicnt = iicnt + 1
                 end do
     
@@ -470,7 +439,7 @@ module unstructuredGrid_m
 
     subroutine read_adjacency(self, path, success)
         use filename_m, only : adjacencyFileName
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
         logical, intent(out) :: success
         integer II,NA, n_unit, num_cells, num_adj, num_BF, NCMAX
@@ -517,7 +486,7 @@ module unstructuredGrid_m
 
     subroutine output_adjacency(self, path)
         use filename_m, only : adjacencyFileName
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
         integer II, n_unit, num_cells, NCMAX
         character(:), allocatable :: FNAME
@@ -547,7 +516,7 @@ module unstructuredGrid_m
 
     subroutine read_boundaries(self, path)
         use filename_m, only : boundaryFileName
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
         character(:), allocatable :: FNAME
@@ -566,7 +535,7 @@ module unstructuredGrid_m
 
     subroutine output_boundaries(self, path)
         use filename_m, only : boundaryFileName
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
         character(:), allocatable :: FNAME
@@ -584,7 +553,7 @@ module unstructuredGrid_m
     end subroutine
 
     integer function nearest_cell(self, X) !最も近いセルNCNの探索
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         real, intent(in) :: X(3)
         integer II, IIMX
         real, allocatable :: distance(:)
@@ -604,7 +573,7 @@ module unstructuredGrid_m
     end function
 
     integer function nearer_cell(self, X, NCN)  !近セルの探索（隣接セルから）
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         integer, intent(in) :: NCN
         real, intent(in) :: X(3)
         integer NA, featuringCellID, adjaCellID
@@ -642,7 +611,7 @@ module unstructuredGrid_m
     end function
 
     logical function nearcell_check(self, X, NCN)
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         real, intent(in) :: X(3)
         integer, intent(in) :: NCN
         real :: distance
@@ -661,7 +630,7 @@ module unstructuredGrid_m
     end function
 
     subroutine search_refCELL(self, X, reference_cell, stat)
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         real, intent(in) :: X(3)
         integer, intent(inout) :: reference_cell
         logical, optional :: stat
@@ -680,7 +649,7 @@ module unstructuredGrid_m
     end subroutine
 
     integer function refCellSearchInfo(self, name)
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: name
 
         select case(name)
@@ -697,7 +666,7 @@ module unstructuredGrid_m
                      
     subroutine boundary_setting(self, first) !全境界面に対して外向き法線ベクトルと重心を算出
         use vector_m
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         logical, intent(in) :: first
         integer II, JJ, JB, IIMX, JBMX, nodeID(3)
         real :: a(3), b(3), r(3), normalVector(3)
@@ -750,7 +719,7 @@ module unstructuredGrid_m
 
     subroutine adhesionCheckOnBound(self, position, radius, cellID, stat)
         use vector_m
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         double precision, intent(in) :: position(3), radius
         integer, intent(in) :: cellID
         integer, intent(out) :: stat
@@ -776,7 +745,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine point2cellVelocity(self, pointVector)
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         real, intent(in) :: pointVector(:,:)
         integer II, IIMX, n, ID, num_node
 
@@ -799,7 +768,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine output_STL(self, fname)
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: fname
         integer i, n_unit, JB
 
@@ -825,9 +794,9 @@ module unstructuredGrid_m
 
     end subroutine
 
-    subroutine solve_adacencyOnUnstructuredGrid(self)
+    subroutine solve_adacencyOnFlowFieldUnstructuredGrid(self)
         use adjacencySolver_m
-        class(UnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid) self
         integer i, j, num_adjacent, num_boundFace
         integer, parameter :: max_vertex=6, max_adjacent=4, max_boundFace=4
         integer, allocatable :: cellVertices(:,:)
@@ -859,33 +828,6 @@ module unstructuredGrid_m
 
     end subroutine
 
-    integer function get_meshInformation(self, name)
-        class(UnstructuredGrid) self
-        character(*), intent(in) :: name
-        
-        select case(name)
-            case('node')
-                get_meshInformation = size(self%NODEs)
-
-            case('cell')
-                get_meshInformation = size(self%CELLs)
-
-            case('tetra')
-                get_meshInformation = count(self%CELLs(:)%typeName == 'tetra')
-
-            case('prism')
-                get_meshInformation = count(self%CELLs(:)%typeName == 'prism')
-
-            case('pyramid')
-                get_meshInformation = count(self%CELLs(:)%typeName == 'pyrmd')
-
-            case default
-                error stop
-
-        end select
-
-    end function
-
     function extensionOf(FileName) result(extension)
         character(*), intent(in) :: FileName
         character(:), allocatable :: extension
@@ -895,33 +837,57 @@ module unstructuredGrid_m
     end function
     
     function get_flowVelocityInCELL(self, ID) result(velocity)
-        class(UnstructuredGrid), intent(in) :: self
+        class(FlowFieldUnstructuredGrid), intent(in) :: self
         integer, intent(in) :: ID
         real velocity(3)
 
         velocity = self%CELLs(ID)%flowVelocity
 
     end function
-    
-    function get_cellCenters(self) result(centers)
-        class(UnstructuredGrid), intent(in) :: self
-        real, allocatable :: centers(:,:)
-        integer i
-
-        allocate(centers(3, size(self%CELLs)))
-        do i = 1, size(self%CELLs)
-            centers(:,i) = self%CELLs(i)%center
-        end do
-
-    end function
 
     function get_movementVectorOfBoundarySurface(self, ID) result(vector)
-        class(UnstructuredGrid), intent(in) :: self
+        class(FlowFieldUnstructuredGrid), intent(in) :: self
         integer, intent(in) :: ID
         real vector(3)
 
         vector = self%BoundFACEs(ID)%moveVector(:)
 
     end function
+
+    function get_cellCenterOf(self, ID) result(center)
+        class(FlowFieldUnstructuredGrid), intent(in) :: self
+        integer, intent(in) :: ID
+        real center(3)
+
+        center = self%CELLs(ID)%center
+
+    end function
+
+    function get_allOfCellCenters(self) result(centers)
+        class(FlowFieldUnstructuredGrid), intent(in) :: self
+        real, allocatable :: centers(:,:)
+        integer i, num_cell
+
+        num_cell = size(self%CELLs)
+        allocate(centers(3,num_cell))
+        do i = 1, num_cell
+            centers(:,i) = self%CELLs(i)%center
+        end do
+    end function
+
+    function get_gridInformation(self, name) result(info)
+        class(FlowFieldUnstructuredGrid), intent(in) :: self
+        character(*), intent(in) :: name
+        integer info
+
+        select case(name)
+        case('node')
+            info = size(self%NODEs)
+        case('cell')
+            info = size(self%CELLs)
+        end select
+
+    end function
+
     
 end module unstructuredGrid_m

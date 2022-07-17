@@ -229,20 +229,20 @@ module dropletMotionSimulation
     subroutine area_check(dGroup)
         type(DropletGroup) dGroup
         logical check
-        real areaMinMax(3,2)
+        real areaMin(3), areaMax(3)
         integer i, J
 
-        areaMinMax = flow_field%get_MinMaxCDN()
+        call flow_field%get_MinMaxOfGrid(areaMin, areaMax)
 
         do i = 1, size(dGroup%droplet)
             check = .false.
             do J = 1, 3
         
-                if(dGroup%droplet(i)%position(J) < areaMinMax(J,1)) then
-                    dGroup%droplet(i)%position(J) = areaMinMax(J,1)
+                if(dGroup%droplet(i)%position(J) < areaMin(J)) then
+                    dGroup%droplet(i)%position(J) = areaMin(J)
                     check = .true.
-                else if(dGroup%droplet(i)%position(J) > areaMinMax(J,2)) then
-                    dGroup%droplet(i)%position(J) = areaMinMax(J,2)
+                else if(dGroup%droplet(i)%position(J) > areaMax(J)) then
+                    dGroup%droplet(i)%position(J) = areaMax(J)
                     check = .true.
                 end if
 

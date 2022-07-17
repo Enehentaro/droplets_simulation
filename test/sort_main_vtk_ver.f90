@@ -3,7 +3,7 @@ program sortMain_vtk_ver
     use path_operator_m
     use unstructuredGrid_m
     implicit none 
-    type(UnstructuredGrid) grid
+    type(FlowFieldUnstructuredGrid) grid
     real, allocatable :: xyz(:,:)
     type(kdTree) kd_tree
     real droplet_position(3)
@@ -22,7 +22,7 @@ program sortMain_vtk_ver
 
     call make_directory(output_dir)
 
-    xyz = grid%get_cellCenters()
+    xyz = grid%get_allOfCellCenters()
 
     open(newunit = n_unit, file = output_dir//"/before.txt", status = 'replace')
         do i = 1, iimx

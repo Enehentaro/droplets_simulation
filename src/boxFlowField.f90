@@ -13,7 +13,7 @@ program boxFlowField
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
-    type(UnstructuredGrid) mesh
+    type(FlowFieldUnstructuredGrid) mesh
 
     box_array = get_box_array('.', 0)
     num_box = size(box_array)
@@ -23,9 +23,9 @@ program boxFlowField
         call getarg(nc, caseName)
         print*, trim(caseName)
 
-        ! mesh = UnstructuredGrid_(condVal%path2FlowFile, condVal%meshFile)
+        ! mesh = FlowFieldUnstructuredGrid_(condVal%path2FlowFile, condVal%meshFile)
         if(nc==1) then
-            mesh = UnstructuredGrid_(trim(caseName)//'/field_0000005125.array', './case1.vtk')
+            mesh = FlowFieldUnstructuredGrid_(trim(caseName)//'/field_0000005125.array', './case1.vtk')
         else
             call mesh%updateWithFlowFieldFile(trim(caseName)//'/field_0000005125.array')
         end if
@@ -75,8 +75,8 @@ program boxFlowField
     end subroutine
 
     subroutine output_boxVTK
-        use vtkMesh_operator_m
-        type(vtkMesh) boxMesh
+        use VTK_operator_m
+        type(UnstructuredGrid_inVTK) boxMesh
         integer i, j, k
         real, parameter :: trans(3,8) = reshape([ &
                                             0.0,0.0,0.0, 1.0,0.0,0.0, 0.0,1.0,0.0, 1.0,1.0,0.0, &
@@ -105,7 +105,7 @@ program boxFlowField
 
         end do
 
-        boxMesh = vtkMesh_(xyz, vertices, types)
+        boxMesh = UnstructuredGrid_inVTK_(xyz, vertices, types)
 
         call boxMesh%output(trim(caseName)//'/BoxFlow.vtk', cellVector=velArray, vectorName='VEL')
 

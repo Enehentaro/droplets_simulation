@@ -2,20 +2,21 @@
 !ふたつのサブルーチン結果が一致するかをテストすることで齟齬が起きないよう対処（その場しのぎ）
 program cellCenterCalc_test
     use unstructuredGrid_m
-    use vtkMesh_operator_m
+    use unstructuredElement_m
+    use VTK_operator_m
     use array_m
     implicit none
-    type(UnstructuredGrid) grid
-    type(vtkMesh) vtk_mesh
+    type(FlowFieldUnstructuredGrid) grid
+    type(UnstructuredGrid_inVTK) vtk_mesh
     ! character(17), parameter :: cellCenterFName = 'CellCenters.array'
     real, allocatable :: centers1(:,:), centers2(:,:), vtk_vel(:,:)
     integer i, imax
 
     call grid%setupWithFlowFieldFile('SAX/sax_flow.vtk')
-    centers1 = grid%get_cellCenters()
+    centers1 = grid%get_allOfCellCenters()
 
     call vtk_mesh%read('SAX/sax_flow.vtk', cellVector=vtk_vel)
-    centers2 = vtk_mesh%get_cellCenters()
+    centers2 = get_cellCenters(vtk_mesh%node_array, vtk_mesh%cell_array)
 
     if(.not.all(centers1 == centers2)) error stop
 

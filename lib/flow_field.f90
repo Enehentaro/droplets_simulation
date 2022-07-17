@@ -2,8 +2,7 @@ module flow_field
     use unstructuredGrid_m
     implicit none
     private
-
-    type, public, extends(UnstructuredGrid) :: FlowField
+    type, public, extends(FlowFieldUnstructuredGrid) :: FlowField
         private
         integer INTERVAL                             !気流データ出力間隔
         integer LoopHead, LoopTail, OFFSET
@@ -28,6 +27,52 @@ module flow_field
     public FlowField_
 
     contains
+
+    type(FlowField) function FlowField_(&
+        time, PATH2FlowFile, DeltaT, OFFSET, outputINTERVAL, LoopHead, LoopTail, meshFile)
+        
+        double precision, intent(in) :: time, DeltaT
+        integer, intent(in) :: OFFSET, outputINTERVAL, LoopHead, LoopTail
+        character(*), intent(in) :: PATH2FlowFile
+        character(*), intent(in), optional :: meshFile
+
+        call FlowField_%set_FileNameFormat(PATH2FlowFile)
+
+        FlowField_%INTERVAL  = outputINTERVAL
+
+        if(FlowField_%INTERVAL   <= 0) then
+            print*, 'AirFlow is Steady'
+
+        else
+            print*, 'Interval of AirFlow =', FlowField_%INTERVAL 
+
+            FlowField_%OFFSET = OFFSET
+            print*, 'OFFSET =', FlowField_%OFFSET
+
+            FlowField_%LoopHead = LoopHead
+            FlowField_%LoopTail = LoopTail
+            if(FlowField_%LoopTail - FlowField_%LoopHead > 0) then
+                print*, 'Loop is from', FlowField_%LoopHead, 'to', FlowField_%LoopTail
+            elseif(FlowField_%LoopTail - FlowField_%LoopHead == 0) then 
+                print*, 'After', FlowField_%LoopTail, ', Checkout SteadyFlow'
+            end if
+
+            FlowField_%DT = DeltaT
+            print*, 'Delta_Time inFLOW =', FlowField_%DT
+
+            call FlowField_%set_time(time)
+
+        end if
+
+        if(present(meshFile)) then
+            FlowField_%FlowFieldUnstructuredGrid = FlowFieldUnstructuredGrid_(FlowField_%get_requiredFileName(), meshFile)
+        else
+            FlowField_%FlowFieldUnstructuredGrid = FlowFieldUnstructuredGrid_(FlowField_%get_requiredFileName())
+        end if
+
+        call FlowField_%calc_NextUpdate()
+
+    end function
 
     subroutine set_FileNameFormat(self, PATH2FlowFile)
         use path_operator_m
@@ -86,52 +131,6 @@ module flow_field
             end block
 
         end if
-
-    end function
-
-    type(FlowField) function FlowField_(&
-        time, PATH2FlowFile, DeltaT, OFFSET, outputINTERVAL, LoopHead, LoopTail, meshFile)
-        
-        double precision, intent(in) :: time, DeltaT
-        integer, intent(in) :: OFFSET, outputINTERVAL, LoopHead, LoopTail
-        character(*), intent(in) :: PATH2FlowFile
-        character(*), intent(in), optional :: meshFile
-
-        call FlowField_%set_FileNameFormat(PATH2FlowFile)
-
-        FlowField_%INTERVAL  = outputINTERVAL
-
-        if(FlowField_%INTERVAL   <= 0) then
-            print*, 'AirFlow is Steady'
-
-        else
-            print*, 'Interval of AirFlow =', FlowField_%INTERVAL 
-
-            FlowField_%OFFSET = OFFSET
-            print*, 'OFFSET =', FlowField_%OFFSET
-
-            FlowField_%LoopHead = LoopHead
-            FlowField_%LoopTail = LoopTail
-            if(FlowField_%LoopTail - FlowField_%LoopHead > 0) then
-                print*, 'Loop is from', FlowField_%LoopHead, 'to', FlowField_%LoopTail
-            elseif(FlowField_%LoopTail - FlowField_%LoopHead == 0) then 
-                print*, 'After', FlowField_%LoopTail, ', Checkout SteadyFlow'
-            end if
-
-            FlowField_%DT = DeltaT
-            print*, 'Delta_Time inFLOW =', FlowField_%DT
-
-            call FlowField_%set_time(time)
-
-        end if
-
-        if(present(meshFile)) then
-            FlowField_%UnstructuredGrid = UnstructuredGrid_(FlowField_%get_requiredFileName(), meshFile)
-        else
-            FlowField_%UnstructuredGrid = UnstructuredGrid_(FlowField_%get_requiredFileName())
-        end if
-
-        call FlowField_%calc_NextUpdate()
 
     end function
 
