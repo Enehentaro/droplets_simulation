@@ -1,4 +1,4 @@
-program sortMain_vtk_ver
+program sort_main_vtk_ver
     use kdTree_m
     use path_operator_m
     use unstructuredGrid_m
@@ -53,4 +53,4 @@ program sortMain_vtk_ver
     print*, "kdTree_elapsedTime =",kdTree_endTime - kdTree_startTime, "sec"
     print*, "fullSearch_elapsedTime =",fullSearch_endTime - fullSearch_startTime, "sec"
 
-end program sortMain_vtk_ver
+end program sort_main_vtk_ver
