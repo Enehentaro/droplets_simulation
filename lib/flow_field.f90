@@ -1,4 +1,4 @@
-module flow_field
+module flow_field_m
     use unstructuredGrid_m
     implicit none
     private
@@ -220,4 +220,4 @@ module flow_field
 
     end function
     
-end module flow_field
+end module flow_field_m

@@ -12,8 +12,11 @@ function(ADDTEST name)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         )
 
+    SETCOMPILEOPTIONS(${name})
+
 endfunction(ADDTEST)
 
 ADDTEST(sort_test)
 ADDTEST(sort_main_vtk_ver)
+ADDTEST(geometry_test)
 ADDTEST(cellCenterCalc_test)

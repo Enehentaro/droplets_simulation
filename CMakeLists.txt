@@ -21,6 +21,24 @@ project(droplet Fortran)
 #     set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -march=native")
 # endif()
 
+#コンパイルオプション指定用関数
+function(SETCOMPILEOPTIONS name)
+
+    if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
+        target_compile_options(${name} PRIVATE
+            $<$<CONFIG:Debug>:-O0 -warn all -check all -traceback>
+            $<$<CONFIG:Release>:-O2 -fPIC>
+        )
+    elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
+        target_compile_options(${name} PRIVATE
+            # $<$<CONFIG:Debug>: -O0 -Wall -fcheck=all -fbacktrace>
+            $<$<CONFIG:Debug>: -O0 -fcheck=all -fbacktrace>
+            $<$<CONFIG:Release>: -O2>
+        )
+    endif()
+
+endfunction(SETCOMPILEOPTIONS)
+
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_CURRENT_BINARY_DIR}/bin)
 
 set(CMAKE_Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/mod)

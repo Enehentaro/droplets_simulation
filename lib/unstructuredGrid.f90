@@ -27,7 +27,8 @@ module unstructuredGrid_m
 
         procedure, public :: nearest_cell, nearcell_check, get_MinMaxOfGrid
         procedure, public :: get_flowVelocityInCELL, get_movementVectorOfBoundarySurface
-        procedure, public :: get_cellCenterOf,  get_allOfCellCenters
+        procedure, public :: get_cellCenterOf, get_allOfCellCenters
+        procedure, public :: get_cellVerticesOf
         procedure, public :: get_info => get_gridInformation
 
         procedure set_cellCenter, set_cellThreshold, set_MinMaxCDN, point2cellVelocity
@@ -873,6 +874,21 @@ module unstructuredGrid_m
         do i = 1, num_cell
             centers(:,i) = self%CELLs(i)%center
         end do
+    end function
+
+    function get_cellVerticesOf(self, ID) result(vertices)
+        class(FlowFieldUnstructuredGrid), intent(in) :: self
+        integer, intent(in) :: ID
+        real, allocatable :: vertices(:,:)
+        integer i, num_node, nodeID
+
+        num_node = size(self%CELLs(ID)%nodeID)
+        allocate(vertices(3, num_node))
+        do i = 1, num_node
+            nodeID = self%CELLs(ID)%nodeID(i)
+            vertices(:,i) = self%NODEs(nodeID)%coordinate
+        end do
+
     end function
 
     function get_gridInformation(self, name) result(info)

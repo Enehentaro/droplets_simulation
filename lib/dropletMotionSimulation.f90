@@ -1,7 +1,7 @@
 module dropletMotionSimulation
     use dropletGenerator_m
     use dropletEquation_m
-    use flow_field
+    use flow_field_m
     use timeKeeper_m
     implicit none
 
