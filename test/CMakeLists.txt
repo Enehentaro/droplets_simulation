@@ -17,6 +17,6 @@ function(ADDTEST name)
 endfunction(ADDTEST)
 
 ADDTEST(sort_test)
-ADDTEST(sort_main_vtk_ver)
 ADDTEST(geometry_test)
 ADDTEST(cellCenterCalc_test)
+ADDTEST(sort_main_vtk_ver)
