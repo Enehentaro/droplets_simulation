@@ -1,9 +1,13 @@
 module simpleFile_reader
     implicit none
+    private
+    !簡単なファイル（CSV、TXTなど）の操作手続き集モジュール
 
     interface read_CSV
         module procedure read_csv_dble, read_csv_int, read_csv_char
     end interface
+
+    public read_CSV, read_textRecord
 
     contains
 
@@ -20,7 +24,7 @@ module simpleFile_reader
 
         print*, 'CSV_READER:', filename
 
-        open (newunit=Num_unit, file=filename, status='old')
+        open (newunit=Num_unit, file=filename, status='old', action='read')
 
             mat_size = get_size_csv(Num_unit, header_flag)
 
@@ -51,7 +55,7 @@ module simpleFile_reader
 
         print*, 'CSV_READER:', filename
 
-        open (newunit=Num_unit, file=filename, status='old')
+        open (newunit=Num_unit, file=filename, status='old', action='read')
 
             mat_size = get_size_csv(Num_unit, header_flag)
 
@@ -82,7 +86,7 @@ module simpleFile_reader
 
         print*, 'CSV_READER:', filename
 
-        open (newunit=Num_unit, file=filename, status='old')
+        open (newunit=Num_unit, file=filename, status='old', action='read')
 
             mat_size = get_size_csv(Num_unit, header_flag)
 
@@ -108,7 +112,7 @@ module simpleFile_reader
 
         print*, 'simpleREADER : ', filename
 
-        open (newunit=Num_unit, file=filename, status='old')
+        open (newunit=Num_unit, file=filename, status='old', action='read')
 
             num_record = get_num_records(Num_unit, header_flag=.false.)
 
@@ -179,60 +183,5 @@ module simpleFile_reader
         end do
         
     end function
-
-    subroutine output_array_asBinary(fname, array)
-        character(*), intent(in)  :: fname
-        real, intent(in) :: array(:,:)
-        integer n_unit
-
-        print*, 'output_binArray : ', fname
-
-        open(newunit=n_unit, file=fname, form='unformatted', status='replace')
-
-            write(n_unit) shape(array)
-
-            write(n_unit) array
-
-        close(n_unit)
-
-    end subroutine
-
-    subroutine read_array_asBinary(fname, array)
-        character(*), intent(in)  :: fname
-        real, allocatable, intent(out) :: array(:,:)
-        integer n_unit, arrayShape(2)
-
-        print*, 'read_binArray : ', fname
-
-        open(newunit=n_unit, file=fname, form='unformatted', status='old')
-
-            read(n_unit) arrayShape(:)
-
-            allocate(array(arrayShape(1), arrayShape(2)))
-
-            read(n_unit) array
-
-        close(n_unit)
-
-    end subroutine
-
-    subroutine read_array_real(fname, array)
-        character(*), intent(in)  :: fname
-        real, allocatable, intent(out) :: array(:)
-        integer n_unit, size
-
-        print*, 'read_array : ', fname
-
-        open(newunit=n_unit, file=fname, status='old')
-
-            read(n_unit, *) size
-
-            allocate(array(size))
-
-            read(n_unit, *) array
-
-        close(n_unit)
-
-    end subroutine
 
 end module simpleFile_reader

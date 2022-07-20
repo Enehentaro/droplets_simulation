@@ -1,6 +1,12 @@
 *.o
 *.mod
-.vscode
 
-/droplet*
+bin/
+
 /*.txt
+
+# for CMake
+!CMakeLists.txt
+/build
+
+.vscode

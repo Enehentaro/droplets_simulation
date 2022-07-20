@@ -1,7 +1,7 @@
 module path_operator_m
     implicit none
 
-    character(7), parameter, private :: OS = 'Windows'
+    character(7), parameter, private :: OS = 'Windows'!'Linux'
 
     contains
 
@@ -20,7 +20,7 @@ module path_operator_m
 
             case default
                 print*, 'OS ERROR : ', OS
-                stop
+                error stop
                 
         end select
 

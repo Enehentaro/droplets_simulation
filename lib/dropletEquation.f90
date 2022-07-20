@@ -10,7 +10,7 @@ module dropletEquation_m
         ! integer, public, target :: timeStep = 0   !構造体の要素はtarget属性にできないぽい
 
         contains
-        procedure, public :: repValue => representativeValue
+        procedure :: repValue => representativeValue
         procedure TimeStep2RealTime
     end type
 
@@ -32,9 +32,10 @@ module dropletEquation_m
         procedure set_gravity_acceleration, set_dropletEnvironment, dropletEnvironment
         procedure set_coeff_drdt, set_minimumRadiusRatio
         procedure next_position, next_velocity
-        procedure, public :: get_minimumRadius!, virusDeadline
+        procedure get_radiusLowerLimitRatio
 
-        procedure, public :: evaporatin_eq, solve_motionEquation
+        procedure :: evaporationEq => evaporationEquation
+        procedure solve_motionEquation
 
     end type
 
@@ -146,9 +147,8 @@ module dropletEquation_m
 
     end subroutine
 
-    elemental double precision function get_minimumRadius(self, initial_radius)
+    double precision function get_radiusLowerLimitRatio(self)
         class(DropletEquationSolver), intent(in) :: self
-        double precision, intent(in) :: initial_radius
 
         ! if(RH < 64) then
         !     minimum_radius(:) = initial_radius(:)*0.19d0
@@ -162,14 +162,15 @@ module dropletEquation_m
         !     minimum_radius(:) = initial_radius(:)
         ! end if
 
-        get_minimumRadius = initial_radius * self%minimumRadiusRatio
+        get_radiusLowerLimitRatio = self%minimumRadiusRatio
 
     end function
 
-    double precision function evaporatin_eq(self, radius)
+    !蒸発方程式。半径変化量を返す。
+    function evaporationEquation(self, radius) result(dr)
         class(DropletEquationSolver) self
         double precision, intent(in) :: radius
-        double precision drdt1,dr1, drdt2,dr2, r_approxi
+        double precision drdt1,dr1, drdt2,dr2, r_approxi, dr
         !========= 飛沫半径の変化の計算　(2次精度ルンゲクッタ（ホイン）) ===========================
     
         drdt1 = self%coeff_drdt / radius
@@ -180,7 +181,7 @@ module dropletEquation_m
         drdt2 = self%coeff_drdt / r_approxi
         dr2 = drdt2 * self%dt
 
-        evaporatin_eq = radius + (dr1 + dr2)*0.5d0
+        dr = (dr1 + dr2)*0.5d0
 
     end function
 
@@ -205,7 +206,7 @@ module dropletEquation_m
 
         if(radius_d <= 0.d0) then
             print*, '**ZeroRadius ERROR**', radius_d
-            stop
+            error stop
         end if
 
         speed_r = norm2(vel_a(:) - vel_d(:))    !相対速度の大きさ
@@ -283,7 +284,7 @@ module dropletEquation_m
 
             case default
                 print*, 'RepresentativeValueERROR : ', name
-                stop
+                error stop
 
         end select
 
