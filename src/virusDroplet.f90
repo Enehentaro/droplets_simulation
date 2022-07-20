@@ -5,7 +5,7 @@ module virusDroplet_m
     type, public :: virusDroplet_t
         double precision :: position(3), velocity(3)=0.d0
         double precision, private :: radius, radius_min, initialRadius, deadline
-        integer, private :: status=0
+        integer :: status=0
         integer :: coalesID=0, refCellID=0, adhesBoundID=0
 
         contains

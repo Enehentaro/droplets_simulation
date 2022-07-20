@@ -53,7 +53,7 @@ program dropletCount
         ! end do
 
         ! addition
-        fname = trim(caseName)//'/backup/backup_6000000.bu'
+        fname = trim(caseName)//'/backup/backup_400000.bu'
         
         mainDroplet = read_backup(fname)
     
