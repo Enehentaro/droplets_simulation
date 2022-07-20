@@ -451,7 +451,7 @@ module dropletMotionSimulation
 
     subroutine create_CaseDirectory
         use path_operator_m
-
+       
         call make_directory(case_dir//'/VTK')
         call make_directory(case_dir//'/backup')
         
