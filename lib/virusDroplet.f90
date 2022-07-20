@@ -116,7 +116,7 @@ module virusDroplet_m
 
             case default
                 print*, '**ERROR [statusNumber] : ', name, ' is not found.**'
-                stop
+                error stop
 
         end select
 
