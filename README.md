@@ -8,8 +8,7 @@ Simulation of Virus-Laden Droplets Behavior in AFDET
   1. `$ mkdir build`でビルドディレクトリ作成
   1. `$ cd build`で移動
   1. `$ cmake ..`で依存関係解決
-      - 一部の環境(Windows等)では、`-G "MinGW Makefiles"`でGenerator指定
-      - `-D CMAKE_Fortran_COMPILER=[ifort/gfortran]`でコンパイラ指定
+      - Windows環境用なので `-G "MinGW Makefiles" -D CMAKE_Fortran_COMPILER=gfortran`でコンパイラ指定
       - `-D CMAKE_BUILD_TYPE=debug`でデバッグ用コンパイルオプション付与
   1. `$ make`でコンパイル
   
