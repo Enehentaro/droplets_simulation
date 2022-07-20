@@ -89,14 +89,7 @@ module dropletGenerator_m
         deadline = deadline + nowTime
         call generateDroplet%set_deadline(deadline)
 
-        if(self%generateRate > 0) then
-            block
-                integer i
-                do i = 1, num_droplet
-                    call generateDroplet%droplet(i)%set_status('nonActive')
-                end do
-            end block
-        end if
+        if(self%generateRate > 0) call generateDroplet%set_status('nonActive')
 
     end function
 
@@ -109,7 +102,7 @@ module dropletGenerator_m
 
         if(.not.allocated(self%pBox_array)) then
             print*, 'ERROR : InitialPositionBox is not Set.'
-            stop
+            error stop
         end if
         num_box = size(self%pBox_array)
 
@@ -189,7 +182,7 @@ module dropletGenerator_m
 
     subroutine set_dropletPlacementBox(self, positionDir)
         use simpleFile_reader
-        use filename_mod, only : IniPositionFName
+        use filename_m, only : IniPositionFName
         class(DropletGenerator) self
         character(*), intent(in) :: positionDir
         integer i_box, num_box
@@ -253,11 +246,11 @@ module dropletGenerator_m
 
                     do i_box = 1, num_box
                         generateEnd = min(nonActive_perBox*(i_box-1) + generate_perBox, nonActive_perBox*i_box)
-                        call dGroup%set_status(0, nonActiveID_array(nonActive_perBox*(i_box-1) +1 : generateEnd))
+                        call dGroup%set_status('floating', nonActiveID_array(nonActive_perBox*(i_box-1) +1 : generateEnd))
                     end do
 
                 else  !この時刻までに生成されているべき数が総飛沫数未満でない　＝＞　全て生成されるべき
-                    call dGroup%set_status(0, nonActiveID_array(:))
+                    call dGroup%set_status('floating', nonActiveID_array(:))
 
                 end if
 
@@ -271,11 +264,11 @@ module dropletGenerator_m
     end subroutine
 
     subroutine set_SequentialArray(self, filename)
-        use simpleFile_reader
+        use array_m
         class(SequentialArray) self
         character(*), intent(in) :: filename
 
-        call read_array_real(filename, self%array)
+        call read_1dArray_real(filename, self%array)
 
         self%index = 1
 

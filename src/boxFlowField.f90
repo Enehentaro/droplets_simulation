@@ -1,7 +1,7 @@
 program boxFlowField
     use conditionValue_m
     use boxCounter_m
-    use unstructuredGrid_mod
+    use unstructuredGrid_m
     use terminalControler_m
     implicit none
     integer i_box, num_box, nc
@@ -13,7 +13,7 @@ program boxFlowField
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
-    type(UnstructuredGrid) mesh
+    type(FlowFieldUnstructuredGrid) mesh
 
     box_array = get_box_array('.', 0)
     num_box = size(box_array)
@@ -23,9 +23,9 @@ program boxFlowField
         call getarg(nc, caseName)
         print*, trim(caseName)
 
-        ! mesh = UnstructuredGrid_(condVal%path2FlowFile, condVal%meshFile)
+        ! mesh = FlowFieldUnstructuredGrid_(condVal%path2FlowFile, condVal%meshFile)
         if(nc==1) then
-            mesh = UnstructuredGrid_(trim(caseName)//'/field_0000005125.array', './case1.vtk')
+            mesh = FlowFieldUnstructuredGrid_(trim(caseName)//'/field_0000005125.array', './case1.vtk')
         else
             call mesh%updateWithFlowFieldFile(trim(caseName)//'/field_0000005125.array')
         end if
@@ -41,7 +41,7 @@ program boxFlowField
                 call print_progress([i_box, num_box])
                 ! i_cell = mesh%nearest_cell(box_array(i_box)%center)
                 call mesh%search_refCELL(box_array(i_box)%center, i_cell)
-                bResult(i_box)%flowVelocity = mesh%CELLs(i_cell)%flowVelocity
+                bResult(i_box)%flowVelocity = mesh%get_flowVelocityInCELL(i_cell)
             end do
 
         end block
@@ -75,8 +75,8 @@ program boxFlowField
     end subroutine
 
     subroutine output_boxVTK
-        use vtkMesh_operator_m
-        type(vtkMesh) boxMesh
+        use VTK_operator_m
+        type(UnstructuredGrid_inVTK) boxMesh
         integer i, j, k
         real, parameter :: trans(3,8) = reshape([ &
                                             0.0,0.0,0.0, 1.0,0.0,0.0, 0.0,1.0,0.0, 1.0,1.0,0.0, &
@@ -105,7 +105,7 @@ program boxFlowField
 
         end do
 
-        boxMesh = vtkMesh_(xyz, vertices, types)
+        boxMesh = UnstructuredGrid_inVTK_(xyz, vertices, types)
 
         call boxMesh%output(trim(caseName)//'/BoxFlow.vtk', cellVector=velArray, vectorName='VEL')
 

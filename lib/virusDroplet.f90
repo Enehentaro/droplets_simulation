@@ -12,7 +12,6 @@ module virusDroplet_m
 
         procedure :: isFloating => isDropletFloating
         procedure :: coalescenceID => dropletCoalescneceID
-        procedure :: set_status => set_dropletStatus
         procedure stop_droplet, isEvaporating, evaporation, get_radius
 
     end type
@@ -43,7 +42,7 @@ module virusDroplet_m
         procedure coalescence_check
         ! procedure :: calculation => Calculation_Droplets
 
-        procedure :: append => append_dropletGroup
+        ! procedure :: append => append_dropletGroup
 
     end type
 
@@ -96,14 +95,6 @@ module virusDroplet_m
 
     end function
 
-    subroutine set_dropletStatus(self, status)
-        class(virusDroplet_t) self
-        character(*), intent(in) :: status
-
-        self%status = get_statusNumber(status)
-
-    end subroutine
-
     integer function get_statusNumber(name)
         character(*), intent(in) :: name
 
@@ -125,7 +116,7 @@ module virusDroplet_m
 
             case default
                 print*, '**ERROR [statusNumber] : ', name, ' is not found.**'
-                stop
+                error stop
 
         end select
 
@@ -469,13 +460,13 @@ module virusDroplet_m
 
     end subroutine
 
-    subroutine append_dropletGroup(self, dGroup)
-        class(DropletGroup) self
-        type(DropletGroup), intent(in) :: dGroup
+    ! subroutine append_dropletGroup(self, dGroup)
+    !     class(DropletGroup) self
+    !     type(DropletGroup), intent(in) :: dGroup
 
-        self%droplet = [self%droplet, dGroup%droplet]
+    !     self%droplet = [self%droplet, dGroup%droplet]
 
-    end subroutine
+    ! end subroutine
 
     function read_backup(fname) result(dGroup_read)
         character(*), intent(in) :: fname
@@ -598,13 +589,13 @@ module virusDroplet_m
 
     subroutine set_dropletGroupStatus(self, status, ID)
         class(DropletGroup) self
-        integer, intent(in) :: status
+        character(*), intent(in) :: status
         integer, intent(in), optional :: ID(:)
 
         if(present(ID)) then
-            self%droplet(ID)%status = status
+            self%droplet(ID)%status = get_statusNumber(status)
         else
-            self%droplet(:)%status = status
+            self%droplet(:)%status = get_statusNumber(status)
         end if
 
     end subroutine
