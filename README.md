@@ -6,8 +6,9 @@ https://enehentaro.github.io/droplet-FORD-docs/
 
 ## 使い方
   
-  ### 依存関係解決・コンパイル
+### 依存関係解決・コンパイル
   ビルドに`cmake`コマンドを使います（[CMakeのインストール](https://qiita.com/ijknabla/items/05270ae5e597705d0dae#cmake-%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)が必要）。
+  
   1. `$ mkdir build`でビルドディレクトリ作成
   1. `$ cd build`で移動
   1. `$ cmake ..`で依存関係解決
@@ -16,15 +17,16 @@ https://enehentaro.github.io/droplet-FORD-docs/
       - `-D CMAKE_BUILD_TYPE=debug`でデバッグ用コンパイルオプション付与
   1. `$ make`でコンパイル
   
-  ### 実行
+### 実行
   ルートディレクトリ（README.mdのあるディレクトリ）での作業
+  
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）
   1. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集 
   1. `./build/bin/main`で実行。ケース名を入力して計算開始。
 
 
 ## 条件ファイル(condition.nml, initial_position.csv)解説
-  ### condition.nml
+### condition.nml
   - **リスタート位置 num_restart**
     - 通常は`0`を指定
     - `1以上`にすると、その値に対応するbackupファイルが読み込まれ、そこからリスタートが始まる
@@ -48,7 +50,7 @@ https://enehentaro.github.io/droplet-FORD-docs/
     - 任意の区間の流体連番ファイルを繰り返し用いるときに指定（例えば呼吸のサイクル）
     - `(先頭) = (末尾)` とすると、そのステップ数到達後は流れ場の更新が起こらなくなる
     - `(先頭) > (末尾)` とすれば、特殊な処理は起こらず、流体連番ファイルが順番に読み込まれる
-  ### initial_position.csv
+### initial_position.csv
   - 初期飛沫の配置帯（直方体）を設定する
   - 左から順に、直方体の中心座標(x,y,z), 直方体の幅(x,y,z)
   - 改行すれば配置帯を複数設定できる
@@ -56,13 +58,13 @@ https://enehentaro.github.io/droplet-FORD-docs/
 
 ## 方程式
 
-  ### 飛沫の蒸発方程式
+### 飛沫の蒸発方程式
 
   $$ \frac{dr}{dt} \space = \space -\left(1-\frac{RH}{100}\right) \cdot \frac{D e_{s}(T)}{\rho_{w} R_{v} T} \cdot \frac{1}{r} $$
   
   プログラム内では、２次精度ルンゲクッタ法で解いている。
   
-  ### 飛沫の運動方程式
+### 飛沫の運動方程式
 
 $$ m \frac{d \mathbf{v}}{dt} \space = \space m \mathbf{g} \space + \space C_D (\mathbf{v}) \space \cdot \space \frac{1}{2} \rho_a S \left | \mathbf{u}_a - \mathbf{v} \right | (\mathbf{u}_a - \mathbf{v}) $$
 
