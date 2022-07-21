@@ -255,8 +255,9 @@ module kdTree_m
 
         open(newunit=n_unit, file = fname)
             do i = 1, size(self%node)    
-                write(n_unit,'(6(1x,I0))') i, self%node(i)%cell_ID, self%node(i)%parent_ID, &
-                self%node(i)%child_ID_1, self%node(i)%child_ID_2, size(self%node(i)%cellID_array)
+                write(n_unit,'(7(1x,I0))') i, self%node(i)%cell_ID, self%node(i)%parent_ID, &
+                self%node(i)%child_ID_1, self%node(i)%child_ID_2, self%node(i)%depth, &
+                size(self%node(i)%cellID_array)
             end do
             write(n_unit,'()')
             do i = 1, size(self%node)
@@ -281,7 +282,8 @@ module kdTree_m
         open(newunit = n_unit, file = fname)
             do i = 1, iimx
                 read(n_unit,*) nodeID(i), self%node(i)%cell_ID, self%node(i)%parent_ID, &
-                self%node(i)%child_ID_1, self%node(i)%child_ID_2, cellID_arraySize(i)
+                self%node(i)%child_ID_1, self%node(i)%child_ID_2, self%node(i)%depth, &
+                cellID_arraySize(i)
             end do
             read(n_unit,'()')
             do i = 1, iimx
@@ -291,11 +293,11 @@ module kdTree_m
         close(n_unit)
 
         do i = 1, iimx
-            print'(5(1x,I0))', nodeID(i), self%node(i)%cell_ID, &
-            self%node(i)%parent_ID, self%node(i)%child_ID_1, self%node(i)%child_ID_2
+            print'(6(1x,I0))', nodeID(i), self%node(i)%cell_ID, self%node(i)%parent_ID, &
+            self%node(i)%child_ID_1, self%node(i)%child_ID_2, self%node(i)%depth
         end do
         do i = 1, iimx
-            print*, self%node(i)%cellID_array
+            print *, self%node(i)%cellID_array
         end do
 
     end subroutine
