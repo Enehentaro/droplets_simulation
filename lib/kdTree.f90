@@ -14,7 +14,7 @@ module kdTree_m
         private
         type(node_in_kdTree_t), allocatable :: node(:)
         contains
-        procedure set_relation, saveAsDOT
+        procedure set_relation, saveAsDOT, saveAsTXT, read_kdTree
         procedure :: search => search_kdtree
     end type
 
@@ -205,51 +205,7 @@ module kdTree_m
 
         deallocate(NotYetCompared)
 
-        print*, "mindist =", mindist
-        print*, "nearest_ID =", nearest_ID
-
     end subroutine
-
-    ! subroutine get_selfAndHalfChildren(self, topParentID, lr, selfAndHalfChildren)
-    !     class(kdTree) self
-    !     integer, intent(in) :: topParentID
-    !     character(*), intent(in) :: lr
-    !     integer, allocatable, intent(out) :: selfAndHalfChildren(:)
-    !     integer, allocatable :: selfAndAllChildren(:), halfChildren(:)
-    !     integer childID, cnt, i
-
-    !     ! 親IDとそれに付随するすべての子のcellIDを格納
-    !     selfAndAllChildren = self%node(topParentID)%cellID_array
-
-    !     ! leftの場合、これから比較するのは左側で、全体から取り除くべき子供は右側
-    !     select case(lr)
-    !         case('left')
-    !             childID = self%node(topParentID)%child_ID_2
-    !         case('right')
-    !             childID = self%node(topParentID)%child_ID_1
-    !     end select
-
-    !     if(childID == 0) return
-
-    !     ! 取り除く子供すべてをhalfChildrenに格納
-    !     halfChildren = self%node(childID)%cellID_array
-    !     allocate(selfAndHalfChildren(&
-    !         size(selfAndAllChildren) - size(halfChildren)))
-
-    !     cnt = 0
-    !     do i = 1, size(selfAndAllChildren)
-    !         ! any文はself..(i)の値がhalf..に存在すればtrueを返す
-    !         ! つまり、全体のcellIDの内、これから比較を行うべきcellIDのみif文内の処理を行う
-    !         if(.not.any(selfAndAllChildren(i)==halfChildren)) then
-    !             cnt = cnt +1
-    !             selfAndHalfChildren(cnt) = selfAndAllChildren(i)
-    !         end if
-    !     end do
-
-    !     deallocate(selfAndAllChildren)
-    !     deallocate(halfChildren)
-
-    ! end subroutine
 
     subroutine saveAsDOT(self, xyz, fname)
         class(kdTree), intent(in) :: self
@@ -288,6 +244,59 @@ module kdTree_m
 
 
         write(n_unit, '("}")')
+
+    end subroutine
+
+    subroutine saveAsTXT(self, fname)
+        class(kdTree), intent(in) :: self
+        character(*), intent(in) :: fname
+        character(size(self%node)) fmt
+        integer i, n_unit
+
+        open(newunit=n_unit, file = fname)
+            do i = 1, size(self%node)    
+                write(n_unit,'(6(1x,I0))') i, self%node(i)%cell_ID, self%node(i)%parent_ID, &
+                self%node(i)%child_ID_1, self%node(i)%child_ID_2, size(self%node(i)%cellID_array)
+            end do
+            write(n_unit,'()')
+            do i = 1, size(self%node)
+                write(fmt,'("("I0"(1x,I0))")') size(self%node(i)%cellID_array)
+                write(n_unit,fmt) self%node(i)%cellID_array
+            end do
+        close(n_unit)        
+
+    end subroutine
+
+    subroutine read_kdTree(self, fname, iimx)
+        class(kdTree), intent(inout) :: self
+        character(*), intent(in) :: fname
+        integer, intent(in) :: iimx
+        integer i, n_unit
+        integer, allocatable :: nodeID(:), cellID_arraySize(:)
+
+        allocate(self%node(iimx))
+        allocate(nodeID(iimx))
+        allocate(cellID_arraySize(iimx))
+
+        open(newunit = n_unit, file = fname)
+            do i = 1, iimx
+                read(n_unit,*) nodeID(i), self%node(i)%cell_ID, self%node(i)%parent_ID, &
+                self%node(i)%child_ID_1, self%node(i)%child_ID_2, cellID_arraySize(i)
+            end do
+            read(n_unit,'()')
+            do i = 1, iimx
+                allocate(self%node(i)%cellID_array(cellID_arraySize(i)))
+                read(n_unit,*) self%node(i)%cellID_array
+            end do
+        close(n_unit)
+
+        do i = 1, iimx
+            print'(5(1x,I0))', nodeID(i), self%node(i)%cell_ID, &
+            self%node(i)%parent_ID, self%node(i)%child_ID_1, self%node(i)%child_ID_2
+        end do
+        do i = 1, iimx
+            print*, self%node(i)%cellID_array
+        end do
 
     end subroutine
 
