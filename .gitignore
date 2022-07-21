@@ -10,5 +10,7 @@ bin/
 !CMakeLists.txt
 /build
 
+# for FORD
+docs/
 
 .vscode
