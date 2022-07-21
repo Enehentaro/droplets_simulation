@@ -1,14 +1,14 @@
 MODULE adjacencySolver_m
-    ! use unstructuredGrid_m
+    !!セルの隣接関係解決モジュール
     IMPLICIT NONE
     private
-    ! integer num_nodes, num_cells, num_tetras, num_prisms, num_pyramids
-    ! INTEGER num_halfFace
 
+    !>ハーフフェイス構造体
     type halfFace_t
         integer :: nodeID(4) = 0, pairID = 0, ID_sum = 0, ownerID(2) = -1
     end type halfFace_t
 
+    !>隣接関係ソルバークラス
     type AdjacencySolver
         type(halfFace_t), allocatable :: halfFaceArray(:)
         integer num_BoundFace
@@ -21,6 +21,7 @@ MODULE adjacencySolver_m
     contains
 
     subroutine set_halfFaceArray(self, cellVertices)
+        !!各セルごとにハーフフェイスをカウントし、配列に格納
         class(AdjacencySolver) self
         integer, intent(in) :: cellVertices(:,:)
         INTEGER II,JJJ, j, n, JJJMX, num_halfFace, num_cell
@@ -91,6 +92,9 @@ MODULE adjacencySolver_m
     end subroutine
     
     subroutine check_halfFace(self)
+        !!各ハーフフェイスに対して相方を探す
+        !!相方がみつかれば、相方のセルと隣接していることがわかる
+        !!相方のいないハーフフェイスは境界面
         use terminalControler_m
         class(AdjacencySolver) self
         INTEGER match, width, numNode, faceID, groupID,num_group, maxID_sum, num_halfFace, num_BoundFaces
@@ -199,6 +203,7 @@ MODULE adjacencySolver_m
     END subroutine check_halfFace
 
     subroutine find_boundFaceInformation(self, cellBoundFaces, boundFaceVertices)
+        !!境界面のみを取り出し、配列に格納
         class(AdjacencySolver) self
         INTEGER II,JJJ,JB
         integer cellBoundFaces(:,:)
@@ -223,6 +228,7 @@ MODULE adjacencySolver_m
     end subroutine
         
     subroutine find_adjacentCellID(self, adjacentCellArray)
+        !!隣接関係を配列に格納
         class(AdjacencySolver) self
         integer II, JJJ, adjacentCellArray(:,:)
         integer, allocatable :: num_adjacent(:)
@@ -241,6 +247,7 @@ MODULE adjacencySolver_m
     end subroutine
 
     subroutine solve_BoundaryAndAdjacency(cellVertices, cellBoundFaces, boundFaceVertices, adjacentCellArray)
+        !!境界面と隣接関係を、それぞれ配列に格納
         integer, intent(in) :: cellVertices(:,:)
         integer cellBoundFaces(:,:), adjacentCellArray(:,:)
         integer, allocatable, intent(out) :: boundFaceVertices(:,:)
