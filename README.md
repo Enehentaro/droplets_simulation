@@ -1,6 +1,9 @@
 # Droplets Simulation
 Simulation of Virus-Laden Droplets Behavior in AFDET
 
+## ドキュメント
+https://enehentaro.github.io/droplet-FORD-docs/
+
 ## 使い方
   
   ### 依存関係解決・コンパイル
