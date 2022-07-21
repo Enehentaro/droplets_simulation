@@ -2,6 +2,8 @@ module conditionValue_m
     implicit none
     private
 
+    !>条件値クラス
+    !>条件指定ファイル（namelist）を読み込んだ結果を格納する
     type, public :: conditionValue_t
         double precision dt, L, U, direction_g(3)
         character(:), allocatable :: initialDistributionFName
