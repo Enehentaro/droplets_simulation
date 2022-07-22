@@ -7,15 +7,39 @@ program cellCenterCalc_test
     type(FlowFieldUnstructuredGrid) grid
     ! character(17), parameter :: cellCenterFName = 'CellCenters.array'
     real, allocatable :: centers(:,:), vertices(:,:)
+    real center(3)
     integer i, imax
+    integer n
 
     call grid%setupWithFlowFieldFile('SAX/sax_flow.vtk')    !このサブルーチン内で重心計算も行われる
+
+    imax = grid%get_info('cell')
     centers = grid%get_allOfCellCenters()
 
     do i = 1, imax
         vertices = grid%get_cellVerticesOf(i)
+        center = centers(:,i)
+
         !重心がテトラ内部になければエラー
-        if(.not.insideJudgment_tetra(vertices, centers(:,i))) error stop
+        if(.not.insideJudgment_tetra(vertices, center)) then
+            print'("============================")'
+            block
+                real vol_sum, volume
+                call insideJudgment_tetra_check(vertices, center, vol_sum, volume)
+                print*, vol_sum, volume
+            end block
+            print'("============================")'
+            print*, i, imax
+            print'("============================")'
+            do n = 1, size(vertices, dim=2)
+                print*, vertices(:,n)
+            end do
+            print'("============================")'
+            print*, center
+            print'("============================")'
+            error stop
+        end if
+
     end do
 
     ! contains
