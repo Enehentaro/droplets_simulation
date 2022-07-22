@@ -292,14 +292,6 @@ module kdTree_m
             end do
         close(n_unit)
 
-        do i = 1, iimx
-            print'(6(1x,I0))', nodeID(i), self%node(i)%cell_ID, self%node(i)%parent_ID, &
-            self%node(i)%child_ID_1, self%node(i)%child_ID_2, self%node(i)%depth
-        end do
-        do i = 1, iimx
-            print *, self%node(i)%cellID_array
-        end do
-
     end subroutine
 
 end module

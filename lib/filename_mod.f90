@@ -4,4 +4,5 @@ module filename_m
     character(21), parameter :: conditionFName = 'condition.nml'
     character(20), parameter :: IniPositionFName = 'initial_position.csv'
     character(22), parameter :: IniDistributionFName = 'InitialDistribution.bu'
+    character(20), parameter :: kdTreeFName = 'kdTree.txt'
 end module filename_m

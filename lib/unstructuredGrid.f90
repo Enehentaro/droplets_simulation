@@ -44,6 +44,8 @@ module unstructuredGrid_m
         procedure AdjacencySolvingProcess
         procedure read_adjacency, read_boundaries, solve_adacencyOnFlowFieldUnstructuredGrid
         procedure output_boundaries, output_adjacency, boundary_setting, output_STL
+        
+        procedure setup_kdTree
 
     end type
 
@@ -66,6 +68,7 @@ module unstructuredGrid_m
         end if
 
         call FlowFieldUnstructuredGrid_%AdjacencySolvingProcess(Dir)    !流れ場の前処理
+        call FlowFieldUnstructuredGrid_%setup_kdTree(Dir)
 
     end function
 
@@ -553,11 +556,47 @@ module unstructuredGrid_m
         
     end subroutine
 
-    integer function nearest_cell(self, X) !最も近いセルNCNの探索
+    subroutine setup_kdTree(self, path)
+        use filename_m, only : kdTreeFName 
+        use kdTree_m
         class(FlowFieldUnstructuredGrid) self
+        type(kdTree) kd_tree
+        character(*), intent(in) :: path
+        character(:), allocatable :: FNAME
+        real, allocatable :: xyz(:,:)
+        integer iimx
+        logical existance
+
+        FNAME = trim(path)//kdTreeFName
+
+        iimx = self%get_info('cell')
+        xyz = self%get_allOfCellCenters()
+
+        inquire(file = FNAME, exist=existance)
+        if(.not.existance) then
+
+            kd_tree = kdTree_(xyz)
+            call kd_tree%saveAsTXT(FNAME)
+            print*, 'OUTPUT kdtree:', FNAME
+
+        else
+
+            call kd_tree%read_kdTree(FNAME, iimx)
+            print*, 'READ kdtree:', FNAME
+
+        end if
+
+    end subroutine
+
+    integer function nearest_cell(self, X) !最も近いセルNCNの探索
+        ! use kdTree_m
+        class(FlowFieldUnstructuredGrid) self
+        ! type(kdTree) kd_tree
         real, intent(in) :: X(3)
         integer II, IIMX
         real, allocatable :: distance(:)
+        ! real, allocatable :: xyz(:,:)
+        ! integer nearestID
 
         IIMX = size(self%CELLs)
         allocate(distance(IIMX))
@@ -570,6 +609,11 @@ module unstructuredGrid_m
         
         nearest_cell = minloc(distance, dim=1)   !最小値インデックス
         ! print*, distance(nearest_cell)
+
+        ! xyz = self%get_allOfCellCenters()
+
+        ! call kd_tree%search(xyz, X, nearestID)
+        ! nearest_cell = nearestID
         
     end function
 
