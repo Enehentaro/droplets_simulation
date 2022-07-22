@@ -34,7 +34,7 @@ module dropletEquation_m
         procedure next_position, next_velocity
         procedure get_radiusLowerLimitRatio
 
-        procedure :: evaporationEq => evaporatinEquation
+        procedure :: evaporationEq => evaporationEquation
         procedure solve_motionEquation
 
     end type
@@ -167,7 +167,7 @@ module dropletEquation_m
     end function
 
     !蒸発方程式。半径変化量を返す。
-    function evaporatinEquation(self, radius) result(dr)
+    function evaporationEquation(self, radius) result(dr)
         class(DropletEquationSolver) self
         double precision, intent(in) :: radius
         double precision drdt1,dr1, drdt2,dr2, r_approxi, dr
@@ -206,7 +206,7 @@ module dropletEquation_m
 
         if(radius_d <= 0.d0) then
             print*, '**ZeroRadius ERROR**', radius_d
-            stop
+            error stop
         end if
 
         speed_r = norm2(vel_a(:) - vel_d(:))    !相対速度の大きさ
@@ -284,7 +284,7 @@ module dropletEquation_m
 
             case default
                 print*, 'RepresentativeValueERROR : ', name
-                stop
+                error stop
 
         end select
 

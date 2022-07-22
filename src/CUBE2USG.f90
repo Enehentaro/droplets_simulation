@@ -3,8 +3,9 @@
 !対応する各節点における流速を配列にして、そのままバイナリファイル出力を行う。
 program CUBE2USG
     use plot3d_operator
-    use vtkMesh_operator_m
+    use VTK_operator_m
     use simpleFile_reader
+    use array_m
     implicit none
     character(100) F_fname, USG_fname, casefname
     character(50),parameter :: filename = 'name.txt'
@@ -12,7 +13,7 @@ program CUBE2USG
     character(20), parameter :: CorrespondenceFName = 'vtkCell2cubeNode.txt'
     integer fileID, num_record, num_cell, nc, nc_max
     real, allocatable :: velocity(:,:)
-    type(vtkMesh) USG
+    type(UnstructuredGrid_inVTK) USG
     type(Plot3dMesh) cubeMesh
     type(plot3dNodeInfo), allocatable :: vtkCell2cubeNode(:)
 
@@ -55,7 +56,7 @@ program CUBE2USG
                 fname_base = F_fname(:len_trim(F_fname)-2)
 
                 !流速場配列をバイナリ出力
-                call output_array_asBinary(fname=fname_base//'.array', array=velocity)
+                call output_2dArray_asBinary(fname=fname_base//'.array', array=velocity)
 
                 !確認用に、ひとつだけVTKファイル出力
                 if(fileID==1) call USG%output(fname_base//'.vtk', cellVector=velocity, vectorName='Velocity')
@@ -92,6 +93,7 @@ program CUBE2USG
     subroutine search_nodeInfo
         use timeKeeper_m
         use terminalControler_m
+        use unstructuredElement_m
         integer i
         real progress_percent, estimation, speed
         type(TimeKeeper) tk
@@ -103,12 +105,12 @@ program CUBE2USG
         call set_formatTC('("SEARCH vtkcell2cubenode [ ",f6.2," % ] ", f8.1, " sec is left.")')
 
         allocate(vtkCell2cubeNode(num_cell))
-        cellCenter = USG%get_cellCenter()
+        cellCenter = get_cellCenters(USG%node_array, USG%cell_array)
         do i = 1, num_cell
 
-            progress_percent = real(i*100) / real(num_cell-1)
+            progress_percent = real(i*100) / real(num_cell)
             speed = real(i) / tk%erapsedTime()
-            estimation = real(num_cell-1 - i) / (speed + 1.e-9)
+            estimation = real(num_cell - i) / (speed + 1.e-9)
             call print_progress([progress_percent, estimation])
 
             vtkCell2cubeNode(i) = cubeMesh%nearestNodeInfo(cellCenter(:,i))
@@ -119,6 +121,7 @@ program CUBE2USG
 
     !節点情報対応付けファイルを読み込むサブルーチン
     subroutine read_nodeInfo(success)
+        use array_m
         logical, intent(out) :: success
         integer n_unit, i, num_cell_, num_cube, cubeShape(3)
         character dummy*10
@@ -133,7 +136,7 @@ program CUBE2USG
             read(n_unit, *) dummy, num_cell_
 
             if((num_cell_/=num_cell).or.(num_cube/=cubeMesh%get_numCube()).or.&
-                .not.isEqual(cubeShape, cubeMesh%get_cubeShape())) then
+                .not.all(cubeShape==cubeMesh%get_cubeShape())) then
 
                 print*, 'SizeERROR:', num_cell_, num_cell, num_cube, cubeMesh%get_numCube()
                 success = .false.
@@ -170,21 +173,5 @@ program CUBE2USG
         end if
 
     end subroutine
-
-    !配列が等しいかどうかを判定する関数
-    logical function isEqual(a, b)
-        integer, intent(in) :: a(:), b(:)
-        integer i
-
-        isEqual = .true.
-
-        do i = 1, size(a)
-            if(a(i)/=b(i)) then
-                isEqual = .false.
-                return
-            end if
-        end do
-
-    end function
     
 end program CUBE2USG

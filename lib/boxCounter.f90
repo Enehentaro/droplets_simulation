@@ -36,7 +36,7 @@ module boxCounter_m
             if((new_box_array(i)%width(1) <= 0.d0)&
                 .or.(new_box_array(i)%width(2) <= 0.d0).or.(new_box_array(i)%width(3) <= 0.d0)) then
                     print*, 'ERROR boxSize :', new_box_array(i)%center(:), new_box_array(i)%width(:)
-                    stop
+                    error stop
             end if
 
             allocate(new_box_array(i)%Flag(num_Flag), source=.false.)

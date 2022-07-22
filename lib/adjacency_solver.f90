@@ -1,5 +1,5 @@
 MODULE adjacencySolver_m
-    ! use unstructuredGrid_mod
+    ! use unstructuredGrid_m
     IMPLICIT NONE
     private
     ! integer num_nodes, num_cells, num_tetras, num_prisms, num_pyramids
@@ -34,7 +34,7 @@ MODULE adjacencySolver_m
         num_cell = size(cellVertices, dim=2)    !cellVerticesには、(6ｘセル数)の配列が入ってきている想定
         if(num_cell <= 0) then
             print*, 'ERROR_num_cells', num_cell
-            stop
+            error stop
         end if
 
         allocate(n_type(num_cell))
@@ -48,7 +48,7 @@ MODULE adjacencySolver_m
                     n_type(II) = 3
                 case default
                     print*, '**CEll VERTICES ERROR**'
-                    stop
+                    error stop
             end select
         END DO
 
@@ -85,7 +85,7 @@ MODULE adjacencySolver_m
             print*, 'JJJMX / num_halfFace =', JJJMX, '/', num_halfFace
         else
             print*, 'JJJMX_ERROR:', JJJMX, num_halfFace
-            stop
+            error stop
         end if
             
     end subroutine
@@ -136,7 +136,7 @@ MODULE adjacencySolver_m
 
         if(checkCounter /= num_halfFace) then
             print*, 'faceCounter_ERROR:', checkCounter, num_halfFace
-            stop
+            error stop
         end if
           
         num_BoundFaces = 0
@@ -194,7 +194,7 @@ MODULE adjacencySolver_m
 
         ! call cpu_time(time2)
         ! print*, time2 - time1
-        ! stop
+        ! error stop
 
     END subroutine check_halfFace
 

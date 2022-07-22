@@ -7,7 +7,7 @@ module caseName_m
 
     subroutine case_check(num_case)
         use simpleFile_reader
-        use filename_mod, only : conditionFName
+        use filename_m, only : conditionFName
         character(30) caseName
         integer, intent(out) :: num_case
         integer i
@@ -28,7 +28,7 @@ module caseName_m
             inquire(file=trim(case_array(i))//'/'//conditionFName, exist=existance)
             if(.not.existance) then
                 print*, 'Case:[ ', trim(case_array(i)), ' ] is not found.'
-                stop
+                error stop
             end if
         end do
 

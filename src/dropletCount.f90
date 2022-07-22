@@ -89,8 +89,8 @@ program dropletCount
     end subroutine
 
     subroutine output_boxVTK
-        use vtkMesh_operator_m
-        type(vtkMesh) mesh
+        use VTK_operator_m
+        type(UnstructuredGrid_inVTK) mesh
         integer i, j, k
         real, parameter :: trans(3,8) = reshape([ &
                                             0.0,0.0,0.0, 1.0,0.0,0.0, 0.0,1.0,0.0, 1.0,1.0,0.0, &
@@ -113,7 +113,7 @@ program dropletCount
 
         end do
 
-        mesh = vtkMesh_(xyz, vertices, types)
+        mesh = UnstructuredGrid_inVTK_(xyz, vertices, types)
 
         call mesh%output(trim(caseName)//'/Box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
 
