@@ -1,6 +1,6 @@
-!CUBE格子上の流速場をVTK非構造格子に載せるプログラム。
-!非構造格子上の各格子に対して、CUBE格子上の最近傍節点を探し、対応付けを行う。
-!対応する各節点における流速を配列にして、そのままバイナリファイル出力を行う。
+!>CUBE格子上の流速場をVTK非構造格子に載せるプログラム。
+!>非構造格子上の各格子に対して、CUBE格子上の最近傍節点を探し、対応付けを行う。
+!>対応する各節点における流速を配列にして、そのままバイナリファイル出力を行う。
 program CUBE2USG
     use plot3d_operator
     use VTK_operator_m
@@ -69,7 +69,7 @@ program CUBE2USG
 
     contains
 
-    !対応する節点情報をアスキーファイルで出力するサブルーチン
+    !>対応する節点情報をアスキーファイルで出力するサブルーチン
     subroutine output_nodeInfo
         integer n_unit, i
 
@@ -89,7 +89,7 @@ program CUBE2USG
 
     end subroutine
 
-    !非構造格子に対応する節点情報を探すサブルーチン
+    !>非構造格子に対応する節点情報を探すサブルーチン
     subroutine search_nodeInfo
         use timeKeeper_m
         use terminalControler_m
@@ -119,7 +119,7 @@ program CUBE2USG
 
     end subroutine
 
-    !節点情報対応付けファイルを読み込むサブルーチン
+    !>節点情報対応付けファイルを読み込むサブルーチン
     subroutine read_nodeInfo(success)
         use array_m
         logical, intent(out) :: success
@@ -155,7 +155,7 @@ program CUBE2USG
 
     end subroutine
 
-    !格子と節点の対応付けを解決するサブルーチン
+    !>格子と節点の対応付けを解決するサブルーチン
     subroutine solve_correspondence
         logical existance, success
 

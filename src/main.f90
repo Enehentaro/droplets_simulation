@@ -1,7 +1,7 @@
 !---------------------------------------------------------------------------------
-!     Simulation of viral droplets
-!                                by KIYOTA OGURA(2021/1/10)
-!     updated by IDA
+!> Simulation of Virus-Laden Droplets Behavior in AFDET
+!> by KIYOTA OGURA(2021/1/10)
+!> updated by YUTA IDA
 !---------------------------------------------------------------------------------
 PROGRAM MAIN
       !$ use omp_lib
