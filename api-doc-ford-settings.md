@@ -4,7 +4,7 @@ src_dir: ./src
 output_dir: ./docs
 page_dir: ./page
 project: Droplets Simulation
-summary: ウイルス飛沫運動シミュレーション
+summary: Simulation of Virus-Laden Droplets Behavior in AFDET
 author: Y.Ida
 license: by-nc-sa
 graph: true
