@@ -2,7 +2,7 @@
 Simulation of Virus-Laden Droplets Behavior in AFDET
 
 ## ドキュメント
-https://enehentaro.github.io/droplet-FORD-docs/
+https://enehentaro.github.io/droplets_simulation/
 
 ※[FORD](https://github.com/Fortran-FOSS-Programmers/ford)を使用しています
 
