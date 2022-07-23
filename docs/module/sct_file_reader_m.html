@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+   <meta name="description" content="Simulation of Virus-Laden Droplets Behavior in AFDET">
+    <meta name="author" content="Y.Ida" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>SCT_file_reader_m &ndash; Droplets Simulation</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">Droplets Simulation </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href='../page/index.html'>Read Me</a></li>
+            <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
+              <a href="#" class="dropdown-toggle"
+              data-toggle="dropdown" role="button"
+              aria-haspopup="true"
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="../lists/files.html">Source Files</a></li>
+            <li><a href="../lists/modules.html">Modules</a></li>
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+                   <li><a href="../lists/types.html">Derived Types</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
+       
+            </ul>
+        
+            </li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/files.html">Source Files</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/modules.html">Modules</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/procedures.html">Procedures</a></li>
+                             <li class="visible-xs hidden-sm visible-lg"><a href="../lists/types.html">Derived Types</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/programs.html">Programs</a></li>
+          </ul>
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+  <div class="row">
+    <h1>SCT_file_reader_m 
+    <small>Module</small>
+    </h1>
+    <div class="row">
+  <div class="col-lg-12">
+<div class="well well-sm">
+  <ul class="list-inline" style="margin-bottom:0px;display:inline">
+    <li><i class="fa fa-legal"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a></li> 
+     <li><i class="fa fa-list-ol"></i>
+       <a data-toggle="tooltip"
+    data-placement="bottom" data-html="true"
+    title="23.5% of total for modules and submodules.">1065 statements</a>
+     </li> 
+    <li><i class="fa fa-code"></i><a href="../src/SCTfile_reader.f90"> Source File</a></li>
+  </ul>
+  <ol class="breadcrumb in-well text-right">
+     <li><a href='../sourcefile/sctfile_reader.f90.html'>SCTfile_reader.f90</a></li>
+     <li class="active">SCT_file_reader_m</li>
+  </ol>
+</div>
+</div>
+</div>
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+</script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+    <div id="sidebar">
+  <h3>Contents</h3>
+ 
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-0">Variables</a></h3></div>
+  <div id="vars-0" class="panel-collapse collapse">
+    <div class="list-group">
+      <a class="list-group-item" href="../module/sct_file_reader_m.html#variable-missingvaluesize">MissingValueSize</a>
+    </div>
+  </div>
+</div>
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#types-0">Derived Types</a></h3></div>
+  <div id="types-0" class="panel-collapse collapse">
+    <div class="list-group">
+      <a class="list-group-item" href="../module/sct_file_reader_m.html#type-sctregion_t">sctregion_t</a>
+      <a class="list-group-item" href="../module/sct_file_reader_m.html#type-sct_data_name_list_t">sct_data_name_list_t</a>
+      <a class="list-group-item" href="../module/sct_file_reader_m.html#type-sct_grid_t">sct_grid_t</a>
+    </div>
+  </div>
+</div>
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#subs-0">Subroutines</a></h3></div>
+  <div class="list-group">
+    <div id="subs-0" class="panel-collapse collapse">
+      <a class="list-group-item" href="../module/sct_file_reader_m.html#proc-get_cell_data_from_cellvertices">get_cell_data_from_cellvertices</a>
+    </div>
+  </div>
+</div>
+
+</div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+    <p>package     : SCT_file_reader ver 2.5.2
+author      : T.Ikeda, Y.Ida
+description :
+ - SC/TETRA 出力のファイルを読み取り，データを取り出す.<br>
+ - 今までのconverterと異なり, 本モジュールで独立して扱えるようになっている. 
+ - 並列化には対応していない. 
+note        :
+ - セルの節点の並び順はwedge以外はvtkのものと同じ.
+ - SC/TETRAでは，セル番号および節点番号は0スタートなので, fortran運用のためインデックス+1. 
+ - 頂点配列(NDNO)はセルタイプ毎に並んでいない. 
+Others      :
+ - cell2verticesのrank 1には最大で8つ(hexahedron), face2verticesには4つの値が入るが, 
+   値が入っていない箇所は全て-1に統一されている. </p>
+    
+    
+    <br>
+
+    <section class="visible-xs visible-sm hidden-md">
+      <h3>Contents</h3>
+ 
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-1">Variables</a></h3></div>
+  <div id="vars-1" class="panel-collapse collapse">
+    <div class="list-group">
+      <a class="list-group-item" href="../module/sct_file_reader_m.html#variable-missingvaluesize">MissingValueSize</a>
+    </div>
+  </div>
+</div>
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#types-1">Derived Types</a></h3></div>
+  <div id="types-1" class="panel-collapse collapse">
+    <div class="list-group">
+      <a class="list-group-item" href="../module/sct_file_reader_m.html#type-sctregion_t">sctregion_t</a>
+      <a class="list-group-item" href="../module/sct_file_reader_m.html#type-sct_data_name_list_t">sct_data_name_list_t</a>
+      <a class="list-group-item" href="../module/sct_file_reader_m.html#type-sct_grid_t">sct_grid_t</a>
+    </div>
+  </div>
+</div>
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#subs-1">Subroutines</a></h3></div>
+  <div class="list-group">
+    <div id="subs-1" class="panel-collapse collapse">
+      <a class="list-group-item" href="../module/sct_file_reader_m.html#proc-get_cell_data_from_cellvertices">get_cell_data_from_cellvertices</a>
+    </div>
+  </div>
+</div>
+
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+
+
+    <section>
+    <h2>Variables</h2>
+    <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Visibility</th><th>Attributes</th><th></th><th>Name</th><th></th><th>Initial</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" id="variable-missingvaluesize"></span>real(kind=8),</td>
+<td>public,</td>  <td>parameter</td><td>::</td>
+  <td><strong>MissingValueSize</strong></td><td> =</td><td>1.0d20</td><td><p>SC/TETRAで規定された欠測値の大きさ. </p></td>
+</tr>
+</tbody>
+</table>
+
+    </section>
+    <br>
+    
+    
+
+    
+    <section>
+     <h2>Derived Types</h2>
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="type-sctregion_t"></span><h3>type, public :: <a href='../type/sctregion_t.html'>sctregion_t</a>  </h3></div>
+  <div class="panel-body">
+     
+  </div>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="type-sct_data_name_list_t"></span><h3>type, public :: <a href='../type/sct_data_name_list_t.html'>sct_data_name_list_t</a>  </h3></div>
+  <div class="panel-body">
+    <p>スカラーorベクトルデータの名前だけを取り出す. 構造体の配列にして使用する.
+region用に使うことも出来る. その場合abbreviatedは使わない.
+異なる文字長の配列が実装できなかったのでこれで代用する.  </p>
+     
+  </div>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="type-sct_grid_t"></span><h3>type, public :: <a href='../type/sct_grid_t.html'>sct_grid_t</a>  </h3></div>
+  <div class="panel-body">
+    <p>SC/TETRA メッシュクラス. 
+必要最低限の変数のみ保持. 変数名はフォーマットに準拠.<br>
+メッシュそのものを取り扱うのでメモリ圧迫する可能性大. 
+ソルバ内で使う場合はサブルーチンのローカル変数として扱う方が無難(自動開放されるはず)</p>
+     <h4>Components</h4>
+    <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Visibility</th><th>Attributes</th><th></th><th>Name</th><th></th><th>Initial</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" id="variable-get_data_titles"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>get_data_titles</strong></td><td></td><td></td><td></td>
+</tr>
+</tbody>
+</table>
+
+     
+     <h4>Type-Bound Procedures</h4>
+      <table class="table table-striped varlist">
+      <tbody>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-includes_topology'>includes_topology</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-is_fld_file'>is_fld_file</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-print_self'>print_self</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-read_sct_file'>read_SCT_file</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-extract_original_cell_vertices'>extract_original_cell_vertices</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-extract_cell_vertices'>extract_cell_vertices</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-extract_ordered_cell_vertices'>extract_ordered_cell_vertices</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-get_2d_array_of_point_coords'>get_2d_array_of_point_coords</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-get_cell_types'>get_cell_types</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-get_element_count'>get_element_count</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-get_vertex_count'>get_vertex_count</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-get_tetrahedron_count'>get_tetrahedron_count</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-get_wedge_count'>get_wedge_count</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-get_pyramid_count'>get_pyramid_count</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-get_hexahedron_count'>get_hexahedron_count</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-get_region_count'>get_region_count</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-get_region_namelist'>get_region_namelist</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-extract_face2vertices_on_region'>extract_face2vertices_on_region</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-search_scalar_data'>search_scalar_data</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-search_vector_data'>search_vector_data</a></strong>  </td>
+       <td></td></tr>
+       </tbody>
+       </table>
+  </div>
+</div>
+
+    </section>
+  <br>
+    
+
+    <section>
+    <h2>Subroutines</h2>
+      <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="proc-get_cell_data_from_cellvertices"></span><h3>public subroutine <a href='../proc/get_cell_data_from_cellvertices.html'>get_cell_data_from_cellvertices</a>(cell_data, cell2vertices, point_data)</h3></div>
+  <div class="panel-body">
+       
+<p>各セル毎の頂点配列に関連する節点中心データからセル中心データを構築する. 
+値はセルを構成する節点データの算術平均として計算する. </p>
+    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(inout)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>cell_data</strong>(:)</td><td><p>出力されるセル中心データ. </p></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>cell2vertices</strong>(:,:)</td><td><p>頂点配列. </p></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>point_data</strong>(:)</td><td><p>任意の節点データ. </p></td>
+</tr>
+</tbody>
+</table>
+
+
+  </div>
+  </div>
+
+    </section>    
+    <br>
+    
+    </div>
+  </div>
+
+    <hr>    
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+      <div class="row">
+        <div class="col-xs-6 col-md-6"><p>Droplets Simulation was developed by Y.Ida<br>&copy; 2022 <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>
+</p>
+        </div>
+        <div class="col-xs-6 col-md-6">
+          <p class="text-right">
+            Documentation generated by 
+            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+          </p>
+        </div>
+      </div>
+      <br>
+      </div> <!-- /container -->    
+    </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+  </body>
+</html>
