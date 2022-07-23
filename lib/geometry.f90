@@ -59,7 +59,7 @@ contains
 
     subroutine insideJudgment_tetra_check(vertices, point, vol_sum, volume)
         real, intent(in) :: vertices(3,4), point(3)
-        real volume, vol_sum
+        real, intent(out) :: volume, vol_sum
 
         volume = volume_tetra(vertices)
         vol_sum = partitionedVolume_sum_tetra(vertices, point)

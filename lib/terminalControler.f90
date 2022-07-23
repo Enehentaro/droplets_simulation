@@ -12,16 +12,19 @@ module terminalControler_m
         module procedure print_progress_int, print_progress_real
     end interface
 
-    !============================================================================
-    ! How to use EXAMPLE:
+    !|##Example
+    !```Fortran
+    !program main
+    !   use terminalControler_m
+    !
+    !   call set_formatTC('("CHECK halfFace [ #group : ",i6," / ",i6," ]")')
+    !   do groupID = 1, num_group
+    !       call print_progress([groupID, num_group])
+    !   end do
+    !
+    !end program main
+    !```
 
-    ! call set_formatTC('("CHECK halfFace [ #group : ",i6," / ",i6," ]")')
-    ! do groupID = 1, num_group
-    !     call print_progress([groupID, num_group])
-    ! end do
-
-    !============================================================================
-            
     contains
 
     subroutine reset_formatTC

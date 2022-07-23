@@ -1,12 +1,15 @@
 module unstructuredElement_m
+    !!非構造要素モジュール
+    !!非構造格子のベースとなる構造体を定義している
     implicit none
     private
 
-    !このあたりは隠蔽するとかえって使いにくくなるので隠蔽しすぎない
+    !>節点構造体（ただの座標配列）
     type, public :: node_t
         real coordinate(3)
     end type
 
+    !>セル構造体（節点のID配列）
     type, public :: cell_t
         integer, allocatable :: nodeID(:)
     end type
@@ -30,6 +33,7 @@ module unstructuredElement_m
     ! end function
 
     function get_MinMaxCDN(node) result(MinMax)
+        !!節点群の座標の最大最小を返す
         class(node_t), intent(in) :: node(:)
         real MinMax(3,2)
 
@@ -46,6 +50,7 @@ module unstructuredElement_m
     end function
 
     function get_cellCenters(node, cell) result(centers)
+        !!すべてのセル重心を計算し、配列で返す
         class(node_t), intent(in) :: node(:)
         class(cell_t), intent(in) :: cell(:)
         real, allocatable :: centers(:,:)

@@ -1,5 +1,6 @@
+!>全飛沫を、center(x,y)中心にphi[rad]だけ回転させ(z方向には回転しない),全飛沫の中心center(x,y,z)をcenter_translated(X,Y,Z)に移動させるサンプルコード
+!> by Hikaru Konishi
 program translate
-    !全飛沫を、center(x,y)中心にphi[rad]だけ回転させ(z方向には回転しない),全飛沫の中心center(x,y,z)をcenter_translated(X,Y,Z)に移動させるサンプルコード
     use virusDroplet_m
     implicit none
     character(15) infected_person

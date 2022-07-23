@@ -1,5 +1,5 @@
-!セル重心計算がうまく行っているかをテストする。
-!具体的には、重心をテトラの内外判定にかけている。
+!>セル重心計算がうまく行っているかをテストする。
+!>具体的には、重心をテトラの内外判定にかけている。
 program cellCenterCalc_test
     use unstructuredGrid_m
     use geometry_m

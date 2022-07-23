@@ -1,6 +1,6 @@
-!テトラ内外判定をテストする。
-!乱数で発生させた点群に対して判定を行う。
-!テスト用のテトラは単純な形状で、平面の方程式から即座に内外判定が行えるので、これと比較してテストする。
+!>テトラ内外判定をテストする。
+!>乱数で発生させた点群に対して判定を行う。
+!>テスト用のテトラは単純な形状で、平面の方程式から即座に内外判定が行えるので、これと比較してテストする。
 program geometry_test
     use geometry_m
     implicit none
@@ -36,7 +36,7 @@ program geometry_test
 
     contains
 
-    !テスト用テトラの斜面の方程式
+    !>テスト用テトラの斜面の方程式
     function plane_equation(x,y) result(z)
         real, intent(in) :: x, y
         real z
