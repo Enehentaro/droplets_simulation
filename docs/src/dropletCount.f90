@@ -1,13 +1,16 @@
 program dropletCount
+    !!ボックスを通過した飛沫をカウントする。
+    !!飛沫計算の出力ファイルを順に読み込み、各ボックスに対して内外判定を行う。
+    !!ボックス側では、通過した飛沫のIDしか見ておらず、同じIDの飛沫のダブルカウントなどは起こらない。
     use virusDroplet_m
     use conditionValue_m
     ! use dropletEquation_m
     use boxCounter_m
     use caseName_m
     implicit none
-    integer n, i_box, num_box, nc_max
-    integer, pointer :: nc => nowCase
-    character(255) caseName, fname
+    integer n, i_box, num_box, caseID
+    character(50), allocatable :: caseName_array(:)
+    character(:), allocatable :: caseName, fname
     integer, allocatable :: id_array(:)
     type(DropletGroup) mainDroplet, dGroup
     type(conditionValue_t) condVal
@@ -20,24 +23,28 @@ program dropletCount
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
-    call case_check(num_case = nc_max)
+    call case_check(caseName_array)
     !print*, 'caseName = ?'
     !read(5, *) caseName
 
-    do nc = 1, nc_max
-        caseName = get_caseName()
-        call condVal%read(trim(caseName))
+    do caseID = 1, size(caseName_array)
+        caseName = trim(caseName_array(caseID))
+        condVal = read_condition(caseName)
         ! baseParam = BasicParameter_(condVal%dt, condVal%L, condVal%U)
     
-        box_array = get_box_array(trim(caseName), condVal%num_drop)
+        box_array = get_box_array(caseName, condVal%num_drop)
     
         num_box = size(box_array)
     
         do n = 0, condVal%stepEnd, condVal%outputInterval
             if(n==0) then
-                fname = trim(caseName)//'/backup/InitialDistribution.bu'
+                fname = caseName//'/backup/InitialDistribution.bu'
             else
-                write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
+                block
+                    character(255) str
+                    write(str,'("'//caseName//'/backup/backup_", i0 , ".bu")') n
+                    fname = trim(str)
+                end block
             end if
     
             mainDroplet = read_backup(fname)
@@ -73,7 +80,7 @@ program dropletCount
         integer n_unit, i
         character(:), allocatable :: csvFName
 
-        csvFName = trim(caseName)//'/BoxCount.csv'
+        csvFName = caseName//'/BoxCount.csv'
         print*, 'output: ', csvFName
 
         open(newunit=n_unit, file=csvFName, status='replace')
@@ -115,7 +122,7 @@ program dropletCount
 
         mesh = UnstructuredGrid_inVTK_(xyz, vertices, types)
 
-        call mesh%output(trim(caseName)//'/Box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
+        call mesh%output(caseName//'/Box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
 
     end subroutine
 

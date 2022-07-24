@@ -90,7 +90,7 @@
      <li><i class="fa fa-list-ol"></i>
        <a data-toggle="tooltip"
     data-placement="bottom" data-html="true"
-    title="<p> 5.9% of total for derived types.</p>Including implementation: 392 statements, 20.4% of total for derived types.">16 statements</a>
+    title="<p> 5.9% of total for derived types.</p>Including implementation: 387 statements, 20.7% of total for derived types.">16 statements</a>
      </li> 
     <li><i class="fa fa-code"></i><a href="../src/flow_field.f90"> Source File</a></li>
   </ul>
@@ -174,9 +174,10 @@
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-read_vtk">read_VTK</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-updatewithflowfieldfile">updateWithFlowFieldFile</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-setupwithflowfieldfile">setupWithFlowFieldFile</a>
-      <a class="list-group-item" href="../type/flowfield.html#boundprocedure-adhesioncheckonbound">adhesionCheckOnBound</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-search_refcell">search_refCELL</a>
-      <a class="list-group-item" href="../type/flowfield.html#boundprocedure-refcellsearchinfo">refCellSearchInfo</a>
+      <a class="list-group-item" href="../type/flowfield.html#boundprocedure-adhesioncheckonbound">adhesionCheckOnBound</a>
+      <a class="list-group-item" href="../type/flowfield.html#boundprocedure-get_nearersearchfalserate">get_nearerSearchFalseRate</a>
+      <a class="list-group-item" href="../type/flowfield.html#boundprocedure-get_num_nearersearchfalse">get_num_nearerSearchFalse</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-update">update</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-isupdatetiming">isUpdateTiming</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-get_defaultflowfilename">get_defaultFlowFileName</a>
@@ -246,46 +247,46 @@
 <polygon fill="#000000" stroke="#000000" points="184.78,-85.93 175.58,-91.19 186.05,-92.81 184.78,-85.93"/>
 <text text-anchor="middle" x="254" y="-83.4" font-family="Helvetica,sans-Serif" font-size="9.50">NODEs</text>
 </g>
-<!-- type~cell_inflow_t -->
-<g id="type~~flowfield~~InheritsGraph_node4" class="node">
-<title>type~cell_inflow_t</title>
-<polygon fill="#5cb85c" stroke="#5cb85c" points="188,-66 109,-66 109,-42 188,-42 188,-66"/>
-<text text-anchor="middle" x="148.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cell_inFlow_t</text>
-</g>
-<!-- type~flowfieldunstructuredgrid&#45;&gt;type~cell_inflow_t -->
-<g id="type~~flowfield~~InheritsGraph_edge3" class="edge">
-<title>type~flowfieldunstructuredgrid&#45;&gt;type~cell_inflow_t</title>
-<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M301.88,-54C267.84,-54 228.57,-54 198.42,-54"/>
-<polygon fill="#000000" stroke="#000000" points="198.15,-50.5 188.15,-54 198.15,-57.5 198.15,-50.5"/>
-<text text-anchor="middle" x="254" y="-56.4" font-family="Helvetica,sans-Serif" font-size="9.50">CELLs</text>
-</g>
 <!-- type~boundarytriangle_t -->
-<g id="type~~flowfield~~InheritsGraph_node5" class="node">
+<g id="type~~flowfield~~InheritsGraph_node4" class="node">
 <title>type~boundarytriangle_t</title>
-<polygon fill="#5cb85c" stroke="#5cb85c" points="206,-24 91,-24 91,0 206,0 206,-24"/>
-<text text-anchor="middle" x="148.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">boundaryTriangle_t</text>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="206,-66 91,-66 91,-42 206,-42 206,-66"/>
+<text text-anchor="middle" x="148.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">boundaryTriangle_t</text>
 </g>
 <!-- type~flowfieldunstructuredgrid&#45;&gt;type~boundarytriangle_t -->
 <g id="type~~flowfield~~InheritsGraph_edge4" class="edge">
 <title>type~flowfieldunstructuredgrid&#45;&gt;type~boundarytriangle_t</title>
-<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M311.81,-41.96C281.84,-36.43 246.35,-29.88 216.2,-24.31"/>
-<polygon fill="#000000" stroke="#000000" points="216.67,-20.84 206.2,-22.47 215.4,-27.73 216.67,-20.84"/>
-<text text-anchor="middle" x="254" y="-39.4" font-family="Helvetica,sans-Serif" font-size="9.50">BoundFACEs</text>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M301.88,-54C274.22,-54 243.1,-54 216.24,-54"/>
+<polygon fill="#000000" stroke="#000000" points="216.16,-50.5 206.16,-54 216.16,-57.5 216.16,-50.5"/>
+<text text-anchor="middle" x="254" y="-56.4" font-family="Helvetica,sans-Serif" font-size="9.50">BoundFACEs</text>
+</g>
+<!-- type~cell_inflow_t -->
+<g id="type~~flowfield~~InheritsGraph_node5" class="node">
+<title>type~cell_inflow_t</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="188,-24 109,-24 109,0 188,0 188,-24"/>
+<text text-anchor="middle" x="148.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cell_inFlow_t</text>
+</g>
+<!-- type~flowfieldunstructuredgrid&#45;&gt;type~cell_inflow_t -->
+<g id="type~~flowfield~~InheritsGraph_edge3" class="edge">
+<title>type~flowfieldunstructuredgrid&#45;&gt;type~cell_inflow_t</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M311.81,-41.96C275.52,-35.26 231.1,-27.07 197.92,-20.94"/>
+<polygon fill="#000000" stroke="#000000" points="198.47,-17.48 188,-19.11 197.2,-24.37 198.47,-17.48"/>
+<text text-anchor="middle" x="254" y="-38.4" font-family="Helvetica,sans-Serif" font-size="9.50">CELLs</text>
 </g>
 <!-- type~cell_t -->
 <g id="type~~flowfield~~InheritsGraph_node6" class="node">
 <title>type~cell_t</title>
 <g id="a_type~~flowfield~~InheritsGraph_node6"><a xlink:href=".././type/cell_t.html" xlink:title="cell_t">
-<polygon fill="#5cb85c" stroke="#5cb85c" points="54,-66 0,-66 0,-42 54,-42 54,-66"/>
-<text text-anchor="middle" x="27" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cell_t</text>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cell_t</text>
 </a>
 </g>
 </g>
 <!-- type~cell_inflow_t&#45;&gt;type~cell_t -->
 <g id="type~~flowfield~~InheritsGraph_edge5" class="edge">
 <title>type~cell_inflow_t&#45;&gt;type~cell_t</title>
-<path fill="none" stroke="#000000" d="M108.7,-54C94.47,-54 78.43,-54 64.42,-54"/>
-<polygon fill="#000000" stroke="#000000" points="64.16,-50.5 54.16,-54 64.16,-57.5 64.16,-50.5"/>
+<path fill="none" stroke="#000000" d="M108.7,-12C94.47,-12 78.43,-12 64.42,-12"/>
+<polygon fill="#000000" stroke="#000000" points="64.16,-8.5 54.16,-12 64.16,-15.5 64.16,-8.5"/>
 </g>
 </g>
 </svg>
@@ -390,9 +391,10 @@
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-read_vtk">read_VTK</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-updatewithflowfieldfile">updateWithFlowFieldFile</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-setupwithflowfieldfile">setupWithFlowFieldFile</a>
-      <a class="list-group-item" href="../type/flowfield.html#boundprocedure-adhesioncheckonbound">adhesionCheckOnBound</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-search_refcell">search_refCELL</a>
-      <a class="list-group-item" href="../type/flowfield.html#boundprocedure-refcellsearchinfo">refCellSearchInfo</a>
+      <a class="list-group-item" href="../type/flowfield.html#boundprocedure-adhesioncheckonbound">adhesionCheckOnBound</a>
+      <a class="list-group-item" href="../type/flowfield.html#boundprocedure-get_nearersearchfalserate">get_nearerSearchFalseRate</a>
+      <a class="list-group-item" href="../type/flowfield.html#boundprocedure-get_num_nearersearchfalse">get_num_nearerSearchFalse</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-update">update</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-isupdatetiming">isUpdateTiming</a>
       <a class="list-group-item" href="../type/flowfield.html#boundprocedure-get_defaultflowfilename">get_defaultFlowFileName</a>
@@ -1046,6 +1048,46 @@
 </div>
 
      <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-search_refcell"></span><h3>procedure, public :: <strong>search_refCELL</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private subroutine search_refCELL(self, X, reference_cell, stat)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>real,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>X</strong>(3)</td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(inout)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>reference_cell</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>logical,</td>
+<td></td>
+  <td>optional</td>  <td></td><td>::</td>
+  <td><strong>stat</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
   <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-adhesioncheckonbound"></span><h3>procedure, public :: <strong>adhesionCheckOnBound</strong>    </h3></div>
   <ul class="list-group">
       <li class="list-group-item">
@@ -1092,10 +1134,10 @@
 </div>
 
      <div class="panel panel-default">
-  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-search_refcell"></span><h3>procedure, public :: <strong>search_refCELL</strong>    </h3></div>
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_nearersearchfalserate"></span><h3>procedure, public :: <strong>get_nearerSearchFalseRate</strong>    </h3></div>
   <ul class="list-group">
       <li class="list-group-item">
-          <h3>private subroutine search_refCELL(self, X, reference_cell, stat)</h3>    
+          <h3>private function get_nearerSearchFalseRate(self)</h3>    
 <h4>Arguments</h4>      <table class="table table-striped varlist">
 <thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
 <tbody>
@@ -1105,37 +1147,20 @@
   <td></td>  <td></td><td>::</td>
   <td><strong>self</strong></td><td></td>
 </tr>
-<tr>
-  <td><span class="anchor" ></span>real,</td>
-<td>intent(in)</td>
-  <td></td>  <td></td><td>::</td>
-  <td><strong>X</strong>(3)</td><td></td>
-</tr>
-<tr>
-  <td><span class="anchor" ></span>integer,</td>
-<td>intent(inout)</td>
-  <td></td>  <td></td><td>::</td>
-  <td><strong>reference_cell</strong></td><td></td>
-</tr>
-<tr>
-  <td><span class="anchor" ></span>logical,</td>
-<td></td>
-  <td>optional</td>  <td></td><td>::</td>
-  <td><strong>stat</strong></td><td></td>
-</tr>
 </tbody>
 </table>
 
+<h4>Return Value <small>real</small></h4>  
 
       </li>
   </ul>
 </div>
 
      <div class="panel panel-default">
-  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-refcellsearchinfo"></span><h3>procedure, public :: <strong>refCellSearchInfo</strong>    </h3></div>
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_num_nearersearchfalse"></span><h3>procedure, public :: <strong>get_num_nearerSearchFalse</strong>    </h3></div>
   <ul class="list-group">
       <li class="list-group-item">
-          <h3>private function refCellSearchInfo(self, name)</h3>    
+          <h3>private function get_num_nearerSearchFalse(self)</h3>    
 <h4>Arguments</h4>      <table class="table table-striped varlist">
 <thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
 <tbody>
@@ -1144,12 +1169,6 @@
 <td></td>
   <td></td>  <td></td><td>::</td>
   <td><strong>self</strong></td><td></td>
-</tr>
-<tr>
-  <td><span class="anchor" ></span>character,</td>
-<td>intent(in)</td>
-  <td></td>  <td></td><td>::</td>
-  <td><strong>name</strong></td><td></td>
 </tr>
 </tbody>
 </table>

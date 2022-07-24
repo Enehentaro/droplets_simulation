@@ -90,7 +90,7 @@
      <li><i class="fa fa-list-ol"></i>
        <a data-toggle="tooltip"
     data-placement="bottom" data-html="true"
-    title=" 3.1% of total for procedures.">25 statements</a>
+    title=" 2.6% of total for procedures.">22 statements</a>
      </li> 
     <li><i class="fa fa-code"></i><a href="../src/caseName.f90"> Source File</a></li>
   </ul>
@@ -122,7 +122,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public subroutine case_check(num_case)</h2>
+    <h2>public subroutine case_check(caseName_array)</h2>
         <div class="panel panel-default">
       <div class="panel-heading">
   <h3 class="panel-title">Uses</h3>
@@ -247,16 +247,18 @@
     </div>
 
 
+    <p>case名をキーボードから取得する。
+TXTファイルを指定すると、それを全行読み込んで配列に格納。</p>
 
     <h3>Arguments</h3>
       <table class="table table-striped varlist">
 <thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
 <tbody>
 <tr>
-  <td><span class="anchor" id="variable-num_case"></span>integer,</td>
-<td>intent(out)</td>
-  <td></td>  <td></td><td>::</td>
-  <td><strong>num_case</strong></td><td></td>
+  <td><span class="anchor" id="variable-casename_array"></span>character,</td>
+<td>intent(out),</td>
+  <td></td>  <td>allocatable</td><td>::</td>
+  <td><strong>caseName_array</strong>(:)</td><td></td>
 </tr>
 </tbody>
 </table>

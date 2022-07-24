@@ -90,7 +90,7 @@
      <li><i class="fa fa-list-ol"></i>
        <a data-toggle="tooltip"
     data-placement="bottom" data-html="true"
-    title="<p> 4.1% of total for derived types.</p>Including implementation: 52 statements,  2.7% of total for derived types.">11 statements</a>
+    title="<p> 4.4% of total for derived types.</p>Including implementation: 12 statements,  0.6% of total for derived types.">12 statements</a>
      </li> 
     <li><i class="fa fa-code"></i><a href="../src/conditionValue.f90"> Source File</a></li>
   </ul>
@@ -138,14 +138,8 @@
       <a class="list-group-item" href="../type/conditionvalue_t.html#variable-interval_flow">INTERVAL_FLOW</a>
       <a class="list-group-item" href="../type/conditionvalue_t.html#variable-loophead~2">LoopHead</a>
       <a class="list-group-item" href="../type/conditionvalue_t.html#variable-looptail~2">LoopTail</a>
-    </div>
-  </div>
-</div>
-<div class="panel panel-primary">
-  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#boundprocs-0">Type-Bound Procedures</a></h3></div>
-  <div id="boundprocs-0" class="panel-collapse collapse">
-    <div class="list-group">
-      <a class="list-group-item" href="../type/conditionvalue_t.html#boundprocedure-read">read</a>
+      <a class="list-group-item" href="../type/conditionvalue_t.html#variable-isinitialdistributionspecified">isInitialDistributionSpecified</a>
+      <a class="list-group-item" href="../type/conditionvalue_t.html#variable-ismeshfilespecified">isMeshFileSpecified</a>
     </div>
   </div>
 </div>
@@ -157,7 +151,8 @@
     <div class="col-md-9" id='text'>
       <h2>type, public :: conditionValue_t</h2>
     <p>条件値クラス
-条件指定ファイル（namelist）を読み込んだ結果を格納する</p>
+条件指定ファイル（namelist）を読み込んだ結果を格納する
+飛沫計算用の諸条件をまとめた構造体</p>
     <br>
 
     <section class="visible-xs visible-sm hidden-md">
@@ -186,14 +181,8 @@
       <a class="list-group-item" href="../type/conditionvalue_t.html#variable-interval_flow">INTERVAL_FLOW</a>
       <a class="list-group-item" href="../type/conditionvalue_t.html#variable-loophead~2">LoopHead</a>
       <a class="list-group-item" href="../type/conditionvalue_t.html#variable-looptail~2">LoopTail</a>
-    </div>
-  </div>
-</div>
-<div class="panel panel-primary">
-  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#boundprocs-1">Type-Bound Procedures</a></h3></div>
-  <div id="boundprocs-1" class="panel-collapse collapse">
-    <div class="list-group">
-      <a class="list-group-item" href="../type/conditionvalue_t.html#boundprocedure-read">read</a>
+      <a class="list-group-item" href="../type/conditionvalue_t.html#variable-isinitialdistributionspecified">isInitialDistributionSpecified</a>
+      <a class="list-group-item" href="../type/conditionvalue_t.html#variable-ismeshfilespecified">isMeshFileSpecified</a>
     </div>
   </div>
 </div>
@@ -301,6 +290,16 @@
 <td>public</td>  <td></td><td>::</td>
   <td><strong>LoopTail</strong></td><td></td><td></td><td></td>
 </tr>
+<tr>
+  <td><span class="anchor" id="variable-isinitialdistributionspecified"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>isInitialDistributionSpecified</strong></td><td></td><td></td><td><p>飛沫初期分布ファイルが指定されたか否かを返す</p></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-ismeshfilespecified"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>isMeshFileSpecified</strong></td><td></td><td></td><td><p>メッシュファイルが別途指定されたか否かを返す</p></td>
+</tr>
 </tbody>
 </table>
 
@@ -309,38 +308,6 @@
     
     
     
- 
-    <section>
-    <h2>Type-Bound Procedures</h2>
-     <div class="panel panel-default">
-  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-read"></span><h3>procedure, public :: <strong>read</strong>  => read_condition   </h3></div>
-  <ul class="list-group">
-      <li class="list-group-item">
-          <h3>private subroutine read_condition(self, dir)</h3>    
-<h4>Arguments</h4>      <table class="table table-striped varlist">
-<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
-<tbody>
-<tr>
-  <td><span class="anchor" ></span>class(<a href='../type/conditionvalue_t.html'>conditionValue_t</a>)</td>
-<td></td>
-  <td></td>  <td></td><td>::</td>
-  <td><strong>self</strong></td><td></td>
-</tr>
-<tr>
-  <td><span class="anchor" ></span>character,</td>
-<td>intent(in)</td>
-  <td></td>  <td></td><td>::</td>
-  <td><strong>dir</strong></td><td></td>
-</tr>
-</tbody>
-</table>
-
-
-      </li>
-  </ul>
-</div>
-
-    </section>
     
     
     </div>

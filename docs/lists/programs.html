@@ -92,7 +92,9 @@
 非構造格子上の各格子に対して、CUBE格子上の最近傍節点を探し、対応付けを行う。
 対応する各節点における流速を配列にして、そのままバイナリファイル出力を行う。</p></td></tr>
 			   <tr><td><a href='../program/droplet2csv.html'>droplet2CSV</a></td><td><a href='../sourcefile/droplet2csv.f90.html'>droplet2CSV.f90</a></td><td></td></tr>
-			   <tr><td><a href='../program/dropletcount.html'>dropletCount</a></td><td><a href='../sourcefile/dropletcount.f90.html'>dropletCount.f90</a></td><td></td></tr>
+			   <tr><td><a href='../program/dropletcount.html'>dropletCount</a></td><td><a href='../sourcefile/dropletcount.f90.html'>dropletCount.f90</a></td><td><p>ボックスを通過した飛沫をカウントする。
+飛沫計算の出力ファイルを順に読み込み、各ボックスに対して内外判定を行う。
+ボックス側では、通過した飛沫のIDしか見ておらず、同じIDの飛沫のダブルカウントなどは起こらない。</p></td></tr>
 			   <tr><td><a href='../program/geometry_test.html'>geometry_test</a></td><td><a href='../sourcefile/geometry_test.f90.html'>geometry_test.f90</a></td><td><p>テトラ内外判定をテストする。
 乱数で発生させた点群に対して判定を行う。
 テスト用のテトラは単純な形状で、平面の方程式から即座に内外判定が行えるので、これと比較してテストする。</p></td></tr>
