@@ -12,6 +12,7 @@ function(ADDTEST name)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         )
 
+    # コンパイルオプション付与
     SETCOMPILEOPTIONS(${name})
 
 endfunction(ADDTEST)

@@ -1,29 +1,19 @@
-add_executable(main main.f90)
-target_link_libraries(main lib)
+#プログラム登録用関数
+function(ADDPROGRAM name)
+    ### テスト用プログラムのビルド設定
+    add_executable(${name} ${name}.f90)
 
-add_executable(CUBE2USG CUBE2USG.f90)
-target_link_libraries(CUBE2USG lib)
+    # モジュール参照
+    target_link_libraries(${name} lib)
 
-add_executable(boxFlowField boxFlowField.f90)
-target_link_libraries(boxFlowField lib)
+    # コンパイルオプション付与
+    SETCOMPILEOPTIONS(${name})
 
-add_executable(dropletCount dropletCount.f90)
-target_link_libraries(dropletCount lib)
+endfunction(ADDPROGRAM)
 
-add_executable(droplet2CSV droplet2CSV.f90)
-target_link_libraries(droplet2CSV lib)
-
-add_executable(initial_translate initial_translate.f90)
-target_link_libraries(initial_translate lib)
-
-# if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
-#     target_compile_options(main PRIVATE
-#         $<$<CONFIG:Debug>:-O0 -warn all -check all -traceback>
-#         $<$<CONFIG:Release>:-O2 -fPIC>
-#     )
-# elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
-#     target_compile_options(main PRIVATE
-#         $<$<CONFIG:Debug>: -O0 -Wall -fcheck=all -fbacktrace>
-#         $<$<CONFIG:Release>: -O2>
-#     )
-# endif()
+ADDPROGRAM(MAIN)
+ADDPROGRAM(CUBE2USG)
+ADDPROGRAM(boxFlowField)
+ADDPROGRAM(dropletCount)
+ADDPROGRAM(droplet2CSV)
+ADDPROGRAM(initial_translate)
