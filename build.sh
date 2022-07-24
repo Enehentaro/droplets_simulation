@@ -1,12 +1,12 @@
 #!/bin/bash
 
 #ビルド用シェルスクリプト
-#いちいちディレクトリ移動するの面倒なので作成
 
 mkdir -v build
 cd build
 cmake .. -D CMAKE_BUILD_TYPE=debug
 make
+ctest
 cd ..
 
 
