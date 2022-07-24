@@ -13,7 +13,7 @@ program droplet2CSV
     print*, 'caseName = ?'
     read(5, *) caseName
 
-    call condVal%read(caseName)
+    condVal = read_condition(caseName)
     baseParam = BasicParameter_(condVal%dt, condVal%L, condVal%U)
 
     print*, 'End = ?'

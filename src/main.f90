@@ -8,8 +8,8 @@ PROGRAM MAIN
       use dropletMotionSimulation
       use caseName_m
       implicit none
-      integer, pointer :: nc => nowCase
-      integer nc_max
+      character(50), allocatable :: caseName(:)
+      integer caseID
 
       !$OMP parallel
             !$OMP single
@@ -19,11 +19,11 @@ PROGRAM MAIN
 
       call read_basicSettingOnSimulation
 
-      call case_check(num_case=nc_max) 
+      call case_check(caseName) 
 
-      DO nc = 1, nc_max                         !実行数だけループ（通常1回）
+      DO caseID = 1, size(caseName)                        !実行数だけループ（通常1回）
             
-            call simulationSetUp(get_caseName())          !SetUp
+            call simulationSetUp(trim(caseName(caseID)))          !SetUp
 
             call mainDropletLoop                !mainLoop
 
