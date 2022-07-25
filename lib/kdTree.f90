@@ -5,7 +5,7 @@ module kdTree_m
     implicit none
     private
 
-    type node_in_kdTree_t
+    type, public :: node_in_kdTree_t
         private
         integer :: parent_ID = 0, child_ID_1 = 0, child_ID_2 = 0, cell_ID = 0
         integer depth
@@ -13,7 +13,7 @@ module kdTree_m
     end type
 
     type, public :: kdTree
-        private
+        ! private
         type(node_in_kdTree_t), allocatable :: node(:)
         contains
         procedure set_relation, saveAsDOT, saveAsTXT, read_kdTree

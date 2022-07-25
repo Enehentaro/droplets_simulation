@@ -1,5 +1,6 @@
 module unstructuredGrid_m
     use unstructuredElement_m
+    use kdTree_m
     implicit none
     private
 
@@ -18,6 +19,7 @@ module unstructuredGrid_m
         type(node_t), allocatable :: NODEs(:)
         type(cell_inFlow_t), allocatable :: CELLs(:)
         type(boundaryTriangle_t), allocatable :: BoundFACEs(:)
+        type(node_in_kdTree_t), allocatable :: kdTree_node(:)
 
         real MIN_CDN(3), MAX_CDN(3)
         integer :: num_refCellSearchFalse = 0, num_refCellSearch = 0
@@ -559,7 +561,6 @@ module unstructuredGrid_m
 
     subroutine setup_kdTree(self, path)
         use filename_m, only : kdTreeFName 
-        use kdTree_m
         class(FlowFieldUnstructuredGrid) self
         type(kdTree) kd_tree
         character(*), intent(in) :: path
@@ -579,10 +580,12 @@ module unstructuredGrid_m
             kd_tree = kdTree_(xyz)
             call kd_tree%saveAsTXT(FNAME)
             print*, 'OUTPUT kdtree:', FNAME
+            self%kdTree_node = kd_tree%node
 
         else
 
             call kd_tree%read_kdTree(FNAME, iimx)
+            self%kdTree_node = kd_tree%node
             print*, 'READ kdtree:', FNAME
 
         end if
@@ -590,31 +593,31 @@ module unstructuredGrid_m
     end subroutine
 
     integer function nearest_cell(self, X) !最も近いセルNCNの探索
-        ! use kdTree_m
         class(FlowFieldUnstructuredGrid) self
-        ! type(kdTree) kd_tree
+        type(kdTree) kd_tree
         real, intent(in) :: X(3)
-        integer II, IIMX
-        real, allocatable :: distance(:)
-        ! real, allocatable :: xyz(:,:)
-        ! integer nearestID
+        ! integer II, IIMX
+        ! real, allocatable :: distance(:)
+        real, allocatable :: xyz(:,:)
+        integer nearestID
 
-        IIMX = size(self%CELLs)
-        allocate(distance(IIMX))
+        ! IIMX = size(self%CELLs)
+        ! allocate(distance(IIMX))
 
-        !$omp parallel do
-        DO II = 1,IIMX
-            distance(II) = norm2(self%CELLs(II)%center(:) - X(:))
-        END DO
-        !$omp end parallel do 
+        ! !$omp parallel do
+        ! DO II = 1,IIMX
+        !     distance(II) = norm2(self%CELLs(II)%center(:) - X(:))
+        ! END DO
+        ! !$omp end parallel do 
         
-        nearest_cell = minloc(distance, dim=1)   !最小値インデックス
-        ! print*, distance(nearest_cell)
+        ! nearest_cell = minloc(distance, dim=1)   !最小値インデックス
+        ! ! print*, distance(nearest_cell)
 
-        ! xyz = self%get_allOfCellCenters()
+        xyz = self%get_allOfCellCenters()
+        kd_tree%node = self%kdTree_node
 
-        ! call kd_tree%search(xyz, X, nearestID)
-        ! nearest_cell = nearestID
+        call kd_tree%search(xyz, X, nearestID)
+        nearest_cell = nearestID
         
     end function
 
