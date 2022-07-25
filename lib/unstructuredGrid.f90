@@ -27,10 +27,11 @@ module unstructuredGrid_m
         contains
         private
 
-        procedure, public :: nearest_cell, nearcell_check, get_MinMaxOfGrid
+        procedure, public :: nearest_cell, nearcell_check
+        procedure, public :: exact_nearest_search, nearest_search_kdTree
         procedure, public :: get_flowVelocityInCELL, get_movementVectorOfBoundarySurface
         procedure, public :: get_cellCenterOf, get_allOfCellCenters
-        procedure, public :: get_cellVerticesOf
+        procedure, public :: get_cellVerticesOf, get_MinMaxOfGrid
         procedure, public :: get_info => get_gridInformation
 
         procedure set_cellCenter, set_cellThreshold, set_MinMaxCDN, point2cellVelocity
@@ -589,30 +590,47 @@ module unstructuredGrid_m
 
     end subroutine
 
-    integer function nearest_cell(self, X) !最も近いセルNCNの探索
-        class(FlowFieldUnstructuredGrid) self
+    integer function nearest_cell(self, X)
+        !!最近傍セル探索
+        class(FlowFieldUnstructuredGrid), intent(in) :: self
         real, intent(in) :: X(3)
-        ! integer II, IIMX
-        ! real, allocatable :: distance(:)
-        real, allocatable :: xyz(:,:)
-        integer nearestID
 
-        ! IIMX = size(self%CELLs)
-        ! allocate(distance(IIMX))
-
-        ! !$omp parallel do
-        ! DO II = 1,IIMX
-        !     distance(II) = norm2(self%CELLs(II)%center(:) - X(:))
-        ! END DO
-        ! !$omp end parallel do 
+        !厳密かkdツリーかはここで切り替え
         
-        ! nearest_cell = minloc(distance, dim=1)   !最小値インデックス
-        ! ! print*, distance(nearest_cell)
+        ! nearest_cell = self%exact_nearest_search(X)
+        nearest_cell = self%nearest_search_kdTree(X)
+
+    end function
+
+    integer function exact_nearest_search(self, X)
+        !!厳密最近傍セル探索
+        class(FlowFieldUnstructuredGrid), intent(in) :: self
+        real, intent(in) :: X(3)
+        integer II, IIMX
+        real, allocatable :: distance(:)
+
+        IIMX = size(self%CELLs)
+        allocate(distance(IIMX))
+
+        !$omp parallel do
+        DO II = 1,IIMX
+            distance(II) = norm2(self%CELLs(II)%center(:) - X(:))
+        END DO
+        !$omp end parallel do 
+        
+        exact_nearest_search = minloc(distance, dim=1)   !最小値インデックス
+
+    end function
+
+    integer function nearest_search_kdTree(self, X)
+        !!kdツリーによる最近傍セル探索
+        class(FlowFieldUnstructuredGrid), intent(in) :: self
+        real, intent(in) :: X(3)
+        real, allocatable :: xyz(:,:)
 
         xyz = self%get_allOfCellCenters()
 
-        call self%kd_tree%search(xyz, X, nearestID)
-        nearest_cell = nearestID
+        call self%kd_tree%search(xyz, X, nearest_search_kdTree)
         
     end function
 
