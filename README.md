@@ -11,6 +11,9 @@ https://enehentaro.github.io/droplets_simulation/
 ### 依存関係解決・コンパイル
   ビルドに`cmake`コマンドを使います（[CMakeのインストール](https://qiita.com/ijknabla/items/05270ae5e597705d0dae#cmake-%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)が必要）。
   
+  - `$ source build.sh`で一括コンパイル出来る(コンパイル手法を変える場合は各自で編集)
+  
+  - **`build.sh`の内容について**
   1. `$ mkdir build`でビルドディレクトリ作成
   1. `$ cd build`で移動
   1. `$ cmake ..`で依存関係解決
