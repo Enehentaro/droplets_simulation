@@ -115,7 +115,14 @@ module sort_m
         
         if(child2ID <= size(self%node)) then 
             !第2子が存在する（配列サイズ内）場合
-            featuredChildID = get_smallerID(self%node(:)%value, child1ID, child2ID)
+            if (self%node(child1ID)%value < self%node(child2ID)%value) then
+                featuredChildID = child1ID
+            else
+                featuredChildID = child2ID
+            end if
+
+            !self%node(:)%valueの臨時配列生成に時間がかかってたぽい
+            ! featuredChildID = get_smallerID(self%node(:)%value, child1ID, child2ID)
 
         else
             !第2子が存在しない（配列サイズ外）場合
@@ -125,18 +132,18 @@ module sort_m
     
     end function
 
-    function get_smallerID(array, ID1, ID2) result(smaller_ID)
-        real,intent(in) :: array(:)
-        integer, intent(in) :: ID1, ID2
-        integer smaller_ID
+    ! function get_smallerID(array, ID1, ID2) result(smaller_ID)
+    !     real,intent(in) :: array(:)
+    !     integer, intent(in) :: ID1, ID2
+    !     integer smaller_ID
 
-        if (array(ID1) < array(ID2)) then
-            smaller_ID = ID1
-        else
-            smaller_ID = ID2
-        end if
+    !     if (array(ID1) < array(ID2)) then
+    !         smaller_ID = ID1
+    !     else
+    !         smaller_ID = ID2
+    !     end if
     
-    end function
+    ! end function
 
     !>ヒープソート
     subroutine heap_sort(array_origin, array_sorted)

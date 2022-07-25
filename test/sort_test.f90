@@ -5,7 +5,7 @@ program sort_test
     implicit none
     real, parameter :: test1(10) = [-9.0, -1.0, 0.0, 3.0, 5.0, 7.2, 14.4, 99.9, 122.5, 255.0]
     real, parameter :: test2(11) = [-99.0, -9.0, -1.0, 0.0, 3.0, 5.0, 7.2, 14.4, 99.9, 122.5, 255.0]
-    real test3(1000)
+    real test3(10000)
 
     call testing(test1)
 
