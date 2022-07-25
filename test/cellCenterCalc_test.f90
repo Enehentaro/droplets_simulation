@@ -11,7 +11,7 @@ program cellCenterCalc_test
     integer i, imax
     integer n
 
-    call grid%setupWithFlowFieldFile('SAX/sax_flow.vtk')    !このサブルーチン内で重心計算も行われる
+    call grid%setupWithFlowFieldFile('VTK/sax_flow.vtk')    !このサブルーチン内で重心計算も行われる
 
     imax = grid%get_info('cell')
     centers = grid%get_allOfCellCenters()

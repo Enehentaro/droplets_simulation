@@ -28,7 +28,7 @@ module unstructuredGrid_m
         private
 
         procedure, public :: nearest_cell, nearcell_check
-        procedure, public :: exact_nearest_search, nearest_search_kdTree
+        procedure, public :: nearest_search_exact, nearest_search_kdTree
         procedure, public :: get_flowVelocityInCELL, get_movementVectorOfBoundarySurface
         procedure, public :: get_cellCenterOf, get_allOfCellCenters
         procedure, public :: get_cellVerticesOf, get_MinMaxOfGrid
@@ -596,13 +596,13 @@ module unstructuredGrid_m
         real, intent(in) :: X(3)
 
         !厳密かkdツリーかはここで切り替え
-        
-        ! nearest_cell = self%exact_nearest_search(X)
+
+        ! nearest_cell = self%nearest_search_exact(X)
         nearest_cell = self%nearest_search_kdTree(X)
 
     end function
 
-    integer function exact_nearest_search(self, X)
+    integer function nearest_search_exact(self, X)
         !!厳密最近傍セル探索
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         real, intent(in) :: X(3)
@@ -618,7 +618,7 @@ module unstructuredGrid_m
         END DO
         !$omp end parallel do 
         
-        exact_nearest_search = minloc(distance, dim=1)   !最小値インデックス
+        nearest_search_exact = minloc(distance, dim=1)   !最小値インデックス
 
     end function
 

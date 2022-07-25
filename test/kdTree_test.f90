@@ -13,7 +13,7 @@ program kdTree_test
     character(10), parameter :: output_dir = 'test_check'
     logical existance
 
-    vtkFName = "sample.vtk"
+    vtkFName = "VTK/sample.vtk"
     kd_treeFName = "kdTreeOfsample.txt"
     call make_directory(output_dir)
     call grid%setupWithFlowFieldFile(vtkFName)
@@ -62,7 +62,7 @@ program kdTree_test
             point = min_cdn + delta*rand
             ! print*, point
 
-            result_exact = grid%exact_nearest_search(point)
+            result_exact = grid%nearest_search_exact(point)
             call kd_tree%search(xyz, point, result_kdTree)
 
             if(result_exact /= result_kdTree) then
