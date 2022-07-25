@@ -19,7 +19,7 @@ module unstructuredGrid_m
         type(node_t), allocatable :: NODEs(:)
         type(cell_inFlow_t), allocatable :: CELLs(:)
         type(boundaryTriangle_t), allocatable :: BoundFACEs(:)
-        type(node_in_kdTree_t), allocatable :: kdTree_node(:)
+        type(kdTree) kd_tree
 
         real MIN_CDN(3), MAX_CDN(3)
         integer :: num_refCellSearchFalse = 0, num_refCellSearch = 0
@@ -562,7 +562,6 @@ module unstructuredGrid_m
     subroutine setup_kdTree(self, path)
         use filename_m, only : kdTreeFName 
         class(FlowFieldUnstructuredGrid) self
-        type(kdTree) kd_tree
         character(*), intent(in) :: path
         character(:), allocatable :: FNAME
         real, allocatable :: xyz(:,:)
@@ -577,15 +576,13 @@ module unstructuredGrid_m
         inquire(file = FNAME, exist=existance)
         if(.not.existance) then
 
-            kd_tree = kdTree_(xyz)
-            call kd_tree%saveAsTXT(FNAME)
+            self%kd_tree = kdTree_(xyz)
+            call self%kd_tree%saveAsTXT(FNAME)
             print*, 'OUTPUT kdtree:', FNAME
-            self%kdTree_node = kd_tree%node
 
         else
 
-            call kd_tree%read_kdTree(FNAME, iimx)
-            self%kdTree_node = kd_tree%node
+            call self%kd_tree%read_kdTree(FNAME, iimx)
             print*, 'READ kdtree:', FNAME
 
         end if
@@ -594,7 +591,6 @@ module unstructuredGrid_m
 
     integer function nearest_cell(self, X) !最も近いセルNCNの探索
         class(FlowFieldUnstructuredGrid) self
-        type(kdTree) kd_tree
         real, intent(in) :: X(3)
         ! integer II, IIMX
         ! real, allocatable :: distance(:)
@@ -614,9 +610,8 @@ module unstructuredGrid_m
         ! ! print*, distance(nearest_cell)
 
         xyz = self%get_allOfCellCenters()
-        kd_tree%node = self%kdTree_node
 
-        call kd_tree%search(xyz, X, nearestID)
+        call self%kd_tree%search(xyz, X, nearestID)
         nearest_cell = nearestID
         
     end function
