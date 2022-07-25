@@ -46,7 +46,8 @@ module dropletMotionSimulation
         case_dir = case_name
         call create_CaseDirectory
 
-        call condVal%read(case_dir)
+        condVal = read_condition(case_dir)
+
         num_restart = condVal%restart
         n_end = condVal%stepEnd
         outputInterval = condVal%outputInterval
@@ -69,7 +70,7 @@ module dropletMotionSimulation
 
         if(num_restart <= 0) then
 
-            if(allocated(condVal%initialDistributionFName)) then
+            if(condVal%isInitialDistributionSpecified()) then
 
                 mainDroplet = read_backup(case_dir//'/'//condVal%initialDistributionFName)
 
@@ -100,7 +101,7 @@ module dropletMotionSimulation
 
         call checkpoint
 
-        if(allocated(condVal%meshFile)) then
+        if(condVal%isMeshFileSpecified()) then
             flow_field = FlowField_( &                !流れ場の取得
                 dropletSolver%TimeStep2RealTime(step=n_start, dimension=.false.), &
                 condVal%PATH2FlowFile, condVal%DT_FLOW, condVal%OFFSET, condVal%INTERVAL_FLOW, &
@@ -156,10 +157,7 @@ module dropletMotionSimulation
 
             call Calculation_Droplets     !飛沫の運動計算
 
-            if (mod(n, outputInterval) == 0) then
-                call periodicOutput             !出力
-                print*, "It will take", real(n_end - n)/(60.*real(n)/tK%erapsedTime()), "minites"
-            end if
+            if (mod(n, outputInterval) == 0) call periodicOutput(n)            !出力
 
             call check_FlowFieldUpdate        !流れ場の更新チェック
 
@@ -333,7 +331,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine output_mainDroplet(initial)
-        use filename_m, only : IniDistributionFName
+        use filename_m, only : IniDistributionFName => InitialDistributionFileName
         logical, intent(in) :: initial
         character(255) fname
 
@@ -438,7 +436,7 @@ module dropletMotionSimulation
                         exit
 
                     case('n')
-                        error stop
+                        stop
 
                 end select
 
@@ -457,13 +455,17 @@ module dropletMotionSimulation
         
     end subroutine
 
-    subroutine periodicOutput
+    subroutine periodicOutput(nowStep)
         use terminalControler_m
+        integer, intent(in) :: nowStep
+        real nearerSearchFalseRate
 
         print*, '[Start Date] ' // tk%startDateAndTime()
+        print '(" ** It will take", f8.2, " minites **")', real(n_end - nowStep)/(60.*real(nowStep)/tK%erapsedTime())
         print*, 'Now_Step_Time =', TimeOnSimu(dimension=.true.), '[sec]'
         print*, '# floating :', mainDroplet%Counter('floating'), '/', mainDroplet%Counter('total')
-        if(flow_field%refCellSearchInfo('FalseRate') >= 1) print*, '# searchFalse :', flow_field%refCellSearchInfo('NumFalse')
+        nearerSearchFalseRate = flow_field%get_nearerSearchFalseRate()
+        if(nearerSearchFalseRate >= 1.) print*, '# searchFalseRate :', nearerSearchFalseRate, '%'
         call output_mainDroplet(initial=.false.)
         print '("====================================================")'
         call reset_formatTC
@@ -524,8 +526,8 @@ module dropletMotionSimulation
             write(n_unit,'(A18, F18.2)') 'Temp [degC] =', dropletSolver%dropletEnvironment('Temperature')
             write(n_unit,'(A18, F18.2)') 'RH [%] =', dropletSolver%dropletEnvironment('RelativeHumidity')
             write(n_unit,'(A18, 2X, A)') 'Used FlowFile :', flow_field%get_defaultFlowFileName()
-            write(n_unit, '(A18, 2(I15,2x,A))') 'SearchFalseInfo :', flow_field%refCellSearchInfo('NumFalse'), &
-                    ' (', flow_field%refCellSearchInfo('FalseRate'), '%)'
+            write(n_unit, '(A18, I15,2x,A, f8.3,2x,A)') 'SearchFalseInfo :', flow_field%get_num_nearerSearchFalse(), &
+                    ' (', flow_field%get_nearerSearchFalseRate(), '%)'
 
         close(n_unit)
         

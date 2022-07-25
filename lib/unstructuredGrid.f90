@@ -38,8 +38,9 @@ module unstructuredGrid_m
 
         procedure, public :: setupWithFlowFieldFile, updateWithFlowFieldFile
         procedure nearer_cell
+        procedure, public :: search_refCELL
         procedure, public :: adhesionCheckOnBound
-        procedure, public :: refCellSearchInfo, search_refCELL
+        procedure, public ::  get_num_nearerSearchFalse, get_nearerSearchFalseRate
 
         procedure AdjacencySolvingProcess
         procedure read_adjacency, read_boundaries, solve_adacencyOnFlowFieldUnstructuredGrid
@@ -693,19 +694,17 @@ module unstructuredGrid_m
     
     end subroutine
 
-    integer function refCellSearchInfo(self, name)
+    integer function get_num_nearerSearchFalse(self)
         class(FlowFieldUnstructuredGrid) self
-        character(*), intent(in) :: name
 
-        select case(name)
-            case('NumFalse')
-                refCellSearchInfo = self%num_refCellSearchFalse
-            case('FalseRate')
-                refCellSearchInfo = 100 * self%num_refCellSearchFalse / (self%num_refCellSearch + 1)
-            case default
-                print*, 'ERROR refCellSearchInfo : ', name
-                error stop
-        end select
+        get_num_nearerSearchFalse = self%num_refCellSearchFalse
+
+    end function
+
+    real function get_nearerSearchFalseRate(self)
+        class(FlowFieldUnstructuredGrid) self
+
+        get_nearerSearchFalseRate = 100. * real(self%num_refCellSearchFalse) / real(self%num_refCellSearch + 1)
 
     end function
                      
