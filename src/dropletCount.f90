@@ -119,8 +119,8 @@ program dropletCount
 
     end subroutine
 
+    !>1分間あたりの感染確率を計算（もとの資料では1時間あたりの感染確率だが、1分間あたりに換算）
     elemental real function RateOfInfection(volume)
-        !1分間あたりの感染確率を計算（もとの資料では1時間あたりの感染確率だが、1分間あたりに換算）
         real, intent(in) :: volume
 
         RateOfInfection = 1. - exp(-volume*1.e7 / (900./60.))

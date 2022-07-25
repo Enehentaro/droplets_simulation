@@ -2,15 +2,17 @@ module sort_m
     implicit none
     private
 
+    !>コンテンツ構造体
+    !>実数とIDをメンバに持つ
     type, public :: content_t
         integer originID
         real value
     end type
 
-    !ヒープ木クラス
+    !>ヒープ木クラス
+    !>実体は単なる配列だがツリー構造を表現している
+    !>要素 i に注目すると、親ノードは要素 i/2(小数切り捨て) であり、子ノードは要素 2i, 2i + 1 である
     type HeapTree
-        !実体は単なる配列だがツリー構造を表現している
-        !要素 i に注目すると、親ノードは要素 i/2(小数切り捨て) であり、子ノードは要素 2i, 2i + 1 である
         type(content_t), allocatable :: node(:)
         integer switch
 
@@ -26,7 +28,7 @@ module sort_m
 
     contains
 
-    !ヒープ木のコンストラクタ
+    !>ヒープ木のコンストラクタ
     type(HeapTree) function HeapTree_(array)
         type(content_t), intent(in) :: array(:)
 
@@ -36,7 +38,7 @@ module sort_m
 
     end function
 
-    !全体ヒープ化（親子の大小関係解決）メソッド
+    !>全体ヒープ化（親子の大小関係解決）メソッド
     subroutine totalHeaplification(self)
         class(HeapTree) self
         integer num_node
@@ -87,7 +89,7 @@ module sort_m
 
     ! end subroutine
 
-    !根ノードを除去し、ノード配列を左詰めにする。
+    !>根ノードを除去し、ノード配列を左詰めにする。
     subroutine rebuild_tree(self)
         class(HeapTree) self
 
@@ -136,6 +138,7 @@ module sort_m
     
     end function
 
+    !>ヒープソート
     subroutine heap_sort(array_origin, array_sorted)
         type(content_t), intent(in) :: array_origin(:)
         type(content_t), intent(out) :: array_sorted(:)
@@ -163,6 +166,7 @@ module sort_m
 
     end subroutine
 
+    !>実数型配列をコンテンツ配列に変換する
     function real2content(real_array) result(content_array)
         real, intent(in) :: real_array(:)
         type(content_t), allocatable :: content_array(:)

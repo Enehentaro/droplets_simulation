@@ -1,3 +1,5 @@
+!>kd-treeモジュール
+!>by Shohei Kishi, Hikaru Konishi, Tatsuya Miyoshi, Yuta Ida
 module kdTree_m
     use sort_m
     implicit none
@@ -109,7 +111,7 @@ module kdTree_m
 
     end subroutine
 
-    !ただ根ノードから葉ノードまで一方的に下っているだけなので、未完成
+    !>探索サブルーチン
     subroutine search_kdTree(self, xyz, droplet_position, nearest_ID)
         class(kdTree), intent(in) :: self
         real, intent(in) :: xyz(:,:) 

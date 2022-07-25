@@ -1,3 +1,4 @@
+!>ヒープソートの機能テスト
 program sort_test
     use sort_m
     use array_m

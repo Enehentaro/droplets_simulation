@@ -2,6 +2,8 @@ module dropletEquation_m
     implicit none
     private
 
+    !>基礎変数クラス
+    !>時間間隔や代表値を格納
     type, public :: BasicParameter
         private
         double precision dt !無次元時間間隔
@@ -19,6 +21,8 @@ module dropletEquation_m
     double precision, parameter :: Rho_d = 0.99822d3          ! 飛沫（水）の密度[kg/m3]
     double precision, parameter :: gamma = Rho / Rho_d      !密度比（空気密度 / 飛沫(水)密度）
 
+    !>飛沫方程式ソルバクラス
+    !>蒸発方程式や運動方程式を解くメソッドを保持
     type, public, extends(BasicParameter) :: DropletEquationSolver
         private
         double precision coeff_drdt !半径変化率の無次元係数

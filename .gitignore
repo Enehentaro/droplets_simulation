@@ -10,5 +10,4 @@ bin/
 !CMakeLists.txt
 /build
 
-
 .vscode
