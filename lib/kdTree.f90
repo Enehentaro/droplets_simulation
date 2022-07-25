@@ -25,6 +25,7 @@ module kdTree_m
     contains
 
     type(kdTree) function kdTree_(xyz_origin)
+        use terminalControler_m
         real, intent(in) :: xyz_origin(:,:) !セル重心座標配列(3, num_cell)
         type(content_t), allocatable :: x_origin(:), y_origin(:), z_origin(:)
         type(content_t), allocatable :: array_pre(:), array_sorted(:)
@@ -46,7 +47,10 @@ module kdTree_m
         kdTree_%node(1)%cellID_array = x_origin(:)%originID
         kdTree_%node(1)%depth = 0 !最初は深さゼロ
 
+        call set_formatTC('("CREATING kd-tree [ #node : ",i6," / ",i6," ]")')
         do i = 1, num_node
+            call print_progress([i, num_node])
+
             parentID = i
 
             depth = kdTree_%node(i)%depth
