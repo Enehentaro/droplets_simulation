@@ -436,7 +436,7 @@ module dropletMotionSimulation
                         exit
 
                     case('n')
-                        error stop
+                        stop
 
                 end select
 
