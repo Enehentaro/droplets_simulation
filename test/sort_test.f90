@@ -5,10 +5,28 @@ program sort_test
     implicit none
     real, parameter :: test1(10) = [-9.0, -1.0, 0.0, 3.0, 5.0, 7.2, 14.4, 99.9, 122.5, 255.0]
     real, parameter :: test2(11) = [-99.0, -9.0, -1.0, 0.0, 3.0, 5.0, 7.2, 14.4, 99.9, 122.5, 255.0]
+    real test3(10000)
 
     call testing(test1)
+
     print '("==============================================================")'
+
     call testing(test2)
+
+    print '("==============================================================")'
+
+    block
+        integer i
+        real rand
+        !配列を乱数で生成
+        test3(1) = 0.
+        do i = 2, size(test3)
+            call random_number(rand)
+            test3(i) = test3(i-1) + rand
+        end do
+    end block
+
+    call testing(test3)
 
     contains
 
@@ -23,12 +41,17 @@ program sort_test
         array = real2content(tmp)
         call heap_sort(array, array_sorted)
 
-        ! if(.not.isEqual(array_sorted(:)%value, array_correct)) error stop
-        if(.not.all(array_sorted(:)%value == array_correct)) error stop
+        ! ひとつでも違う要素があればテスト失敗
+        if(.not.all(array_sorted(:)%value == array_correct)) then
+            do i = 1, size(array_sorted)
+                print '(2(i6, x, f20.16, 4x, "|"))', &
+                    array(i)%originID, array(i)%value, &
+                    array_sorted(i)%originID, array_sorted(i)%value
+            end do
 
-        do i = 1, size(array_sorted)
-            print '(2(i6, x, f20.16, 4x, "|"))', array(i)%originID, array(i)%value, array_sorted(i)%originID, array_sorted(i)%value
-        end do
+            error stop
+
+        end if
 
     end subroutine
     

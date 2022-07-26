@@ -5,7 +5,7 @@ module kdTree_m
     implicit none
     private
 
-    type node_in_kdTree_t
+    type :: node_in_kdTree_t
         private
         integer :: parent_ID = 0, child_ID_1 = 0, child_ID_2 = 0, cell_ID = 0
         integer depth
@@ -16,7 +16,7 @@ module kdTree_m
         private
         type(node_in_kdTree_t), allocatable :: node(:)
         contains
-        procedure set_relation, saveAsDOT
+        procedure set_relation, saveAsDOT, saveAsTXT, read_kdTree
         procedure :: search => search_kdtree
     end type
 
@@ -25,6 +25,7 @@ module kdTree_m
     contains
 
     type(kdTree) function kdTree_(xyz_origin)
+        use terminalControler_m
         real, intent(in) :: xyz_origin(:,:) !セル重心座標配列(3, num_cell)
         type(content_t), allocatable :: x_origin(:), y_origin(:), z_origin(:)
         type(content_t), allocatable :: array_pre(:), array_sorted(:)
@@ -46,7 +47,10 @@ module kdTree_m
         kdTree_%node(1)%cellID_array = x_origin(:)%originID
         kdTree_%node(1)%depth = 0 !最初は深さゼロ
 
+        call set_formatTC('("CREATING kd-tree [ #node : ",i6," / ",i6," ]")')
         do i = 1, num_node
+            call print_progress([i, num_node])
+
             parentID = i
 
             depth = kdTree_%node(i)%depth
@@ -207,51 +211,7 @@ module kdTree_m
 
         deallocate(NotYetCompared)
 
-        print*, "mindist =", mindist
-        print*, "nearest_ID =", nearest_ID
-
     end subroutine
-
-    ! subroutine get_selfAndHalfChildren(self, topParentID, lr, selfAndHalfChildren)
-    !     class(kdTree) self
-    !     integer, intent(in) :: topParentID
-    !     character(*), intent(in) :: lr
-    !     integer, allocatable, intent(out) :: selfAndHalfChildren(:)
-    !     integer, allocatable :: selfAndAllChildren(:), halfChildren(:)
-    !     integer childID, cnt, i
-
-    !     ! 親IDとそれに付随するすべての子のcellIDを格納
-    !     selfAndAllChildren = self%node(topParentID)%cellID_array
-
-    !     ! leftの場合、これから比較するのは左側で、全体から取り除くべき子供は右側
-    !     select case(lr)
-    !         case('left')
-    !             childID = self%node(topParentID)%child_ID_2
-    !         case('right')
-    !             childID = self%node(topParentID)%child_ID_1
-    !     end select
-
-    !     if(childID == 0) return
-
-    !     ! 取り除く子供すべてをhalfChildrenに格納
-    !     halfChildren = self%node(childID)%cellID_array
-    !     allocate(selfAndHalfChildren(&
-    !         size(selfAndAllChildren) - size(halfChildren)))
-
-    !     cnt = 0
-    !     do i = 1, size(selfAndAllChildren)
-    !         ! any文はself..(i)の値がhalf..に存在すればtrueを返す
-    !         ! つまり、全体のcellIDの内、これから比較を行うべきcellIDのみif文内の処理を行う
-    !         if(.not.any(selfAndAllChildren(i)==halfChildren)) then
-    !             cnt = cnt +1
-    !             selfAndHalfChildren(cnt) = selfAndAllChildren(i)
-    !         end if
-    !     end do
-
-    !     deallocate(selfAndAllChildren)
-    !     deallocate(halfChildren)
-
-    ! end subroutine
 
     subroutine saveAsDOT(self, xyz, fname)
         class(kdTree), intent(in) :: self
@@ -290,6 +250,66 @@ module kdTree_m
 
 
         write(n_unit, '("}")')
+
+    end subroutine
+
+    subroutine saveAsTXT(self, fname)
+        class(kdTree), intent(in) :: self
+        character(*), intent(in) :: fname
+        character(size(self%node)) fmt
+        integer i, n_unit, iimx
+
+        iimx = size(self%node)    
+
+        open(newunit=n_unit, file = fname)
+            write(n_unit,'(I0)') iimx
+            do i = 1, iimx    
+                write(n_unit,'(7(1x,I0))') i, self%node(i)%cell_ID, self%node(i)%parent_ID, &
+                self%node(i)%child_ID_1, self%node(i)%child_ID_2, self%node(i)%depth, &
+                size(self%node(i)%cellID_array)
+            end do
+            write(n_unit,'()')
+            do i = 1, size(self%node)
+                write(fmt,'("("I0"(1x,I0))")') size(self%node(i)%cellID_array)
+                write(n_unit,fmt) self%node(i)%cellID_array
+            end do
+        close(n_unit)        
+
+    end subroutine
+
+    subroutine read_kdTree(self, fname)
+        class(kdTree), intent(inout) :: self
+        character(*), intent(in) :: fname
+        integer i, n_unit, iimx
+        integer, allocatable :: nodeID(:), cellID_arraySize(:)
+        
+        open(newunit = n_unit, file = fname)
+
+            read(n_unit,*) iimx
+            allocate(self%node(iimx))
+            allocate(nodeID(iimx))
+            allocate(cellID_arraySize(iimx))
+
+            do i = 1, iimx
+                read(n_unit,*) nodeID(i), self%node(i)%cell_ID, self%node(i)%parent_ID, &
+                self%node(i)%child_ID_1, self%node(i)%child_ID_2, self%node(i)%depth, &
+                cellID_arraySize(i)
+            end do
+            read(n_unit,'()')
+            do i = 1, iimx
+                allocate(self%node(i)%cellID_array(cellID_arraySize(i)))
+                read(n_unit,*) self%node(i)%cellID_array
+            end do
+
+        close(n_unit)
+
+        ! do i = 1, iimx
+        !     print'(6(1x,I0))', nodeID(i), self%node(i)%cell_ID, self%node(i)%parent_ID, &
+        !     self%node(i)%child_ID_1, self%node(i)%child_ID_2, self%node(i)%depth
+        ! end do
+        ! do i = 1, iimx
+        !     print *, self%node(i)%cellID_array
+        ! end do
 
     end subroutine
 

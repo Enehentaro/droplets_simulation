@@ -9,8 +9,12 @@ https://enehentaro.github.io/droplets_simulation/
 ## 使い方
   
 ### 依存関係解決・コンパイル
-  ビルドに`cmake`コマンドを使います（[CMakeのインストール](https://qiita.com/ijknabla/items/05270ae5e597705d0dae#cmake-%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)が必要）。
+  - ビルドに`cmake`コマンドを使います（[CMakeのインストール](https://qiita.com/ijknabla/items/05270ae5e597705d0dae#cmake-%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)が必要）。
   
+  - `$ source build.sh`でビルド・CTest・パス通しまで出来る(コンパイル手法を変える場合は各自で編集)
+  - `$ MAIN`で実行
+  
+#### `build.sh`を使わない場合（Windowsだとそもそもシェルスクリプト使えないかも）
   1. `$ mkdir build`でビルドディレクトリ作成
   1. `$ cd build`で移動
   1. `$ cmake ..`で依存関係解決
@@ -19,7 +23,7 @@ https://enehentaro.github.io/droplets_simulation/
       - `-D CMAKE_BUILD_TYPE=debug`でデバッグ用コンパイルオプション付与
   1. `$ make`でコンパイル
   
-### 実行
+#### 実行
   ルートディレクトリ（README.mdのあるディレクトリ）での作業
   
   1. 「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）

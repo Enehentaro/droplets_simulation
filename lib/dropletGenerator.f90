@@ -182,7 +182,7 @@ module dropletGenerator_m
 
     subroutine set_dropletPlacementBox(self, positionDir)
         use simpleFile_reader
-        use filename_m, only : IniPositionFName => InitialDistributionFileName
+        use filename_m, only : IniPositionFName => InitialPositionFileName
         class(DropletGenerator) self
         character(*), intent(in) :: positionDir
         integer i_box, num_box

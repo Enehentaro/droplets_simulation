@@ -12,6 +12,7 @@ function(ADDTEST name)
         WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
         )
 
+    # コンパイルオプション付与
     SETCOMPILEOPTIONS(${name})
 
 endfunction(ADDTEST)
@@ -19,4 +20,4 @@ endfunction(ADDTEST)
 ADDTEST(sort_test)
 ADDTEST(geometry_test)
 ADDTEST(cellCenterCalc_test)
-ADDTEST(sort_main_vtk_ver)
+ADDTEST(kdTree_test)
