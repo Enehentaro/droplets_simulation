@@ -566,12 +566,10 @@ module unstructuredGrid_m
         character(*), intent(in) :: path
         character(:), allocatable :: FNAME
         real, allocatable :: xyz(:,:)
-        integer iimx
         logical existance
 
         FNAME = trim(path)//kdTreeFName
 
-        iimx = self%get_info('cell')
         xyz = self%get_allOfCellCenters()
 
         inquire(file = FNAME, exist=existance)
@@ -583,7 +581,7 @@ module unstructuredGrid_m
 
         else
 
-            call self%kd_tree%read_kdTree(FNAME, iimx)
+            call self%kd_tree%read_kdTree(FNAME)
             print*, 'READ kdtree:', FNAME
 
         end if

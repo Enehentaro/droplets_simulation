@@ -257,10 +257,13 @@ module kdTree_m
         class(kdTree), intent(in) :: self
         character(*), intent(in) :: fname
         character(size(self%node)) fmt
-        integer i, n_unit
+        integer i, n_unit, iimx
+
+        iimx = size(self%node)    
 
         open(newunit=n_unit, file = fname)
-            do i = 1, size(self%node)    
+            write(n_unit,'(I0)') iimx
+            do i = 1, iimx    
                 write(n_unit,'(7(1x,I0))') i, self%node(i)%cell_ID, self%node(i)%parent_ID, &
                 self%node(i)%child_ID_1, self%node(i)%child_ID_2, self%node(i)%depth, &
                 size(self%node(i)%cellID_array)
@@ -274,18 +277,19 @@ module kdTree_m
 
     end subroutine
 
-    subroutine read_kdTree(self, fname, iimx)
+    subroutine read_kdTree(self, fname)
         class(kdTree), intent(inout) :: self
         character(*), intent(in) :: fname
-        integer, intent(in) :: iimx
-        integer i, n_unit
+        integer i, n_unit, iimx
         integer, allocatable :: nodeID(:), cellID_arraySize(:)
-
-        allocate(self%node(iimx))
-        allocate(nodeID(iimx))
-        allocate(cellID_arraySize(iimx))
-
+        
         open(newunit = n_unit, file = fname)
+
+            read(n_unit,*) iimx
+            allocate(self%node(iimx))
+            allocate(nodeID(iimx))
+            allocate(cellID_arraySize(iimx))
+
             do i = 1, iimx
                 read(n_unit,*) nodeID(i), self%node(i)%cell_ID, self%node(i)%parent_ID, &
                 self%node(i)%child_ID_1, self%node(i)%child_ID_2, self%node(i)%depth, &
@@ -296,6 +300,7 @@ module kdTree_m
                 allocate(self%node(i)%cellID_array(cellID_arraySize(i)))
                 read(n_unit,*) self%node(i)%cellID_array
             end do
+
         close(n_unit)
 
         ! do i = 1, iimx

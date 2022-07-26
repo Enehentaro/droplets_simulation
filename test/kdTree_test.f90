@@ -24,14 +24,6 @@ program kdTree_test
 
     inquire(file = output_dir//'/'//kd_treeFName, exist=existance)
     if(.not.existance) then
-                
-        !これいる？
-        ! open(newunit = n_unit, file = output_dir//"/before.txt", status = 'replace')
-        !     do i = 1, iimx
-        !         ! write(n_unit,'(I3)', advance='no') before(i)%originID
-        !         write(n_unit,'(3(f12.5))') xyz(:, i)
-        !     end do
-        ! close(n_unit)
 
         kd_tree = kdTree_(xyz)
         call kd_tree%saveAsDOT(xyz, output_dir//'/kdTree.dot')
@@ -39,7 +31,7 @@ program kdTree_test
     
     else
 
-        call kd_tree%read_kdTree(output_dir//'/'//kd_treeFName, iimx)
+        call kd_tree%read_kdTree(output_dir//'/'//kd_treeFName)
 
     end if
 
