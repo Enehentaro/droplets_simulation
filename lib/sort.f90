@@ -146,22 +146,15 @@ module sort_m
     ! end function
 
     !>ヒープソート
-    subroutine heap_sort(array_origin, array_sorted)
+    function heap_sort(array_origin) result(array_sorted)
         type(content_t), intent(in) :: array_origin(:)
-        type(content_t), intent(out) :: array_sorted(:)
+        type(content_t) array_sorted(size(array_origin))
         type(HeapTree) heap_tree
         integer i
-        integer arraySize
-
-        arraySize = size(array_origin)
-        if(size(array_sorted) /= arraySize) then
-            print '("SORT ERROR")'
-            error stop
-        end if
 
         heap_tree = HeapTree_(array_origin)
 
-        do i = 1, arraySize  !ソート後の配列に格納するループ
+        do i = 1, size(array_origin)    !ソート後の配列に格納するループ
             array_sorted(i) = heap_tree%node(1)
 
             call heap_tree%rebuild_tree()
@@ -171,7 +164,7 @@ module sort_m
 
         end do
 
-    end subroutine
+    end function
 
     !>実数型配列をコンテンツ配列に変換する
     function real2content(real_array) result(content_array)
