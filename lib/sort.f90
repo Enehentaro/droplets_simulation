@@ -19,7 +19,7 @@ module sort_m
         contains
 
         procedure totalHeaplification!, partialHeaplification
-        procedure get_featuredChildID, rebuild_tree
+        procedure rebuild_tree!, get_featuredChildID
         
     end type
 
@@ -42,7 +42,7 @@ module sort_m
     subroutine totalHeaplification(self)
         class(HeapTree) self
         integer num_node
-        integer parentID, child1ID, child2ID, featuredChildID
+        integer parentID, child1ID, child2ID!, featuredChildID
 
         num_node = size(self%node)
             
@@ -51,9 +51,14 @@ module sort_m
             child1ID = parentID*2
             child2ID = parentID*2 + 1
 
-            featuredChildID = self%get_featuredChildID(child1ID, child2ID)
+            ! featuredChildID = self%get_featuredChildID(child1ID, child2ID)
+            !これ使わんほうが速い
 
-            if(self%node(parentID)%value > self%node(featuredChildID)%value) call swap_content(self%node, parentID, featuredChildID)
+            if(self%node(parentID)%value > self%node(child1ID)%value) call swap_content(self%node, parentID, child1ID)
+
+            if(child2ID <= num_node) then
+                if(self%node(parentID)%value > self%node(child2ID)%value) call swap_content(self%node, parentID, child2ID)
+            end if
 
         end do
 
@@ -89,8 +94,9 @@ module sort_m
 
     ! end subroutine
 
-    !>根ノードを除去し、ノード配列を左詰めにする。
     subroutine rebuild_tree(self)
+        !!根ノードを除去し、ノード配列を左詰めにする。
+        !!このとき、配列のサイズが一つ減る。
         class(HeapTree) self
 
         self%node = self%node(2:)
@@ -108,29 +114,30 @@ module sort_m
 
     end subroutine
 
-    function get_featuredChildID(self, child1ID, child2ID) result(featuredChildID)
-        class(HeapTree) self
-        integer, intent(in) :: child1ID, child2ID
-        integer featuredChildID
+    ! function get_featuredChildID(self, child1ID, child2ID) result(featuredChildID)
+    !     class(HeapTree) self
+    !     integer, intent(in) :: child1ID, child2ID
+    !     integer featuredChildID
         
-        if(child2ID <= size(self%node)) then 
-            !第2子が存在する（配列サイズ内）場合
-            if (self%node(child1ID)%value < self%node(child2ID)%value) then
-                featuredChildID = child1ID
-            else
-                featuredChildID = child2ID
-            end if
+    !     if(child2ID <= size(self%node)) then 
+    !         !第2子が存在する（配列サイズ内）場合
+    !         !値の小さい方を返す
+    !         if (self%node(child1ID)%value < self%node(child2ID)%value) then
+    !             featuredChildID = child1ID
+    !         else
+    !             featuredChildID = child2ID
+    !         end if
 
-            !self%node(:)%valueの臨時配列生成に時間がかかってたぽい
-            ! featuredChildID = get_smallerID(self%node(:)%value, child1ID, child2ID)
+    !         !self%node(:)%valueの臨時配列生成に時間がかかってたぽい
+    !         ! featuredChildID = get_smallerID(self%node(:)%value, child1ID, child2ID)
 
-        else
-            !第2子が存在しない（配列サイズ外）場合
-            featuredChildID = child1ID  
+    !     else
+    !         !第2子が存在しない（配列サイズ外）場合
+    !         featuredChildID = child1ID  
 
-        end if
+    !     end if
     
-    end function
+    ! end function
 
     ! function get_smallerID(array, ID1, ID2) result(smaller_ID)
     !     real,intent(in) :: array(:)
