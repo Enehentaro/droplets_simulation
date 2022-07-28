@@ -90,7 +90,7 @@
      <li><i class="fa fa-list-ol"></i>
        <a data-toggle="tooltip"
     data-placement="bottom" data-html="true"
-    title="<p>17.2% of total for derived types.</p>Including implementation: 310 statements, 16.4% of total for derived types.">47 statements</a>
+    title="<p>17.2% of total for derived types.</p>Including implementation: 333 statements, 17.4% of total for derived types.">47 statements</a>
      </li> 
     <li><i class="fa fa-code"></i><a href="../src/SCTfile_reader.f90"> Source File</a></li>
   </ul>
@@ -116,14 +116,6 @@
   <h3>Contents</h3>
  
 <div class="panel panel-primary">
-  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-0">Variables</a></h3></div>
-  <div id="vars-0" class="panel-collapse collapse">
-    <div class="list-group">
-      <a class="list-group-item" href="../type/sct_grid_t.html#variable-get_data_titles">get_data_titles</a>
-    </div>
-  </div>
-</div>
-<div class="panel panel-primary">
   <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#boundprocs-0">Type-Bound Procedures</a></h3></div>
   <div id="boundprocs-0" class="panel-collapse collapse">
     <div class="list-group">
@@ -147,6 +139,7 @@
       <a class="list-group-item" href="../type/sct_grid_t.html#boundprocedure-extract_face2vertices_on_region">extract_face2vertices_on_region</a>
       <a class="list-group-item" href="../type/sct_grid_t.html#boundprocedure-search_scalar_data">search_scalar_data</a>
       <a class="list-group-item" href="../type/sct_grid_t.html#boundprocedure-search_vector_data">search_vector_data</a>
+      <a class="list-group-item" href="../type/sct_grid_t.html#boundprocedure-get_data_titles">get_data_titles</a>
     </div>
   </div>
 </div>
@@ -199,31 +192,31 @@
 <polygon fill="#000000" stroke="#000000" points="80.47,-79.26 71.92,-85.52 82.51,-85.96 80.47,-79.26"/>
 <text text-anchor="middle" x="109" y="-80.4" font-family="Helvetica,sans-Serif" font-size="9.50">region</text>
 </g>
-<!-- type~ls_vector_t -->
-<g id="type~~sct_grid_t~~InheritsGraph_node3" class="node">
-<title>type~ls_vector_t</title>
-<polygon fill="#5cb85c" stroke="#5cb85c" points="73,-66 0,-66 0,-42 73,-42 73,-66"/>
-<text text-anchor="middle" x="36.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">LS_Vector_t</text>
-</g>
-<!-- type~sct_grid_t&#45;&gt;type~ls_vector_t -->
-<g id="type~~sct_grid_t~~InheritsGraph_edge3" class="edge">
-<title>type~sct_grid_t&#45;&gt;type~ls_vector_t</title>
-<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M144.87,-54C126.89,-54 103.8,-54 83.64,-54"/>
-<polygon fill="#000000" stroke="#000000" points="83.41,-50.5 73.41,-54 83.41,-57.5 83.41,-50.5"/>
-<text text-anchor="middle" x="109" y="-56.4" font-family="Helvetica,sans-Serif" font-size="9.50">vectors</text>
-</g>
 <!-- type~ls_scalar_t -->
-<g id="type~~sct_grid_t~~InheritsGraph_node4" class="node">
+<g id="type~~sct_grid_t~~InheritsGraph_node3" class="node">
 <title>type~ls_scalar_t</title>
-<polygon fill="#5cb85c" stroke="#5cb85c" points="73,-24 0,-24 0,0 73,0 73,-24"/>
-<text text-anchor="middle" x="36.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">LS_Scalar_t</text>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="73,-66 0,-66 0,-42 73,-42 73,-66"/>
+<text text-anchor="middle" x="36.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">LS_Scalar_t</text>
 </g>
 <!-- type~sct_grid_t&#45;&gt;type~ls_scalar_t -->
 <g id="type~~sct_grid_t~~InheritsGraph_edge2" class="edge">
 <title>type~sct_grid_t&#45;&gt;type~ls_scalar_t</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M144.87,-54C126.89,-54 103.8,-54 83.64,-54"/>
+<polygon fill="#000000" stroke="#000000" points="83.41,-50.5 73.41,-54 83.41,-57.5 83.41,-50.5"/>
+<text text-anchor="middle" x="109" y="-56.4" font-family="Helvetica,sans-Serif" font-size="9.50">scalars</text>
+</g>
+<!-- type~ls_vector_t -->
+<g id="type~~sct_grid_t~~InheritsGraph_node4" class="node">
+<title>type~ls_vector_t</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="73,-24 0,-24 0,0 73,0 73,-24"/>
+<text text-anchor="middle" x="36.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">LS_Vector_t</text>
+</g>
+<!-- type~sct_grid_t&#45;&gt;type~ls_vector_t -->
+<g id="type~~sct_grid_t~~InheritsGraph_edge3" class="edge">
+<title>type~sct_grid_t&#45;&gt;type~ls_vector_t</title>
 <path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M144.87,-44.68C126.72,-39.15 103.37,-32.05 83.09,-25.88"/>
 <polygon fill="#000000" stroke="#000000" points="84,-22.49 73.41,-22.93 81.96,-29.19 84,-22.49"/>
-<text text-anchor="middle" x="109" y="-41.4" font-family="Helvetica,sans-Serif" font-size="9.50">scalars</text>
+<text text-anchor="middle" x="109" y="-41.4" font-family="Helvetica,sans-Serif" font-size="9.50">vectors</text>
 </g>
 </g>
 </svg>
@@ -270,14 +263,6 @@
       <h3>Contents</h3>
  
 <div class="panel panel-primary">
-  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-1">Variables</a></h3></div>
-  <div id="vars-1" class="panel-collapse collapse">
-    <div class="list-group">
-      <a class="list-group-item" href="../type/sct_grid_t.html#variable-get_data_titles">get_data_titles</a>
-    </div>
-  </div>
-</div>
-<div class="panel panel-primary">
   <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#boundprocs-1">Type-Bound Procedures</a></h3></div>
   <div id="boundprocs-1" class="panel-collapse collapse">
     <div class="list-group">
@@ -301,6 +286,7 @@
       <a class="list-group-item" href="../type/sct_grid_t.html#boundprocedure-extract_face2vertices_on_region">extract_face2vertices_on_region</a>
       <a class="list-group-item" href="../type/sct_grid_t.html#boundprocedure-search_scalar_data">search_scalar_data</a>
       <a class="list-group-item" href="../type/sct_grid_t.html#boundprocedure-search_vector_data">search_vector_data</a>
+      <a class="list-group-item" href="../type/sct_grid_t.html#boundprocedure-get_data_titles">get_data_titles</a>
     </div>
   </div>
 </div>
@@ -308,21 +294,6 @@
     </section>
     <br class="visible-xs visible-sm hidden-md">
 
-    <section>
-    <h2>Components</h2>
-    <table class="table table-striped varlist">
-<thead><tr><th>Type</th><th>Visibility</th><th>Attributes</th><th></th><th>Name</th><th></th><th>Initial</th><th></th></thead>
-<tbody>
-<tr>
-  <td><span class="anchor" id="variable-get_data_titles"></span>procedure,</td>
-<td>public</td>  <td></td><td>::</td>
-  <td><strong>get_data_titles</strong></td><td></td><td></td><td></td>
-</tr>
-</tbody>
-</table>
-
-    </section>
-    <br>
     
     
     
@@ -909,6 +880,41 @@ keyにタイトル名を入れて検索する. 該当しない場合含まれる
 <td>intent(inout),</td>
   <td></td>  <td>allocatable</td><td>::</td>
   <td><strong>vector</strong>(:,:)</td><td></td>
+</tr>
+</tbody>
+</table>
+
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_data_titles"></span><h3>procedure, public :: <strong>get_data_titles</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private subroutine get_data_titles(this, titles, data_type)</h3><p>.fldに含まれるデータのタイトルを取得する. </p>
+    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/sct_grid_t.html'>sct_grid_t</a>),</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>this</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>type(<a href='../type/sct_data_name_list_t.html'>sct_data_name_list_t</a>),</td>
+<td>intent(inout),</td>
+  <td></td>  <td>allocatable</td><td>::</td>
+  <td><strong>titles</strong>(:)</td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>character,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>data_type</strong></td><td></td>
 </tr>
 </tbody>
 </table>

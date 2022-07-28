@@ -47,7 +47,7 @@ module kdTree_m
         kdTree_%node(1)%cellID_array = x_origin(:)%originID
         kdTree_%node(1)%depth = 0 !最初は深さゼロ
 
-        call set_formatTC('("CREATING kd-tree [ #node : ",i6," / ",i6," ]")')
+        call set_formatTC('("CREATING kd-tree [ #node : ",i7," / ",i7," ]")')
         do i = 1, num_node
             call print_progress([i, num_node])
 
@@ -58,6 +58,7 @@ module kdTree_m
             !各軸を切り替えながら、コンテンツ配列から要素を抽出
             select case(mod(depth, 3))
             case(0)
+                ! Officeの場合、ここでSegmentation faultになる
                 array_pre = x_origin(kdTree_%node(i)%cellID_array)
             case(1)
                 array_pre = y_origin(kdTree_%node(i)%cellID_array)

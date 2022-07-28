@@ -86,7 +86,9 @@
   <div class="col-lg-12">
 <div class="well well-sm">
   <ul class="list-inline" style="margin-bottom:0px;display:inline">
+     <li><i class="fa fa-pencil"></i> T.Ikeda, Y.Ida</li>
     <li><i class="fa fa-legal"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a></li> 
+    <li><i class="fa fa-barcode"></i> 2.5.2</li>
      <li><i class="fa fa-list-ol"></i>
        <a data-toggle="tooltip"
     data-placement="bottom" data-html="true"
@@ -146,19 +148,21 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <p>package     : SCT_file_reader ver 2.5.2
-author      : T.Ikeda, Y.Ida
-description :
- - SC/TETRA 出力のファイルを読み取り，データを取り出す.<br>
- - 今までのconverterと異なり, 本モジュールで独立して扱えるようになっている. 
- - 並列化には対応していない. 
-note        :
- - セルの節点の並び順はwedge以外はvtkのものと同じ.
- - SC/TETRAでは，セル番号および節点番号は0スタートなので, fortran運用のためインデックス+1. 
- - 頂点配列(NDNO)はセルタイプ毎に並んでいない. 
-Others      :
- - cell2verticesのrank 1には最大で8つ(hexahedron), face2verticesには4つの値が入るが, 
-   値が入っていない箇所は全て-1に統一されている. </p>
+    <ul>
+<li>SC/TETRA 出力のファイルを読み取り，データを取り出す.  </li>
+<li>今までのconverterと異なり, 本モジュールで独立して扱えるようになっている. </li>
+<li>並列化には対応していない. </li>
+</ul>
+<p></p><div class="alert alert-info" role="alert"><h4>Note</h4><p></p>
+<ul>
+<li>セルの節点の並び順はwedge以外はvtkのものと同じ.</li>
+<li>SC/TETRAでは，セル番号および節点番号は0スタートなので, fortran運用のためインデックス+1. </li>
+<li>頂点配列(NDNO)はセルタイプ毎に並んでいない. </li>
+<li>cell2verticesのrank 1には最大で8つ(hexahedron), face2verticesには4つの値が入るが, 
+  値が入っていない箇所は全て-1に統一されている. </li>
+</ul>
+<p></p></div>
+<p>
     
     
     <br>
@@ -242,18 +246,6 @@ region用に使うことも出来る. その場合abbreviatedは使わない.
 必要最低限の変数のみ保持. 変数名はフォーマットに準拠.<br>
 メッシュそのものを取り扱うのでメモリ圧迫する可能性大. 
 ソルバ内で使う場合はサブルーチンのローカル変数として扱う方が無難(自動開放されるはず)</p>
-     <h4>Components</h4>
-    <table class="table table-striped varlist">
-<thead><tr><th>Type</th><th>Visibility</th><th>Attributes</th><th></th><th>Name</th><th></th><th>Initial</th><th></th></thead>
-<tbody>
-<tr>
-  <td><span class="anchor" id="variable-get_data_titles"></span>procedure,</td>
-<td>public</td>  <td></td><td>::</td>
-  <td><strong>get_data_titles</strong></td><td></td><td></td><td></td>
-</tr>
-</tbody>
-</table>
-
      
      <h4>Type-Bound Procedures</h4>
       <table class="table table-striped varlist">
@@ -297,6 +289,8 @@ region用に使うことも出来る. その場合abbreviatedは使わない.
        <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-search_scalar_data'>search_scalar_data</a></strong>  </td>
        <td></td></tr>
        <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-search_vector_data'>search_vector_data</a></strong>  </td>
+       <td></td></tr>
+       <tr><td>procedure, public :: <strong><a href='../type/sct_grid_t.html#boundprocedure-get_data_titles'>get_data_titles</a></strong>  </td>
        <td></td></tr>
        </tbody>
        </table>
