@@ -1,31 +1,28 @@
 module SCT_file_reader_m
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-    !!version: 2.5.2
-    !!author: T.Ikeda, Y.Ida
-    !!summary:
-    !!- SC/TETRA 出力のファイルを読み取り，データを取り出す.  
-    !!- 今までのconverterと異なり, 本モジュールで独立して扱えるようになっている. 
-    !!- 並列化には対応していない. 
-    !!
-    !!@note
-    !!
-    !!- セルの節点の並び順はwedge以外はvtkのものと同じ.
-    !!- SC/TETRAでは，セル番号および節点番号は0スタートなので, fortran運用のためインデックス+1. 
-    !!- 頂点配列(NDNO)はセルタイプ毎に並んでいない. 
-    !!- cell2verticesのrank 1には最大で8つ(hexahedron), face2verticesには4つの値が入るが, 
-    !!  値が入っていない箇所は全て-1に統一されている. 
-    !!
-    !!@endnote
+    !!package     : SCT_file_reader ver 2.5.2
+    !!author      : T.Ikeda, Y.Ida
+    !!description :
+    !! - SC/TETRA 出力のファイルを読み取り，データを取り出す.  
+    !! - 今までのconverterと異なり, 本モジュールで独立して扱えるようになっている. 
+    !! - 並列化には対応していない. 
+    !!note        :
+    !! - セルの節点の並び順はwedge以外はvtkのものと同じ.
+    !! - SC/TETRAでは，セル番号および節点番号は0スタートなので, fortran運用のためインデックス+1. 
+    !! - 頂点配列(NDNO)はセルタイプ毎に並んでいない. 
+    !!Others      :
+    !! - cell2verticesのrank 1には最大で8つ(hexahedron), face2verticesには4つの値が入るが, 
+    !!   値が入っていない箇所は全て-1に統一されている. 
     !~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
     implicit none
     private
 
     integer(4) LCORD
-        !!座標番号(=0固定): 多分不要
+        !! 座標番号(=0固定): 多分不要
 
     integer,parameter :: LengthOfSubRecord = 4194304
-        !!サブレコード1行あたりの長さの上限. 必要はないがメモとして
+        !! サブレコード1行あたりの長さの上限. 必要はないがメモとして
 
     !面の定義. [頂点数, ローカル節点番号の並び].ローカル節点番号は1~最大8.  
     integer, private, target :: SCTTetraFaces_(3+1,4)   = reshape( &
@@ -185,7 +182,7 @@ module SCT_file_reader_m
 
         procedure,public :: search_scalar_data
         procedure,public :: search_vector_data
-        procedure,public :: get_data_titles
+        procedure get_data_titles
 
         final destructor
 
