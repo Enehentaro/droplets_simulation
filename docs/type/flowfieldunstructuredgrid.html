@@ -1,0 +1,1302 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+   <meta name="description" content="Simulation of Virus-Laden Droplets Behavior in AFDET">
+    <meta name="author" content="Y.Ida" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>FlowFieldUnstructuredGrid &ndash; Droplets Simulation </title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">Droplets Simulation </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href='../page/index.html'>Read Me</a></li>
+            <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
+              <a href="#" class="dropdown-toggle"
+              data-toggle="dropdown" role="button"
+              aria-haspopup="true"
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="../lists/files.html">Source Files</a></li>
+            <li><a href="../lists/modules.html">Modules</a></li>
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+                   <li><a href="../lists/types.html">Derived Types</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
+       
+            </ul>
+        
+            </li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/files.html">Source Files</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/modules.html">Modules</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/procedures.html">Procedures</a></li>
+                             <li class="visible-xs hidden-sm visible-lg"><a href="../lists/types.html">Derived Types</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/programs.html">Programs</a></li>
+          </ul>
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+  <div class="row">
+    <h1>FlowFieldUnstructuredGrid
+    <small>Derived Type</small>
+    </h1>
+    <div class="row">
+  <div class="col-lg-12">
+<div class="well well-sm">
+  <ul class="list-inline" style="margin-bottom:0px;display:inline">
+    <li><i class="fa fa-legal"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a></li> 
+     <li><i class="fa fa-list-ol"></i>
+       <a data-toggle="tooltip"
+    data-placement="bottom" data-html="true"
+    title="<p>10.2% of total for derived types.</p>Including implementation: 374 statements, 19.7% of total for derived types.">28 statements</a>
+     </li> 
+    <li><i class="fa fa-code"></i><a href="../src/unstructuredGrid.f90"> Source File</a></li>
+  </ul>
+  <ol class="breadcrumb in-well text-right">
+     <li><a href='../sourcefile/unstructuredgrid.f90.html'>unstructuredGrid.f90</a></li>
+     <li><a href='../module/unstructuredgrid_m.html'>unstructuredGrid_m</a></li>
+     <li class="active">FlowFieldUnstructuredGrid</li>
+  </ol>
+</div>
+</div>
+</div>
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+</script>
+
+  </div>
+  
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+    <div id="sidebar">
+  <h3>Contents</h3>
+ 
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-0">Variables</a></h3></div>
+  <div id="vars-0" class="panel-collapse collapse">
+    <div class="list-group">
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-nodes">NODEs</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-cells">CELLs</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-boundfaces">BoundFACEs</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-kd_tree">kd_tree</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-min_cdn">MIN_CDN</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-max_cdn">MAX_CDN</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-num_refcellsearchfalse">num_refCellSearchFalse</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-num_refcellsearch">num_refCellSearch</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-set_cellcenter">set_cellCenter</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-set_cellthreshold">set_cellThreshold</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-set_minmaxcdn">set_MinMaxCDN</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-point2cellvelocity">point2cellVelocity</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-nearer_cell">nearer_cell</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-adjacencysolvingprocess">AdjacencySolvingProcess</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-read_adjacency">read_adjacency</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-read_boundaries">read_boundaries</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-solve_adacencyonflowfieldunstructuredgrid">solve_adacencyOnFlowFieldUnstructuredGrid</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-output_boundaries">output_boundaries</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-output_adjacency">output_adjacency</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-boundary_setting">boundary_setting</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-output_stl">output_STL</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-setup_kdtree">setup_kdTree</a>
+    </div>
+  </div>
+</div>
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#boundprocs-0">Type-Bound Procedures</a></h3></div>
+  <div id="boundprocs-0" class="panel-collapse collapse">
+    <div class="list-group">
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-nearcell_check">nearcell_check</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-nearest_cell">nearest_cell</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-nearest_search_kdtree">nearest_search_kdTree</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-nearest_search_exact">nearest_search_exact</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_movementvectorofboundarysurface">get_movementVectorOfBoundarySurface</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_flowvelocityincell">get_flowVelocityInCELL</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_allofcellcenters">get_allOfCellCenters</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_cellcenterof">get_cellCenterOf</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_minmaxofgrid">get_MinMaxOfGrid</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_cellverticesof">get_cellVerticesOf</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_info">get_info</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-read_fld">read_FLD</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-read_inp">read_INP</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-read_array">read_array</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-read_vtk">read_VTK</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-updatewithflowfieldfile">updateWithFlowFieldFile</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-setupwithflowfieldfile">setupWithFlowFieldFile</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-search_refcell">search_refCELL</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-adhesioncheckonbound">adhesionCheckOnBound</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_nearersearchfalserate">get_nearerSearchFalseRate</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_num_nearersearchfalse">get_num_nearerSearchFalse</a>
+    </div>
+  </div>
+</div>
+
+</div>
+
+    </div>
+    
+    <div class="col-md-9" id='text'>
+      <h2>type, public :: FlowFieldUnstructuredGrid</h2>
+    
+<br>    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Inherits</h3>
+      </div>
+      <div class="panel-body">
+    <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: type~~flowfieldunstructuredgrid~~InheritsGraph Pages: 1 -->
+<svg id="typeflowfieldunstructuredgridInheritsGraph" width="535pt" height="158pt"
+ viewBox="0.00 0.00 535.00 158.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 154)">
+<title>type~~flowfieldunstructuredgrid~~InheritsGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-154 531,-154 531,4 -4,4"/>
+<!-- type~flowfieldunstructuredgrid -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_node1" class="node">
+<title>type~flowfieldunstructuredgrid</title>
+<polygon fill="none" stroke="black" points="527,-87 375,-87 375,-63 527,-63 527,-87"/>
+<text text-anchor="middle" x="451" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">FlowFieldUnstructuredGrid</text>
+</g>
+<!-- type~node_t -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_node2" class="node">
+<title>type~node_t</title>
+<g id="a_type~~flowfieldunstructuredgrid~~InheritsGraph_node2"><a xlink:href=".././type/node_t.html" xlink:title="node_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="248.5,-150 194.5,-150 194.5,-126 248.5,-126 248.5,-150"/>
+<text text-anchor="middle" x="221.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_t</text>
+</a>
+</g>
+</g>
+<!-- type~flowfieldunstructuredgrid&#45;&gt;type~node_t -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_edge1" class="edge">
+<title>type~flowfieldunstructuredgrid&#45;&gt;type~node_t</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M409.31,-87.01C393.06,-91.76 374.17,-97.21 357,-102 323.66,-111.3 285.53,-121.46 258.4,-128.61"/>
+<polygon fill="#000000" stroke="#000000" points="257.36,-125.26 248.58,-131.19 259.14,-132.03 257.36,-125.26"/>
+<text text-anchor="middle" x="327" y="-120.4" font-family="Helvetica,sans-Serif" font-size="9.50">NODEs</text>
+</g>
+<!-- type~cell_inflow_t -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_node3" class="node">
+<title>type~cell_inflow_t</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="261,-108 182,-108 182,-84 261,-84 261,-108"/>
+<text text-anchor="middle" x="221.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cell_inFlow_t</text>
+</g>
+<!-- type~flowfieldunstructuredgrid&#45;&gt;type~cell_inflow_t -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_edge2" class="edge">
+<title>type~flowfieldunstructuredgrid&#45;&gt;type~cell_inflow_t</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M374.88,-81.93C340.84,-85.08 301.57,-88.7 271.42,-91.48"/>
+<polygon fill="#000000" stroke="#000000" points="270.79,-88.03 261.15,-92.43 271.43,-95 270.79,-88.03"/>
+<text text-anchor="middle" x="327" y="-90.4" font-family="Helvetica,sans-Serif" font-size="9.50">CELLs</text>
+</g>
+<!-- type~boundarytriangle_t -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_node4" class="node">
+<title>type~boundarytriangle_t</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="279,-66 164,-66 164,-42 279,-42 279,-66"/>
+<text text-anchor="middle" x="221.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">boundaryTriangle_t</text>
+</g>
+<!-- type~flowfieldunstructuredgrid&#45;&gt;type~boundarytriangle_t -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_edge3" class="edge">
+<title>type~flowfieldunstructuredgrid&#45;&gt;type~boundarytriangle_t</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M374.88,-68.07C347.22,-65.51 316.1,-62.64 289.24,-60.16"/>
+<polygon fill="#000000" stroke="#000000" points="289.44,-56.66 279.16,-59.23 288.8,-63.63 289.44,-56.66"/>
+<text text-anchor="middle" x="327" y="-68.4" font-family="Helvetica,sans-Serif" font-size="9.50">BoundFACEs</text>
+</g>
+<!-- type~kdtree -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_node5" class="node">
+<title>type~kdtree</title>
+<g id="a_type~~flowfieldunstructuredgrid~~InheritsGraph_node5"><a xlink:href=".././type/kdtree.html" xlink:title="kdTree">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="248.5,-24 194.5,-24 194.5,0 248.5,0 248.5,-24"/>
+<text text-anchor="middle" x="221.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">kdTree</text>
+</a>
+</g>
+</g>
+<!-- type~flowfieldunstructuredgrid&#45;&gt;type~kdtree -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_edge4" class="edge">
+<title>type~flowfieldunstructuredgrid&#45;&gt;type~kdtree</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M411.18,-62.95C394.54,-57.88 374.86,-52.01 357,-47 323.73,-37.67 285.6,-27.82 258.45,-20.96"/>
+<polygon fill="#000000" stroke="#000000" points="259.17,-17.53 248.61,-18.48 257.46,-24.32 259.17,-17.53"/>
+<text text-anchor="middle" x="327" y="-49.4" font-family="Helvetica,sans-Serif" font-size="9.50">kd_tree</text>
+</g>
+<!-- type~cell_t -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_node6" class="node">
+<title>type~cell_t</title>
+<g id="a_type~~flowfieldunstructuredgrid~~InheritsGraph_node6"><a xlink:href=".././type/cell_t.html" xlink:title="cell_t">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="78.5,-108 24.5,-108 24.5,-84 78.5,-84 78.5,-108"/>
+<text text-anchor="middle" x="51.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cell_t</text>
+</a>
+</g>
+</g>
+<!-- type~cell_inflow_t&#45;&gt;type~cell_t -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_edge5" class="edge">
+<title>type~cell_inflow_t&#45;&gt;type~cell_t</title>
+<path fill="none" stroke="#000000" d="M181.96,-96C153.99,-96 116.41,-96 88.94,-96"/>
+<polygon fill="#000000" stroke="#000000" points="88.58,-92.5 78.58,-96 88.58,-99.5 88.58,-92.5"/>
+</g>
+<!-- type~node_in_kdtree_t -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_node7" class="node">
+<title>type~node_in_kdtree_t</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="103,-24 0,-24 0,0 103,0 103,-24"/>
+<text text-anchor="middle" x="51.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">node_in_kdTree_t</text>
+</g>
+<!-- type~kdtree&#45;&gt;type~node_in_kdtree_t -->
+<g id="type~~flowfieldunstructuredgrid~~InheritsGraph_edge6" class="edge">
+<title>type~kdtree&#45;&gt;type~node_in_kdtree_t</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M194.25,-12C172.63,-12 141.13,-12 113.31,-12"/>
+<polygon fill="#000000" stroke="#000000" points="113.25,-8.5 103.25,-12 113.25,-15.5 113.25,-8.5"/>
+<text text-anchor="middle" x="133.5" y="-14.4" font-family="Helvetica,sans-Serif" font-size="9.50">node</text>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="186pt" height="32pt"
+ viewBox="0.00 0.00 185.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 181.5,-28 181.5,4 -4,4"/>
+<!-- Type -->
+<g id="node1" class="node">
+<title>Type</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="177.5,-24 72.5,-24 72.5,0 177.5,0 177.5,-24"/>
+<text text-anchor="middle" x="125" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a derived type to the parent type which it
+    extends. Dashed arrows point from a derived type to the other
+    types it contains as a components, with a label listing the name(s) of
+    said component(s).
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Inherited by</h3>
+      </div>
+      <div class="panel-body">
+     <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: type~~flowfieldunstructuredgrid~~InheritedByGraph Pages: 1 -->
+<svg id="typeflowfieldunstructuredgridInheritedByGraph" width="257pt" height="32pt"
+ viewBox="0.00 0.00 257.00 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="type~~flowfieldunstructuredgrid~~InheritedByGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>type~~flowfieldunstructuredgrid~~InheritedByGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 253,-28 253,4 -4,4"/>
+<!-- type~flowfieldunstructuredgrid -->
+<g id="type~~flowfieldunstructuredgrid~~InheritedByGraph_node1" class="node">
+<title>type~flowfieldunstructuredgrid</title>
+<polygon fill="none" stroke="black" points="152,-24 0,-24 0,0 152,0 152,-24"/>
+<text text-anchor="middle" x="76" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">FlowFieldUnstructuredGrid</text>
+</g>
+<!-- type~flowfield -->
+<g id="type~~flowfieldunstructuredgrid~~InheritedByGraph_node2" class="node">
+<title>type~flowfield</title>
+<g id="a_type~~flowfieldunstructuredgrid~~InheritedByGraph_node2"><a xlink:href=".././type/flowfield.html" xlink:title="FlowField">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="249,-24 188,-24 188,0 249,0 249,-24"/>
+<text text-anchor="middle" x="218.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">FlowField</text>
+</a>
+</g>
+</g>
+<!-- type~flowfield&#45;&gt;type~flowfieldunstructuredgrid -->
+<g id="type~~flowfieldunstructuredgrid~~InheritedByGraph_edge1" class="edge">
+<title>type~flowfield&#45;&gt;type~flowfieldunstructuredgrid</title>
+<path fill="none" stroke="#000000" d="M187.7,-12C180.04,-12 171.39,-12 162.4,-12"/>
+<polygon fill="#000000" stroke="#000000" points="162.14,-8.5 152.14,-12 162.14,-15.5 162.14,-8.5"/>
+</g>
+</g>
+</svg>
+</div><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="186pt" height="32pt"
+ viewBox="0.00 0.00 185.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 181.5,-28 181.5,4 -4,4"/>
+<!-- Type -->
+<g id="node1" class="node">
+<title>Type</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="54,-24 0,-24 0,0 54,0 54,-24"/>
+<text text-anchor="middle" x="27" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Type</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="177.5,-24 72.5,-24 72.5,0 177.5,0 177.5,-24"/>
+<text text-anchor="middle" x="125" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a derived type to the parent type which it
+    extends. Dashed arrows point from a derived type to the other
+    types it contains as a components, with a label listing the name(s) of
+    said component(s).
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+    <br>
+
+    <section class="visible-xs visible-sm hidden-md">
+      <h3>Contents</h3>
+ 
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-1">Variables</a></h3></div>
+  <div id="vars-1" class="panel-collapse collapse">
+    <div class="list-group">
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-nodes">NODEs</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-cells">CELLs</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-boundfaces">BoundFACEs</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-kd_tree">kd_tree</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-min_cdn">MIN_CDN</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-max_cdn">MAX_CDN</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-num_refcellsearchfalse">num_refCellSearchFalse</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-num_refcellsearch">num_refCellSearch</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-set_cellcenter">set_cellCenter</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-set_cellthreshold">set_cellThreshold</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-set_minmaxcdn">set_MinMaxCDN</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-point2cellvelocity">point2cellVelocity</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-nearer_cell">nearer_cell</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-adjacencysolvingprocess">AdjacencySolvingProcess</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-read_adjacency">read_adjacency</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-read_boundaries">read_boundaries</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-solve_adacencyonflowfieldunstructuredgrid">solve_adacencyOnFlowFieldUnstructuredGrid</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-output_boundaries">output_boundaries</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-output_adjacency">output_adjacency</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-boundary_setting">boundary_setting</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-output_stl">output_STL</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#variable-setup_kdtree">setup_kdTree</a>
+    </div>
+  </div>
+</div>
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#boundprocs-1">Type-Bound Procedures</a></h3></div>
+  <div id="boundprocs-1" class="panel-collapse collapse">
+    <div class="list-group">
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-nearcell_check">nearcell_check</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-nearest_cell">nearest_cell</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-nearest_search_kdtree">nearest_search_kdTree</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-nearest_search_exact">nearest_search_exact</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_movementvectorofboundarysurface">get_movementVectorOfBoundarySurface</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_flowvelocityincell">get_flowVelocityInCELL</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_allofcellcenters">get_allOfCellCenters</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_cellcenterof">get_cellCenterOf</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_minmaxofgrid">get_MinMaxOfGrid</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_cellverticesof">get_cellVerticesOf</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_info">get_info</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-read_fld">read_FLD</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-read_inp">read_INP</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-read_array">read_array</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-read_vtk">read_VTK</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-updatewithflowfieldfile">updateWithFlowFieldFile</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-setupwithflowfieldfile">setupWithFlowFieldFile</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-search_refcell">search_refCELL</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-adhesioncheckonbound">adhesionCheckOnBound</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_nearersearchfalserate">get_nearerSearchFalseRate</a>
+      <a class="list-group-item" href="../type/flowfieldunstructuredgrid.html#boundprocedure-get_num_nearersearchfalse">get_num_nearerSearchFalse</a>
+    </div>
+  </div>
+</div>
+
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+
+    <section>
+    <h2>Components</h2>
+    <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Visibility</th><th>Attributes</th><th></th><th>Name</th><th></th><th>Initial</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" id="variable-nodes"></span>type(<a href='../type/node_t.html'>node_t</a>),</td>
+<td>public,</td>  <td>allocatable</td><td>::</td>
+  <td><strong>NODEs</strong>(:)</td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-cells"></span>type(cell_inFlow_t),</td>
+<td>public,</td>  <td>allocatable</td><td>::</td>
+  <td><strong>CELLs</strong>(:)</td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-boundfaces"></span>type(boundaryTriangle_t),</td>
+<td>public,</td>  <td>allocatable</td><td>::</td>
+  <td><strong>BoundFACEs</strong>(:)</td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-kd_tree"></span>type(<a href='../type/kdtree.html'>kdTree</a>),</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>kd_tree</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-min_cdn"></span>real,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>MIN_CDN</strong>(3)</td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-max_cdn"></span>real,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>MAX_CDN</strong>(3)</td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-num_refcellsearchfalse"></span>integer,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>num_refCellSearchFalse</strong></td><td> =</td><td>0</td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-num_refcellsearch"></span>integer,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>num_refCellSearch</strong></td><td> =</td><td>0</td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-set_cellcenter"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>set_cellCenter</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-set_cellthreshold"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>set_cellThreshold</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-set_minmaxcdn"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>set_MinMaxCDN</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-point2cellvelocity"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>point2cellVelocity</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-nearer_cell"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>nearer_cell</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-adjacencysolvingprocess"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>AdjacencySolvingProcess</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-read_adjacency"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>read_adjacency</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-read_boundaries"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>read_boundaries</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-solve_adacencyonflowfieldunstructuredgrid"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>solve_adacencyOnFlowFieldUnstructuredGrid</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-output_boundaries"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>output_boundaries</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-output_adjacency"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>output_adjacency</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-boundary_setting"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>boundary_setting</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-output_stl"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>output_STL</strong></td><td></td><td></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" id="variable-setup_kdtree"></span>procedure,</td>
+<td>public</td>  <td></td><td>::</td>
+  <td><strong>setup_kdTree</strong></td><td></td><td></td><td></td>
+</tr>
+</tbody>
+</table>
+
+    </section>
+    <br>
+    
+    
+    
+ 
+    <section>
+    <h2>Type-Bound Procedures</h2>
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-nearcell_check"></span><h3>procedure, public :: <strong>nearcell_check</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function nearcell_check(self, X, NCN)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>real,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>X</strong>(3)</td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>NCN</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>logical</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-nearest_cell"></span><h3>procedure, public :: <strong>nearest_cell</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function nearest_cell(self, X)</h3><p>最近傍セル探索</p>
+    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>),</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>real,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>X</strong>(3)</td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>integer</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-nearest_search_kdtree"></span><h3>procedure, public :: <strong>nearest_search_kdTree</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function nearest_search_kdTree(self, X)</h3><p>kdツリーによる最近傍セル探索</p>
+    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>),</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>real,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>X</strong>(3)</td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>integer</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-nearest_search_exact"></span><h3>procedure, public :: <strong>nearest_search_exact</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function nearest_search_exact(self, X)</h3><p>厳密最近傍セル探索</p>
+    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>),</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>real,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>X</strong>(3)</td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>integer</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_movementvectorofboundarysurface"></span><h3>procedure, public :: <strong>get_movementVectorOfBoundarySurface</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function get_movementVectorOfBoundarySurface(self, ID) result(vector)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>),</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>ID</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>real(3)</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_flowvelocityincell"></span><h3>procedure, public :: <strong>get_flowVelocityInCELL</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function get_flowVelocityInCELL(self, ID) result(velocity)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>),</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>ID</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>real(3)</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_allofcellcenters"></span><h3>procedure, public :: <strong>get_allOfCellCenters</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function get_allOfCellCenters(self) result(centers)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>),</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>real,allocatable, (:,:)</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_cellcenterof"></span><h3>procedure, public :: <strong>get_cellCenterOf</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function get_cellCenterOf(self, ID) result(center)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>),</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>ID</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>real(3)</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_minmaxofgrid"></span><h3>procedure, public :: <strong>get_MinMaxOfGrid</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private subroutine get_MinMaxOfGrid(self, MIN_CDN, MAX_CDN)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>real,</td>
+<td>intent(out)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>MIN_CDN</strong>(3)</td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>real,</td>
+<td>intent(out)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>MAX_CDN</strong>(3)</td><td></td>
+</tr>
+</tbody>
+</table>
+
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_cellverticesof"></span><h3>procedure, public :: <strong>get_cellVerticesOf</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function get_cellVerticesOf(self, ID) result(vertices)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>),</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>ID</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>real,allocatable, (:,:)</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_info"></span><h3>procedure, public :: <strong>get_info</strong>  => get_gridInformation   </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function get_gridInformation(self, name) result(info)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>),</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>character,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>name</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>integer</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-read_fld"></span><h3>procedure, public :: <strong>read_FLD</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private subroutine read_FLD(self, FNAME, findTopology, findVelocity)</h3><p>ファイルが存在し, かつトポロジー情報が存在する場合以下の処理が行われる.  </p>
+    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>character,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>FNAME</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>logical,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>findTopology</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>logical,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>findVelocity</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-read_inp"></span><h3>procedure, public :: <strong>read_INP</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private subroutine read_INP(self, FNAME)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>character,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>FNAME</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-read_array"></span><h3>procedure, public :: <strong>read_array</strong>  => read_Array   </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private subroutine read_Array(self, FNAME)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>character,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>FNAME</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-read_vtk"></span><h3>procedure, public :: <strong>read_VTK</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private subroutine read_VTK(self, FNAME, meshOnly)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>character,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>FNAME</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>logical,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>meshOnly</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-updatewithflowfieldfile"></span><h3>procedure, public :: <strong>updateWithFlowFieldFile</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private subroutine updateWithFlowFieldFile(self, FNAME)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>character,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>FNAME</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-setupwithflowfieldfile"></span><h3>procedure, public :: <strong>setupWithFlowFieldFile</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private subroutine setupWithFlowFieldFile(self, FNAME, meshFile)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>character,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>FNAME</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>character,</td>
+<td>intent(in),</td>
+  <td>optional</td>  <td></td><td>::</td>
+  <td><strong>meshFile</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-search_refcell"></span><h3>procedure, public :: <strong>search_refCELL</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private subroutine search_refCELL(self, X, reference_cell, stat)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>real,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>X</strong>(3)</td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(inout)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>reference_cell</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>logical,</td>
+<td></td>
+  <td>optional</td>  <td></td><td>::</td>
+  <td><strong>stat</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-adhesioncheckonbound"></span><h3>procedure, public :: <strong>adhesionCheckOnBound</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private subroutine adhesionCheckOnBound(self, position, radius, cellID, stat)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>double precision,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>position</strong>(3)</td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>double precision,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>radius</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(in)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>cellID</strong></td><td></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(out)</td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>stat</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_nearersearchfalserate"></span><h3>procedure, public :: <strong>get_nearerSearchFalseRate</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function get_nearerSearchFalseRate(self)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>real</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+     <div class="panel panel-default">
+  <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-get_num_nearersearchfalse"></span><h3>procedure, public :: <strong>get_num_nearerSearchFalse</strong>    </h3></div>
+  <ul class="list-group">
+      <li class="list-group-item">
+          <h3>private function get_num_nearerSearchFalse(self)</h3>    
+<h4>Arguments</h4>      <table class="table table-striped varlist">
+<thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
+<tbody>
+<tr>
+  <td><span class="anchor" ></span>class(<a href='../type/flowfieldunstructuredgrid.html'>FlowFieldUnstructuredGrid</a>)</td>
+<td></td>
+  <td></td>  <td></td><td>::</td>
+  <td><strong>self</strong></td><td></td>
+</tr>
+</tbody>
+</table>
+
+<h4>Return Value <small>integer</small></h4>  
+
+      </li>
+  </ul>
+</div>
+
+    </section>
+    
+    
+    </div>
+  </div>
+
+    <hr>    
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+      <div class="row">
+        <div class="col-xs-6 col-md-6"><p>Droplets Simulation was developed by Y.Ida<br>&copy; 2022 <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>
+</p>
+        </div>
+        <div class="col-xs-6 col-md-6">
+          <p class="text-right">
+            Documentation generated by 
+            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+          </p>
+        </div>
+      </div>
+      <br>
+      </div> <!-- /container -->    
+    </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+  </body>
+</html>
