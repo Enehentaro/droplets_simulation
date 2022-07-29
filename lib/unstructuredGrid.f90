@@ -826,9 +826,11 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine output_STL(self, fname)
+        use vector_m
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: fname
-        integer i, n_unit, JB
+        integer n_unit, JB, nodeID(3)
+        real cross(3)
 
         print*, 'output_STL : ', fname
 
@@ -837,11 +839,29 @@ module unstructuredGrid_m
 
             do JB = 1, size(self%BoundFACEs)
                 write(n_unit, '(" facet normal", 3(X,F7.4))') self%BoundFACEs(JB)%normalVector(:)
+
+                nodeID = self%BoundFACEs(JB)%nodeID(:)
+
+                block
+                    real, dimension(3) :: a,b
+
+                    a = self%NODEs(nodeID(2))%coordinate(:) - self%NODEs(nodeID(1))%coordinate(:)
+                    b = self%NODEs(nodeID(3))%coordinate(:) - self%NODEs(nodeID(1))%coordinate(:)
+                    cross = cross_product(a, b)
+                end block
+
                 write(n_unit, '(" outer loop")')
 
-                do i = 1, 3
-                    write(n_unit, '("  vertex", 3(X,E11.4))') self%NODEs(self%BoundFACEs(JB)%nodeID(i))%coordinate(:)
-                end do
+                !面の向きによって点の並びを変えないと表示が上手く行かない（？）
+                if (dot_product(cross, self%BoundFACEs(JB)%normalVector(:)) > 0.) then
+                    write(n_unit, '("  vertex", 3(X,E11.4))') self%NODEs(nodeID(1))%coordinate(:)
+                    write(n_unit, '("  vertex", 3(X,E11.4))') self%NODEs(nodeID(2))%coordinate(:)
+                    write(n_unit, '("  vertex", 3(X,E11.4))') self%NODEs(nodeID(3))%coordinate(:)
+                else
+                    write(n_unit, '("  vertex", 3(X,E11.4))') self%NODEs(nodeID(1))%coordinate(:)
+                    write(n_unit, '("  vertex", 3(X,E11.4))') self%NODEs(nodeID(3))%coordinate(:)
+                    write(n_unit, '("  vertex", 3(X,E11.4))') self%NODEs(nodeID(2))%coordinate(:)
+                end if
 
                 write(n_unit, '(" endloop")')
                 write(n_unit, '(" endfacet")')

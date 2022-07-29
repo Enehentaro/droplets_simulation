@@ -186,6 +186,7 @@ module dropletMotionSimulation
         type(DropletGroup) dGroup
         integer j, num_drop
         logical success
+        real position(3)
 
         print*, 'first_refCellSearch occured!'
 
@@ -197,7 +198,8 @@ module dropletMotionSimulation
         dGroup%droplet(j+1:)%refCellID = dGroup%droplet(j)%refCellID !時間短縮を図る
 
         do j = 2, num_drop
-            call flow_field%search_refCELL(real(dGroup%droplet(j)%position(:)), dGroup%droplet(j)%refCellID, stat=success)
+            position = real(dGroup%droplet(j)%position(:))
+            call flow_field%search_refCELL(position, dGroup%droplet(j)%refCellID, stat=success)
             if(.not.success) dGroup%droplet(j+1:)%refCellID = dGroup%droplet(j)%refCellID
         end do
         
@@ -321,12 +323,14 @@ module dropletMotionSimulation
         use virusDroplet_m
         type(virusDroplet_t) droplet
         double precision velAir(3)
+        real position(3)
 
         velAir(:) = flow_field%get_flowVelocityInCELL(droplet%refCellID)
     
         call dropletSolver%solve_motionEquation(droplet%position(:), droplet%velocity(:), velAir(:), droplet%get_radius())
 
-        call flow_field%search_refCELL(real(droplet%position(:)), droplet%refCellID)
+        position = real(droplet%position(:))
+        call flow_field%search_refCELL(position, droplet%refCellID)
         
     end subroutine
 

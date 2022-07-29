@@ -39,7 +39,7 @@ program sort_test
         tmp = FisherYates_shuffle(array_correct)
         ! print *, tmp
         array = real2content(tmp)
-        call heap_sort(array, array_sorted)
+        array_sorted = heap_sort(array)
 
         ! ひとつでも違う要素があればテスト失敗
         if(.not.all(array_sorted(:)%value == array_correct)) then
