@@ -1,13 +1,18 @@
 module vector_m
     implicit none
+    private
     
     interface cross_product
+        !!ベクトルの外積を返す
         module procedure cross_product_dble, cross_product_real
     end interface
 
     interface normalize_vector
+        !!単位ベクトルを返す
         module procedure normalize_vector_dble, normalize_vector_real
     end interface
+
+    public cross_product, normalize_vector
 
     contains
 
