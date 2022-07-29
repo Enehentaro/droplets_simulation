@@ -37,7 +37,7 @@ contains
 
         !点がテトラの内部にあるとき、分割体積和と元々の体積は厳密に一致するはずだが、
         !数値誤差のために少し条件を緩和する
-        isInside = (vol_sum <= volume*(1. + delta))
+        isInside = (abs(1. - vol_sum/volume) <= delta)
 
     end function
 
