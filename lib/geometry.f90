@@ -58,8 +58,12 @@ contains
     end function
 
     subroutine insideJudgment_tetra_check(vertices, point, vol_sum, volume)
+        !!テトラの内外判定の内部処理確認用サブルーチン
         real, intent(in) :: vertices(3,4), point(3)
-        real, intent(out) :: volume, vol_sum
+        real, intent(out) :: volume
+            !!テトラ体積
+        real, intent(out) :: vol_sum
+            !!分割体積和
 
         volume = volume_tetra(vertices)
         vol_sum = partitionedVolume_sum_tetra(vertices, point)
