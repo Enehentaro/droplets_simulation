@@ -872,7 +872,7 @@ module unstructuredGrid_m
 
     end subroutine
 
-    subroutine solve_adacencyOnFlowFieldUnstructuredGrid(self)
+    subroutine solve_adjacencyOnFlowFieldUnstructuredGrid(self)
         use adjacencySolver_m
         class(FlowFieldUnstructuredGrid) self
         integer i, j, num_adjacent, num_boundFace
