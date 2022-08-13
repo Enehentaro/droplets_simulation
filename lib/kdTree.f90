@@ -1,6 +1,6 @@
-!>kd-treeモジュール
-!>by Shohei Kishi, Hikaru Konishi, Tatsuya Miyoshi, Yuta Ida
 module kdTree_m
+    !!kd-treeモジュール
+    !!author: Shohei Kishi, Hikaru Konishi, Tatsuya Miyoshi, Yuta Ida
     use sort_m
     implicit none
     private
