@@ -14,7 +14,6 @@ module sort_m
     !>要素 i に注目すると、親ノードは要素 i/2(小数切り捨て) であり、子ノードは要素 2i, 2i + 1 である
     type HeapTree
         type(content_t), allocatable :: node(:)
-        integer switch
 
         contains
 

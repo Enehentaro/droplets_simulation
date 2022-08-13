@@ -1,6 +1,7 @@
 module unstructuredGrid_m
     use unstructuredElement_m
     use kdTree_m
+    use vector_m
     implicit none
     private
 
@@ -590,10 +591,10 @@ module unstructuredGrid_m
 
     integer function nearest_cell(self, X)
         !!最近傍セル探索
+        !!note        :
+        !!厳密探索かkdツリー探索かはここで切り替える
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         real, intent(in) :: X(3)
-
-        !厳密かkdツリーかはここで切り替え
 
         ! nearest_cell = self%nearest_search_exact(X)
         nearest_cell = self%nearest_search_kdTree(X)
@@ -612,7 +613,8 @@ module unstructuredGrid_m
 
         !$omp parallel do
         DO II = 1,IIMX
-            distance(II) = norm2(self%CELLs(II)%center(:) - X(:))
+            ! distance(II) = norm2(self%CELLs(II)%center(:) - X(:))
+            distance(II) = norm2_squared(self%CELLs(II)%center(:) - X(:))
         END DO
         !$omp end parallel do 
         
@@ -723,7 +725,6 @@ module unstructuredGrid_m
     end function
                      
     subroutine boundary_setting(self, first) !全境界面に対して外向き法線ベクトルと重心を算出
-        use vector_m
         class(FlowFieldUnstructuredGrid) self
         logical, intent(in) :: first
         integer II, JJ, JB, IIMX, JBMX, nodeID(3)
@@ -776,7 +777,6 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine adhesionCheckOnBound(self, position, radius, cellID, stat)
-        use vector_m
         class(FlowFieldUnstructuredGrid) self
         double precision, intent(in) :: position(3), radius
         integer, intent(in) :: cellID
@@ -826,7 +826,6 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine output_STL(self, fname)
-        use vector_m
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: fname
         integer n_unit, JB, nodeID(3)
