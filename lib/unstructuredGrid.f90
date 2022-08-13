@@ -591,10 +591,10 @@ module unstructuredGrid_m
 
     integer function nearest_cell(self, X)
         !!最近傍セル探索
-        !!note        :
-        !!厳密探索かkdツリー探索かはここで切り替える
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         real, intent(in) :: X(3)
+
+        !!@note 厳密探索かkdツリー探索かはここで切り替える
 
         ! nearest_cell = self%nearest_search_exact(X)
         nearest_cell = self%nearest_search_kdTree(X)
