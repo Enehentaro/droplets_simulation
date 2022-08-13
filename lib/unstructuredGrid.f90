@@ -47,7 +47,7 @@ module unstructuredGrid_m
         procedure, public ::  get_num_nearerSearchFalse, get_nearerSearchFalseRate
 
         procedure AdjacencySolvingProcess
-        procedure read_adjacency, read_boundaries, solve_adacencyOnFlowFieldUnstructuredGrid
+        procedure read_adjacency, read_boundaries, solve_adjacencyOnFlowFieldUnstructuredGrid
         procedure output_boundaries, output_adjacency, boundary_setting, output_STL
         
         procedure setup_kdTree
@@ -159,7 +159,7 @@ module unstructuredGrid_m
             call self%read_boundaries(dir)
 
         else
-            call self%solve_adacencyOnFlowFieldUnstructuredGrid()
+            call self%solve_adjacencyOnFlowFieldUnstructuredGrid()
             call self%output_boundaries(dir)
             call self%output_adjacency(dir)
 
@@ -871,7 +871,7 @@ module unstructuredGrid_m
 
     end subroutine
 
-    subroutine solve_adacencyOnFlowFieldUnstructuredGrid(self)
+    subroutine solve_adjacencyOnFlowFieldUnstructuredGrid(self)
         use adjacencySolver_m
         class(FlowFieldUnstructuredGrid) self
         integer i, j, num_adjacent, num_boundFace
