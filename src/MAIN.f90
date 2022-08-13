@@ -1,34 +1,35 @@
-!---------------------------------------------------------------------------------
-!> Simulation of Virus-Laden Droplets Behavior in AFDET
-!> by KIYOTA OGURA(2021/1/10)
-!> updated by YUTA IDA
-!---------------------------------------------------------------------------------
 PROGRAM MAIN
-      !$ use omp_lib
-      use dropletMotionSimulation
-      use caseName_m
-      implicit none
-      character(50), allocatable :: caseName(:)
-      integer caseID
+    !!author: KIYOTA OGURA, Y.Ida
+    !!Simulation of Virus-Laden Droplets Behavior in AFDET
+    !!summary:
+    !!- 流れ場ファイルを読み込み、その流れ場における飛沫の運動をシミュレーション
+    !!- 並列化には対応していない. 
 
-      !$OMP parallel
-            !$OMP single
-            !$ print *, "Num threads:", omp_get_num_threads()
-            !$OMP end single
-      !$OMP end parallel
+    !$ use omp_lib
+    use dropletMotionSimulation
+    use caseName_m
+    implicit none
+    character(50), allocatable :: caseName(:)
+    integer caseID
 
-      call read_basicSettingOnSimulation
+    !$OMP parallel
+        !$OMP single
+        !$ print *, "Num threads:", omp_get_num_threads()
+        !$OMP end single
+    !$OMP end parallel
 
-      call case_check(caseName) 
+    call read_basicSettingOnSimulation
 
-      DO caseID = 1, size(caseName)                        !実行数だけループ（通常1回）
-            
-            call simulationSetUp(trim(caseName(caseID)))          !SetUp
+    call case_check(caseName) 
 
-            call mainDropletLoop                !mainLoop
+    DO caseID = 1, size(caseName)                        !実行数だけループ（通常1回）
+        
+        call simulationSetUp(trim(caseName(caseID)))          !SetUp
 
-            call output_ResultSummary       !最終結果出力
-            
-      END DO
+        call mainDropletLoop                !mainLoop
+
+        call output_ResultSummary       !最終結果出力
+        
+    END DO
     
 END PROGRAM MAIN
