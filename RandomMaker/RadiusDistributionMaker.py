@@ -1,6 +1,10 @@
 import random
 
 def get_radius_list(name:str):
+    '''
+    初期半径のリストを返す。
+    引数には咳(coughing)か会話(conversation)を指定。
+    '''
     radius_list = []
 
     if name == "coughing":
@@ -21,8 +25,8 @@ def get_radius_list(name:str):
         radius_list.extend([87.5]*232)
         radius_list.extend([112.5]*151)
         radius_list.extend([187.5]*195)
-        radius_list.extend([365]*48)
-        radius_list.extend([750]*9)
+        radius_list.extend([365.]*48)
+        radius_list.extend([750.]*9)
 
     elif name == "conversation":
         radius_list.extend([0.45]*363)
@@ -35,12 +39,12 @@ def get_radius_list(name:str):
         radius_list.extend([12.5]*756)
         radius_list.extend([17.5]*453)
         radius_list.extend([22.5]*302)
-        radius_list.extend([35]*726)
+        radius_list.extend([35.]*726)
         radius_list.extend([47.5]*181)
-        radius_list.extend([75]*151)
-        radius_list.extend([125]*30)
-        radius_list.extend([250]*97)
-        radius_list.extend([425]*18)
+        radius_list.extend([75.]*151)
+        radius_list.extend([125.]*30)
+        radius_list.extend([250.]*97)
+        radius_list.extend([425.]*18)
 
     return radius_list
 

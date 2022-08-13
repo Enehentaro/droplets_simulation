@@ -1,13 +1,19 @@
 module vector_m
     implicit none
+    private
     
     interface cross_product
+        !!ベクトルの外積を返す
         module procedure cross_product_dble, cross_product_real
     end interface
 
     interface normalize_vector
+        !!単位ベクトルを返す
         module procedure normalize_vector_dble, normalize_vector_real
     end interface
+
+    public cross_product, normalize_vector
+    public norm2_squared
 
     contains
 
@@ -48,6 +54,15 @@ module vector_m
         norm = norm2(a)
 
         normalized(:) = a(:) / norm
+        
+    end function
+
+    real function norm2_squared(a)
+        !!ベクトルのL2ノルムの2乗を返す
+        !!組み込み関数norm2より約5倍速い(かも)
+        real,intent(in) :: a(3)
+
+        norm2_squared = a(1)*a(1) + a(2)*a(2) + a(3)*a(3)
         
     end function
 

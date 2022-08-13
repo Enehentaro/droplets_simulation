@@ -66,8 +66,7 @@ module kdTree_m
                 array_pre = z_origin(kdTree_%node(i)%cellID_array)
             end select
 
-            array_sorted = array_pre !←配列サイズを揃えるため
-            call heap_sort(array_pre, array_sorted)
+            array_sorted = heap_sort(array_pre)
             ! print '(*(i0, x))', array_sorted(:)%originID
             ! print '(*(g0, x))', array_sorted(:)%value
 
