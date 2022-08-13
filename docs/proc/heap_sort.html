@@ -80,7 +80,7 @@
     <div class="container">
   <div class="row">
     <h1>heap_sort
-      <small>Subroutine</small>
+      <small>Function</small>
     </h1>
     <div class="row">
   <div class="col-lg-12">
@@ -90,7 +90,7 @@
      <li><i class="fa fa-list-ol"></i>
        <a data-toggle="tooltip"
     data-placement="bottom" data-html="true"
-    title=" 2.1% of total for procedures.">18 statements</a>
+    title=" 1.4% of total for procedures.">12 statements</a>
      </li> 
     <li><i class="fa fa-code"></i><a href="../src/sort.f90"> Source File</a></li>
   </ul>
@@ -122,7 +122,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public subroutine heap_sort(array_origin, array_sorted)</h2>
+    <h2>public function heap_sort(array_origin) result(array_sorted)</h2>
     
 
     <p>ヒープソート</p>
@@ -137,15 +137,11 @@
   <td></td>  <td></td><td>::</td>
   <td><strong>array_origin</strong>(:)</td><td></td>
 </tr>
-<tr>
-  <td><span class="anchor" id="variable-array_sorted"></span>type(<a href='../type/content_t.html'>content_t</a>),</td>
-<td>intent(out)</td>
-  <td></td>  <td></td><td>::</td>
-  <td><strong>array_sorted</strong>(:)</td><td></td>
-</tr>
 </tbody>
 </table>
 
+   <h3>Return Value <small><span class="anchor" id="variable-array_sorted"></span>type(<a href='../type/content_t.html'>content_t</a>)(size(array_origin))</small></h3>
+    
     <br>
     <div class="panel panel-default">
       <div class="panel-heading">

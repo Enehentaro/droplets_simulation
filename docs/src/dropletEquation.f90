@@ -1,4 +1,5 @@
 module dropletEquation_m
+    !!飛沫の方程式モジュール
     implicit none
     private
 
@@ -25,8 +26,11 @@ module dropletEquation_m
     !>蒸発方程式や運動方程式を解くメソッドを保持
     type, public, extends(BasicParameter) :: DropletEquationSolver
         private
-        double precision coeff_drdt !半径変化率の無次元係数
-        double precision G(3)      !無次元重力加速度
+        double precision coeff_drdt
+            !!半径変化率の無次元係数
+
+        double precision G(3)
+            !!無次元重力加速度
 
         real T, RH
         double precision minimumRadiusRatio
@@ -42,6 +46,8 @@ module dropletEquation_m
         procedure solve_motionEquation
 
     end type
+
+    ! double precision :: Re_d_min = 1.d2
 
     public BasicParameter_, DropletEquationSolver_
 
@@ -133,6 +139,7 @@ module dropletEquation_m
     end subroutine
 
     subroutine set_minimumRadiusRatio(self)
+        !!湿度から、飛沫の下限半径と初期半径との比を求める。
         use simpleFile_reader
         class(DropletEquationSolver) self
         integer i, i_max
@@ -152,6 +159,7 @@ module dropletEquation_m
     end subroutine
 
     double precision function get_radiusLowerLimitRatio(self)
+        !!下限半径と初期半径との比を返す
         class(DropletEquationSolver), intent(in) :: self
 
         ! if(RH < 64) then
@@ -170,11 +178,12 @@ module dropletEquation_m
 
     end function
 
-    !蒸発方程式。半径変化量を返す。
     function evaporationEquation(self, radius) result(dr)
+        !!蒸発方程式。半径変化量を返す。
         class(DropletEquationSolver) self
         double precision, intent(in) :: radius
         double precision drdt1,dr1, drdt2,dr2, r_approxi, dr
+
         !========= 飛沫半径の変化の計算　(2次精度ルンゲクッタ（ホイン）) ===========================
     
         drdt1 = self%coeff_drdt / radius
@@ -190,6 +199,8 @@ module dropletEquation_m
     end function
 
     subroutine solve_motionEquation(self, X, V, Va, R)
+        !!運動方程式を解く。
+        !!引数の値が上書きされる。
         class(DropletEquationSolver) self
         double precision, intent(inout) :: X(3), V(3)
         double precision, intent(in) :: Va(3), R
@@ -204,6 +215,7 @@ module dropletEquation_m
     end subroutine
 
     function next_velocity(self, vel_d, vel_a, radius_d) result(vel_d_next)
+        !!次時刻における速度を計算
         class(DropletEquationSolver) self
         double precision, intent(in) :: vel_d(3), vel_a(3), radius_d
         double precision speed_r, Re_d, CD, C, vel_d_next(3)
@@ -225,6 +237,7 @@ module dropletEquation_m
     end function
 
     function next_position(self, x1, v1, v2) result(x2)
+        !!次時刻における位置を返す
         class(DropletEquationSolver) self
         double precision, intent(in) :: x1(3), v1(3), v2(3)
         double precision x2(3)
@@ -234,12 +247,17 @@ module dropletEquation_m
     end function
 
     double precision function DragCoefficient(Re_d)
+        !!球体の抗力係数を返す
         double precision, intent(in) :: Re_d
+            !!球体周りのレイノルズ数
         double precision Re_d_
 
-        Re_d_ = Re_d + 1.d-9  !ゼロ割回避のため、小さな値を足す
+        ! Re_d_min = min(Re_d_min, Re_d)
+        Re_d_ = Re_d + 1.d-16
+        !ゼロ割回避のため、小さな値を足す
+        !この値は経験則でしかないが、球体周りのレイノルズ数の最小値はだいたい10のマイナス9乗
 
-        DragCoefficient = (24.0d0/Re_d_)*(1.0d0 + 0.15d0*(Re_d_**0.687d0))
+        DragCoefficient = (24.d0/Re_d_)*(1.d0 + 0.15d0*(Re_d_**0.687d0))
 
     end function
     
@@ -291,6 +309,8 @@ module dropletEquation_m
                 error stop
 
         end select
+
+        ! print*, 'Re_d_min=', Re_d_min
 
     end function
 

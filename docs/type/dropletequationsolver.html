@@ -391,12 +391,12 @@
 <tr>
   <td><span class="anchor" id="variable-coeff_drdt"></span>double precision,</td>
 <td>public</td>  <td></td><td>::</td>
-  <td><strong>coeff_drdt</strong></td><td></td><td></td><td></td>
+  <td><strong>coeff_drdt</strong></td><td></td><td></td><td><p>半径変化率の無次元係数</p></td>
 </tr>
 <tr>
   <td><span class="anchor" id="variable-g"></span>double precision,</td>
 <td>public</td>  <td></td><td>::</td>
-  <td><strong>G</strong>(3)</td><td></td><td></td><td></td>
+  <td><strong>G</strong>(3)</td><td></td><td></td><td><p>無次元重力加速度</p></td>
 </tr>
 <tr>
   <td><span class="anchor" id="variable-t"></span>real,</td>
@@ -507,7 +507,8 @@
   <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-evaporationeq"></span><h3>procedure, public :: <strong>evaporationEq</strong>  => evaporationEquation   </h3></div>
   <ul class="list-group">
       <li class="list-group-item">
-          <h3>private function evaporationEquation(self, radius) result(dr)</h3>    
+          <h3>private function evaporationEquation(self, radius) result(dr)</h3><p>蒸発方程式。半径変化量を返す。</p>
+    
 <h4>Arguments</h4>      <table class="table table-striped varlist">
 <thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
 <tbody>
