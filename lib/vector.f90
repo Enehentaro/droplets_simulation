@@ -1,4 +1,5 @@
 module vector_m
+    !!ベクトル（3要素の配列）を扱うモジュール
     implicit none
     private
     

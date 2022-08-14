@@ -1,9 +1,8 @@
 PROGRAM MAIN
     !!author: KIYOTA OGURA, Y.Ida
-    !!Simulation of Virus-Laden Droplets Behavior in AFDET
     !!summary:
     !!- 流れ場ファイルを読み込み、その流れ場における飛沫の運動をシミュレーション
-    !!- 並列化には対応していない. 
+    !!- 並列化には対応していない
 
     !$ use omp_lib
     use dropletMotionSimulation

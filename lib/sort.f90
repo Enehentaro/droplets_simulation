@@ -1,6 +1,6 @@
 module sort_m
-    !!ソートモジュール
     !!author: Shohei Kishi, Hikaru Konishi, Tatsuya Miyoshi, Yuta Ida
+    !!ソートモジュール
     implicit none
     private
 
