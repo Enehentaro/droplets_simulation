@@ -90,7 +90,7 @@
      <li><i class="fa fa-list-ol"></i>
        <a data-toggle="tooltip"
     data-placement="bottom" data-html="true"
-    title=" 3.9% of total for modules and submodules.">178 statements</a>
+    title=" 3.9% of total for modules and submodules.">181 statements</a>
      </li> 
     <li><i class="fa fa-code"></i><a href="../src/adjacency_solver.f90"> Source File</a></li>
   </ul>
@@ -115,10 +115,10 @@
   <h3>Contents</h3>
  
 <div class="panel panel-primary">
-  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#types-0">Derived Types</a></h3></div>
-  <div id="types-0" class="panel-collapse collapse">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-0">Variables</a></h3></div>
+  <div id="vars-0" class="panel-collapse collapse">
     <div class="list-group">
-      <a class="list-group-item" href="../module/adjacencysolver_m.html#type-adjacencysolver">AdjacencySolver</a>
+      <a class="list-group-item" href="../module/adjacencysolver_m.html#variable-none">None</a>
     </div>
   </div>
 </div>
@@ -145,10 +145,10 @@
       <h3>Contents</h3>
  
 <div class="panel panel-primary">
-  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#types-1">Derived Types</a></h3></div>
-  <div id="types-1" class="panel-collapse collapse">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-1">Variables</a></h3></div>
+  <div id="vars-1" class="panel-collapse collapse">
     <div class="list-group">
-      <a class="list-group-item" href="../module/adjacencysolver_m.html#type-adjacencysolver">AdjacencySolver</a>
+      <a class="list-group-item" href="../module/adjacencysolver_m.html#variable-none">None</a>
     </div>
   </div>
 </div>
@@ -165,55 +165,31 @@
     <br class="visible-xs visible-sm hidden-md">
 
 
-    
-    
-
-    
     <section>
-     <h2>Derived Types</h2>
-     <div class="panel panel-default">
-  <div class="panel-heading codesum"><span class="anchor" id="type-adjacencysolver"></span><h3>type, public :: <a href='../type/adjacencysolver.html'>AdjacencySolver</a>  </h3></div>
-  <div class="panel-body">
-    <p>隣接関係ソルバークラス</p>
-     <h4>Components</h4>
+    <h2>Variables</h2>
     <table class="table table-striped varlist">
 <thead><tr><th>Type</th><th>Visibility</th><th>Attributes</th><th></th><th>Name</th><th></th><th>Initial</th><th></th></thead>
 <tbody>
 <tr>
-  <td><span class="anchor" id="variable-set_halffacearray"></span>procedure,</td>
-<td>public</td>  <td></td><td>::</td>
-  <td><strong>set_halfFaceArray</strong></td><td></td><td></td><td></td>
-</tr>
-<tr>
-  <td><span class="anchor" id="variable-check_halfface"></span>procedure,</td>
-<td>public</td>  <td></td><td>::</td>
-  <td><strong>check_halfFace</strong></td><td></td><td></td><td></td>
-</tr>
-<tr>
-  <td><span class="anchor" id="variable-find_boundfaceinformation"></span>procedure,</td>
-<td>public</td>  <td></td><td>::</td>
-  <td><strong>find_boundFaceInformation</strong></td><td></td><td></td><td></td>
-</tr>
-<tr>
-  <td><span class="anchor" id="variable-find_adjacentcellid"></span>procedure,</td>
-<td>public</td>  <td></td><td>::</td>
-  <td><strong>find_adjacentCellID</strong></td><td></td><td></td><td></td>
+  <td><span class="anchor" id="variable-none"></span>integer,</td>
+<td>public,</td>  <td>parameter</td><td>::</td>
+  <td><strong>None</strong></td><td> =</td><td>-1</td><td><p>整数配列中の欠損値の表現</p></td>
 </tr>
 </tbody>
 </table>
 
-     
-  </div>
-</div>
-
     </section>
-  <br>
+    <br>
+    
+    
+
+    
     
 
     <section>
     <h2>Subroutines</h2>
       <div class="panel panel-default">
-  <div class="panel-heading codesum"><span class="anchor" id="proc-solve_boundaryandadjacency"></span><h3>public subroutine <a href='../proc/solve_boundaryandadjacency.html'>solve_BoundaryAndAdjacency</a>(cellVertices, cellBoundFaces, boundFaceVertices, adjacentCellArray)</h3></div>
+  <div class="panel-heading codesum"><span class="anchor" id="proc-solve_boundaryandadjacency"></span><h3>public subroutine <a href='../proc/solve_boundaryandadjacency.html'>solve_BoundaryAndAdjacency</a>(cellVertices, cellBoundFaces, triangleBoundFaceVertices, adjacentCellIDArray)</h3></div>
   <div class="panel-body">
        
 <p>境界面と隣接関係を、それぞれ配列に格納</p>
@@ -225,25 +201,25 @@
   <td><span class="anchor" ></span>integer,</td>
 <td>intent(in)</td>
   <td></td>  <td></td><td>::</td>
-  <td><strong>cellVertices</strong>(:,:)</td><td></td>
-</tr>
-<tr>
-  <td><span class="anchor" ></span>integer</td>
-<td></td>
-  <td></td>  <td></td><td>::</td>
-  <td><strong>cellBoundFaces</strong>(:,:)</td><td></td>
+  <td><strong>cellVertices</strong>(:,:)</td><td><p>セルの頂点ID配列（頂点ID,セルID）</p></td>
 </tr>
 <tr>
   <td><span class="anchor" ></span>integer,</td>
 <td>intent(out),</td>
   <td></td>  <td>allocatable</td><td>::</td>
-  <td><strong>boundFaceVertices</strong>(:,:)</td><td></td>
+  <td><strong>cellBoundFaces</strong>(:,:)</td><td><p>セルの境界面ID配列（境界面ID,セルID）</p></td>
 </tr>
 <tr>
-  <td><span class="anchor" ></span>integer</td>
-<td></td>
-  <td></td>  <td></td><td>::</td>
-  <td><strong>adjacentCellArray</strong>(:,:)</td><td></td>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(out),</td>
+  <td></td>  <td>allocatable</td><td>::</td>
+  <td><strong>triangleBoundFaceVertices</strong>(:,:)</td><td><p>境界面の頂点ID配列（頂点ID,境界面ID）</p></td>
+</tr>
+<tr>
+  <td><span class="anchor" ></span>integer,</td>
+<td>intent(out),</td>
+  <td></td>  <td>allocatable</td><td>::</td>
+  <td><strong>adjacentCellIDArray</strong>(:,:)</td><td><p>セルの隣接セルID配列（隣接セルID,セルID）</p></td>
 </tr>
 </tbody>
 </table>

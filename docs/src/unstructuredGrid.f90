@@ -47,7 +47,7 @@ module unstructuredGrid_m
         procedure, public ::  get_num_nearerSearchFalse, get_nearerSearchFalseRate
 
         procedure AdjacencySolvingProcess
-        procedure read_adjacency, read_boundaries, solve_adacencyOnFlowFieldUnstructuredGrid
+        procedure read_adjacency, read_boundaries, solve_adjacencyOnFlowFieldUnstructuredGrid
         procedure output_boundaries, output_adjacency, boundary_setting, output_STL
         
         procedure setup_kdTree
@@ -159,7 +159,7 @@ module unstructuredGrid_m
             call self%read_boundaries(dir)
 
         else
-            call self%solve_adacencyOnFlowFieldUnstructuredGrid()
+            call self%solve_adjacencyOnFlowFieldUnstructuredGrid()
             call self%output_boundaries(dir)
             call self%output_adjacency(dir)
 
@@ -871,36 +871,41 @@ module unstructuredGrid_m
 
     end subroutine
 
-    subroutine solve_adacencyOnFlowFieldUnstructuredGrid(self)
+    subroutine solve_adjacencyOnFlowFieldUnstructuredGrid(self)
+        !!境界面と隣接関係を解決し、結果を非構造格子クラスに格納
         use adjacencySolver_m
         class(FlowFieldUnstructuredGrid) self
-        integer i, j, num_adjacent, num_boundFace
-        integer, parameter :: max_vertex=6, max_adjacent=4, max_boundFace=4
+        integer i, j, num_adjacent, num_boundFace, num_node
+        integer max_vertex
         integer, allocatable :: cellVertices(:,:)
-        integer, allocatable :: adjacentCellArray(:,:)
+        integer, allocatable :: adjacentCellIDArray(:,:)
         integer, allocatable :: cellBoundFaces(:,:)
-        integer, allocatable :: boundFaceVertices(:,:)
+        integer, allocatable :: triangleBoundFaceVertices(:,:)
 
-        allocate(cellVertices(max_vertex, size(self%CELLs)), source=0)
+        max_vertex = 0
         do i = 1, size(self%CELLs)
-            cellVertices(1:size(self%CELLs(i)%nodeID(:)), i) = self%CELLs(i)%nodeID(:)
+            num_node = size(self%CELLs(i)%nodeID(:))
+            max_vertex = max(max_vertex, num_node)  !頂点数の最大値の探索
+        end do
+        allocate(cellVertices(max_vertex, size(self%CELLs)), source=None)
+        do i = 1, size(self%CELLs)
+            num_node = size(self%CELLs(i)%nodeID(:))
+            cellVertices(1:num_node, i) = self%CELLs(i)%nodeID(1:num_node)
         end do
 
-        allocate(cellBoundFaces(max_adjacent, size(self%CELLs)), source=0)
-        allocate(adjacentCellArray(max_boundFace, size(self%CELLs)), source=0)
-        call solve_BoundaryAndAdjacency(cellVertices, cellBoundFaces, boundFaceVertices, adjacentCellArray)
+        call solve_BoundaryAndAdjacency(cellVertices, cellBoundFaces, triangleBoundFaceVertices, adjacentCellIDArray)
 
-        allocate(self%BoundFACEs(size(boundFaceVertices, dim=2)))
+        allocate(self%BoundFACEs(size(triangleBoundFaceVertices, dim=2)))
         do j = 1, size(self%BoundFACEs)
-            self%BoundFACEs(j)%nodeID = boundFaceVertices(:,j)
+            self%BoundFACEs(j)%nodeID = triangleBoundFaceVertices(:,j)
         end do
 
         do i = 1, size(self%CELLs)
-            num_boundFace = max_boundFace - count(cellBoundFaces(:,i)==0)
+            num_boundFace = count(cellBoundFaces(:,i)/=None)
             self%CELLs(i)%boundFaceID = cellBoundFaces(1:num_boundFace, i)
 
-            num_adjacent = max_adjacent - count(adjacentCellArray(:,i)==0)
-            self%CELLs(i)%adjacentCellID = adjacentCellArray(1:num_adjacent, i)
+            num_adjacent = count(adjacentCellIDArray(:,i)/=None)
+            self%CELLs(i)%adjacentCellID = adjacentCellIDArray(1:num_adjacent, i)
         end do
 
     end subroutine

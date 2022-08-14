@@ -1,4 +1,6 @@
 module sort_m
+    !!author: Shohei Kishi, Hikaru Konishi, Tatsuya Miyoshi, Yuta Ida
+    !!ソートモジュール
     implicit none
     private
 
@@ -24,6 +26,7 @@ module sort_m
 
     public heap_sort
     public real2content
+    public merge_sort
 
     contains
 
@@ -186,5 +189,53 @@ module sort_m
         end do
 
     end function
+
+    function merge_sort(array_origin) result(array_sorted)
+        !!マージソート
+        type(content_t), intent(in) :: array_origin(:)
+        type(content_t) array_sorted(size(array_origin))
+
+        array_sorted = array_origin
+        call merge_sort_recursive(array_sorted, 1, size(array_sorted))
+
+    end function
+
+    recursive subroutine merge_sort_recursive(array, left_end, right_end)
+        type(content_t), intent(inout) :: array(:)
+        integer, intent(in) :: left_end, right_end
+        type(content_t), allocatable :: work_array(:)
+        integer mid, i,j,k
+
+        allocate(work_array(size(array)))
+        
+        if(left_end < right_end) then
+            mid = int((left_end + right_end)/2)
+            call merge_sort_recursive(array, left_end, mid)
+            call merge_sort_recursive(array, mid+1, right_end)
+            
+            do i = mid, left_end, -1
+                work_array(i) = array(i)           
+            end do
+
+            do j = mid+1, right_end
+                work_array(right_end-(j-(mid+1))) = array(j)
+            end do
+
+            i = left_end
+            j = right_end
+
+            do k = left_end, right_end
+                if(work_array(i)%value < work_array(j)%value) then
+                    array(k) = work_array(i)
+                    i = i + 1
+                else
+                    array(k) = work_array(j)
+                    j = j - 1
+                end if
+            end do
+
+        end if
+
+    end subroutine
 
 end module sort_m

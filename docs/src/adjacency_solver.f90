@@ -3,27 +3,25 @@ MODULE adjacencySolver_m
     IMPLICIT NONE
     private
 
+    integer, parameter, public :: None = -1
+        !!整数配列中の欠損値の表現
+
+    integer, parameter :: max_adjacent=5  !想定される最大隣接セル数（プリズムは最大５つのセルと隣接）
+    integer, parameter :: max_boundFace=4  !想定される最大境界面数（プリズムの５つの面のうち、すべて境界面はありえないので４）
+
     !>ハーフフェイス構造体
     type halfFace_t
-        integer :: nodeID(4) = 0, pairID = 0, ID_sum = 0, ownerID(2) = -1
-    end type halfFace_t
-
-    !>隣接関係ソルバークラス
-    type AdjacencySolver
-        type(halfFace_t), allocatable :: halfFaceArray(:)
-        integer num_BoundFace
-        contains
-        procedure set_halfFaceArray,  check_halfFace, find_boundFaceInformation, find_adjacentCellID
+        integer :: nodeID(4) = None, pairID = None, ID_sum = 0, ownerCellID(2) = None
     end type
 
     public solve_BoundaryAndAdjacency
 
     contains
 
-    subroutine set_halfFaceArray(self, cellVertices)
+    function get_halfFaceArray(cellVertices) result(halfFaceArray)
         !!各セルごとにハーフフェイスをカウントし、配列に格納
-        class(AdjacencySolver) self
         integer, intent(in) :: cellVertices(:,:)
+        type(halfFace_t), allocatable :: halfFaceArray(:)
         INTEGER II,JJJ, j, n, JJJMX, num_halfFace, num_cell
         integer, allocatable :: n_type(:)
         integer, parameter :: num_halfFace_perCELL(3) = [4,5,5]
@@ -40,12 +38,12 @@ MODULE adjacencySolver_m
 
         allocate(n_type(num_cell))
         DO II = 1, num_cell
-            select case(count(cellVertices(:,II)==0))
-                case(2) !ゼロの数が2個：頂点数が4個：テトラ
+            select case(count(cellVertices(:,II)/=None))
+                case(4) !頂点数が4個：テトラ
                     n_type(II) = 1
-                case(0) !ゼロの数が0個：頂点数が6個：プリズム
+                case(6) !頂点数が6個：プリズム
                     n_type(II) = 2
-                case(1) !ゼロの数が1個：頂点数が5個：ピラミッド
+                case(5) !頂点数が5個：ピラミッド
                     n_type(II) = 3
                 case default
                     print*, '**CEll VERTICES ERROR**'
@@ -55,7 +53,7 @@ MODULE adjacencySolver_m
 
         num_halfFace = count(n_type==1)*4 + count(n_type==2)*5 + count(n_type==3)*5   !半面数：テトラ数×4 (+プリズム数×5 +ピラミッド数×5)
     
-        allocate(self%halfFaceArray(num_halfFace))
+        allocate(halfFaceArray(num_halfFace))
             
         JJJ = 0
         
@@ -66,15 +64,15 @@ MODULE adjacencySolver_m
                 JJJ = JJJ + 1
                 do n = 1, 3
                     ! print*, JJJ, n, j, n_type, II
-                    self%halfFaceArray(JJJ)%nodeID(n) = cellVertices(IDtrans(n, j, n_type(II)), II)
+                    halfFaceArray(JJJ)%nodeID(n) = cellVertices(IDtrans(n, j, n_type(II)), II)
 
                 end do
                 if(IDtrans(4, j, n_type(II)) > 0) then
-                    self%halfFaceArray(JJJ)%nodeID(4) = cellVertices(IDtrans(4, j, n_type(II)), II) !四角形面なら4点目を代入
+                    halfFaceArray(JJJ)%nodeID(4) = cellVertices(IDtrans(4, j, n_type(II)), II) !四角形面なら4点目を代入
 
                 end if
-                self%halfFaceArray(JJJ)%ownerID(1) = II
-                self%halfFaceArray(JJJ)%ID_sum = sum(self%halfFaceArray(JJJ)%nodeID(:))
+                halfFaceArray(JJJ)%ownerCellID(1) = II
+                halfFaceArray(JJJ)%ID_sum = sum(halfFaceArray(JJJ)%nodeID(:))
 
             end do
             
@@ -89,15 +87,16 @@ MODULE adjacencySolver_m
             error stop
         end if
             
-    end subroutine
+    end function
     
-    subroutine check_halfFace(self)
+    subroutine check_halfFace(halfFaceArray, num_BoundFaces)
         !!各ハーフフェイスに対して相方を探す
         !!相方がみつかれば、相方のセルと隣接していることがわかる
         !!相方のいないハーフフェイスは境界面
         use terminalControler_m
-        class(AdjacencySolver) self
-        INTEGER match, width, numNode, faceID, groupID,num_group, maxID_sum, num_halfFace, num_BoundFaces
+        type(halfFace_t), intent(inout) :: halfFaceArray(:)
+        integer, intent(out) :: num_BoundFaces
+        INTEGER match, width, numNode, faceID, groupID,num_group, maxID_sum, num_halfFace
         integer checkCounter, faceCounter, i,j, faceID1,faceID2, num_face, k,l
         integer, allocatable :: faceID_array(:)
         type faceGroup_t
@@ -110,13 +109,13 @@ MODULE adjacencySolver_m
 
         print*,'START-FACE CHECK!' !同一面の探索
         
-        num_halfFace = size(self%halfFaceArray)
+        num_halfFace = size(halfFaceArray)
         num_group = num_halfFace/5000 + 1   !面グループ数（1グループ数に約5000枚面が入るようにする）（この値は経験則）
     
         allocate(faceGroup(num_group))
         allocate(faceID_array(num_halfFace), source=0)
 
-        maxID_sum = maxval(self%halfFaceArray(:)%ID_sum)
+        maxID_sum = maxval(halfFaceArray(:)%ID_sum)
         width = maxID_sum/num_group + 1   !1グループの幅（最大節点番号和を面グループ数で割る）
           
         checkCounter = 0
@@ -126,8 +125,8 @@ MODULE adjacencySolver_m
             faceID_array(:) = 0
             faceCounter = 1
             do faceID = 1, num_halfFace
-                if((self%halfFaceArray(faceID)%ID_sum > (groupID-1)*width) &
-                    .and.(self%halfFaceArray(faceID)%ID_sum <= groupID*width)) then
+                if((halfFaceArray(faceID)%ID_sum > (groupID-1)*width) &
+                    .and.(halfFaceArray(faceID)%ID_sum <= groupID*width)) then
 
                     faceID_array(faceCounter) = faceID
                     faceCounter = faceCounter + 1
@@ -152,8 +151,8 @@ MODULE adjacencySolver_m
 
             face1 : do i = 1, num_face
                 faceID1 = faceGroup(groupID)%faceID(i)
-                if(self%halfFaceArray(faceID1)%ownerID(2) >= 0) cycle face1 !面共有セル探索が済んでいる場合スキップ
-                if(self%halfFaceArray(faceID1)%nodeID(4) <= 0) then
+                if(halfFaceArray(faceID1)%ownerCellID(2) /= None) cycle face1 !面共有セル探索が済んでいる場合スキップ
+                if(halfFaceArray(faceID1)%nodeID(4) == None) then
                     numNode = 3   !三角形面
                 else
                     numNode = 4   !四角形面
@@ -161,13 +160,13 @@ MODULE adjacencySolver_m
         
                 face2 :do j = i+1, num_face
                     faceID2 = faceGroup(groupID)%faceID(j)
-                    if(self%halfFaceArray(faceID2)%ownerID(2) >= 0) cycle face2 !面共有セル探索が済んでいる場合スキップ
-                    if((numNode==3).and.(self%halfFaceArray(faceID2)%nodeID(4) > 0)) cycle face2 !三角形面を注目中に四角形面が現れればスキップ
+                    if(halfFaceArray(faceID2)%ownerCellID(2) /= None) cycle face2 !面共有セル探索が済んでいる場合スキップ
+                    if((numNode == 3) .and. (halfFaceArray(faceID2)%nodeID(4) /= None)) cycle face2 !三角形面を注目中に四角形面が現れればスキップ
             
                     match = 0
                     do k = 1, numNode
                         do l = 1, numNode
-                            if(self%halfFaceArray(faceID1)%nodeID(k) == self%halfFaceArray(faceID2)%nodeID(l)) match = match + 1  !点IDが一致すればカウント
+                            if(halfFaceArray(faceID1)%nodeID(k) == halfFaceArray(faceID2)%nodeID(l)) match = match + 1  !点IDが一致すればカウント
                         end do
                     end do
             
@@ -175,14 +174,14 @@ MODULE adjacencySolver_m
             
                     !ここまでくれば同一の2面発見
             
-                    self%halfFaceArray(faceID1)%ownerID(2) = self%halfFaceArray(faceID2)%ownerID(1)
-                    self%halfFaceArray(faceID2)%ownerID(2) = self%halfFaceArray(faceID1)%ownerID(1)
+                    halfFaceArray(faceID1)%ownerCellID(2) = halfFaceArray(faceID2)%ownerCellID(1)
+                    halfFaceArray(faceID2)%ownerCellID(2) = halfFaceArray(faceID1)%ownerCellID(1)
             
                     cycle face1 !共有セルが見つかったので次の面へ
         
                 end do face2
         
-                self%halfFaceArray(faceID1)%ownerID(2) = 0 !共有セルが見つからなかった:境界面
+                ! halfFaceArray(faceID1)%ownerCellID(2) = 0 !共有セルが見つからなかった:境界面
                 num_BoundFaces = num_BoundFaces + 1  !境界面カウント
         
             end do face1
@@ -192,8 +191,6 @@ MODULE adjacencySolver_m
         
         print*,'# Boundary Face =', num_BoundFaces
 
-        self%num_BoundFace = num_BoundFaces
-
         print*,'END-FACE CHECK!'
 
         ! call cpu_time(time2)
@@ -202,66 +199,84 @@ MODULE adjacencySolver_m
 
     END subroutine check_halfFace
 
-    subroutine find_boundFaceInformation(self, cellBoundFaces, boundFaceVertices)
+    subroutine find_boundFaceInformation(halfFaceArray, num_boundFace, cellBoundFaces, triangleBoundFaceVertices)
         !!境界面のみを取り出し、配列に格納
-        class(AdjacencySolver) self
+        !!四角形面であったとしても、最初の3点だけ抽出し、三角形面にして返す
+        type(halfFace_t), intent(in) :: halfFaceArray(:)
+        integer, intent(in) :: num_boundFace
         INTEGER II,JJJ,JB
-        integer cellBoundFaces(:,:)
+        integer, intent(out) :: cellBoundFaces(:,:)
         integer, allocatable :: NoB(:)
-        integer, allocatable, intent(out) :: boundFaceVertices(:,:)
+        integer, allocatable, intent(out) :: triangleBoundFaceVertices(:,:)
 
         allocate(NoB(size(cellBoundFaces, dim=2)), source=0)
-        allocate(boundFaceVertices(3, self%num_BoundFace), source=0)
+        allocate(triangleBoundFaceVertices(3, num_BoundFace))
 
         JB = 0
-        DO JJJ = 1, size(self%halfFaceArray)
-            IF (self%halfFaceArray(JJJ)%ownerID(2) /= 0) cycle   !境界面以外はスルー
+        DO JJJ = 1, size(halfFaceArray)
+            if (halfFaceArray(JJJ)%ownerCellID(2) /= None) cycle   !第二オーナーが存在：境界面ではない：スルー
+
             JB = JB +1
-            II = self%halfFaceArray(JJJ)%ownerID(1) !JJが属する要素番号
+            II = halfFaceArray(JJJ)%ownerCellID(1) !JJが属する要素番号
             NoB(II) = NoB(II) +1 !IIが所有する境界面数カウント
             cellBoundFaces(NoB(II),II) = JB !IIが所有する境界面番号
 
-            boundFaceVertices(1:3, JB) = self%halfFaceArray(JJJ)%nodeID(1:3)
+            triangleBoundFaceVertices(1:3, JB) = halfFaceArray(JJJ)%nodeID(1:3) !四角形面であったとしても、最初の3点だけ抽出
 
         END DO
        
     end subroutine
         
-    subroutine find_adjacentCellID(self, adjacentCellArray)
+    subroutine find_adjacentCellID(halfFaceArray, adjacentCellIDArray)
         !!隣接関係を配列に格納
-        class(AdjacencySolver) self
-        integer II, JJJ, adjacentCellArray(:,:)
+        type(halfFace_t), intent(in) :: halfFaceArray(:)
+        integer, intent(out) :: adjacentCellIDArray(:,:)
+        integer II, JJJ
         integer, allocatable :: num_adjacent(:)
 
-        allocate(num_adjacent(size(adjacentCellArray)), source=0)
+        allocate(num_adjacent(size(adjacentCellIDArray)), source=0)
 
-        do JJJ = 1, size(self%halfFaceArray)
-            if (self%halfFaceArray(JJJ)%ownerID(2) <= 0) cycle !境界面はスルー
+        do JJJ = 1, size(halfFaceArray)
+            if (halfFaceArray(JJJ)%ownerCellID(2) == None) cycle !第２オーナーが未発見のハーフフェイス：境界面：スルー
 
-            II = self%halfFaceArray(JJJ)%ownerID(1)
+            II = halfFaceArray(JJJ)%ownerCellID(1)
             num_adjacent(II) = num_adjacent(II) + 1
-            adjacentCellArray(num_adjacent(II), II) = self%halfFaceArray(JJJ)%ownerID(2)
+            adjacentCellIDArray(num_adjacent(II), II) = halfFaceArray(JJJ)%ownerCellID(2)
 
         end do
 
     end subroutine
 
-    subroutine solve_BoundaryAndAdjacency(cellVertices, cellBoundFaces, boundFaceVertices, adjacentCellArray)
+    subroutine solve_BoundaryAndAdjacency(cellVertices, cellBoundFaces, triangleBoundFaceVertices, adjacentCellIDArray)
         !!境界面と隣接関係を、それぞれ配列に格納
+
         integer, intent(in) :: cellVertices(:,:)
-        integer cellBoundFaces(:,:), adjacentCellArray(:,:)
-        integer, allocatable, intent(out) :: boundFaceVertices(:,:)
-        type(AdjacencySolver) AS
+            !!セルの頂点ID配列（頂点ID,セルID）
+
+        integer, allocatable, intent(out) :: cellBoundFaces(:,:)
+            !!セルの境界面ID配列（境界面ID,セルID）
+
+        integer, allocatable, intent(out) :: triangleBoundFaceVertices(:,:)
+            !!境界面の頂点ID配列（頂点ID,境界面ID）
+
+        integer, allocatable, intent(out) :: adjacentCellIDArray(:,:)
+            !!セルの隣接セルID配列（隣接セルID,セルID）
+
+        type(halfFace_t), allocatable :: halfFaceArray(:)
+        integer num_cell, num_BoundFace
 
         print*, '~ SolvingAdjacency is Required. ~'
 
-        call AS%set_halfFaceArray(cellVertices)    !面情報のセッティング
+        halfFaceArray = get_halfFaceArray(cellVertices)    !ハーフフェイスのセッティング
 
-        call AS%check_halfFace()  !同一面のチェック
+        call check_halfFace(halfFaceArray, num_BoundFace)  !同一面のチェック
 
-        call AS%find_boundFaceInformation(cellBoundFaces, boundFaceVertices)   !境界面情報
+        num_cell = size(cellVertices, dim=2)
+        allocate(cellBoundFaces(max_boundFace, num_cell), source=None)
+        allocate(adjacentCellIDArray(max_adjacent, num_cell), source=None)
+        call find_boundFaceInformation(halfFaceArray, num_BoundFace, cellBoundFaces, triangleBoundFaceVertices)   !境界面情報
 
-        call AS%find_adjacentCellID(adjacentCellArray)   !セル隣接情報
+        call find_adjacentCellID(halfFaceArray, adjacentCellIDArray)   !セル隣接情報
 
     end subroutine
 

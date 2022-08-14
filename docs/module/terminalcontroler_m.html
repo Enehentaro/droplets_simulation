@@ -138,16 +138,17 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>Example</h2>
-<div class="codehilite"><pre><span></span><code><span class="k">program </span><span class="n">main</span><span class="w"></span>
+    <p>ターミナル操作を扱うモジュール</p>
+<h2>Example</h2>
+<div class="codehilite"><pre><span></span><code><span class="k">program </span><span class="n">sample</span><span class="w"></span>
 <span class="w">   </span><span class="k">use </span><span class="n">terminalControler_m</span><span class="w"></span>
 
-<span class="w">   </span><span class="k">call </span><span class="n">set_formatTC</span><span class="p">(</span><span class="s1">&#39;(&quot;CHECK halfFace [ #group : &quot;,i6,&quot; / &quot;,i6,&quot; ]&quot;)&#39;</span><span class="p">)</span><span class="w"></span>
-<span class="w">   </span><span class="k">do </span><span class="n">groupID</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">num_group</span><span class="w"></span>
-<span class="w">       </span><span class="k">call </span><span class="n">print_progress</span><span class="p">([</span><span class="n">groupID</span><span class="p">,</span><span class="w"> </span><span class="n">num_group</span><span class="p">])</span><span class="w"></span>
+<span class="w">   </span><span class="k">call </span><span class="n">set_formatTC</span><span class="p">(</span><span class="s1">&#39;(&quot;PROGRESS [ #progress : &quot;,i6,&quot; / &quot;,i6,&quot; ]&quot;)&#39;</span><span class="p">)</span><span class="w"></span>
+<span class="w">   </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">imax</span><span class="w"></span>
+<span class="w">       </span><span class="k">call </span><span class="n">print_progress</span><span class="p">([</span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">imax</span><span class="p">])</span><span class="w"></span>
 <span class="w">   </span><span class="k">end do</span>
 
-<span class="k">end program </span><span class="n">main</span><span class="w"></span>
+<span class="k">end program </span><span class="n">sample</span><span class="w"></span>
 </code></pre></div>
 <br>    
         <div class="panel panel-default">
@@ -316,6 +317,9 @@
    <h2>Interfaces</h2>
      <div class="panel panel-default">
   <div class="panel-heading codesum"><span class="anchor" id="interface-print_progress"></span><h3>public interface <a href='../interface/print_progress.html'>print_progress</a>  </h3></div>
+  <div class="panel-body">
+    <p>進捗を表示する</p>
+  </div>
   <ul class="list-group">
     <li class="list-group-item">
     <h3>private subroutine print_progress_int(array)</h3>    
@@ -372,7 +376,10 @@
       <div class="panel panel-default">
   <div class="panel-heading codesum"><span class="anchor" id="proc-set_formattc"></span><h3>public subroutine <a href='../proc/set_formattc.html'>set_formatTC</a>(fmt_str)</h3></div>
   <div class="panel-body">
-           
+       
+<p>進捗を表示するためのフォーマットを指定
+指定時に改行が起こる（あとで戻ってくるため）</p>
+    
 <h4>Arguments</h4>      <table class="table table-striped varlist">
 <thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
 <tbody>
