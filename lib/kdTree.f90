@@ -69,8 +69,7 @@ module kdTree_m
             ! print '(*(i0, x))', array_sorted(:)%originID
             ! print '(*(g0, x))', array_sorted(:)%value
 
-            call merge_sort(array_pre,1,size(array_pre))
-            array_sorted = array_pre
+            array_sorted = merge_sort(array_pre)
 
             centerID = int(size(array_sorted)/2)+1
             kdTree_%node(i)%cell_ID = array_sorted(centerID)%originID     !ヒープソート結果の中央値
