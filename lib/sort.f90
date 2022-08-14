@@ -190,7 +190,17 @@ module sort_m
 
     end function
 
-    recursive subroutine merge_sort(array, left_end, right_end)
+    function merge_sort(array_origin) result(array_sorted)
+        !!マージソート
+        type(content_t), intent(in) :: array_origin(:)
+        type(content_t) array_sorted(size(array_origin))
+
+        array_sorted = array_origin
+        call merge_sort_recursive(array_sorted, 1, size(array_sorted))
+
+    end function
+
+    recursive subroutine merge_sort_recursive(array, left_end, right_end)
         type(content_t), intent(inout) :: array(:)
         integer, intent(in) :: left_end, right_end
         type(content_t), allocatable :: work_array(:)
@@ -200,8 +210,8 @@ module sort_m
         
         if(left_end < right_end) then
             mid = int((left_end + right_end)/2)
-            call merge_sort(array, left_end, mid)
-            call merge_sort(array, mid+1, right_end)
+            call merge_sort_recursive(array, left_end, mid)
+            call merge_sort_recursive(array, mid+1, right_end)
             
             do i = mid, left_end, -1
                 work_array(i) = array(i)           
