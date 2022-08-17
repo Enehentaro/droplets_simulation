@@ -22,57 +22,79 @@ MODULE adjacencySolver_m
         !!各セルごとにハーフフェイスをカウントし、配列に格納
         integer, intent(in) :: cellVertices(:,:)
         type(halfFace_t), allocatable :: halfFaceArray(:)
-        INTEGER II,JJJ, j, n, JJJMX, num_halfFace, num_cell
-        integer, allocatable :: n_type(:)
-        integer, parameter :: num_halfFace_perCELL(3) = [4,5,5]
-        integer, parameter :: IDtrans(4,5,3) = reshape([ &
-                                1,2,3,0, 2,3,4,0, 3,4,1,0, 4,1,2,0, 0,0,0,0,&                       !テトラ
-                                1,2,3,0, 4,5,6,0, 1,2,4,5, 2,3,5,6, 3,1,6,4,&                       !プリズム
-                                5,1,2,0, 5,2,3,0, 5,3,4,0, 5,4,1,0, 1,2,3,4 ], shape(IDtrans))      !ピラミッド
-                                                        
+        INTEGER II,JJJ, j, n, JJJMX, num_halfFace, num_cell, vertexID
+        character(5), allocatable :: cellType(:)
+        character(5), parameter :: tetra='tetra', prism='prism', pyramid='pyrmd'    !キーワード
+        integer, allocatable :: halfFeceVerticesID(:,:)
+
+        !以下、各ハーフフェイス頂点の順番を表す配列。
+        !例えば、テトラは４つの頂点から構成されており、ハーフフェイスも４つ。
+        !１つ目のハーフフェイスは、４つの頂点のうち 1,2,3 番目のものを頂点とする。
+        !以降、 2,3,4, 3,4,1, 4,1,2 番目を頂点とし、４つのハーフフェイスの定義が完了する。
+        integer, parameter :: halfFeceVerticesID_inTetra(3,4) = reshape(&
+            [1,2,3, 2,3,4, 3,4,1, 4,1,2], shape(halfFeceVerticesID_inTetra))
+
+        integer, parameter :: halfFeceVerticesID_inPrism(4,5) = reshape(&
+            [1,2,3,None, 4,5,6,None, 1,2,4,5, 2,3,5,6, 3,1,6,4], shape(halfFeceVerticesID_inPrism))
+
+        integer, parameter :: halfFeceVerticesID_inPyramid(4,5) = reshape(&
+            [5,1,2,None, 5,2,3,None, 5,3,4,None, 5,4,1,None, 1,2,3,4], shape(halfFeceVerticesID_inPyramid))
+                           
+            
         num_cell = size(cellVertices, dim=2)    !cellVerticesには、(6ｘセル数)の配列が入ってきている想定
         if(num_cell <= 0) then
             print*, 'ERROR_num_cells', num_cell
             error stop
         end if
 
-        allocate(n_type(num_cell))
+        allocate(cellType(num_cell))
         DO II = 1, num_cell
-            select case(count(cellVertices(:,II)/=None))
-                case(4) !頂点数が4個：テトラ
-                    n_type(II) = 1
-                case(6) !頂点数が6個：プリズム
-                    n_type(II) = 2
-                case(5) !頂点数が5個：ピラミッド
-                    n_type(II) = 3
-                case default
-                    print*, '**CEll VERTICES ERROR**'
-                    error stop
+            select case(count(cellVertices(:,II)/=None))    !頂点数（配列内のNoneでない要素数）で場合分け
+            case(4) !頂点数が4個：テトラ
+                cellType(II) = tetra
+
+            case(6) !頂点数が6個：プリズム
+                cellType(II) = prism
+
+            case(5) !頂点数が5個：ピラミッド
+                cellType(II) = pyramid
+
+            case default
+                print*, '**CEll VERTICES ERROR**'
+                error stop
             end select
         END DO
 
-        num_halfFace = count(n_type==1)*4 + count(n_type==2)*5 + count(n_type==3)*5   !半面数：テトラ数×4 (+プリズム数×5 +ピラミッド数×5)
+        num_halfFace = count(cellType==tetra)*4 + count(cellType==prism)*5 + count(cellType==pyramid)*5
+            !半面数：テトラ数×4 (+プリズム数×5 +ピラミッド数×5)
     
         allocate(halfFaceArray(num_halfFace))
             
         JJJ = 0
         
         DO II = 1, num_cell
+            select case(cellType(II))
+            case(tetra)
+                halfFeceVerticesID = halfFeceVerticesID_inTetra
+            case(prism)
+                halfFeceVerticesID = halfFeceVerticesID_inPrism
+            case(pyramid)
+                halfFeceVerticesID = halfFeceVerticesID_inPyramid
+            end select
 
+            !halfFeceVerticesIDは２次元配列で、（頂点、ハーフフェイス）
 
-            do j = 1, num_halfFace_perCELL(n_type(II))
-                JJJ = JJJ + 1
-                do n = 1, 3
-                    ! print*, JJJ, n, j, n_type, II
-                    halfFaceArray(JJJ)%nodeID(n) = cellVertices(IDtrans(n, j, n_type(II)), II)
+            do j = 1, size(halfFeceVerticesID, dim=2)!ハーフフェイスの数だけループ
+                JJJ = JJJ + 1   !ハーフフェイスの絶対IDをカウント
 
+                do n = 1, size(halfFeceVerticesID, dim=1)!あるハーフフェイスにおける頂点数だけループ
+                    vertexID = halfFeceVerticesID(n,j)
+                    if(vertexID/=None) halfFaceArray(JJJ)%nodeID(n) = cellVertices(vertexID, II)
                 end do
-                if(IDtrans(4, j, n_type(II)) > 0) then
-                    halfFaceArray(JJJ)%nodeID(4) = cellVertices(IDtrans(4, j, n_type(II)), II) !四角形面なら4点目を代入
 
-                end if
-                halfFaceArray(JJJ)%ownerCellID(1) = II
-                halfFaceArray(JJJ)%ID_sum = sum(halfFaceArray(JJJ)%nodeID(:))
+                halfFaceArray(JJJ)%ownerCellID(1) = II  !現在はセルIIに着目しているので、自明ながらオーナーセルもII
+
+                halfFaceArray(JJJ)%ID_sum = sum(halfFaceArray(JJJ)%nodeID(:))   !IDの和を格納（あとで使う）
 
             end do
             
