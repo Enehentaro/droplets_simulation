@@ -70,6 +70,8 @@ module array_m
     end function
 
     function FisherYates_shuffle(a) result(b)
+        !!フィッシャー・イェーツのシャッフル
+        !!参考：https://programming-place.net/ppp/contents/algorithm/other/002.html
         real, intent(in) :: a(:)
         real b(size(a)), rand, tmp
         integer i, index

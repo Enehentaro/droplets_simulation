@@ -1,4 +1,5 @@
 module vector_m
+    !!ベクトル（3要素の配列）を扱うモジュール
     implicit none
     private
     
@@ -13,6 +14,7 @@ module vector_m
     end interface
 
     public cross_product, normalize_vector
+    public norm2_squared
 
     contains
 
@@ -53,6 +55,15 @@ module vector_m
         norm = norm2(a)
 
         normalized(:) = a(:) / norm
+        
+    end function
+
+    real function norm2_squared(a)
+        !!ベクトルのL2ノルムの2乗を返す
+        !!組み込み関数norm2より約5倍速い(かも)
+        real,intent(in) :: a(3)
+
+        norm2_squared = a(1)*a(1) + a(2)*a(2) + a(3)*a(3)
         
     end function
 

@@ -1,6 +1,7 @@
 module unstructuredGrid_m
     use unstructuredElement_m
     use kdTree_m
+    use vector_m
     implicit none
     private
 
@@ -593,7 +594,7 @@ module unstructuredGrid_m
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         real, intent(in) :: X(3)
 
-        !厳密かkdツリーかはここで切り替え
+        !!@note 厳密探索かkdツリー探索かはここで切り替える
 
         ! nearest_cell = self%nearest_search_exact(X)
         nearest_cell = self%nearest_search_kdTree(X)
@@ -612,7 +613,8 @@ module unstructuredGrid_m
 
         !$omp parallel do
         DO II = 1,IIMX
-            distance(II) = norm2(self%CELLs(II)%center(:) - X(:))
+            ! distance(II) = norm2(self%CELLs(II)%center(:) - X(:))
+            distance(II) = norm2_squared(self%CELLs(II)%center(:) - X(:))
         END DO
         !$omp end parallel do 
         
@@ -723,7 +725,6 @@ module unstructuredGrid_m
     end function
                      
     subroutine boundary_setting(self, first) !全境界面に対して外向き法線ベクトルと重心を算出
-        use vector_m
         class(FlowFieldUnstructuredGrid) self
         logical, intent(in) :: first
         integer II, JJ, JB, IIMX, JBMX, nodeID(3)
@@ -776,7 +777,6 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine adhesionCheckOnBound(self, position, radius, cellID, stat)
-        use vector_m
         class(FlowFieldUnstructuredGrid) self
         double precision, intent(in) :: position(3), radius
         integer, intent(in) :: cellID
@@ -826,7 +826,6 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine output_STL(self, fname)
-        use vector_m
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: fname
         integer n_unit, JB, nodeID(3)
@@ -873,35 +872,40 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine solve_adjacencyOnFlowFieldUnstructuredGrid(self)
+        !!境界面と隣接関係を解決し、結果を非構造格子クラスに格納
         use adjacencySolver_m
         class(FlowFieldUnstructuredGrid) self
-        integer i, j, num_adjacent, num_boundFace
-        integer, parameter :: max_vertex=6, max_adjacent=4, max_boundFace=4
+        integer i, j, num_adjacent, num_boundFace, num_node
+        integer max_vertex
         integer, allocatable :: cellVertices(:,:)
-        integer, allocatable :: adjacentCellArray(:,:)
+        integer, allocatable :: adjacentCellIDArray(:,:)
         integer, allocatable :: cellBoundFaces(:,:)
-        integer, allocatable :: boundFaceVertices(:,:)
+        integer, allocatable :: triangleBoundFaceVertices(:,:)
 
-        allocate(cellVertices(max_vertex, size(self%CELLs)), source=0)
+        max_vertex = 0
         do i = 1, size(self%CELLs)
-            cellVertices(1:size(self%CELLs(i)%nodeID(:)), i) = self%CELLs(i)%nodeID(:)
+            num_node = size(self%CELLs(i)%nodeID(:))
+            max_vertex = max(max_vertex, num_node)  !頂点数の最大値の探索
+        end do
+        allocate(cellVertices(max_vertex, size(self%CELLs)), source=None)
+        do i = 1, size(self%CELLs)
+            num_node = size(self%CELLs(i)%nodeID(:))
+            cellVertices(1:num_node, i) = self%CELLs(i)%nodeID(1:num_node)
         end do
 
-        allocate(cellBoundFaces(max_adjacent, size(self%CELLs)), source=0)
-        allocate(adjacentCellArray(max_boundFace, size(self%CELLs)), source=0)
-        call solve_BoundaryAndAdjacency(cellVertices, cellBoundFaces, boundFaceVertices, adjacentCellArray)
+        call solve_BoundaryAndAdjacency(cellVertices, cellBoundFaces, triangleBoundFaceVertices, adjacentCellIDArray)
 
-        allocate(self%BoundFACEs(size(boundFaceVertices, dim=2)))
+        allocate(self%BoundFACEs(size(triangleBoundFaceVertices, dim=2)))
         do j = 1, size(self%BoundFACEs)
-            self%BoundFACEs(j)%nodeID = boundFaceVertices(:,j)
+            self%BoundFACEs(j)%nodeID = triangleBoundFaceVertices(:,j)
         end do
 
         do i = 1, size(self%CELLs)
-            num_boundFace = max_boundFace - count(cellBoundFaces(:,i)==0)
+            num_boundFace = count(cellBoundFaces(:,i)/=None)
             self%CELLs(i)%boundFaceID = cellBoundFaces(1:num_boundFace, i)
 
-            num_adjacent = max_adjacent - count(adjacentCellArray(:,i)==0)
-            self%CELLs(i)%adjacentCellID = adjacentCellArray(1:num_adjacent, i)
+            num_adjacent = count(adjacentCellIDArray(:,i)/=None)
+            self%CELLs(i)%adjacentCellID = adjacentCellIDArray(1:num_adjacent, i)
         end do
 
     end subroutine
