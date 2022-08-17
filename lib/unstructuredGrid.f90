@@ -577,8 +577,9 @@ module unstructuredGrid_m
         if(.not.existance) then
 
             self%kd_tree = kdTree_(xyz)
-            call self%kd_tree%saveAsTXT(FNAME)
-            print*, 'OUTPUT kdtree:', FNAME
+            ! 時間かかるので、今は使わない
+            ! call self%kd_tree%saveAsTXT(FNAME)
+            ! print*, 'OUTPUT kdtree:', FNAME
 
         else
 

@@ -25,20 +25,20 @@ MODULE adjacencySolver_m
         INTEGER II,JJJ, j, n, JJJMX, num_halfFace, num_cell, vertexID
         character(5), allocatable :: cellType(:)
         character(5), parameter :: tetra='tetra', prism='prism', pyramid='pyrmd'    !キーワード
-        integer, allocatable :: halfFeceVerticesID(:,:)
+        integer, allocatable :: halfFaceVerticesID(:,:)
 
         !以下、各ハーフフェイス頂点の順番を表す配列。
         !例えば、テトラは４つの頂点から構成されており、ハーフフェイスも４つ。
         !１つ目のハーフフェイスは、４つの頂点のうち 1,2,3 番目のものを頂点とする。
         !以降、 2,3,4, 3,4,1, 4,1,2 番目を頂点とし、４つのハーフフェイスの定義が完了する。
-        integer, parameter :: halfFeceVerticesID_inTetra(3,4) = reshape(&
-            [1,2,3, 2,3,4, 3,4,1, 4,1,2], shape(halfFeceVerticesID_inTetra))
+        integer, parameter :: halfFaceVerticesID_inTetra(3,4) = reshape(&
+            [1,2,3, 2,3,4, 3,4,1, 4,1,2], shape(halfFaceVerticesID_inTetra))
 
-        integer, parameter :: halfFeceVerticesID_inPrism(4,5) = reshape(&
-            [1,2,3,None, 4,5,6,None, 1,2,4,5, 2,3,5,6, 3,1,6,4], shape(halfFeceVerticesID_inPrism))
+        integer, parameter :: halfFaceVerticesID_inPrism(4,5) = reshape(&
+            [1,2,3,None, 4,5,6,None, 1,2,4,5, 2,3,5,6, 3,1,6,4], shape(halfFaceVerticesID_inPrism))
 
-        integer, parameter :: halfFeceVerticesID_inPyramid(4,5) = reshape(&
-            [5,1,2,None, 5,2,3,None, 5,3,4,None, 5,4,1,None, 1,2,3,4], shape(halfFeceVerticesID_inPyramid))
+        integer, parameter :: halfFaceVerticesID_inPyramid(4,5) = reshape(&
+            [5,1,2,None, 5,2,3,None, 5,3,4,None, 5,4,1,None, 1,2,3,4], shape(halfFaceVerticesID_inPyramid))
                            
             
         num_cell = size(cellVertices, dim=2)    !cellVerticesには、(6ｘセル数)の配列が入ってきている想定
@@ -75,20 +75,20 @@ MODULE adjacencySolver_m
         DO II = 1, num_cell
             select case(cellType(II))
             case(tetra)
-                halfFeceVerticesID = halfFeceVerticesID_inTetra
+                halfFaceVerticesID = halfFaceVerticesID_inTetra
             case(prism)
-                halfFeceVerticesID = halfFeceVerticesID_inPrism
+                halfFaceVerticesID = halfFaceVerticesID_inPrism
             case(pyramid)
-                halfFeceVerticesID = halfFeceVerticesID_inPyramid
+                halfFaceVerticesID = halfFaceVerticesID_inPyramid
             end select
 
-            !halfFeceVerticesIDは２次元配列で、（頂点、ハーフフェイス）
+            !halfFaceVerticesIDは２次元配列で、（頂点、ハーフフェイス）
 
-            do j = 1, size(halfFeceVerticesID, dim=2)!ハーフフェイスの数だけループ
+            do j = 1, size(halfFaceVerticesID, dim=2)!ハーフフェイスの数だけループ
                 JJJ = JJJ + 1   !ハーフフェイスの絶対IDをカウント
 
-                do n = 1, size(halfFeceVerticesID, dim=1)!あるハーフフェイスにおける頂点数だけループ
-                    vertexID = halfFeceVerticesID(n,j)
+                do n = 1, size(halfFaceVerticesID, dim=1)!あるハーフフェイスにおける頂点数だけループ
+                    vertexID = halfFaceVerticesID(n,j)
                     if(vertexID/=None) halfFaceArray(JJJ)%nodeID(n) = cellVertices(vertexID, II)
                 end do
 
