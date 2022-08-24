@@ -1,7 +1,7 @@
 program translate
     !!author: Hikaru Konishi
-    !!全飛沫に対して、基準点をbefore_dGroupCenter、回転軸をrotation_axisとして、phi[rad]だけ回転させる。
-    !!回転後の飛沫中心をafter_dGroupCenter(3)に移動させる。
+    !!全飛沫に対して、基準点をbefore_dGroupCenter、回転軸をrotation_axisとして、反時計回りにphi[rad]だけ回転させる。
+    !!回転後の飛沫中心をafter_dGroupCenterに平行移動させる。
     use virusDroplet_m
     use caseName_m
     implicit none
