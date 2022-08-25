@@ -151,7 +151,7 @@ module VTK_operator_m
             write(n_unit,'(A,I0,2X,I0)') 'CELLS ', IIMX, IITOTAL
             DO II = 1, IIMX
                 nodeID = self%cell_array(II)%nodeID(:) - 1
-                write(n_unit, '(*(g0:,","))') size(nodeID), nodeID(:)
+                write(n_unit, '(*(g0:," "))') size(nodeID), nodeID(:)
             END DO
             write(n_unit,'()')
 
