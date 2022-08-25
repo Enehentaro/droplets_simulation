@@ -23,13 +23,11 @@ program translate
     call case_check(caseName_array)
     caseName = trim(caseName_array(1))
 
-    print*, trim(caseName//"/initial_translate_setting.nml")
-
-    ! initial_translate_setting.nmlの読み込み
+    ! optionディレクトリのinitial_translate_setting.nmlの読み込み
     namelist /initial_translate_setting/ fnameDecoration, before_dGroupCenter, after_dGroupCenter, &
                                             rotation_axis, rotation_angle_deg
 
-    open(newunit = n_unit, file = caseName//"/initial_translate_setting.nml")
+    open(newunit = n_unit, file = "option"//"/initial_translate_setting.nml")
         read(n_unit, nml=initial_translate_setting)
     close(n_unit)
 
@@ -49,15 +47,8 @@ program translate
 
     ! 回転軸の切り替え
     select case(rotation_axis)
-        case("z")
-            ! 回転を行うループ
-            do i = 1, size(dGroup%droplet)      
-                vec(1) = dGroup%droplet(i)%position(1) - before_dGroupCenter(1)
-                vec(2) = dGroup%droplet(i)%position(2) - before_dGroupCenter(2)
-                dGroup%droplet(i)%position(1) = cos(phi)*vec(1) - sin(phi)*vec(2) + before_dGroupCenter(1)
-                dGroup%droplet(i)%position(2) = sin(phi)*vec(1) + cos(phi)*vec(2) + before_dGroupCenter(2)
-            end do
         case("x")
+            ! 回転を行うループ
             do i = 1, size(dGroup%droplet)
                 vec(2) = dGroup%droplet(i)%position(2) - before_dGroupCenter(2)
                 vec(3) = dGroup%droplet(i)%position(3) - before_dGroupCenter(3)
@@ -70,6 +61,13 @@ program translate
                 vec(1) = dGroup%droplet(i)%position(1) - before_dGroupCenter(1)
                 dGroup%droplet(i)%position(3) = cos(phi)*vec(3) - sin(phi)*vec(1) + before_dGroupCenter(3)
                 dGroup%droplet(i)%position(1) = sin(phi)*vec(3) + cos(phi)*vec(1) + before_dGroupCenter(1)
+            end do
+        case("z")
+            do i = 1, size(dGroup%droplet)      
+                vec(1) = dGroup%droplet(i)%position(1) - before_dGroupCenter(1)
+                vec(2) = dGroup%droplet(i)%position(2) - before_dGroupCenter(2)
+                dGroup%droplet(i)%position(1) = cos(phi)*vec(1) - sin(phi)*vec(2) + before_dGroupCenter(1)
+                dGroup%droplet(i)%position(2) = sin(phi)*vec(1) + cos(phi)*vec(2) + before_dGroupCenter(2)
             end do
     end select
 
