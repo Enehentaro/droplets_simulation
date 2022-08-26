@@ -7,6 +7,9 @@ program translate
     implicit none
     type(dropletGroup) dGroup
 
+    namelist /initial_translate_setting/ fnameDecoration, before_dGroupCenter, after_dGroupCenter, &
+    rotation_axis, rotation_angle_deg
+
     character(50), allocatable :: caseName_array(:)
     character(:), allocatable :: caseName
     character(15) fnameDecoration
@@ -24,9 +27,6 @@ program translate
     caseName = trim(caseName_array(1))
 
     ! optionディレクトリのinitial_translate_setting.nmlの読み込み
-    namelist /initial_translate_setting/ fnameDecoration, before_dGroupCenter, after_dGroupCenter, &
-                                            rotation_axis, rotation_angle_deg
-
     open(newunit = n_unit, file = "option"//"/initial_translate_setting.nml")
         read(n_unit, nml=initial_translate_setting)
     close(n_unit)
