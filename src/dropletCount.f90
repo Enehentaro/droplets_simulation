@@ -14,29 +14,30 @@ program dropletCount
     integer, allocatable :: id_array(:)
     type(DropletGroup) mainDroplet, dGroup
     type(conditionValue_t) condVal
-    ! type(BasicParameter) baseParam
+    integer outputInterval
     type(boxCounter), allocatable :: box_array(:)
+    real deltaTime
 
     type boxResult_t
         integer num_droplet
         real volume, RoI
     end type
-    type(boxResult_t), allocatable :: bResult(:)
+
+    print*, 'outputInterval = ?'
+    read(5, *) outputInterval
 
     call case_check(caseName_array)
-    !print*, 'caseName = ?'
-    !read(5, *) caseName
 
     do caseID = 1, size(caseName_array)
         caseName = trim(caseName_array(caseID))
         condVal = read_condition(caseName)
-        ! baseParam = BasicParameter_(condVal%dt, condVal%L, condVal%U)
+        deltaTime = real(condVal%dt * condVal%L/condVal%U)
     
         box_array = get_box_array(caseName, condVal%num_drop)
     
         num_box = size(box_array)
     
-        do n = 0, condVal%stepEnd, condVal%outputInterval
+        do n = 10000, condVal%stepEnd, condVal%outputInterval
             if(n==0) then
                 fname = caseName//'/backup/InitialDistribution.bu'
             else
@@ -53,34 +54,50 @@ program dropletCount
                 id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
                 call box_array(i_box)%add_Flag(id_array)
             end do
+
+            if(mod(n, outputInterval) == 0 .and. n /= 0) call calcRoI_and_output
     
         end do
-    
+
+    end do
+
+    contains
+
+    subroutine calcRoI_and_output
+        real erapsedTime
+            !! 経過時間 [ h ]
+
+        type(boxResult_t), allocatable :: bResult(:)
+
+        character(255) :: filename, filename2
+
+        erapsedTime = n*deltaTime / 3600.   ! 経過時間 [ h ]
+        
         allocate(bResult(num_box))
 
         do i_box = 1, num_box
             id_array = box_array(i_box)%get_FlagID()
             dGroup%droplet = mainDroplet%droplet(id_array)
             bResult(i_box)%num_droplet = size(dGroup%droplet)
-            bResult(i_box)%volume = real(dGroup%totalVolume() *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
+            bResult(i_box)%volume = real(dGroup%totalVolume() * condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
         end do
 
-        bResult(:)%RoI = RateOfInfection(bResult(:)%volume) !1分間あたりの感染確率を計算
+        bResult(:)%RoI = RateOfInfection(bResult(:)%volume, erapsedTime) !1分間あたりの感染確率を計算
     
-        call output_countCSV
-        call output_boxVTK
+        write(filename, '("'//caseName//'/BoxCount/box_", i0, ".csv")') n
+        call output_countCSV(trim(filename), bResult)
 
-        deallocate(bResult)
+        write(filename, '("'//caseName//'/BoxCount/Box_", i0, ".vtk")') n
+        write(filename2, '("'//caseName//'/BoxCount/Box_c_", i0, ".vtk")') n
+        call output_boxVTK(trim(filename), trim(filename2), bResult)
 
-    end do
+    end subroutine
 
-    contains
-
-    subroutine output_countCSV
+    subroutine output_countCSV(csvFName, bResult)
+        character(*), intent(in) :: csvFName
+        type(boxResult_t), intent(in) :: bResult(:)
         integer n_unit, i
-        character(:), allocatable :: csvFName
 
-        csvFName = caseName//'/BoxCount.csv'
         print*, 'output: ', csvFName
 
         open(newunit=n_unit, file=csvFName, status='replace')
@@ -95,15 +112,18 @@ program dropletCount
 
     end subroutine
 
-    subroutine output_boxVTK
+    subroutine output_boxVTK(vtkFName, vtkFName2, bResult)
         use VTK_operator_m
+        character(*), intent(in) :: vtkFName
+        character(*), intent(in) :: vtkFName2
+        type(boxResult_t), intent(in) :: bResult(:)
         type(UnstructuredGrid_inVTK) mesh
         integer i, j, k
         real, parameter :: trans(3,8) = reshape([ &
                                             0.0,0.0,0.0, 1.0,0.0,0.0, 0.0,1.0,0.0, 1.0,1.0,0.0, &
                                             0.0,0.0,1.0, 1.0,0.0,1.0, 0.0,1.0,1.0, 1.0,1.0,1.0], shape(trans))
                                         
-        real, allocatable :: xyz(:,:)
+        real, allocatable :: xyz(:,:), num_droplet(:)
         integer, allocatable :: vertices(:,:), types(:)
                                         
         allocate(xyz(3, num_box*8))
@@ -122,15 +142,30 @@ program dropletCount
 
         mesh = UnstructuredGrid_inVTK_(xyz, vertices, types)
 
-        call mesh%output(caseName//'/Box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
+        call mesh%output(vtkFName, cellScalar=bResult(:)%RoI, scalarName='RoI')
+
+        num_droplet = real(bResult(:)%num_droplet)
+        call mesh%output(vtkFName2, cellScalar=num_droplet, scalarName='Droplets')
 
     end subroutine
 
-    !>1分間あたりの感染確率を計算（もとの資料では1時間あたりの感染確率だが、1分間あたりに換算）
-    elemental real function RateOfInfection(volume)
-        real, intent(in) :: volume
+    
+    elemental real function RateOfInfection(volume, erapsedTime)
+        !! 感染確率を計算（もとの資料では1時間あたりの感染確率だが、経過時間あたりに換算）
 
-        RateOfInfection = 1. - exp(-volume*1.e7 / (900./60.))
+        real, intent(in) :: volume
+            !! 飛沫総体積 [ ml ]
+
+        real, intent(in) :: erapsedTime
+            !! 経過時間 [ h ]
+
+        real, parameter :: n_v = 1.e7
+            !! ウイルス密度 [ viral copy / ml ]
+
+        real, parameter :: N_0 = 900.
+            !! 感染に至るウイルス量の指標 [ viral copy / h ]
+
+        RateOfInfection = 1. - exp( - volume * n_v / (N_0 * erapsedTime))
 
     end function
 
