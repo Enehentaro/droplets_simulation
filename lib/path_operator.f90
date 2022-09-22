@@ -25,6 +25,27 @@ module path_operator_m
         end select
 
     end subroutine make_directory
+
+    ! subroutine remove_directory(path)
+    !     character(*), intent(in) :: path
+    !     character(:), allocatable :: directory
+    
+    !     select case(trim(OS))
+    !         case ('Linux')  !for_Linux
+    !             directory =  replace_str(path, from='\', to='/' )
+    !             call system('rm -r -v '//directory)
+
+    !         ! case ('Windows')  !for_Windows
+    !         !     directory =  replace_str(path, from='/', to='\' )
+    !         !     call system('md '//directory)
+
+    !         case default
+    !             print*, 'OS ERROR : ', OS
+    !             error stop
+                
+    !     end select
+
+    ! end subroutine
     
     subroutine get_DirFromPath(path, directory, filename)
         character(*), intent(in) :: path

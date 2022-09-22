@@ -7,37 +7,53 @@ program dropletCount
     ! use dropletEquation_m
     use boxCounter_m
     use caseName_m
+    use simpleFile_reader
+    use path_operator_m
     implicit none
-    integer n, i_box, num_box, caseID
+    integer n, i_box, num_box, caseID, startStep
+    character(255) path2caselist, outputFName
     character(50), allocatable :: caseName_array(:)
-    character(:), allocatable :: caseName, fname
+    character(:), allocatable :: caseName, fname, path2mainDir
     integer, allocatable :: id_array(:)
     type(DropletGroup) mainDroplet, dGroup
     type(conditionValue_t) condVal
-    integer outputInterval
+    ! integer outputInterval
     type(boxCounter), allocatable :: box_array(:)
     real deltaTime
+    double precision min_cdn(3), max_cdn(3)
 
     type boxResult_t
         integer num_droplet
         real volume, RoI
     end type
 
-    print*, 'outputInterval = ?'
-    read(5, *) outputInterval
+    type(boxResult_t), allocatable :: results(:)
 
-    call case_check(caseName_array)
+    print*, 'path2caselist = ?'
+    read(5, '(A)') path2caselist
+
+    print*, 'startStep = ?'
+    read(5, *) startStep
+
+    print*, 'outputFName = ?'
+    read(5, '(A)') outputFName
+
+    call get_DirFromPath(trim(path2caselist), path2mainDir)
+    ! call case_check(caseName_array)
+    call read_textRecord(trim(path2caselist), caseName_array)
+
+    allocate(results(size(caseName_array)))
 
     do caseID = 1, size(caseName_array)
-        caseName = trim(caseName_array(caseID))
+        caseName = path2mainDir // trim(caseName_array(caseID))
         condVal = read_condition(caseName)
         deltaTime = real(condVal%dt * condVal%L/condVal%U)
     
-        box_array = get_box_array(caseName, condVal%num_drop)
+        box_array = get_box_array(path2mainDir // 'box.csv', condVal%num_drop)
     
         num_box = size(box_array)
     
-        do n = 10000, condVal%stepEnd, condVal%outputInterval
+        do n = startStep, condVal%stepEnd, condVal%outputInterval
             if(n==0) then
                 fname = caseName//'/backup/InitialDistribution.bu'
             else
@@ -51,25 +67,36 @@ program dropletCount
             mainDroplet = read_backup(fname)
     
             do i_box = 1, num_box
-                id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
+                min_cdn = dble(box_array(i_box)%min_cdn)
+                max_cdn = dble(box_array(i_box)%max_cdn)
+                id_array = mainDroplet%IDinBox(min_cdn, max_cdn)
                 call box_array(i_box)%add_Flag(id_array)
             end do
 
-            if(mod(n, outputInterval) == 0 .and. n /= 0) call calcRoI_and_output
+            ! if(mod(n, outputInterval) == 0 .and. n /= 0) call calcRoI_and_output
     
         end do
 
+        id_array = box_array(1)%get_FlagID()
+        results(caseID)%num_droplet = size(id_array)
+        dGroup%droplet = mainDroplet%droplet(id_array)
+        results(caseID)%volume = real(dGroup%totalVolume() * condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
+
     end do
+
+    call output_CSV_overCases(outputFName)
 
     contains
 
     subroutine calcRoI_and_output
+        use path_operator_m
         real erapsedTime
             !! 経過時間 [ h ]
 
         type(boxResult_t), allocatable :: bResult(:)
 
         character(255) :: filename, filename2
+        character(:), allocatable :: output_path
 
         erapsedTime = n*deltaTime / 3600.   ! 経過時間 [ h ]
         
@@ -84,12 +111,53 @@ program dropletCount
 
         bResult(:)%RoI = RateOfInfection(bResult(:)%volume, erapsedTime) !1分間あたりの感染確率を計算
     
-        write(filename, '("'//caseName//'/BoxCount/box_", i0, ".csv")') n
+        output_path = caseName//'/BoxCount_from1sec'
+        call make_directory(output_path)
+        ! call remove_directory(caseName//'/BoxCount')
+
+        write(filename, '("'//output_path//'/box_", i0, ".csv")') n
         call output_countCSV(trim(filename), bResult)
 
-        write(filename, '("'//caseName//'/BoxCount/Box_", i0, ".vtk")') n
-        write(filename2, '("'//caseName//'/BoxCount/Box_c_", i0, ".vtk")') n
+        write(filename, '("'//output_path//'/Box_", i0, ".vtk")') n
+        write(filename2, '("'//output_path//'/Box_c_", i0, ".vtk")') n
         call output_boxVTK(trim(filename), trim(filename2), bResult)
+
+    end subroutine
+
+    subroutine output_CSV_overCases(csvFName)
+        character(*), intent(in) :: csvFName
+        integer n_unit, i, iost
+        character(128) errmsg
+        logical  :: isitopened
+
+        print*, 'output: ', csvFName
+
+        ! inquire(file=csvFName, exist=isitopened)
+        ! if(isitopened) then
+        !     print*, "We are there"
+        !     call chmod(csvFName, "u+wrx")
+        !     open(newunit=n_unit, file=csvFName, status='old', action = "write")
+        ! else
+        !     print*, "not there"
+        !     call chmod(csvFName, "u+wrx")
+        !     open(newunit=n_unit, file=csvFName, status='new', action = "write")
+        ! end if
+
+        ! open(unit=220, file="~/test2.txt")
+
+        open(newunit=n_unit, file=csvFName, status='replace', action = "write")
+        ! open(newunit=n_unit, file=csvFName, status='replace', action = "write", iostat = iost, iomsg = errmsg)
+            ! if ( iost /= 0 ) then
+            !     print *, "cannot open "//csvFName, iost
+            !     error stop "ERROR :: "//trim(errmsg)
+            ! end if
+            write(n_unit, '("casename,num_drop,volume[ml]")')
+            
+            do i = 1, size(caseName_array)
+                write(n_unit,'(*(g0:,","))') trim(caseName_array(i)), results(i)%num_droplet, results(i)%volume
+            end do
+
+        close(n_unit)
 
     end subroutine
 

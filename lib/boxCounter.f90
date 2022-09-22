@@ -13,15 +13,15 @@ module boxCounter_m
 
     contains
 
-    function get_box_array(dir, num_Flag) result(new_box_array)
+    function get_box_array(filename, num_Flag) result(new_box_array)
         use simpleFile_reader
         type(boxCounter), allocatable :: new_box_array(:)
-        character(*), intent(in) :: dir
+        character(*), intent(in) :: filename
         integer, intent(in) :: num_Flag
         double precision, allocatable :: boxSize_mat(:,:)
         integer i, num_box
 
-        call read_CSV(filename=dir//'/boxList.csv', matrix=boxSize_mat, header=.true.)
+        call read_CSV(filename=filename, matrix=boxSize_mat, header=.true.)
 
         num_box = size(boxSize_mat, dim=2)
 

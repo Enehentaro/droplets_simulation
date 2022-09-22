@@ -118,7 +118,7 @@ module simpleFile_reader
         integer i, Num_unit
         integer :: num_record
 
-        print*, 'simpleREADER : ', filename
+        print*, 'read_textRecord : ', filename
 
         open (newunit=Num_unit, file=filename, status='old', action='read')
 
