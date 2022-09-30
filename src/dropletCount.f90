@@ -6,15 +6,16 @@ program dropletCount
     use conditionValue_m
     ! use dropletEquation_m
     use boxCounter_m
-    use caseName_m
+    ! use caseName_m
     use simpleFile_reader
     use path_operator_m
     implicit none
-    integer n, caseID
-    integer k, startSecond, startStep, endStep
-    character(255) path2caselist, outputFNameHead, outputFName, backupFName
+    integer n, caseID, officeID
+    integer startSecond, startStep, endStep
+    character(255) path2officelist, outputFName, backupFName
+    character(50), allocatable :: office_array(:)
     character(50), allocatable :: caseName_array(:)
-    character(:), allocatable :: caseName, path2mainDir
+    character(:), allocatable :: caseName, path2mainDir, officeName, path2caseDir
     integer, allocatable :: id_array(:)
     type(DropletGroup) mainDroplet, dGroup
     type(conditionValue_t) condVal
@@ -31,66 +32,73 @@ program dropletCount
 
     type(boxResult_t), allocatable :: result_overCases(:)
 
-    print*, 'path2caselist = ?'
-    read(5, '(A)') path2caselist
+    print*, 'path2officelist = ?'
+    read(5, '(A)') path2officelist
 
-    print*, 'startSecond = ?'
-    read(5, *) startSecond
+    call read_textRecord(trim(path2officelist), office_array)
 
-    print*, 'outputFNameHead = ?'
-    read(5, '(A)') outputFNameHead
+    call get_DirFromPath(trim(path2officelist), path2mainDir)
 
-    call get_DirFromPath(trim(path2caselist), path2mainDir)
-    ! call case_check(caseName_array)
-    call read_textRecord(trim(path2caselist), caseName_array)
-    allocate(result_overCases(size(caseName_array)))
+    do officeID = 1, size(office_array)
 
-    box_array = get_box_array(path2mainDir // 'box.csv', condVal%num_drop)
-    do caseID = 1, size(caseName_array)
-        result_overCases(caseID)%box = box_array(1)
-    end do
+        officeName = trim(office_array(officeID))
 
-    endStep = 600000
+        path2caseDir = trim(path2mainDir) // officeName // '_data_droplets/'
 
-    do k = 1, startSecond
-        startStep = startSecond * 10000
-        
+        ! call case_check(caseName_array)
+        call read_textRecord(path2caseDir//'case_list.txt', caseName_array)
+        allocate(result_overCases(size(caseName_array)))
+
+        box_array = get_box_array(path2mainDir // 'totalBox_standing.csv', 10000)
         do caseID = 1, size(caseName_array)
-            caseName = path2mainDir // trim(caseName_array(caseID))
-            condVal = read_condition(caseName)
-            deltaTime = real(condVal%dt * condVal%L/condVal%U)
-        
-            do n = endStep, startStep, -condVal%outputInterval
-                if(n==0) then
-                    backupFName = caseName//'/backup/InitialDistribution.bu'
-                else
-                    write(backupFName,'("'//caseName//'/backup/backup_", i0 , ".bu")') n
-                end if
-                print*, "caseName", caseName
-        
-                mainDroplet = read_backup(trim(backupFName))
-        
-                min_cdn = dble(result_overCases(caseID)%box%min_cdn)
-                max_cdn = dble(result_overCases(caseID)%box%max_cdn)
-                id_array = mainDroplet%IDinBox(min_cdn, max_cdn)
-                call result_overCases(caseID)%box%add_Flag(id_array)
+            result_overCases(caseID)%box = box_array(1)
+        end do
 
-                ! if(mod(n, outputInterval) == 0 .and. n /= 0) call calcRoI_and_output
-        
+        endStep = 600000
+
+        do startSecond = 10, 1, -1
+            startStep = startSecond * 10000
+            
+            do caseID = 1, size(caseName_array)
+                caseName = path2caseDir // trim(caseName_array(caseID))
+                condVal = read_condition(caseName)
+                deltaTime = real(condVal%dt * condVal%L/condVal%U)
+            
+                do n = endStep, startStep, -condVal%outputInterval
+                    if(n==0) then
+                        backupFName = caseName//'/backup/InitialDistribution.bu'
+                    else
+                        write(backupFName,'("'//caseName//'/backup/backup_", i0 , ".bu")') n
+                    end if
+            
+                    mainDroplet = read_backup(trim(backupFName))
+
+                    min_cdn = dble(result_overCases(caseID)%box%min_cdn)
+                    max_cdn = dble(result_overCases(caseID)%box%max_cdn)
+                    id_array = mainDroplet%IDinBox(min_cdn, max_cdn)
+
+                    call result_overCases(caseID)%box%add_Flag(id_array)
+
+                    ! if(mod(n, outputInterval) == 0 .and. n /= 0) call calcRoI_and_output
+
+                end do
+
+                id_array = result_overCases(caseID)%box%get_FlagID()
+                result_overCases(caseID)%num_droplet = size(id_array)
+                dGroup%droplet = mainDroplet%droplet(id_array)
+                result_overCases(caseID)%volume = real(dGroup%totalVolume() * condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
+
             end do
 
-            id_array = result_overCases(caseID)%box%get_FlagID()
-            result_overCases(caseID)%num_droplet = size(id_array)
-            dGroup%droplet = mainDroplet%droplet(id_array)
-            result_overCases(caseID)%volume = real(dGroup%totalVolume() * condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
+                
+            write(outputFName, '("count_results_standing/", A, "_from'//'", i0, "sec.csv")') officeName, startSecond
+            call output_CSV_overCases(trim(outputFName))
+
+            endStep = startStep
 
         end do
 
-            
-        write(outputFName, '("'//trim(outputFNameHead)//'_from'//'", i0, "sec.csv")') startSecond
-        call output_CSV_overCases(trim(outputFName))
-
-        endStep = startStep
+        deallocate(result_overCases)
 
     end do
 
@@ -134,9 +142,9 @@ program dropletCount
 
     subroutine output_CSV_overCases(csvFName)
         character(*), intent(in) :: csvFName
-        integer n_unit, i, iost
-        character(128) errmsg
-        logical  :: isitopened
+        integer n_unit, i!, iost
+        ! character(128) errmsg
+        ! logical  :: isitopened
 
         print*, 'output: ', csvFName
 
