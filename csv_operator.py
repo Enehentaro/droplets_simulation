@@ -45,6 +45,35 @@ def patientAverage(df:pd.DataFrame) -> pd.DataFrame:
     #     for case_remove in case_list:
     #         index_list.remove(case_remove)
 
+def plot_var():
+    for startSecond in startSecond_list:
+        fname = f"./CountResults/sitting/count_from{startSecond}sec.csv"
+        df_sitting = pd.read_csv(fname)
+
+        fname = f"./CountResults/standing/count_from{startSecond}sec.csv"
+        df_standing = pd.read_csv(fname)
+
+        df_total = df_sitting #+ df_standing
+
+        df_total["RoI_norm"] = df_total["RoI"] / df_total["RoI"].max()
+
+        total_var_list.append(df_total["RoI_norm"].var())
+
+        #####################
+
+        fname = f"./CountResults/sitting/count_from{startSecond}sec_patientAverage.csv"
+        df_sitting = pd.read_csv(fname)
+
+        fname = f"./CountResults/standing/count_from{startSecond}sec_patientAverage.csv"
+        df_standing = pd.read_csv(fname)
+
+        df_patientAverage = df_sitting #+ df_standing
+
+        df_patientAverage["RoI_norm"] = df_patientAverage["RoI"] / df_patientAverage["RoI"].max()
+
+        patientAverage_var_list.append(df_patientAverage["RoI_norm"].var())
+
+
 if __name__ == "__main__":
     startSecond_list = [i+1 for i in range(10)]
 
@@ -55,8 +84,8 @@ if __name__ == "__main__":
 
     for startSecond in startSecond_list:
 
-        file_list = glob.glob(f"count_results_sitting_220926/*from{startSecond}sec*")
-        # file_list = glob.glob(f"count_results_standing/*from{startSecond}sec*")
+        # file_list = glob.glob(f"count_results_sitting_221018/*from{startSecond}sec*")
+        file_list = glob.glob(f"count_results_standing_221018/*from{startSecond}sec*")
         print(file_list)
 
         df_total = None
@@ -84,8 +113,8 @@ if __name__ == "__main__":
             else:
                 df_patientAverage = pd.concat([df_patientAverage, df_ave])
 
-        outputDir = "countResults_sitting"
-        # outputDir = "countResults_standing"
+        # outputDir = "countResults_sitting"
+        outputDir = "countResults_standing"
         os.makedirs(outputDir, exist_ok=True)
         df_total.to_csv(outputDir + f"/count_from{startSecond}sec.csv")
         df_patientAverage.to_csv(outputDir + f"/count_from{startSecond}sec_patientAverage.csv")

@@ -15,7 +15,7 @@ program dropletCount
     character(255) path2officelist, outputFName, backupFName
     character(50), allocatable :: office_array(:)
     character(50), allocatable :: caseName_array(:)
-    character(:), allocatable :: caseName, path2mainDir, officeName, path2caseDir
+    character(:), allocatable :: caseName, path2mainDir, officeName, path2caseDir, mode
     integer, allocatable :: id_array(:)
     type(DropletGroup) mainDroplet, dGroup
     type(conditionValue_t) condVal
@@ -31,6 +31,9 @@ program dropletCount
     end type
 
     type(boxResult_t), allocatable :: result_overCases(:)
+
+
+    mode = "standing"
 
     print*, 'path2officelist = ?'
     read(5, '(A)') path2officelist
@@ -49,7 +52,7 @@ program dropletCount
         call read_textRecord(path2caseDir//'case_list.txt', caseName_array)
         allocate(result_overCases(size(caseName_array)))
 
-        box_array = get_box_array(path2mainDir // 'totalBox_standing.csv', 10000)
+        box_array = get_box_array(path2mainDir // 'totalBox_' // mode // '.csv', 10000)
         do caseID = 1, size(caseName_array)
             result_overCases(caseID)%box = box_array(1)
         end do
@@ -91,7 +94,7 @@ program dropletCount
             end do
 
                 
-            write(outputFName, '("count_results_standing/", A, "_from'//'", i0, "sec.csv")') officeName, startSecond
+            write(outputFName, '("count_results_", A, "/", A, "_from'//'", i0, "sec.csv")') mode, officeName, startSecond
             call output_CSV_overCases(trim(outputFName))
 
             endStep = startStep
