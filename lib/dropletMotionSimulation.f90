@@ -1,4 +1,5 @@
 module dropletMotionSimulation
+    use virusDroplet_m
     use dropletGenerator_m
     use dropletEquation_m
     use flow_field_m
@@ -25,7 +26,7 @@ module dropletMotionSimulation
     integer :: coalescenceLimit=10000, num_divide=4
     character(:), allocatable :: radiusDistributionFilename
 
-    type(DropletGroup) mainDroplet
+    type(virusDroplet_t), allocatable :: mainDroplets(:)
 
     type(DropletEquationSolver), target :: dropletSolver
 
@@ -72,11 +73,11 @@ module dropletMotionSimulation
 
             if(condVal%isInitialDistributionSpecified()) then
 
-                mainDroplet = read_backup(case_dir//'/'//condVal%initialDistributionFName)
+                mainDroplets = read_backup(case_dir//'/'//condVal%initialDistributionFName)
 
             else
 
-                mainDroplet = dropGenerator%generateDroplet(condVal%num_drop, TimeOnSimu())
+                mainDroplets = dropGenerator%generateDroplet(condVal%num_drop, TimeOnSimu())
 
             end if
 
@@ -90,13 +91,13 @@ module dropletMotionSimulation
                 character(255) fname
 
                 write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') num_restart
-                mainDroplet = read_backup(trim(fname))   !ここで自動割り付け
+                mainDroplets = read_backup(trim(fname))   !ここで自動割り付け
 
             end block
 
         end if
 
-        print*, 'num_droplets =', size(mainDroplet%droplet)
+        print*, 'num_droplets =', size(mainDroplets)
         last_coalescenceStep = 0
 
         call checkpoint
@@ -118,7 +119,7 @@ module dropletMotionSimulation
 
         end if
             
-        if(num_restart <= 0) call first_refCellSearch(mainDroplet)
+        if(num_restart <= 0) call first_refCellSearch(mainDroplets)
 
     end subroutine
 
@@ -147,11 +148,11 @@ module dropletMotionSimulation
 
         do n = n_start + 1, n_end           !ステップ数だけループ
             
-            call dropGenerator%periodicGeneration(mainDroplet, TimeOnSimu(), generationFlag)
+            call dropGenerator%periodicGeneration(mainDroplets, TimeOnSimu(), generationFlag)
 
-            if(adhesionSwitch) call adhesion_check(mainDroplet)
+            if(adhesionSwitch) call adhesion_check(mainDroplets)
 
-            call mainDroplet%survival_check(TimeOnSimu())           !生存率に関する処理
+            call survival_check(mainDroplets, TimeOnSimu())           !生存率に関する処理
 
             call coalescence_process        !飛沫間の合体判定
 
@@ -177,98 +178,98 @@ module dropletMotionSimulation
 
         if(flow_field%isUpdateTiming()) then
             call flow_field%update()   !流れ場の更新
-            call dropletOnBoundary(mainDroplet)
+            call dropletOnBoundary(mainDroplets)
         end if
 
     end subroutine
 
-    subroutine first_refCellSearch(dGroup)
-        type(DropletGroup) dGroup
+    subroutine first_refCellSearch(droplets)
+        type(virusDroplet_t), intent(inout) :: droplets(:)
         integer j, num_drop
         logical success
         real position(3)
 
         print*, 'first_refCellSearch occured!'
 
-        num_drop = size(dGroup%droplet)
+        num_drop = size(droplets)
 
         j = 1
-        dGroup%droplet(j)%refCellID = flow_field%nearest_cell(real(dGroup%droplet(j)%position(:)))
+        droplets(j)%refCellID = flow_field%nearest_cell(real(droplets(j)%position(:)))
 
-        dGroup%droplet(j+1:)%refCellID = dGroup%droplet(j)%refCellID !時間短縮を図る
+        droplets(j+1:)%refCellID = droplets(j)%refCellID !時間短縮を図る
 
         do j = 2, num_drop
-            position = real(dGroup%droplet(j)%position(:))
-            call flow_field%search_refCELL(position, dGroup%droplet(j)%refCellID, stat=success)
-            if(.not.success) dGroup%droplet(j+1:)%refCellID = dGroup%droplet(j)%refCellID
+            position = real(droplets(j)%position(:))
+            call flow_field%search_refCELL(position, droplets(j)%refCellID, stat=success)
+            if(.not.success) droplets(j+1:)%refCellID = droplets(j)%refCellID
         end do
         
         ! call mainMesh%sort()
 
     end subroutine
    
-    subroutine adhesion_check(dGroup)
+    subroutine adhesion_check(droplets)
         use unstructuredGrid_m
-        type(DropletGroup) dGroup
+        type(virusDroplet_t), intent(inout) :: droplets(:)
         integer i
 
-        do i = 1, size(dGroup%droplet)
-            if(dGroup%droplet(i)%isFloating()) then
+        do i = 1, size(droplets)
+            if(droplets(i)%isFloating()) then
                 call flow_field%adhesionCheckOnBound( &
-                    dGroup%droplet(i)%position, dGroup%droplet(i)%get_radius(), dGroup%droplet(i)%refCellID, &
-                    stat=dGroup%droplet(i)%adhesBoundID &
+                    droplets(i)%position, droplets(i)%get_radius(), droplets(i)%refCellID, &
+                    stat=droplets(i)%adhesBoundID &
                     )
-                if (dGroup%droplet(i)%adhesBoundID >= 1) call dGroup%droplet(i)%stop_droplet()
+                if (droplets(i)%adhesBoundID >= 1) call droplets(i)%stop_droplet()
             end if
         end do
             
-        call area_check(dGroup)
+        call area_check(droplets)
 
     end subroutine
 
-    subroutine area_check(dGroup)
-        type(DropletGroup) dGroup
+    subroutine area_check(droplets)
+        type(virusDroplet_t), intent(inout) :: droplets(:)
         logical check
         real areaMin(3), areaMax(3)
         integer i, J
 
         call flow_field%get_MinMaxOfGrid(areaMin, areaMax)
 
-        do i = 1, size(dGroup%droplet)
+        do i = 1, size(droplets)
             check = .false.
             do J = 1, 3
         
-                if(dGroup%droplet(i)%position(J) < areaMin(J)) then
-                    dGroup%droplet(i)%position(J) = areaMin(J)
+                if(droplets(i)%position(J) < areaMin(J)) then
+                    droplets(i)%position(J) = areaMin(J)
                     check = .true.
-                else if(dGroup%droplet(i)%position(J) > areaMax(J)) then
-                    dGroup%droplet(i)%position(J) = areaMax(J)
+                else if(droplets(i)%position(J) > areaMax(J)) then
+                    droplets(i)%position(J) = areaMax(J)
                     check = .true.
                 end if
 
             end do
 
-            if (check) call dGroup%droplet(i)%stop_droplet()
+            if (check) call droplets(i)%stop_droplet()
 
         end do
 
     end subroutine
                       
-    subroutine dropletOnBoundary(dGroup) !境界面の移動に合わせて付着飛沫も移動
+    subroutine dropletOnBoundary(droplets) !境界面の移動に合わせて付着飛沫も移動
         use unstructuredGrid_m
-        type(DropletGroup) dGroup
+        type(virusDroplet_t), intent(inout) :: droplets(:)
         integer vn, JB
 
         ! print*, 'CALL:dropletOnBoundary'
 
-        do vn = 1, size(dGroup%droplet)
+        do vn = 1, size(droplets)
         
-            if (dGroup%droplet(vn)%isFloating()) cycle !付着していないならスルー
+            if (droplets(vn)%isFloating()) cycle !付着していないならスルー
     
-            JB = dGroup%droplet(vn)%adhesBoundID
+            JB = droplets(vn)%adhesBoundID
             if (JB > 0) then
-                dGroup%droplet(vn)%position(:) &
-                    = dGroup%droplet(vn)%position(:) &
+                droplets(vn)%position(:) &
+                    = droplets(vn)%position(:) &
                     + flow_field%get_movementVectorOfBoundarySurface(JB) !面重心の移動量と同じだけ移動
             end if
         
@@ -284,19 +285,19 @@ module dropletMotionSimulation
         integer vn, targetID
 
         !$omp parallel do
-        do vn = 1, size(mainDroplet%droplet)
+        do vn = 1, size(mainDroplets)
 
-            if(mainDroplet%droplet(vn)%isFloating())then
+            if(mainDroplets(vn)%isFloating())then
 
-                call evaporationProcess(mainDroplet%droplet(vn))    !蒸発方程式関連の処理
-                call motionCalculation(mainDroplet%droplet(vn))     !運動方程式関連の処理
+                call evaporationProcess(mainDroplets(vn))    !蒸発方程式関連の処理
+                call motionCalculation(mainDroplets(vn))     !運動方程式関連の処理
             
             else 
-                targetID = mainDroplet%droplet(vn)%coalescenceID()
+                targetID = mainDroplets(vn)%coalescenceID()
                 if(targetID > 0) then
                     !合体飛沫の片割れも移動させる
-                    mainDroplet%droplet(vn)%position = mainDroplet%droplet(targetID)%position
-                    mainDroplet%droplet(vn)%velocity = mainDroplet%droplet(targetID)%velocity
+                    mainDroplets(vn)%position = mainDroplets(targetID)%position
+                    mainDroplets(vn)%velocity = mainDroplets(targetID)%velocity
                 end if
             end if
 
@@ -340,17 +341,17 @@ module dropletMotionSimulation
         character(255) fname
 
         write(fname,'("'//case_dir//'/VTK/drop_", i0, ".vtk")') timeStep
-        call mainDroplet%output_VTK(fname, deadline=initial)
+        call output_droplet_VTK(mainDroplets, fname, deadline=initial)
 
         fname = case_dir//'/particle.csv'
-        call mainDroplet%output_CSV(fname, TimeOnSimu(dimension=.true.), initial)
+        call output_droplet_CSV(mainDroplets, fname, TimeOnSimu(dimension=.true.), initial)
 
         if(initial) then
             fname = case_dir//'/backup/'//IniDistributionFName
         else
             write(fname,'("'//case_dir//'/backup/backup_", i0, ".bu")') timeStep
         end if
-        call mainDroplet%output_backup(trim(fname))
+        call output_backup(mainDroplets, trim(fname))
 
     end subroutine
 
@@ -358,7 +359,7 @@ module dropletMotionSimulation
         use terminalControler_m
         integer numFloating, num_coalescence
         
-        numFloating = mainDroplet%counter('floating')
+        numFloating = dropletCounter(mainDroplets, 'floating')
         if(generationFlag) last_coalescenceStep = timeStep - 1    !飛沫発生が起こったら前ステップに付着が起こったことにする（付着判定再起動のため）
 
         !最後の合体から指定ステップが経過したら、以降は合体が起こらないとみなしてリターン
@@ -375,7 +376,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine divideAreaCoalescence_process(num_coales)
-        type(DropletGroup) dGroup
+        type(virusDroplet_t), allocatable :: droplets(:)
         integer, intent(out) :: num_coales
         integer i, j, k, id, m, stat_coales
         integer, allocatable :: ID_array(:)
@@ -385,7 +386,7 @@ module dropletMotionSimulation
         num_coales = 0
         if(num_divide <= 0) return
 
-        call mainDroplet%getArea(AreaMin, AreaMax)
+        call get_dropletsArea(mainDroplets, AreaMin, AreaMax)
 
         ! AreaMin(:) = AreaMin(:) - 1.d-9 ;print*, 'AreaMin:',AreaMin
         ! AreaMax(:) = AreaMax(:) + 1.d-9 ;print*, 'AreaMax:',AreaMax
@@ -402,21 +403,21 @@ module dropletMotionSimulation
                     min_cdn(1) = AreaMin(1) + width(1)*dble(i-1) - delta(1)
                     max_cdn(1) = AreaMin(1) + width(1)*dble(i) + delta(1)
 
-                    ID_array = mainDroplet%IDinBox(min_cdn, max_cdn, status=0)
+                    ID_array = dropletIDinBox(mainDroplets, min_cdn, max_cdn, status=0)
                     ! print*, 'divide_stat :', size(ID_array), min_cdn, max_cdn
-                    dGroup%droplet = mainDroplet%droplet(ID_array)  !分割エリア内の飛沫を抽出（ここでIDが変わる）
-                    call dGroup%coalescence_check(stat=stat_coales)  !分割エリア内で合体判定
+                    droplets = mainDroplets(ID_array)  !分割エリア内の飛沫を抽出（ここでIDが変わる）
+                    call coalescence_check(droplets, stat=stat_coales)  !分割エリア内で合体判定
                     num_coales = num_coales + stat_coales
 
                     block
                         integer coalesID
                         do m = 1, size(ID_array)
                             id = ID_array(m)
-                            mainDroplet%droplet(id) = dGroup%droplet(m)  !飛沫情報をもとのIDに格納
+                            mainDroplets(id) = droplets(m)  !飛沫情報をもとのIDに格納
 
-                            coalesID = dGroup%droplet(m)%coalescenceID()
+                            coalesID = droplets(m)%coalescenceID()
                             !合体飛沫については、合体先ID（coalesID）ももとのIDに戻す必要がある
-                            if(coalesID > 0) mainDroplet%droplet(id)%coalesID = ID_array(coalesID)
+                            if(coalesID > 0) mainDroplets(id)%coalesID = ID_array(coalesID)
                         end do
                     end block
 
@@ -467,7 +468,7 @@ module dropletMotionSimulation
         print*, '[Start Date] ' // tk%startDateAndTime()
         print '(" ** It will take", f8.2, " minites **")', real(n_end - nowStep)/(60.*real(nowStep)/tK%erapsedTime())
         print*, 'Now_Step_Time =', TimeOnSimu(dimension=.true.), '[sec]'
-        print*, '# floating :', mainDroplet%Counter('floating'), '/', mainDroplet%Counter('total')
+        print*, '# floating :', dropletCounter(mainDroplets, 'floating'), '/', dropletCounter(mainDroplets, 'total')
         nearerSearchFalseRate = flow_field%get_nearerSearchFalseRate()
         if(nearerSearchFalseRate >= 1.) print*, '# searchFalseRate :', nearerSearchFalseRate, '%'
         call output_mainDroplet(initial=.false.)
@@ -521,11 +522,11 @@ module dropletMotionSimulation
             write(n_unit, '(A18, 2(I15,2x,A))') 'Step =', n_start, '-', n_end !計算回数
             write(n_unit,'(A18, I15)') 'OutputInterval =', outputInterval
             write(n_unit,'(A)') '======================================================='
-            write(n_unit,'(A18, I15)') '#Droplets =', mainDroplet%counter('total')
-            write(n_unit,'(A18, I15)') 'floating =', mainDroplet%counter('floating')
-            write(n_unit,'(A18, I15)') 'death =', mainDroplet%counter('death') !生存率で消滅
-            write(n_unit,'(A18, I15)') 'coalescence =', mainDroplet%counter('coalescence') !生存率で消滅
-            write(n_unit,'(A18, I15)') 'adhesion =', mainDroplet%counter('adhesion') !付着したすべてのウイルス数
+            write(n_unit,'(A18, I15)') '#Droplets =', dropletCounter(mainDroplets, 'total')
+            write(n_unit,'(A18, I15)') 'floating =', dropletCounter(mainDroplets, 'floating')
+            write(n_unit,'(A18, I15)') 'death =', dropletCounter(mainDroplets, 'death') !生存率で消滅
+            write(n_unit,'(A18, I15)') 'coalescence =', dropletCounter(mainDroplets, 'coalescence') !生存率で消滅
+            write(n_unit,'(A18, I15)') 'adhesion =', dropletCounter(mainDroplets, 'adhesion') !付着したすべてのウイルス数
             write(n_unit,'(A)') '======================================================='
             write(n_unit,'(A18, F18.2)') 'Temp [degC] =', dropletSolver%dropletEnvironment('Temperature')
             write(n_unit,'(A18, F18.2)') 'RH [%] =', dropletSolver%dropletEnvironment('RelativeHumidity')
