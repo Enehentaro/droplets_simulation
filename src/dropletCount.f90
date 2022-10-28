@@ -17,7 +17,7 @@ program dropletCount
     character(50), allocatable :: caseName_array(:)
     character(:), allocatable :: caseName, path2mainDir, officeName, path2caseDir, mode
     integer, allocatable :: id_array(:)
-    type(DropletGroup) mainDroplet, dGroup
+    type(virusDroplet_t), allocatable :: mainDroplets(:), droplets(:)
     type(conditionValue_t) condVal
     ! integer outputInterval
     type(boxCounter), allocatable :: box_array(:)
@@ -31,7 +31,6 @@ program dropletCount
     end type
 
     type(boxResult_t), allocatable :: result_overCases(:)
-
 
     mode = "standing"
 
@@ -74,11 +73,11 @@ program dropletCount
                         write(backupFName,'("'//caseName//'/backup/backup_", i0 , ".bu")') n
                     end if
             
-                    mainDroplet = read_backup(trim(backupFName))
+                    mainDroplets = read_backup(trim(backupFName))
 
                     min_cdn = dble(result_overCases(caseID)%box%min_cdn)
                     max_cdn = dble(result_overCases(caseID)%box%max_cdn)
-                    id_array = mainDroplet%IDinBox(min_cdn, max_cdn)
+                    id_array = dropletIDinBox(mainDroplets, min_cdn, max_cdn)
 
                     call result_overCases(caseID)%box%add_Flag(id_array)
 
@@ -88,8 +87,8 @@ program dropletCount
 
                 id_array = result_overCases(caseID)%box%get_FlagID()
                 result_overCases(caseID)%num_droplet = size(id_array)
-                dGroup%droplet = mainDroplet%droplet(id_array)
-                result_overCases(caseID)%volume = real(dGroup%totalVolume() * condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
+                droplets = mainDroplets(id_array)
+                result_overCases(caseID)%volume = real(dropletTotalVolume(droplets) * condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
 
             end do
 
