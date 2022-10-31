@@ -430,23 +430,20 @@ module dropletMotionSimulation
     subroutine checkpoint
         character(1) input
 
-        if(.not.startFlag) then
-            do
-                print*, 'Do you want to start the calculation? (y/n)'
-                read(5,*) input
+        do while(.not.startFlag)
+            print*, 'Do you want to start the calculation? (y/n)'
+            read(5,*) input
 
-                select case(input)
-                    case('y')
-                        startFlag = .true.
-                        exit
+            select case(input)
+            case('y')
+                startFlag = .true.
 
-                    case('n')
-                        stop
+            case('n')
+                stop
 
-                end select
+            end select
 
-            end do
-        end if
+        end do
 
         tk = TimeKeeper_()
 
