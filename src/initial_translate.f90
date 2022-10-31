@@ -5,7 +5,7 @@ program translate
     use virusDroplet_m
     use caseName_m
     implicit none
-    type(dropletGroup) dGroup
+    type(virusDroplet_t), allocatable :: droplets(:)
 
     namelist /initial_translate_setting/ fnameDecoration, before_dGroupCenter, after_dGroupCenter, &
     rotation_axis, rotation_angle_deg
@@ -39,7 +39,7 @@ program translate
     print'(*(g0:))', "rotation_angle_deg = ", rotation_angle_deg
 
     ! backupファイルから飛沫の情報を取得
-    dGroup = read_backup(caseName//"/backup/InitialDistribution.bu")
+    droplets = read_backup(caseName//"/backup/InitialDistribution.bu")
 
     ! これから計算を行う上で必要な値の算出
     phi = PI * (rotation_angle_deg / 180.d0) ! [°]から[rad]への変換
@@ -49,37 +49,37 @@ program translate
     select case(rotation_axis)
         case("x")
             ! 回転を行うループ
-            do i = 1, size(dGroup%droplet)
-                vec(2) = dGroup%droplet(i)%position(2) - before_dGroupCenter(2)
-                vec(3) = dGroup%droplet(i)%position(3) - before_dGroupCenter(3)
-                dGroup%droplet(i)%position(2) = cos(phi)*vec(2) - sin(phi)*vec(3) + before_dGroupCenter(2)
-                dGroup%droplet(i)%position(3) = sin(phi)*vec(2) + cos(phi)*vec(3) + before_dGroupCenter(3)
+            do i = 1, size(droplets)
+                vec(2) = droplets(i)%position(2) - before_dGroupCenter(2)
+                vec(3) = droplets(i)%position(3) - before_dGroupCenter(3)
+                droplets(i)%position(2) = cos(phi)*vec(2) - sin(phi)*vec(3) + before_dGroupCenter(2)
+                droplets(i)%position(3) = sin(phi)*vec(2) + cos(phi)*vec(3) + before_dGroupCenter(3)
             end do
         case("y")
-            do i = 1, size(dGroup%droplet)
-                vec(3) = dGroup%droplet(i)%position(3) - before_dGroupCenter(3)
-                vec(1) = dGroup%droplet(i)%position(1) - before_dGroupCenter(1)
-                dGroup%droplet(i)%position(3) = cos(phi)*vec(3) - sin(phi)*vec(1) + before_dGroupCenter(3)
-                dGroup%droplet(i)%position(1) = sin(phi)*vec(3) + cos(phi)*vec(1) + before_dGroupCenter(1)
+            do i = 1, size(droplets)
+                vec(3) = droplets(i)%position(3) - before_dGroupCenter(3)
+                vec(1) = droplets(i)%position(1) - before_dGroupCenter(1)
+                droplets(i)%position(3) = cos(phi)*vec(3) - sin(phi)*vec(1) + before_dGroupCenter(3)
+                droplets(i)%position(1) = sin(phi)*vec(3) + cos(phi)*vec(1) + before_dGroupCenter(1)
             end do
         case("z")
-            do i = 1, size(dGroup%droplet)      
-                vec(1) = dGroup%droplet(i)%position(1) - before_dGroupCenter(1)
-                vec(2) = dGroup%droplet(i)%position(2) - before_dGroupCenter(2)
-                dGroup%droplet(i)%position(1) = cos(phi)*vec(1) - sin(phi)*vec(2) + before_dGroupCenter(1)
-                dGroup%droplet(i)%position(2) = sin(phi)*vec(1) + cos(phi)*vec(2) + before_dGroupCenter(2)
+            do i = 1, size(droplets)      
+                vec(1) = droplets(i)%position(1) - before_dGroupCenter(1)
+                vec(2) = droplets(i)%position(2) - before_dGroupCenter(2)
+                droplets(i)%position(1) = cos(phi)*vec(1) - sin(phi)*vec(2) + before_dGroupCenter(1)
+                droplets(i)%position(2) = sin(phi)*vec(1) + cos(phi)*vec(2) + before_dGroupCenter(2)
             end do
     end select
 
     ! 平行移動を行うループ
-    do i = 1, size(dGroup%droplet)      
-        dGroup%droplet(i)%position(1) = dGroup%droplet(i)%position(1) + center_displacement(1)
-        dGroup%droplet(i)%position(2) = dGroup%droplet(i)%position(2) + center_displacement(2)
-        dGroup%droplet(i)%position(3) = dGroup%droplet(i)%position(3) + center_displacement(3)
+    do i = 1, size(droplets)      
+        droplets(i)%position(1) = droplets(i)%position(1) + center_displacement(1)
+        droplets(i)%position(2) = droplets(i)%position(2) + center_displacement(2)
+        droplets(i)%position(3) = droplets(i)%position(3) + center_displacement(3)
     end do
 
     ! ファイルの出力
-    call dGroup%output_backup('InitialDistribution_'//trim(fnameDecoration)//'.bu')
-    call dGroup%output_VTK('InitialDistribution_'//trim(fnameDecoration)//'.vtk')
+    call output_backup(droplets, 'InitialDistribution_'//trim(fnameDecoration)//'.bu')
+    call output_droplet_VTK(droplets, 'InitialDistribution_'//trim(fnameDecoration)//'.vtk')
     
 end program translate
