@@ -212,6 +212,8 @@ module virusDroplet_m
     end function
 
     double precision function dropletTotalVolume(droplets)
+        !! 配列内の全飛沫の総体積（無次元）を計算
+
         type(virusDroplet_t) droplets(:)
         integer i
         double precision, parameter :: PI = acos(-1.d0) 
