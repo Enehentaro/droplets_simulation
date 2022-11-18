@@ -1,4 +1,6 @@
 module dropletMotionSimulation
+    !!author: Yuta Ida
+    !!飛沫運動シミュレーションモジュール
     use virusDroplet_m
     use dropletGenerator_m
     use dropletEquation_m
@@ -27,14 +29,26 @@ module dropletMotionSimulation
     contains
 
     subroutine simulationSetUp(case_name, droplets, dropletSolver, dropGenerator, flow_field, n_start, n_end)
+        !!シミュレーションの条件ファイルを読み込み、諸々の変数を初期化して引数として返す
         use virusDroplet_m
         use conditionValue_m
         character(*), intent(in) :: case_name
+            !!条件ファイルへのパス
+
         type(virusDroplet_t), allocatable, intent(out) :: droplets(:)
+            !!飛沫構造体配列
+
         type(DropletEquationSolver), target, intent(out) :: dropletSolver
+            !!飛沫の運動方程式クラス
+
         type(DropletGenerator), intent(out) :: dropGenerator
+            !!飛沫発生源クラス
+        
         type(FlowField), intent(out) :: flow_field
+            !!流れ場クラス
+
         integer, intent(out) :: n_start, n_end
+
         type(conditionValue_t) condVal
 
         case_dir = case_name
@@ -110,11 +124,12 @@ module dropletMotionSimulation
 
         end if
             
-        if(condVal%restart <= 0) call first_refCellSearch(droplets, flow_field)
+        if(condVal%restart <= 0) call first_refCellSearch(droplets, flow_field)  !ここでようやく飛沫の参照セル探索
 
     end subroutine
 
     subroutine read_basicSettingOnSimulation
+        !!シミュレーションの基礎的な設定ファイルを読み込む
         integer n_unit
         character(23) :: fname ='option/basicSetting.nml'
         character(255) radiusDistributionFNAME
@@ -131,7 +146,11 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine RunDropletsSimulation(case_name)
+        !!飛沫運動シミュレーションの実行
+
         character(*), intent(in) :: case_name
+            !!条件ファイルへのパス
+
         type(virusDroplet_t), allocatable :: mainDroplets(:)
         type(DropletEquationSolver), target :: dropletSolver
         type(DropletGenerator) dropGenerator
@@ -158,11 +177,12 @@ module dropletMotionSimulation
 
             call Calculation_Droplets(mainDroplets, dropletSolver, flow_field)     !飛沫の運動計算
 
-            if (mod(n, outputInterval) == 0) call periodicOutput(n, n_end, mainDroplets, &
-                dropletSolver%TimeStep2RealTime(n, .true.),  flow_field%get_nearerSearchFalseRate())!出力
+            if (mod(n, outputInterval) == 0) then
+                call periodicOutput(n, n_end, mainDroplets, dropletSolver%TimeStep2RealTime(n, .true.),  flow_field%get_nearerSearchFalseRate())
+            end if
 
             if(n==n_end) exit
-            call check_FlowFieldUpdate(flow_field, mainDroplets, timeInSimulation)        !流れ場の更新チェック
+            call check_FlowFieldUpdate(timeInSimulation, flow_field, mainDroplets)        !流れ場の更新チェック
 
         end do
 
@@ -174,10 +194,13 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine check_FlowFieldUpdate(flow_field, droplets, time)
+    subroutine check_FlowFieldUpdate(time, flow_field, droplets)
+        !!現時点のシミュレーション時刻から流れ場の更新が必要かを判定し、必要であれば更新する
+        !!更新時、付着飛沫の移動も行う（移動格子への考慮）
+        double precision, intent(in) :: time
+            !!現時点のシミュレーション時刻
         type(FlowField), intent(inout) ::  flow_field
         type(virusDroplet_t), intent(inout) ::  droplets(:)
-        double precision, intent(in) :: time
 
         call flow_field%set_time(time)
 
@@ -189,6 +212,8 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine first_refCellSearch(droplets, flow_field)
+        !!飛沫の参照セル探索化
+        !!初期飛沫は一箇所に密集していることを利用した時間短縮機能を実装
         type(virusDroplet_t), intent(inout) :: droplets(:)
         type(FlowField), intent(inout) ::  flow_field
         integer j, num_drop
@@ -215,6 +240,7 @@ module dropletMotionSimulation
     end subroutine
    
     subroutine adhesion_check(droplets, flow_field)
+        !!流れ場境界面への飛沫付着判定
         use unstructuredGrid_m
         type(virusDroplet_t), intent(inout) :: droplets(:)
         type(FlowField), intent(in) ::  flow_field
@@ -235,6 +261,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine area_check(droplets, flow_field)
+        !!流れ場のバウンディングボックスへの飛沫付着判定
         type(virusDroplet_t), intent(inout) :: droplets(:)
         type(FlowField), intent(in) ::  flow_field
         logical check
@@ -263,7 +290,8 @@ module dropletMotionSimulation
 
     end subroutine
                       
-    subroutine dropletOnBoundary(droplets, flow_field) !境界面の移動に合わせて付着飛沫も移動
+    subroutine dropletOnBoundary(droplets, flow_field)
+        !!流れ場境界面の移動に合わせて付着飛沫も移動させる
         use unstructuredGrid_m
         type(virusDroplet_t), intent(inout) :: droplets(:)
         type(FlowField), intent(in) ::  flow_field
@@ -291,6 +319,8 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine Calculation_Droplets(droplets, dropletSolver, flow_field)
+        !!飛沫の運動に関する一連の処理
+        !!蒸発方程式、運動方程式を解いたあと、飛沫の参照セル探索を行う
         type(virusDroplet_t), intent(inout) :: droplets(:)
         type(DropletEquationSolver), intent(in) :: dropletSolver
         type(FlowField), intent(in) ::  flow_field
@@ -326,7 +356,8 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine evaporationProcess(droplet, dropletSolver) !CALCULATE droplet evaporation
+    subroutine evaporationProcess(droplet, dropletSolver)
+        !!CALCULATE droplet evaporation
         use virusDroplet_m
         type(virusDroplet_t), intent(inout) :: droplet
         type(DropletEquationSolver), intent(in) :: dropletSolver
@@ -341,6 +372,8 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine output_droplet_process(initial, droplets, timeStep, real_time)
+        !!飛沫情報のファイル出力
+        !!VTK, CSV, backupファイルを出力
         use filename_m, only : IniDistributionFName => InitialDistributionFileName
         logical, intent(in) :: initial
         type(virusDroplet_t), intent(in) :: droplets(:)
@@ -365,9 +398,16 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine coalescence_process(mainDroplets, timeStep)
+        !!飛沫間の合体判定プロセス
+        !!一定期間合体が起こらなければ以降は判定をオフにする機能付き（計算コスト削減のため）
         use terminalControler_m
+
         type(virusDroplet_t), intent(inout) :: mainDroplets(:)
+            !!メインの飛沫構造体配列
+
         integer, intent(in) :: timeStep
+            !!時間ステップ
+
         integer numFloating, num_coalescence
         
         numFloating = dropletCounter(mainDroplets, 'floating')
@@ -380,15 +420,20 @@ module dropletMotionSimulation
         call print_progress([timeStep, last_coalescenceStep + coalescenceLimit])
 
         ! call mainDroplet%coalescence_check(stat = num_coalescence)
-        call divideAreaCoalescence_process(num_coales = num_coalescence, mainDroplets = mainDroplets)
+        call divideAreaCoalescence_process(mainDroplets = mainDroplets, num_coales = num_coalescence)
 
         if(num_coalescence >= 1) last_coalescenceStep = timeStep
 
     end subroutine
 
-    subroutine divideAreaCoalescence_process(num_coales, mainDroplets)
-        integer, intent(out) :: num_coales
+    subroutine divideAreaCoalescence_process(mainDroplets, num_coales)
+        !!飛沫をいくつかのエリアに分割し、それぞれで別々に合体判定を行う（計算コスト削減のため）
         type(virusDroplet_t), intent(inout) :: mainDroplets(:)
+            !! メインの飛沫構造体配列
+
+        integer, intent(out) :: num_coales
+            !!合体が起こった回数
+
         type(virusDroplet_t), allocatable :: droplets(:)
         integer i, j, k, id, m, stat_coales
         integer, allocatable :: ID_array(:)
@@ -440,6 +485,8 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine checkpoint
+        !! 計算条件確認のためのチェックポイント
+
         character(1) input
 
         do while(.not.startFlag)
@@ -457,11 +504,12 @@ module dropletMotionSimulation
 
         end do
 
-        tk = TimeKeeper_()
+        tK = TimeKeeper_()
 
     end subroutine
 
     subroutine create_CaseDirectory
+        !!連番ファイル出力用のディレクトリを作成
         use path_operator_m
 
         call make_directory(case_dir//'/VTK')
@@ -470,11 +518,22 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine periodicOutput(nowStep, endStep, droplets, real_time, nearerSearchFalseRate)
+        !!一定のステップ周期で飛沫情報をコンソールに出力する
         use terminalControler_m
-        integer, intent(in) :: nowStep, endStep
+        integer, intent(in) :: nowStep
+            !!現在の時間ステップ
+
+        integer, intent(in) :: endStep
+            !!終了時間ステップ
+
         type(virusDroplet_t), intent(in) :: droplets(:)
+            !!飛沫構造体配列
+
         double precision, intent(in) :: real_time
+            !!シミュレーション時刻[sec]
+
         real, intent(in) ::  nearerSearchFalseRate
+            !!飛沫の参照セル探索（時間短縮版）の成功率
 
         print*, '[Start Date] ' // tk%startDateAndTime()
         print '(" ** It will take", f8.2, " minites **")', real(endStep - nowStep)/(60.*real(nowStep)/tK%erapsedTime())
@@ -488,6 +547,7 @@ module dropletMotionSimulation
     end subroutine
 
     subroutine output_ResultSummary(droplets, dropletSolver, flow_field, n_start, n_end)
+        !!シミュレーション結果のサマリーをファイル出力
         use dropletEquation_m
         type(virusDroplet_t), allocatable, intent(in) :: droplets(:)
         type(DropletEquationSolver), target, intent(in) :: dropletSolver
@@ -563,15 +623,6 @@ module dropletMotionSimulation
     !     end if
 
     ! end function
-
-    function DateAndTime_string(date, time) result(string)
-        character(*), intent(in) :: date, time
-        character(:), allocatable :: string
-
-        string = date(1:4)//'/'//date(5:6)//'/'//date(7:8)//' ' &
-              //time(1:2)//':'//time(3:4)//':'//time(5:6)
-
-    end function
 
     ! subroutine random_set    !実行時刻に依存した乱数シードを指定する
     !     implicit none
