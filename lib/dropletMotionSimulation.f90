@@ -419,10 +419,10 @@ module dropletMotionSimulation
         integer, intent(in) :: timeStep
             !!時間ステップ
 
-        integer last_coalescenceStep
+        integer, intent(inout) ::  last_coalescenceStep
             !! 最後に合体が起こったときの時間ステップ
 
-        logical generationFlag
+        logical, intent(in) ::  generationFlag
             !! 飛沫が新たに発生したか否か
 
         integer numFloating, num_coalescence
