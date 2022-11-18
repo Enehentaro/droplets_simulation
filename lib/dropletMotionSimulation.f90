@@ -10,15 +10,9 @@ module dropletMotionSimulation
 
     private
 
-    integer outputInterval
-
     type(TimeKeeper) tK
 
-    character(:), allocatable :: case_dir
-
     logical :: startFlag = .false.
-    integer :: last_coalescenceStep=0
-    logical generationFlag
 
     logical :: adhesionSwitch = .true.
     integer :: coalescenceLimit=10000, num_divide=4
@@ -28,12 +22,12 @@ module dropletMotionSimulation
 
     contains
 
-    subroutine simulationSetUp(case_name, droplets, dropletSolver, dropGenerator, flow_field, n_start, n_end)
+    subroutine simulationSetUp(case_dir, droplets, dropletSolver, dropGenerator, flow_field, n_start, n_end, outputInterval)
         !!シミュレーションの条件ファイルを読み込み、諸々の変数を初期化して引数として返す
         use virusDroplet_m
         use conditionValue_m
-        character(*), intent(in) :: case_name
-            !!条件ファイルへのパス
+        character(*), intent(in) :: case_dir
+            !!ケースディレクトリ名
 
         type(virusDroplet_t), allocatable, intent(out) :: droplets(:)
             !!飛沫構造体配列
@@ -49,10 +43,11 @@ module dropletMotionSimulation
 
         integer, intent(out) :: n_start, n_end
 
+        integer, intent(out) :: outputInterval
+
         type(conditionValue_t) condVal
 
-        case_dir = case_name
-        call create_CaseDirectory
+        call create_CaseDirectory(case_dir)
 
         condVal = read_condition(case_dir)
 
@@ -85,7 +80,7 @@ module dropletMotionSimulation
 
             end if
 
-            call output_droplet_process(initial=.true., droplets=droplets, &
+            call output_droplet_process(case_dir=case_dir, initial=.true., droplets=droplets, &
                 timeStep=n_start, real_time=dropletSolver%TimeStep2RealTime(n_start, .true.))   !この時点では、飛沫の参照セルは見つかっていない
 
         else
@@ -103,7 +98,6 @@ module dropletMotionSimulation
         end if
 
         print*, 'num_droplets =', size(droplets)
-        last_coalescenceStep = 0
 
         call checkpoint
 
@@ -149,16 +143,20 @@ module dropletMotionSimulation
         !!飛沫運動シミュレーションの実行
 
         character(*), intent(in) :: case_name
-            !!条件ファイルへのパス
+            !!ケースディレクトリ名
 
         type(virusDroplet_t), allocatable :: mainDroplets(:)
         type(DropletEquationSolver), target :: dropletSolver
         type(DropletGenerator) dropGenerator
         type(FlowField) flow_field
-        integer n, n_start, n_end
+        integer n, n_start, n_end, outputInterval
         double precision timeInSimulation
+        integer last_coalescenceStep
+        logical generationFlag
 
-        call simulationSetUp(case_name, mainDroplets, dropletSolver, dropGenerator, flow_field, n_start, n_end)
+        call simulationSetUp(case_name, mainDroplets, dropletSolver, dropGenerator, flow_field, n_start, n_end, outputInterval)
+
+        last_coalescenceStep = n_start
         
         print '("*******************************************")'
         print '("            START step_loop                ")'
@@ -173,12 +171,24 @@ module dropletMotionSimulation
 
             call survival_check(mainDroplets, timeInSimulation)           !生存率に関する処理
 
-            call coalescence_process(mainDroplets, n)        !飛沫間の合体判定
+            call coalescence_process(mainDroplets, n, last_coalescenceStep, generationFlag)        !飛沫間の合体判定
 
             call Calculation_Droplets(mainDroplets, dropletSolver, flow_field)     !飛沫の運動計算
 
             if (mod(n, outputInterval) == 0) then
-                call periodicOutput(n, n_end, mainDroplets, dropletSolver%TimeStep2RealTime(n, .true.),  flow_field%get_nearerSearchFalseRate())
+
+                block
+                    double precision real_time
+
+                    real_time = dropletSolver%TimeStep2RealTime(n, .true.)
+                    
+                    call output_droplet_process(case_dir=case_name, &
+                        initial=.false., droplets=mainDroplets, timeStep=n, real_time=real_time)
+
+                    call periodicOutput(n, n_end, mainDroplets, real_time, flow_field%get_nearerSearchFalseRate())
+
+                end block
+
             end if
 
             if(n==n_end) exit
@@ -190,7 +200,7 @@ module dropletMotionSimulation
         print '("             END step_loop                 ")'
         print '("*******************************************")'
 
-        call output_ResultSummary(mainDroplets, dropletSolver, flow_field, n_start, n_end)
+        call output_ResultSummary(case_name, mainDroplets, dropletSolver, flow_field, n_start, n_end, outputInterval)
 
     end subroutine
 
@@ -371,10 +381,11 @@ module dropletMotionSimulation
       
     end subroutine
 
-    subroutine output_droplet_process(initial, droplets, timeStep, real_time)
+    subroutine output_droplet_process(case_dir, initial, droplets, timeStep, real_time)
         !!飛沫情報のファイル出力
         !!VTK, CSV, backupファイルを出力
         use filename_m, only : IniDistributionFName => InitialDistributionFileName
+        character(*), intent(in) :: case_dir
         logical, intent(in) :: initial
         type(virusDroplet_t), intent(in) :: droplets(:)
         integer, intent(in) :: timeStep
@@ -397,7 +408,7 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine coalescence_process(mainDroplets, timeStep)
+    subroutine coalescence_process(mainDroplets, timeStep, last_coalescenceStep, generationFlag)
         !!飛沫間の合体判定プロセス
         !!一定期間合体が起こらなければ以降は判定をオフにする機能付き（計算コスト削減のため）
         use terminalControler_m
@@ -408,8 +419,14 @@ module dropletMotionSimulation
         integer, intent(in) :: timeStep
             !!時間ステップ
 
+        integer last_coalescenceStep
+            !! 最後に合体が起こったときの時間ステップ
+
+        logical generationFlag
+            !! 飛沫が新たに発生したか否か
+
         integer numFloating, num_coalescence
-        
+
         numFloating = dropletCounter(mainDroplets, 'floating')
         if(generationFlag) last_coalescenceStep = timeStep - 1    !飛沫発生が起こったら前ステップに付着が起こったことにする（付着判定再起動のため）
 
@@ -508,9 +525,10 @@ module dropletMotionSimulation
 
     end subroutine
 
-    subroutine create_CaseDirectory
+    subroutine create_CaseDirectory(case_dir)
         !!連番ファイル出力用のディレクトリを作成
         use path_operator_m
+        character(*), intent(in) :: case_dir
 
         call make_directory(case_dir//'/VTK')
         call make_directory(case_dir//'/backup')
@@ -540,19 +558,19 @@ module dropletMotionSimulation
         print*, 'Now_Step_Time =', real_time, '[sec]'
         print*, '# floating :', dropletCounter(droplets, 'floating'), '/', dropletCounter(droplets, 'total')
         if(nearerSearchFalseRate >= 1.) print*, '# searchFalseRate :', nearerSearchFalseRate, '%'
-        call output_droplet_process(initial=.false., droplets=droplets, timeStep=nowStep, real_time=real_time)
         print '("====================================================")'
         call reset_formatTC
 
     end subroutine
 
-    subroutine output_ResultSummary(droplets, dropletSolver, flow_field, n_start, n_end)
+    subroutine output_ResultSummary(case_dir, droplets, dropletSolver, flow_field, n_start, n_end, outputInterval)
         !!シミュレーション結果のサマリーをファイル出力
         use dropletEquation_m
+        character(*), intent(in) :: case_dir
         type(virusDroplet_t), allocatable, intent(in) :: droplets(:)
         type(DropletEquationSolver), target, intent(in) :: dropletSolver
         type(FlowField), intent(in) :: flow_field
-        integer, intent(in) :: n_start, n_end
+        integer, intent(in) :: n_start, n_end, outputInterval
         integer n_unit, cnt
         real erapsed_time
         character(50) fname
