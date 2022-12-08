@@ -45,7 +45,7 @@ module dropletGenerator_m
     end type
 
     ! public BasicParameter, DropletEquationSolver, BasicParameter_, DropletEquationSolver_
-    public DropletGroup, DropletGenerator_
+    public DropletGenerator_
 
     contains
 
@@ -68,34 +68,35 @@ module dropletGenerator_m
 
     end function
 
-    type(DropletGroup) function generateDroplet(self, num_droplet, nowTime)
+    function generateDroplet(self, num_droplet, nowTime) result(droplets)
         class(DropletGenerator) self
+        type(virusDroplet_t), allocatable :: droplets(:)
         integer, intent(in) :: num_droplet
         double precision, intent(in) :: nowTime
         double precision, allocatable :: initialRadius(:), deadline(:)
 
         if(num_droplet <= 0) return 
 
-        allocate(generateDroplet%droplet(num_droplet))
+        allocate(droplets(num_droplet))
 
-        call self%calc_initialPosition(generateDroplet)
+        call self%calc_initialPosition(droplets)
 
         initialRadius = self%initialRadiusArray%get_valueArray(num_droplet) * 1.d-6 !マイクロメートル換算
         initialRadius = initialRadius / self%equation%repValue('length') !無次元化
-        call generateDroplet%set_initialRadius(initialRadius)
-        call generateDroplet%set_radiusLowerLimit(self%equation%get_radiusLowerLimitRatio())
+        call set_initialRadius(droplets, initialRadius)
+        call set_radiusLowerLimit(droplets, self%equation%get_radiusLowerLimitRatio())
 
         deadline = self%deadlineArray%get_valueArray(num_droplet) / self%equation%repValue('time') !無次元化
         deadline = deadline + nowTime
-        call generateDroplet%set_deadline(deadline)
+        call set_virusDeadline(droplets, deadline)
 
-        if(self%generateRate > 0) call generateDroplet%set_status('nonActive')
+        if(self%generateRate > 0) call set_dropletStatus(droplets, 'nonActive')
 
     end function
 
-    subroutine calc_initialPosition(self, dGroup)
+    subroutine calc_initialPosition(self, droplets)
         class(DropletGenerator), intent(in) :: self
-        type(DropletGroup) dGroup
+        type(virusDroplet_t), intent(inout) ::  droplets(:)
         integer kx,ky,kz, num_perEdge, num_perBox, k, k_end, cnt
         integer i_box, num_box, num_drop
         double precision :: standard(3), delta(3), width(3)!, randble(3)
@@ -106,7 +107,7 @@ module dropletGenerator_m
         end if
         num_box = size(self%pBox_array)
 
-        num_drop = size(dGroup%droplet)
+        num_drop = size(droplets)
         num_perBox = num_drop / num_box
         
         ! print*, 'calc_initialPosition'
@@ -135,9 +136,9 @@ module dropletGenerator_m
 
                         do kz = 1, num_perEdge
 
-                            dGroup%droplet(k)%position(1) = standard(1) + delta(1)*dble(kx - 1)
-                            dGroup%droplet(k)%position(2) = standard(2) + delta(2)*dble(ky - 1)
-                            dGroup%droplet(k)%position(3) = standard(3) + delta(3)*dble(kz - 1)
+                            droplets(k)%position(1) = standard(1) + delta(1)*dble(kx - 1)
+                            droplets(k)%position(2) = standard(2) + delta(2)*dble(ky - 1)
+                            droplets(k)%position(3) = standard(3) + delta(3)*dble(kz - 1)
                             k = k + 1
                             
                         end do
@@ -158,9 +159,9 @@ module dropletGenerator_m
                     d_max = 1
                     placement:do
                         ! call random_number(randble(:))
-                        ! dGroup%droplet(k)%position(:) = standard(:) + width(:)*randble(:)
+                        ! droplets(k)%position(:) = standard(:) + width(:)*randble(:)
                         do d = 1, d_max
-                            dGroup%droplet(k)%position(:) = self%pBox_array(i_box)%center(:) + width(:)*dble(direction(:,d))
+                            droplets(k)%position(:) = self%pBox_array(i_box)%center(:) + width(:)*dble(direction(:,d))
                             k = k + 1
                             if(k > k_end) exit placement
                         end do
@@ -212,9 +213,9 @@ module dropletGenerator_m
 
     end subroutine
 
-    subroutine dropletPeriodicGeneration(self, dGroup, nowTime, stat)
+    subroutine dropletPeriodicGeneration(self, droplets, nowTime, stat)
         class(DropletGenerator) self
-        type(DropletGroup) dGroup
+        type(virusDroplet_t), intent(inout) :: droplets(:)
         double precision, intent(in) :: nowTime
         integer num_generated, required_generation, num_nowGenerate
         logical, intent(out) :: stat
@@ -224,8 +225,8 @@ module dropletGenerator_m
         
         required_generation = int(dble(self%generateRate)*nowTime * self%equation%repValue('time'))  !このステップ終了までに生成されているべき数
 
-        num_generated = dGroup%counter('total') - dGroup%counter('nonActive')  !今までに生成された数
-        if(num_generated == size(dGroup%droplet)) return        !生成され尽くした場合リターン
+        num_generated = dropletCounter(droplets, 'total') - dropletCounter(droplets, 'nonActive')  !今までに生成された数
+        if(num_generated == size(droplets)) return        !生成され尽くした場合リターン
 
         num_nowGenerate = required_generation - num_generated !今このステップで生成されるべき数
 
@@ -238,19 +239,19 @@ module dropletGenerator_m
             num_box = size(self%pBox_array)
 
             if(num_nowGenerate >= num_box) then
-                nonActiveID_array = dGroup%IDinState('nonActive')
+                nonActiveID_array = dropletIDinState(droplets, 'nonActive')
 
-                if(required_generation < size(dGroup%droplet)) then
+                if(required_generation < size(droplets)) then
                     nonActive_perBox = size(nonActiveID_array) / num_box
                     generate_perBox = num_nowGenerate / num_box
 
                     do i_box = 1, num_box
                         generateEnd = min(nonActive_perBox*(i_box-1) + generate_perBox, nonActive_perBox*i_box)
-                        call dGroup%set_status('floating', nonActiveID_array(nonActive_perBox*(i_box-1) +1 : generateEnd))
+                        call set_dropletStatus(droplets, 'floating', nonActiveID_array(nonActive_perBox*(i_box-1) +1 : generateEnd))
                     end do
 
                 else  !この時刻までに生成されているべき数が総飛沫数未満でない　＝＞　全て生成されるべき
-                    call dGroup%set_status('floating', nonActiveID_array(:))
+                    call set_dropletStatus(droplets, 'floating', nonActiveID_array(:))
 
                 end if
 

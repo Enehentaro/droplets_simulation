@@ -22,12 +22,8 @@ PROGRAM MAIN
     call case_check(caseName) 
 
     DO caseID = 1, size(caseName)                        !実行数だけループ（通常1回）
-        
-        call simulationSetUp(trim(caseName(caseID)))          !SetUp
 
-        call mainDropletLoop                !mainLoop
-
-        call output_ResultSummary       !最終結果出力
+        call RunDropletsSimulation(trim(caseName(caseID)))
         
     END DO
     

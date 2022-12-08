@@ -12,7 +12,7 @@ program dropletCount
     character(50), allocatable :: caseName_array(:)
     character(:), allocatable :: caseName, fname
     integer, allocatable :: id_array(:)
-    type(DropletGroup) mainDroplet, dGroup
+    type(virusDroplet_t), allocatable :: mainDroplets(:), droplets(:)
     type(conditionValue_t) condVal
     ! type(BasicParameter) baseParam
     type(boxCounter), allocatable :: box_array(:)
@@ -47,10 +47,10 @@ program dropletCount
                 end block
             end if
     
-            mainDroplet = read_backup(fname)
+            mainDroplets = read_backup(fname)
     
             do i_box = 1, num_box
-                id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
+                id_array = dropletIDinBox(mainDroplets, dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
                 call box_array(i_box)%add_Flag(id_array)
             end do
     
@@ -60,9 +60,9 @@ program dropletCount
 
         do i_box = 1, num_box
             id_array = box_array(i_box)%get_FlagID()
-            dGroup%droplet = mainDroplet%droplet(id_array)
-            bResult(i_box)%num_droplet = size(dGroup%droplet)
-            bResult(i_box)%volume = real(dGroup%totalVolume() *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
+            droplets = mainDroplets(id_array)
+            bResult(i_box)%num_droplet = size(droplets)
+            bResult(i_box)%volume = real(dropletTotalVolume(droplets) *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
         end do
 
         bResult(:)%RoI = RateOfInfection(bResult(:)%volume) !1分間あたりの感染確率を計算
