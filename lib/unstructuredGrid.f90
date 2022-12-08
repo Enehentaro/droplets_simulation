@@ -778,7 +778,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine adhesionCheckOnBound(self, position, radius, cellID, stat)
-        class(FlowFieldUnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid), intent(in) :: self
         double precision, intent(in) :: position(3), radius
         integer, intent(in) :: cellID
         integer, intent(out) :: stat
