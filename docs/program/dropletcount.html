@@ -89,7 +89,7 @@
      <li><i class="fa fa-list-ol"></i>
        <a data-toggle="tooltip"
     data-placement="bottom" data-html="true"
-    title="17.4% of total for programs.">90 statements</a>
+    title="17.5% of total for programs.">90 statements</a>
      </li> 
     <li><i class="fa fa-code"></i><a href="../src/dropletCount.f90"> Source File</a></li>
   </ul>
@@ -117,17 +117,17 @@
   <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-0">Variables</a></h3></div>
   <div id="vars-0" class="panel-collapse collapse">
     <div class="list-group">
-      <a class="list-group-item" href="../program/dropletcount.html#variable-n~2">n</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-n">n</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-i_box~2">i_box</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-num_box~2">num_box</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-caseid~2">caseID</a>
-      <a class="list-group-item" href="../program/dropletcount.html#variable-casename_array~2">caseName_array</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-casename_array~3">caseName_array</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-casename~4">caseName</a>
-      <a class="list-group-item" href="../program/dropletcount.html#variable-fname~6">fname</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-fname~8">fname</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-id_array~3">id_array</a>
-      <a class="list-group-item" href="../program/dropletcount.html#variable-maindroplet">mainDroplet</a>
-      <a class="list-group-item" href="../program/dropletcount.html#variable-dgroup~3">dGroup</a>
-      <a class="list-group-item" href="../program/dropletcount.html#variable-condval~2">condVal</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-maindroplets">mainDroplets</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-droplets~17">droplets</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-condval">condVal</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-box_array~2">box_array</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-bresult~2">bResult</a>
     </div>
@@ -171,10 +171,10 @@
       <ul class="list-group">
       <li class="list-group-item">
   <ul class="list-inline">
-    <li><a href='../module/conditionvalue_m.html'>conditionValue_m</a></li>
-    <li><a href='../module/boxcounter_m.html'>boxCounter_m</a></li>
     <li><a href='../module/casename_m.html'>caseName_m</a></li>
     <li><a href='../module/virusdroplet_m.html'>virusDroplet_m</a></li>
+    <li><a href='../module/conditionvalue_m.html'>conditionValue_m</a></li>
+    <li><a href='../module/boxcounter_m.html'>boxCounter_m</a></li>
   </ul>
       </li>
       <li class="list-group-item">
@@ -195,35 +195,35 @@
 <polygon fill="none" stroke="black" points="225,-87 143,-87 143,-63 225,-63 225,-87"/>
 <text text-anchor="middle" x="184" y="-72.6" font-family="Helvetica,sans-Serif" font-size="10.50">dropletCount</text>
 </g>
-<!-- module~conditionvalue_m -->
+<!-- module~casename_m -->
 <g id="program~~dropletcount~~UsesGraph_node2" class="node">
+<title>module~casename_m</title>
+<g id="a_program~~dropletcount~~UsesGraph_node2"><a xlink:href=".././module/casename_m.html" xlink:title="caseName_m">
+<polygon fill="#337ab7" stroke="#337ab7" points="96,-150 11,-150 11,-126 96,-126 96,-150"/>
+<text text-anchor="middle" x="53.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">caseName_m</text>
+</a>
+</g>
+</g>
+<!-- program~dropletcount&#45;&gt;module~casename_m -->
+<g id="program~~dropletcount~~UsesGraph_edge1" class="edge">
+<title>program~dropletcount&#45;&gt;module~casename_m</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M162.72,-87.11C147.61,-95.91 126.34,-107.83 107,-117 103.41,-118.7 99.64,-120.39 95.85,-122.03"/>
+<polygon fill="#000000" stroke="#000000" points="94.3,-118.88 86.42,-125.97 97,-125.34 94.3,-118.88"/>
+</g>
+<!-- module~conditionvalue_m -->
+<g id="program~~dropletcount~~UsesGraph_node3" class="node">
 <title>module~conditionvalue_m</title>
-<g id="a_program~~dropletcount~~UsesGraph_node2"><a xlink:href=".././module/conditionvalue_m.html" xlink:title="conditionValue_m">
-<polygon fill="#337ab7" stroke="#337ab7" points="107,-150 0,-150 0,-126 107,-126 107,-150"/>
-<text text-anchor="middle" x="53.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">conditionValue_m</text>
+<g id="a_program~~dropletcount~~UsesGraph_node3"><a xlink:href=".././module/conditionvalue_m.html" xlink:title="conditionValue_m">
+<polygon fill="#337ab7" stroke="#337ab7" points="107,-108 0,-108 0,-84 107,-84 107,-108"/>
+<text text-anchor="middle" x="53.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">conditionValue_m</text>
 </a>
 </g>
 </g>
 <!-- program~dropletcount&#45;&gt;module~conditionvalue_m -->
-<g id="program~~dropletcount~~UsesGraph_edge1" class="edge">
+<g id="program~~dropletcount~~UsesGraph_edge2" class="edge">
 <title>program~dropletcount&#45;&gt;module~conditionvalue_m</title>
-<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M162.72,-87.11C147.61,-95.91 126.34,-107.83 107,-117 103.41,-118.7 99.64,-120.39 95.85,-122.03"/>
-<polygon fill="#000000" stroke="#000000" points="94.3,-118.88 86.42,-125.97 97,-125.34 94.3,-118.88"/>
-</g>
-<!-- module~boxcounter_m -->
-<g id="program~~dropletcount~~UsesGraph_node3" class="node">
-<title>module~boxcounter_m</title>
-<g id="a_program~~dropletcount~~UsesGraph_node3"><a xlink:href=".././module/boxcounter_m.html" xlink:title="boxCounter_m">
-<polygon fill="#337ab7" stroke="#337ab7" points="98.5,-108 8.5,-108 8.5,-84 98.5,-84 98.5,-108"/>
-<text text-anchor="middle" x="53.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">boxCounter_m</text>
-</a>
-</g>
-</g>
-<!-- program~dropletcount&#45;&gt;module~boxcounter_m -->
-<g id="program~~dropletcount~~UsesGraph_edge3" class="edge">
-<title>program~dropletcount&#45;&gt;module~boxcounter_m</title>
-<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M142.69,-81.59C131.88,-83.35 120.01,-85.29 108.57,-87.16"/>
-<polygon fill="#000000" stroke="#000000" points="107.98,-83.71 98.68,-88.78 109.11,-90.62 107.98,-83.71"/>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M142.69,-81.59C134.65,-82.9 126.03,-84.31 117.43,-85.71"/>
+<polygon fill="#000000" stroke="#000000" points="116.7,-82.29 107.4,-87.36 117.83,-89.2 116.7,-82.29"/>
 </g>
 <!-- module~virusdroplet_m -->
 <g id="program~~dropletcount~~UsesGraph_node4" class="node">
@@ -235,23 +235,23 @@
 </g>
 </g>
 <!-- program~dropletcount&#45;&gt;module~virusdroplet_m -->
-<g id="program~~dropletcount~~UsesGraph_edge2" class="edge">
+<g id="program~~dropletcount~~UsesGraph_edge3" class="edge">
 <title>program~dropletcount&#45;&gt;module~virusdroplet_m</title>
 <path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M142.69,-68.41C132.33,-66.72 120.99,-64.87 109.99,-63.07"/>
 <polygon fill="#000000" stroke="#000000" points="110.47,-59.6 100.04,-61.44 109.34,-66.51 110.47,-59.6"/>
 </g>
-<!-- module~casename_m -->
+<!-- module~boxcounter_m -->
 <g id="program~~dropletcount~~UsesGraph_node5" class="node">
-<title>module~casename_m</title>
-<g id="a_program~~dropletcount~~UsesGraph_node5"><a xlink:href=".././module/casename_m.html" xlink:title="caseName_m">
-<polygon fill="#337ab7" stroke="#337ab7" points="96,-24 11,-24 11,0 96,0 96,-24"/>
-<text text-anchor="middle" x="53.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">caseName_m</text>
+<title>module~boxcounter_m</title>
+<g id="a_program~~dropletcount~~UsesGraph_node5"><a xlink:href=".././module/boxcounter_m.html" xlink:title="boxCounter_m">
+<polygon fill="#337ab7" stroke="#337ab7" points="98.5,-24 8.5,-24 8.5,0 98.5,0 98.5,-24"/>
+<text text-anchor="middle" x="53.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">boxCounter_m</text>
 </a>
 </g>
 </g>
-<!-- program~dropletcount&#45;&gt;module~casename_m -->
+<!-- program~dropletcount&#45;&gt;module~boxcounter_m -->
 <g id="program~~dropletcount~~UsesGraph_edge4" class="edge">
-<title>program~dropletcount&#45;&gt;module~casename_m</title>
+<title>program~dropletcount&#45;&gt;module~boxcounter_m</title>
 <path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M162.72,-62.89C147.61,-54.09 126.34,-42.17 107,-33 103.41,-31.3 99.64,-29.61 95.85,-27.97"/>
 <polygon fill="#000000" stroke="#000000" points="97,-24.66 86.42,-24.03 94.3,-31.12 97,-24.66"/>
 </g>
@@ -334,166 +334,196 @@
 <!-- Generated by graphviz version 2.43.0 (0)
  -->
 <!-- Title: program~~dropletcount~~CallsGraph Pages: 1 -->
-<svg id="programdropletcountCallsGraph" width="411pt" height="284pt"
- viewBox="0.00 0.00 411.00 284.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
-<g id="program~~dropletcount~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 280)">
+<svg id="programdropletcountCallsGraph" width="422pt" height="368pt"
+ viewBox="0.00 0.00 422.00 368.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="program~~dropletcount~~CallsGraph" class="graph" transform="scale(1 1) rotate(0) translate(4 364)">
 <title>program~~dropletcount~~CallsGraph</title>
-<polygon fill="white" stroke="transparent" points="-4,4 -4,-280 407,-280 407,4 -4,4"/>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-364 418,-364 418,4 -4,4"/>
 <!-- program~dropletcount -->
 <g id="program~~dropletcount~~CallsGraph_node1" class="node">
 <title>program~dropletcount</title>
-<polygon fill="none" stroke="black" points="82,-150 0,-150 0,-126 82,-126 82,-150"/>
-<text text-anchor="middle" x="41" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50">dropletCount</text>
+<polygon fill="none" stroke="black" points="82,-192 0,-192 0,-168 82,-168 82,-192"/>
+<text text-anchor="middle" x="41" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50">dropletCount</text>
 </g>
 <!-- proc~case_check -->
 <g id="program~~dropletcount~~CallsGraph_node2" class="node">
 <title>proc~case_check</title>
 <g id="a_program~~dropletcount~~CallsGraph_node2"><a xlink:href=".././proc/case_check.html" xlink:title="case_check">
-<polygon fill="#d9534f" stroke="#d9534f" points="207,-276 133,-276 133,-252 207,-252 207,-276"/>
-<text text-anchor="middle" x="170" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">case_check</text>
+<polygon fill="#d9534f" stroke="#d9534f" points="212.5,-360 138.5,-360 138.5,-336 212.5,-336 212.5,-360"/>
+<text text-anchor="middle" x="175.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">case_check</text>
 </a>
 </g>
 </g>
 <!-- program~dropletcount&#45;&gt;proc~case_check -->
 <g id="program~~dropletcount~~CallsGraph_edge1" class="edge">
 <title>program~dropletcount&#45;&gt;proc~case_check</title>
-<path fill="none" stroke="#000000" d="M47.85,-150.06C58.82,-171.52 84.42,-216.53 118,-243 119.8,-244.42 121.71,-245.76 123.7,-247.02"/>
-<polygon fill="#000000" stroke="#000000" points="122.32,-250.25 132.76,-252.04 125.71,-244.13 122.32,-250.25"/>
+<path fill="none" stroke="#000000" d="M45.03,-192.14C52.57,-219.93 74.77,-288.72 118,-327 121.35,-329.97 125.16,-332.53 129.18,-334.74"/>
+<polygon fill="#000000" stroke="#000000" points="127.69,-337.91 138.22,-339.03 130.69,-331.58 127.69,-337.91"/>
 </g>
 <!-- proc~read_condition -->
 <g id="program~~dropletcount~~CallsGraph_node3" class="node">
 <title>proc~read_condition</title>
 <g id="a_program~~dropletcount~~CallsGraph_node3"><a xlink:href=".././proc/read_condition.html" xlink:title="read_condition">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="215.5,-234 124.5,-234 124.5,-210 215.5,-210 215.5,-234"/>
-<text text-anchor="middle" x="170" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_condition</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="221,-318 130,-318 130,-294 221,-294 221,-318"/>
+<text text-anchor="middle" x="175.5" y="-303.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_condition</text>
 </a>
 </g>
 </g>
 <!-- program~dropletcount&#45;&gt;proc~read_condition -->
-<g id="program~~dropletcount~~CallsGraph_edge3" class="edge">
+<g id="program~~dropletcount~~CallsGraph_edge2" class="edge">
 <title>program~dropletcount&#45;&gt;proc~read_condition</title>
-<path fill="none" stroke="#000000" d="M54.28,-150.2C68.6,-163.94 93.47,-186.25 118,-201 120.66,-202.6 123.47,-204.13 126.34,-205.59"/>
-<polygon fill="#000000" stroke="#000000" points="125.1,-208.87 135.64,-209.97 128.09,-202.54 125.1,-208.87"/>
+<path fill="none" stroke="#000000" d="M47.76,-192.18C58.59,-213.82 83.96,-259.12 118,-285 119.86,-286.42 121.83,-287.74 123.87,-288.99"/>
+<polygon fill="#000000" stroke="#000000" points="122.7,-292.33 133.18,-293.93 125.99,-286.15 122.7,-292.33"/>
 </g>
-<!-- proc~rateofinfection -->
+<!-- proc~read_backup -->
 <g id="program~~dropletcount~~CallsGraph_node4" class="node">
-<title>proc~rateofinfection</title>
-<g id="a_program~~dropletcount~~CallsGraph_node4"><a xlink:href=".././proc/rateofinfection.html" xlink:title="RateOfInfection">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="217.5,-192 122.5,-192 122.5,-168 217.5,-168 217.5,-192"/>
-<text text-anchor="middle" x="170" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">RateOfInfection</text>
+<title>proc~read_backup</title>
+<g id="a_program~~dropletcount~~CallsGraph_node4"><a xlink:href=".././proc/read_backup.html" xlink:title="read_backup">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="216,-276 135,-276 135,-252 216,-252 216,-276"/>
+<text text-anchor="middle" x="175.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_backup</text>
 </a>
 </g>
 </g>
-<!-- program~dropletcount&#45;&gt;proc~rateofinfection -->
-<g id="program~~dropletcount~~CallsGraph_edge2" class="edge">
-<title>program~dropletcount&#45;&gt;proc~rateofinfection</title>
-<path fill="none" stroke="#000000" d="M78.39,-150.04C92.21,-154.6 108.13,-159.87 122.74,-164.7"/>
-<polygon fill="#000000" stroke="#000000" points="122.01,-168.15 132.6,-167.96 124.21,-161.5 122.01,-168.15"/>
+<!-- program~dropletcount&#45;&gt;proc~read_backup -->
+<g id="program~~dropletcount~~CallsGraph_edge3" class="edge">
+<title>program~dropletcount&#45;&gt;proc~read_backup</title>
+<path fill="none" stroke="#000000" d="M53.93,-192.11C68.13,-205.96 93.07,-228.59 118,-243 120.99,-244.73 124.15,-246.36 127.38,-247.89"/>
+<polygon fill="#000000" stroke="#000000" points="126.05,-251.13 136.61,-251.94 128.86,-244.72 126.05,-251.13"/>
 </g>
 <!-- proc~get_box_array -->
 <g id="program~~dropletcount~~CallsGraph_node5" class="node">
 <title>proc~get_box_array</title>
 <g id="a_program~~dropletcount~~CallsGraph_node5"><a xlink:href=".././proc/get_box_array.html" xlink:title="get_box_array">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="214,-150 126,-150 126,-126 214,-126 214,-150"/>
-<text text-anchor="middle" x="170" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_box_array</text>
+<polygon fill="#d94e8f" stroke="#d94e8f" points="219.5,-234 131.5,-234 131.5,-210 219.5,-210 219.5,-234"/>
+<text text-anchor="middle" x="175.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">get_box_array</text>
 </a>
 </g>
 </g>
 <!-- program~dropletcount&#45;&gt;proc~get_box_array -->
-<g id="program~~dropletcount~~CallsGraph_edge4" class="edge">
+<g id="program~~dropletcount~~CallsGraph_edge5" class="edge">
 <title>program~dropletcount&#45;&gt;proc~get_box_array</title>
-<path fill="none" stroke="#000000" d="M82.18,-138C92.75,-138 104.33,-138 115.48,-138"/>
-<polygon fill="#000000" stroke="#000000" points="115.56,-141.5 125.56,-138 115.56,-134.5 115.56,-141.5"/>
+<path fill="none" stroke="#000000" d="M79.97,-192.04C94.52,-196.65 111.32,-201.97 126.68,-206.84"/>
+<polygon fill="#000000" stroke="#000000" points="125.94,-210.28 136.53,-209.96 128.05,-203.6 125.94,-210.28"/>
 </g>
-<!-- proc~read_backup -->
+<!-- proc~dropletidinbox -->
 <g id="program~~dropletcount~~CallsGraph_node6" class="node">
-<title>proc~read_backup</title>
-<g id="a_program~~dropletcount~~CallsGraph_node6"><a xlink:href=".././proc/read_backup.html" xlink:title="read_backup">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="210.5,-108 129.5,-108 129.5,-84 210.5,-84 210.5,-108"/>
-<text text-anchor="middle" x="170" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_backup</text>
+<title>proc~dropletidinbox</title>
+<g id="a_program~~dropletcount~~CallsGraph_node6"><a xlink:href=".././proc/dropletidinbox.html" xlink:title="dropletIDinBox">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="221,-192 130,-192 130,-168 221,-168 221,-192"/>
+<text text-anchor="middle" x="175.5" y="-177.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dropletIDinBox</text>
 </a>
 </g>
 </g>
-<!-- program~dropletcount&#45;&gt;proc~read_backup -->
-<g id="program~~dropletcount~~CallsGraph_edge5" class="edge">
-<title>program~dropletcount&#45;&gt;proc~read_backup</title>
-<path fill="none" stroke="#000000" d="M78.39,-125.96C92.21,-121.4 108.13,-116.13 122.74,-111.3"/>
-<polygon fill="#000000" stroke="#000000" points="124.21,-114.5 132.6,-108.04 122.01,-107.85 124.21,-114.5"/>
+<!-- program~dropletcount&#45;&gt;proc~dropletidinbox -->
+<g id="program~~dropletcount~~CallsGraph_edge4" class="edge">
+<title>program~dropletcount&#45;&gt;proc~dropletidinbox</title>
+<path fill="none" stroke="#000000" d="M82.11,-180C93.9,-180 106.99,-180 119.53,-180"/>
+<polygon fill="#000000" stroke="#000000" points="119.89,-183.5 129.89,-180 119.89,-176.5 119.89,-183.5"/>
+</g>
+<!-- proc~droplettotalvolume -->
+<g id="program~~dropletcount~~CallsGraph_node7" class="node">
+<title>proc~droplettotalvolume</title>
+<g id="a_program~~dropletcount~~CallsGraph_node7"><a xlink:href=".././proc/droplettotalvolume.html" xlink:title="dropletTotalVolume">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="233,-150 118,-150 118,-126 233,-126 233,-150"/>
+<text text-anchor="middle" x="175.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dropletTotalVolume</text>
+</a>
+</g>
+</g>
+<!-- program~dropletcount&#45;&gt;proc~droplettotalvolume -->
+<g id="program~~dropletcount~~CallsGraph_edge6" class="edge">
+<title>program~dropletcount&#45;&gt;proc~droplettotalvolume</title>
+<path fill="none" stroke="#000000" d="M79.97,-167.96C94.52,-163.35 111.32,-158.03 126.68,-153.16"/>
+<polygon fill="#000000" stroke="#000000" points="128.05,-156.4 136.53,-150.04 125.94,-149.72 128.05,-156.4"/>
+</g>
+<!-- proc~rateofinfection -->
+<g id="program~~dropletcount~~CallsGraph_node8" class="node">
+<title>proc~rateofinfection</title>
+<g id="a_program~~dropletcount~~CallsGraph_node8"><a xlink:href=".././proc/rateofinfection.html" xlink:title="RateOfInfection">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="223,-108 128,-108 128,-84 223,-84 223,-108"/>
+<text text-anchor="middle" x="175.5" y="-93.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">RateOfInfection</text>
+</a>
+</g>
+</g>
+<!-- program~dropletcount&#45;&gt;proc~rateofinfection -->
+<g id="program~~dropletcount~~CallsGraph_edge7" class="edge">
+<title>program~dropletcount&#45;&gt;proc~rateofinfection</title>
+<path fill="none" stroke="#000000" d="M53.93,-167.89C68.13,-154.04 93.07,-131.41 118,-117 120.99,-115.27 124.15,-113.64 127.38,-112.11"/>
+<polygon fill="#000000" stroke="#000000" points="128.86,-115.28 136.61,-108.06 126.05,-108.87 128.86,-115.28"/>
 </g>
 <!-- proc~output_countcsv~2 -->
-<g id="program~~dropletcount~~CallsGraph_node7" class="node">
+<g id="program~~dropletcount~~CallsGraph_node9" class="node">
 <title>proc~output_countcsv~2</title>
-<g id="a_program~~dropletcount~~CallsGraph_node7"><a xlink:href=".././proc/output_countcsv~2.html" xlink:title="output_countCSV">
-<polygon fill="#d9534f" stroke="#d9534f" points="222,-66 118,-66 118,-42 222,-42 222,-66"/>
-<text text-anchor="middle" x="170" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">output_countCSV</text>
+<g id="a_program~~dropletcount~~CallsGraph_node9"><a xlink:href=".././proc/output_countcsv~2.html" xlink:title="output_countCSV">
+<polygon fill="#d9534f" stroke="#d9534f" points="227.5,-66 123.5,-66 123.5,-42 227.5,-42 227.5,-66"/>
+<text text-anchor="middle" x="175.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">output_countCSV</text>
 </a>
 </g>
 </g>
 <!-- program~dropletcount&#45;&gt;proc~output_countcsv~2 -->
-<g id="program~~dropletcount~~CallsGraph_edge6" class="edge">
+<g id="program~~dropletcount~~CallsGraph_edge8" class="edge">
 <title>program~dropletcount&#45;&gt;proc~output_countcsv~2</title>
-<path fill="none" stroke="#000000" d="M54.28,-125.8C68.6,-112.06 93.47,-89.75 118,-75 120.66,-73.4 123.47,-71.87 126.34,-70.41"/>
-<polygon fill="#000000" stroke="#000000" points="128.09,-73.46 135.64,-66.03 125.1,-67.13 128.09,-73.46"/>
+<path fill="none" stroke="#000000" d="M47.76,-167.82C58.59,-146.18 83.96,-100.88 118,-75 119.86,-73.58 121.83,-72.26 123.87,-71.01"/>
+<polygon fill="#000000" stroke="#000000" points="125.99,-73.85 133.18,-66.07 122.7,-67.67 125.99,-73.85"/>
 </g>
 <!-- proc~output_boxvtk~2 -->
-<g id="program~~dropletcount~~CallsGraph_node8" class="node">
+<g id="program~~dropletcount~~CallsGraph_node10" class="node">
 <title>proc~output_boxvtk~2</title>
-<g id="a_program~~dropletcount~~CallsGraph_node8"><a xlink:href=".././proc/output_boxvtk~2.html" xlink:title="output_boxVTK">
-<polygon fill="#d9534f" stroke="#d9534f" points="216,-24 124,-24 124,0 216,0 216,-24"/>
-<text text-anchor="middle" x="170" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">output_boxVTK</text>
+<g id="a_program~~dropletcount~~CallsGraph_node10"><a xlink:href=".././proc/output_boxvtk~2.html" xlink:title="output_boxVTK">
+<polygon fill="#d9534f" stroke="#d9534f" points="221.5,-24 129.5,-24 129.5,0 221.5,0 221.5,-24"/>
+<text text-anchor="middle" x="175.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">output_boxVTK</text>
 </a>
 </g>
 </g>
 <!-- program~dropletcount&#45;&gt;proc~output_boxvtk~2 -->
-<g id="program~~dropletcount~~CallsGraph_edge7" class="edge">
+<g id="program~~dropletcount~~CallsGraph_edge9" class="edge">
 <title>program~dropletcount&#45;&gt;proc~output_boxvtk~2</title>
-<path fill="none" stroke="#000000" d="M47.85,-125.94C58.82,-104.48 84.42,-59.47 118,-33 119.77,-31.6 121.65,-30.29 123.6,-29.05"/>
-<polygon fill="#000000" stroke="#000000" points="125.47,-32.01 132.5,-24.09 122.06,-25.9 125.47,-32.01"/>
+<path fill="none" stroke="#000000" d="M45.03,-167.86C52.57,-140.07 74.77,-71.28 118,-33 119.5,-31.67 121.09,-30.43 122.75,-29.26"/>
+<polygon fill="#000000" stroke="#000000" points="124.72,-32.15 131.52,-24.03 121.14,-26.14 124.72,-32.15"/>
 </g>
 <!-- proc~read_textrecord -->
-<g id="program~~dropletcount~~CallsGraph_node9" class="node">
+<g id="program~~dropletcount~~CallsGraph_node11" class="node">
 <title>proc~read_textrecord</title>
-<g id="a_program~~dropletcount~~CallsGraph_node9"><a xlink:href=".././proc/read_textrecord.html" xlink:title="read_textRecord">
-<polygon fill="#d9534f" stroke="#d9534f" points="380,-276 281,-276 281,-252 380,-252 380,-276"/>
-<text text-anchor="middle" x="330.5" y="-261.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_textRecord</text>
+<g id="a_program~~dropletcount~~CallsGraph_node11"><a xlink:href=".././proc/read_textrecord.html" xlink:title="read_textRecord">
+<polygon fill="#d9534f" stroke="#d9534f" points="391,-360 292,-360 292,-336 391,-336 391,-360"/>
+<text text-anchor="middle" x="341.5" y="-345.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_textRecord</text>
 </a>
 </g>
 </g>
 <!-- proc~case_check&#45;&gt;proc~read_textrecord -->
-<g id="program~~dropletcount~~CallsGraph_edge8" class="edge">
+<g id="program~~dropletcount~~CallsGraph_edge10" class="edge">
 <title>proc~case_check&#45;&gt;proc~read_textrecord</title>
-<path fill="none" stroke="#000000" d="M207.36,-264C226.13,-264 249.5,-264 270.75,-264"/>
-<polygon fill="#000000" stroke="#000000" points="270.99,-267.5 280.99,-264 270.99,-260.5 270.99,-267.5"/>
+<path fill="none" stroke="#000000" d="M212.9,-348C233.12,-348 258.77,-348 281.75,-348"/>
+<polygon fill="#000000" stroke="#000000" points="281.76,-351.5 291.76,-348 281.76,-344.5 281.76,-351.5"/>
 </g>
 <!-- interface~read_csv -->
-<g id="program~~dropletcount~~CallsGraph_node11" class="node">
+<g id="program~~dropletcount~~CallsGraph_node13" class="node">
 <title>interface~read_csv</title>
-<g id="a_program~~dropletcount~~CallsGraph_node11"><a xlink:href=".././interface/read_csv.html" xlink:title="read_CSV">
-<polygon fill="#a7506f" stroke="#a7506f" points="362.5,-150 298.5,-150 298.5,-126 362.5,-126 362.5,-150"/>
-<text text-anchor="middle" x="330.5" y="-135.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_CSV</text>
+<g id="a_program~~dropletcount~~CallsGraph_node13"><a xlink:href=".././interface/read_csv.html" xlink:title="read_CSV">
+<polygon fill="#a7506f" stroke="#a7506f" points="373.5,-234 309.5,-234 309.5,-210 373.5,-210 373.5,-234"/>
+<text text-anchor="middle" x="341.5" y="-219.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">read_CSV</text>
 </a>
 </g>
 </g>
 <!-- proc~get_box_array&#45;&gt;interface~read_csv -->
-<g id="program~~dropletcount~~CallsGraph_edge9" class="edge">
+<g id="program~~dropletcount~~CallsGraph_edge11" class="edge">
 <title>proc~get_box_array&#45;&gt;interface~read_csv</title>
-<path fill="none" stroke="#000000" d="M214.31,-138C237.36,-138 265.56,-138 288.28,-138"/>
-<polygon fill="#000000" stroke="#000000" points="288.3,-141.5 298.3,-138 288.3,-134.5 288.3,-141.5"/>
+<path fill="none" stroke="#000000" d="M219.59,-222C244.14,-222 274.75,-222 299.03,-222"/>
+<polygon fill="#000000" stroke="#000000" points="299.35,-225.5 309.35,-222 299.35,-218.5 299.35,-225.5"/>
 </g>
 <!-- proc~unstructuredgrid_invtk_ -->
-<g id="program~~dropletcount~~CallsGraph_node10" class="node">
+<g id="program~~dropletcount~~CallsGraph_node12" class="node">
 <title>proc~unstructuredgrid_invtk_</title>
-<g id="a_program~~dropletcount~~CallsGraph_node10"><a xlink:href=".././proc/unstructuredgrid_invtk_.html" xlink:title="UnstructuredGrid_inVTK_">
-<polygon fill="#d94e8f" stroke="#d94e8f" points="403,-24 258,-24 258,0 403,0 403,-24"/>
-<text text-anchor="middle" x="330.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">UnstructuredGrid_inVTK_</text>
+<g id="a_program~~dropletcount~~CallsGraph_node12"><a xlink:href=".././proc/unstructuredgrid_invtk_.html" xlink:title="UnstructuredGrid_inVTK_">
+<polygon fill="#d94e8f" stroke="#d94e8f" points="414,-24 269,-24 269,0 414,0 414,-24"/>
+<text text-anchor="middle" x="341.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">UnstructuredGrid_inVTK_</text>
 </a>
 </g>
 </g>
 <!-- proc~output_boxvtk~2&#45;&gt;proc~unstructuredgrid_invtk_ -->
-<g id="program~~dropletcount~~CallsGraph_edge10" class="edge">
+<g id="program~~dropletcount~~CallsGraph_edge12" class="edge">
 <title>proc~output_boxvtk~2&#45;&gt;proc~unstructuredgrid_invtk_</title>
-<path fill="none" stroke="#000000" d="M216.42,-12C226.19,-12 236.81,-12 247.5,-12"/>
-<polygon fill="#000000" stroke="#000000" points="247.74,-15.5 257.74,-12 247.74,-8.5 247.74,-15.5"/>
+<path fill="none" stroke="#000000" d="M221.75,-12C233.27,-12 246.01,-12 258.74,-12"/>
+<polygon fill="#000000" stroke="#000000" points="258.93,-15.5 268.93,-12 258.93,-8.5 258.93,-15.5"/>
 </g>
 </g>
 </svg>
@@ -566,17 +596,17 @@
   <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#vars-1">Variables</a></h3></div>
   <div id="vars-1" class="panel-collapse collapse">
     <div class="list-group">
-      <a class="list-group-item" href="../program/dropletcount.html#variable-n~2">n</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-n">n</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-i_box~2">i_box</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-num_box~2">num_box</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-caseid~2">caseID</a>
-      <a class="list-group-item" href="../program/dropletcount.html#variable-casename_array~2">caseName_array</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-casename_array~3">caseName_array</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-casename~4">caseName</a>
-      <a class="list-group-item" href="../program/dropletcount.html#variable-fname~6">fname</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-fname~8">fname</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-id_array~3">id_array</a>
-      <a class="list-group-item" href="../program/dropletcount.html#variable-maindroplet">mainDroplet</a>
-      <a class="list-group-item" href="../program/dropletcount.html#variable-dgroup~3">dGroup</a>
-      <a class="list-group-item" href="../program/dropletcount.html#variable-condval~2">condVal</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-maindroplets">mainDroplets</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-droplets~17">droplets</a>
+      <a class="list-group-item" href="../program/dropletcount.html#variable-condval">condVal</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-box_array~2">box_array</a>
       <a class="list-group-item" href="../program/dropletcount.html#variable-bresult~2">bResult</a>
     </div>
@@ -618,7 +648,7 @@
 <thead><tr><th>Type</th><th>Attributes</th><th></th><th>Name</th><th></th><th>Initial</th><th></th></thead>
 <tbody>
 <tr>
-  <td><span class="anchor" id="variable-n~2"></span>integer</td>
+  <td><span class="anchor" id="variable-n"></span>integer</td>
   <td></td><td>::</td>
   <td><strong>n</strong></td><td></td><td></td><td></td>
 </tr>
@@ -638,7 +668,7 @@
   <td><strong>caseID</strong></td><td></td><td></td><td></td>
 </tr>
 <tr>
-  <td><span class="anchor" id="variable-casename_array~2"></span>character(len=50),</td>
+  <td><span class="anchor" id="variable-casename_array~3"></span>character(len=50),</td>
   <td>allocatable</td><td>::</td>
   <td><strong>caseName_array</strong>(:)</td><td></td><td></td><td></td>
 </tr>
@@ -648,7 +678,7 @@
   <td><strong>caseName</strong></td><td></td><td></td><td></td>
 </tr>
 <tr>
-  <td><span class="anchor" id="variable-fname~6"></span>character,</td>
+  <td><span class="anchor" id="variable-fname~8"></span>character,</td>
   <td>allocatable</td><td>::</td>
   <td><strong>fname</strong></td><td></td><td></td><td></td>
 </tr>
@@ -658,17 +688,17 @@
   <td><strong>id_array</strong>(:)</td><td></td><td></td><td></td>
 </tr>
 <tr>
-  <td><span class="anchor" id="variable-maindroplet"></span>type(<a href='../type/dropletgroup.html'>DropletGroup</a>)</td>
-  <td></td><td>::</td>
-  <td><strong>mainDroplet</strong></td><td></td><td></td><td></td>
+  <td><span class="anchor" id="variable-maindroplets"></span>type(<a href='../type/virusdroplet_t.html'>virusDroplet_t</a>),</td>
+  <td>allocatable</td><td>::</td>
+  <td><strong>mainDroplets</strong>(:)</td><td></td><td></td><td></td>
 </tr>
 <tr>
-  <td><span class="anchor" id="variable-dgroup~3"></span>type(<a href='../type/dropletgroup.html'>DropletGroup</a>)</td>
-  <td></td><td>::</td>
-  <td><strong>dGroup</strong></td><td></td><td></td><td></td>
+  <td><span class="anchor" id="variable-droplets~17"></span>type(<a href='../type/virusdroplet_t.html'>virusDroplet_t</a>),</td>
+  <td>allocatable</td><td>::</td>
+  <td><strong>droplets</strong>(:)</td><td></td><td></td><td></td>
 </tr>
 <tr>
-  <td><span class="anchor" id="variable-condval~2"></span>type(<a href='../type/conditionvalue_t.html'>conditionValue_t</a>)</td>
+  <td><span class="anchor" id="variable-condval"></span>type(<a href='../type/conditionvalue_t.html'>conditionValue_t</a>)</td>
   <td></td><td>::</td>
   <td><strong>condVal</strong></td><td></td><td></td><td></td>
 </tr>

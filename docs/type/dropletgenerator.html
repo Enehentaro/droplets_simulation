@@ -90,7 +90,7 @@
      <li><i class="fa fa-list-ol"></i>
        <a data-toggle="tooltip"
     data-placement="bottom" data-html="true"
-    title="<p> 4.5% of total for derived types.</p>Including implementation: 61 statements,  3.2% of total for derived types.">12 statements</a>
+    title="<p> 4.8% of total for derived types.</p>Including implementation: 62 statements,  3.6% of total for derived types.">12 statements</a>
      </li> 
     <li><i class="fa fa-code"></i><a href="../src/dropletGenerator.f90"> Source File</a></li>
   </ul>
@@ -184,34 +184,34 @@
 <polygon fill="#000000" stroke="#000000" points="276.67,-85.46 267.07,-89.95 277.37,-92.43 276.67,-85.46"/>
 <text text-anchor="middle" x="365" y="-90.4" font-family="Helvetica,sans-Serif" font-size="9.50">equation</text>
 </g>
-<!-- type~sequentialarray -->
+<!-- type~placementbox -->
 <g id="type~~dropletgenerator~~InheritsGraph_node3" class="node">
+<title>type~placementbox</title>
+<polygon fill="#5cb85c" stroke="#5cb85c" points="245,-66 156,-66 156,-42 245,-42 245,-66"/>
+<text text-anchor="middle" x="200.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">placementBox</text>
+</g>
+<!-- type~dropletgenerator&#45;&gt;type~placementbox -->
+<g id="type~~dropletgenerator~~InheritsGraph_edge2" class="edge">
+<title>type~dropletgenerator&#45;&gt;type~placementbox</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M462.88,-54C405.39,-54 313.35,-54 255.23,-54"/>
+<polygon fill="#000000" stroke="#000000" points="255.14,-50.5 245.14,-54 255.14,-57.5 255.14,-50.5"/>
+<text text-anchor="middle" x="365" y="-56.4" font-family="Helvetica,sans-Serif" font-size="9.50">pBox_array</text>
+</g>
+<!-- type~sequentialarray -->
+<g id="type~~dropletgenerator~~InheritsGraph_node4" class="node">
 <title>type~sequentialarray</title>
-<g id="a_type~~dropletgenerator~~InheritsGraph_node3"><a xlink:href=".././type/sequentialarray.html" xlink:title="SequentialArray">
-<polygon fill="#5cb85c" stroke="#5cb85c" points="250,-66 151,-66 151,-42 250,-42 250,-66"/>
-<text text-anchor="middle" x="200.5" y="-51.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">SequentialArray</text>
+<g id="a_type~~dropletgenerator~~InheritsGraph_node4"><a xlink:href=".././type/sequentialarray.html" xlink:title="SequentialArray">
+<polygon fill="#5cb85c" stroke="#5cb85c" points="250,-24 151,-24 151,0 250,0 250,-24"/>
+<text text-anchor="middle" x="200.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">SequentialArray</text>
 </a>
 </g>
 </g>
 <!-- type~dropletgenerator&#45;&gt;type~sequentialarray -->
 <g id="type~~dropletgenerator~~InheritsGraph_edge3" class="edge">
 <title>type~dropletgenerator&#45;&gt;type~sequentialarray</title>
-<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M462.88,-54C407.04,-54 318.58,-54 260.29,-54"/>
-<polygon fill="#000000" stroke="#000000" points="260.13,-50.5 250.13,-54 260.13,-57.5 260.13,-50.5"/>
-<text text-anchor="middle" x="365" y="-56.4" font-family="Helvetica,sans-Serif" font-size="9.50">initialRadiusArray, deadlineArray</text>
-</g>
-<!-- type~placementbox -->
-<g id="type~~dropletgenerator~~InheritsGraph_node4" class="node">
-<title>type~placementbox</title>
-<polygon fill="#5cb85c" stroke="#5cb85c" points="245,-24 156,-24 156,0 245,0 245,-24"/>
-<text text-anchor="middle" x="200.5" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">placementBox</text>
-</g>
-<!-- type~dropletgenerator&#45;&gt;type~placementbox -->
-<g id="type~~dropletgenerator~~InheritsGraph_edge2" class="edge">
-<title>type~dropletgenerator&#45;&gt;type~placementbox</title>
-<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M462.72,-43.05C456.76,-41.95 450.75,-40.9 445,-40 380.05,-29.79 304.8,-21.7 255.34,-16.9"/>
-<polygon fill="#000000" stroke="#000000" points="255.48,-13.4 245.19,-15.92 254.81,-20.36 255.48,-13.4"/>
-<text text-anchor="middle" x="365" y="-42.4" font-family="Helvetica,sans-Serif" font-size="9.50">pBox_array</text>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M462.72,-43.05C456.76,-41.95 450.75,-40.9 445,-40 382.21,-30.13 309.79,-22.24 260.36,-17.39"/>
+<polygon fill="#000000" stroke="#000000" points="260.46,-13.88 250.17,-16.4 259.78,-20.85 260.46,-13.88"/>
+<text text-anchor="middle" x="365" y="-42.4" font-family="Helvetica,sans-Serif" font-size="9.50">initialRadiusArray, deadlineArray</text>
 </g>
 <!-- type~basicparameter -->
 <g id="type~~dropletgenerator~~InheritsGraph_node5" class="node">
@@ -354,7 +354,7 @@
   <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-generatedroplet"></span><h3>procedure, public :: <strong>generateDroplet</strong>    </h3></div>
   <ul class="list-group">
       <li class="list-group-item">
-          <h3>private function generateDroplet(self, num_droplet, nowTime)</h3>    
+          <h3>private function generateDroplet(self, num_droplet, nowTime) result(droplets)</h3>    
 <h4>Arguments</h4>      <table class="table table-striped varlist">
 <thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
 <tbody>
@@ -379,7 +379,7 @@
 </tbody>
 </table>
 
-<h4>Return Value <small>type(<a href='../type/dropletgroup.html'>DropletGroup</a>)</small></h4>  
+<h4>Return Value <small>type(<a href='../type/virusdroplet_t.html'>virusDroplet_t</a>),allocatable, (:)</small></h4>  
 
       </li>
   </ul>
@@ -389,7 +389,7 @@
   <div class="panel-heading codesum"><span class="anchor" id="boundprocedure-periodicgeneration~2"></span><h3>procedure, public :: <strong>periodicGeneration</strong>  => dropletPeriodicGeneration   </h3></div>
   <ul class="list-group">
       <li class="list-group-item">
-          <h3>private subroutine dropletPeriodicGeneration(self, dGroup, nowTime, stat)</h3>    
+          <h3>private subroutine dropletPeriodicGeneration(self, droplets, nowTime, stat)</h3>    
 <h4>Arguments</h4>      <table class="table table-striped varlist">
 <thead><tr><th>Type</th><th>Intent</th><th>Optional</th><th>Attributes</th><th></th><th>Name</th><th></th></thead>
 <tbody>
@@ -400,10 +400,10 @@
   <td><strong>self</strong></td><td></td>
 </tr>
 <tr>
-  <td><span class="anchor" ></span>type(<a href='../type/dropletgroup.html'>DropletGroup</a>)</td>
-<td></td>
+  <td><span class="anchor" ></span>type(<a href='../type/virusdroplet_t.html'>virusDroplet_t</a>),</td>
+<td>intent(inout)</td>
   <td></td>  <td></td><td>::</td>
-  <td><strong>dGroup</strong></td><td></td>
+  <td><strong>droplets</strong>(:)</td><td></td>
 </tr>
 <tr>
   <td><span class="anchor" ></span>double precision,</td>

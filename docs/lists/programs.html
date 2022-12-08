@@ -91,7 +91,6 @@
 			   <tr><td><a href='../program/cube2usg.html'>CUBE2USG</a></td><td><a href='../sourcefile/cube2usg.f90.html'>CUBE2USG.f90</a></td><td><p>CUBE格子上の流速場をVTK非構造格子に載せるプログラム。
 非構造格子上の各格子に対して、CUBE格子上の最近傍節点を探し、対応付けを行う。
 対応する各節点における流速を配列にして、そのままバイナリファイル出力を行う。</p></td></tr>
-			   <tr><td><a href='../program/droplet2csv.html'>droplet2CSV</a></td><td><a href='../sourcefile/droplet2csv.f90.html'>droplet2CSV.f90</a></td><td></td></tr>
 			   <tr><td><a href='../program/dropletcount.html'>dropletCount</a></td><td><a href='../sourcefile/dropletcount.f90.html'>dropletCount.f90</a></td><td><p>ボックスを通過した飛沫をカウントする。
 飛沫計算の出力ファイルを順に読み込み、各ボックスに対して内外判定を行う。
 ボックス側では、通過した飛沫のIDしか見ておらず、同じIDの飛沫のダブルカウントなどは起こらない。</p></td></tr>
@@ -101,7 +100,8 @@
 			   <tr><td><a href='../program/kdtree_test.html'>kdTree_test</a></td><td><a href='../sourcefile/kdtree_test.f90.html'>kdTree_test.f90</a></td><td><p>kdTreeによる探索結果と、厳密なnearest探索結果が一致するかどうかをテスト</p></td></tr>
 			   <tr><td><a href='../program/main.html'>MAIN</a></td><td><a href='../sourcefile/main.f90.html'>MAIN.f90</a></td><td><a href="../program/main.html" class="pull-right"><emph>Read more&hellip;</emph></a></td></tr>
 			   <tr><td><a href='../program/sort_test.html'>sort_test</a></td><td><a href='../sourcefile/sort_test.f90.html'>sort_test.f90</a></td><td><p>ヒープソートの機能テスト</p></td></tr>
-			   <tr><td><a href='../program/translate.html'>translate</a></td><td><a href='../sourcefile/initial_translate.f90.html'>initial_translate.f90</a></td><td><p>全飛沫を、center(x,y)中心にphi[rad]だけ回転させ(z方向には回転しない),全飛沫の中心center(x,y,z)をcenter_translated(X,Y,Z)に移動させるサンプルコード</p></td></tr>
+			   <tr><td><a href='../program/translate.html'>translate</a></td><td><a href='../sourcefile/initial_translate.f90.html'>initial_translate.f90</a></td><td><p>全飛沫に対して、基準点をbefore_dGroupCenter、回転軸をrotation_axisとして、反時計回りにphi[rad]だけ回転させる。
+回転後の飛沫中心をafter_dGroupCenterに平行移動させる。</p></td></tr>
 			 </tbody></table>
         </div>
       </div>

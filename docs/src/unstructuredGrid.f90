@@ -577,8 +577,9 @@ module unstructuredGrid_m
         if(.not.existance) then
 
             self%kd_tree = kdTree_(xyz)
-            call self%kd_tree%saveAsTXT(FNAME)
-            print*, 'OUTPUT kdtree:', FNAME
+            ! 時間かかるので、今は使わない
+            ! call self%kd_tree%saveAsTXT(FNAME)
+            ! print*, 'OUTPUT kdtree:', FNAME
 
         else
 
@@ -777,7 +778,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine adhesionCheckOnBound(self, position, radius, cellID, stat)
-        class(FlowFieldUnstructuredGrid) self
+        class(FlowFieldUnstructuredGrid), intent(in) :: self
         double precision, intent(in) :: position(3), radius
         integer, intent(in) :: cellID
         integer, intent(out) :: stat
