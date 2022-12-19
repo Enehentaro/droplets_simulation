@@ -6,23 +6,60 @@ module unstructuredGrid_m
     private
 
     type, extends(cell_t) :: cell_inFlow_t
-        integer, allocatable :: boundFaceID(:), adjacentCellID(:)
-        real center(3), flowVelocity(3), threshold
+        !! 流れ場格子構造体
+
+        integer, allocatable :: boundFaceID(:)
+            !! 境界面ID配列。内部格子なら境界面を持たず、配列サイズはゼロ。
+
+        integer, allocatable :: adjacentCellID(:)
+            !! 隣接セルID配列。
+
+        real center(3)
+            !! セル重心
+
+        real flowVelocity(3)
+            !! 流速
+
+        real threshold
+            !! 近傍セル判定の閾値
+
     end type
 
     type boundaryTriangle_t
+        !! 境界三角形面構造体
+
         integer nodeID(3)
-        real center(3), normalVector(3), moveVector(3)
+            !! 節点ID配列
+
+        real center(3)
+            !! 面重心
+
+        real normalVector(3)
+            !! 法線ベクトル
+
+        real moveVector(3)
+            !! 移動量ベクトル（格子移動がある場合に必要になる）
+
     end type
 
     type, public :: FlowFieldUnstructuredGrid
+        !! 流れ場非構造格子クラス
         private
+
         type(node_t), allocatable :: NODEs(:)
+            !! 節点配列
+
         type(cell_inFlow_t), allocatable :: CELLs(:)
+            !! セル配列
+
         type(boundaryTriangle_t), allocatable :: BoundFACEs(:)
+            !! 境界面配列
+
         type(kdTree) kd_tree
+            !! kd-tree（近傍セル探索用）
 
         real MIN_CDN(3), MAX_CDN(3)
+
         integer :: num_refCellSearchFalse = 0, num_refCellSearch = 0
 
         contains
@@ -59,6 +96,8 @@ module unstructuredGrid_m
     contains
 
     type(FlowFieldUnstructuredGrid) function FlowFieldUnstructuredGrid_(FlowFieldFile, meshFile)
+        !! 流れ場のコンストラクタ
+        !! 流れ場ファイルの読み込み、前処理、kd-treeの構築を行う
         use path_operator_m
         character(*), intent(in) :: FlowFieldFile
         character(*), intent(in), optional :: meshFile
@@ -78,6 +117,9 @@ module unstructuredGrid_m
     end function
 
     subroutine setupWithFlowFieldFile(self, FNAME, meshFile)
+        !! 流れ場ファイルの読み込み
+        !! VTK, INP, FLDに対応
+        !! 独自フォーマットのArrayにも対応
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: FNAME
         character(*), intent(in), optional :: meshFile
@@ -119,6 +161,8 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine updateWithFlowFieldFile(self, FNAME)
+        !! 流れ場ファイルを読み込み、流れ場を更新する
+        !! あくまで更新目的であり、セル数の異なるメッシュは想定していない
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: FNAME
 
@@ -150,6 +194,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine AdjacencySolvingProcess(self, dir)
+        !! 前処理
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: dir
         logical success
@@ -171,7 +216,8 @@ module unstructuredGrid_m
 
     end subroutine
 
-    subroutine set_MinMaxCDN(self) !節点群の座標最大最小の算出
+    subroutine set_MinMaxCDN(self)
+        !! 節点群の座標最大最小の算出
         class(FlowFieldUnstructuredGrid) self
         real MinMax(3,2)
 
@@ -191,7 +237,8 @@ module unstructuredGrid_m
 
     end subroutine
 
-    subroutine set_cellCenter(self) !セル重心の算出
+    subroutine set_cellCenter(self)
+        !! セル重心の算出
         class(FlowFieldUnstructuredGrid) self
         integer II,IIMX, n, num_node, nodeID
         real vector(3)
@@ -209,7 +256,8 @@ module unstructuredGrid_m
 
     end subroutine
 
-    subroutine set_cellThreshold(self) !セル閾値の算出
+    subroutine set_cellThreshold(self)
+        !! セル閾値の算出
         class(FlowFieldUnstructuredGrid) self
         integer II,IIMX, n, num_node, nodeID
         real x, vector(3)
@@ -288,7 +336,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine read_INP(self, FNAME)
-        !  INPファイルを読み込み、節点データを要素データに変換する
+        !! INPファイルを読み込み、節点データを要素データに変換する
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: FNAME
         INTEGER II,II2,KK,AAmax, IIMX2, AA, n_unit
@@ -397,7 +445,7 @@ module unstructuredGrid_m
         call grid%read_SCT_file(FNAME)
         
         if(findTopology) then
-            !!ファイルが存在し, かつトポロジー情報が存在する場合以下の処理が行われる.  
+            !ファイルが存在し, かつトポロジー情報が存在する場合以下の処理が行われる.  
             call grid%extract_cell_vertices(tetras, pyramids, wedges, hexas)
             if(allocated(tetras)) then
                 call grid%get_2d_array_of_point_coords(points)
@@ -447,6 +495,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine read_adjacency(self, path, success)
+        !! セルの隣接関係情報をTXTファイルから読み込む
         use filename_m, only : adjacencyFileName
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
@@ -494,6 +543,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine output_adjacency(self, path)
+        !! セルの隣接関係情報をTXTファイルに出力
         use filename_m, only : adjacencyFileName
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
@@ -524,6 +574,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine read_boundaries(self, path)
+        !! 境界面情報をTXTファイルから読み込む
         use filename_m, only : boundaryFileName
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
@@ -543,6 +594,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine output_boundaries(self, path)
+        !! 境界面情報をTXTファイルに出力
         use filename_m, only : boundaryFileName
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
@@ -562,6 +614,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine setup_kdTree(self, path)
+        !! kd-treeの構築
         use filename_m, only : kdTreeFName 
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
@@ -635,7 +688,8 @@ module unstructuredGrid_m
         
     end function
 
-    integer function nearer_cell(self, X, NCN)  !近セルの探索（隣接セルから）
+    integer function nearer_cell(self, X, NCN) 
+        !! 近セルの探索（隣接セルを起点に探索）
         class(FlowFieldUnstructuredGrid) self
         integer, intent(in) :: NCN
         real, intent(in) :: X(3)
@@ -674,6 +728,7 @@ module unstructuredGrid_m
     end function
 
     logical function nearcell_check(self, X, NCN)
+        !! 近傍セル探索の結果が妥当かどうかをチェック
         class(FlowFieldUnstructuredGrid) self
         real, intent(in) :: X(3)
         integer, intent(in) :: NCN
@@ -693,6 +748,7 @@ module unstructuredGrid_m
     end function
 
     subroutine search_refCELL(self, X, reference_cell, stat)
+        !! 参照セル探索
         class(FlowFieldUnstructuredGrid) self
         real, intent(in) :: X(3)
         integer, intent(inout) :: reference_cell
@@ -725,7 +781,8 @@ module unstructuredGrid_m
 
     end function
                      
-    subroutine boundary_setting(self, first) !全境界面に対して外向き法線ベクトルと重心を算出
+    subroutine boundary_setting(self, first)
+        !! 全境界面に対して外向き法線ベクトルと重心を算出
         class(FlowFieldUnstructuredGrid) self
         logical, intent(in) :: first
         integer II, JJ, JB, IIMX, JBMX, nodeID(3)
@@ -778,6 +835,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine adhesionCheckOnBound(self, position, radius, cellID, stat)
+        !! 境界面への付着判定
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         double precision, intent(in) :: position(3), radius
         integer, intent(in) :: cellID
@@ -804,6 +862,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine point2cellVelocity(self, pointVector)
+        !! 節点定義のベクトル場を、セル重心定義に換算
         class(FlowFieldUnstructuredGrid) self
         real, intent(in) :: pointVector(:,:)
         integer II, IIMX, n, ID, num_node
@@ -827,6 +886,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine output_STL(self, fname)
+        !! 境界面形状情報をSTL形式で出力
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: fname
         integer n_unit, JB, nodeID(3)
@@ -912,6 +972,7 @@ module unstructuredGrid_m
     end subroutine
 
     function extensionOf(FileName) result(extension)
+        !! ファイル名の拡張子を返す
         character(*), intent(in) :: FileName
         character(:), allocatable :: extension
 
@@ -920,6 +981,7 @@ module unstructuredGrid_m
     end function
     
     function get_flowVelocityInCELL(self, ID) result(velocity)
+        !! 指定IDにおけるセルの流速を返す
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         integer, intent(in) :: ID
         real velocity(3)
@@ -929,6 +991,7 @@ module unstructuredGrid_m
     end function
 
     function get_movementVectorOfBoundarySurface(self, ID) result(vector)
+        !! 指定IDにおける境界面の移動量ベクトルを返す
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         integer, intent(in) :: ID
         real vector(3)
@@ -938,6 +1001,7 @@ module unstructuredGrid_m
     end function
 
     function get_cellCenterOf(self, ID) result(center)
+        !! 指定IDにおけるセル重心
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         integer, intent(in) :: ID
         real center(3)
@@ -947,6 +1011,7 @@ module unstructuredGrid_m
     end function
 
     function get_allOfCellCenters(self) result(centers)
+        !! 全セルの重心座標を２次元配列で返す
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         real, allocatable :: centers(:,:)
         integer i, num_cell
@@ -959,6 +1024,8 @@ module unstructuredGrid_m
     end function
 
     function get_cellVerticesOf(self, ID) result(vertices)
+        !! 指定IDのセルにおける頂点座標配列を返す
+        !! ２次元配列：（xyz、頂点）
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         integer, intent(in) :: ID
         real, allocatable :: vertices(:,:)
@@ -974,8 +1041,10 @@ module unstructuredGrid_m
     end function
 
     function get_gridInformation(self, name) result(info)
+        !! 節点数もしくはセル数を取得
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         character(*), intent(in) :: name
+            !! 'node' or 'cell'
         integer info
 
         select case(name)
