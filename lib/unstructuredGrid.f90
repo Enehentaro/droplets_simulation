@@ -122,7 +122,7 @@ module unstructuredGrid_m
         !! 流れ場ファイルの読み込み、前処理、kd-treeの構築を行う
         use path_operator_m
         character(*), intent(in) :: FlowFieldFile
-            !! 流れ場ファイル名
+            !! 流速データファイル名
         character(*), intent(in) :: meshFile
             !! メッシュファイル
         character(:), allocatable :: Dir
