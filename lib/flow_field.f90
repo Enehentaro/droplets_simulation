@@ -65,7 +65,7 @@ module flow_field_m
         end if
 
         if(present(meshFile)) then
-            FlowField_%FlowFieldUnstructuredGrid = FlowFieldUnstructuredGrid_(FlowField_%get_requiredFileName(), meshFile)
+            FlowField_%FlowFieldUnstructuredGrid = FlowFieldUnstructuredGrid_withMeshFile(FlowField_%get_requiredFileName(), meshFile)
         else
             FlowField_%FlowFieldUnstructuredGrid = FlowFieldUnstructuredGrid_(FlowField_%get_requiredFileName())
         end if

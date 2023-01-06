@@ -97,28 +97,41 @@ module unstructuredGrid_m
 
     end type
 
-    public FlowFieldUnstructuredGrid_
+    public FlowFieldUnstructuredGrid_, FlowFieldUnstructuredGrid_withMeshFile
 
     contains
 
-    type(FlowFieldUnstructuredGrid) function FlowFieldUnstructuredGrid_(FlowFieldFile, meshFile)
+    function FlowFieldUnstructuredGrid_(FlowFieldFile) result(grid)
         !! 流れ場のコンストラクタ
         !! 流れ場ファイルの読み込み、前処理、kd-treeの構築を行う
         use path_operator_m
         character(*), intent(in) :: FlowFieldFile
-        character(*), intent(in), optional :: meshFile
+            !! 流れ場ファイル名
         character(:), allocatable :: Dir
+        type(FlowFieldUnstructuredGrid) grid
 
-        if(present(meshFile)) then
-            call FlowFieldUnstructuredGrid_%setupWithFlowFieldFile(FlowFieldFile, meshFile)
-            call get_DirFromPath(meshFile, Dir)
-        else
-            call FlowFieldUnstructuredGrid_%setupWithFlowFieldFile(FlowFieldFile)
-            call get_DirFromPath(FlowFieldFile, Dir)
-        end if
+        call grid%setupWithFlowFieldFile(FlowFieldFile)
+        call get_DirFromPath(FlowFieldFile, Dir)
+        call grid%AdjacencySolvingProcess(Dir)    !流れ場の前処理
+        call grid%setup_kdTree(Dir)
 
-        call FlowFieldUnstructuredGrid_%AdjacencySolvingProcess(Dir)    !流れ場の前処理
-        call FlowFieldUnstructuredGrid_%setup_kdTree(Dir)
+    end function
+
+    function FlowFieldUnstructuredGrid_withMeshFile(FlowFieldFile, meshFile) result(grid)
+        !! 流れ場のコンストラクタ(meshファイルと流速データファイルが分かれている場合)
+        !! 流れ場ファイルの読み込み、前処理、kd-treeの構築を行う
+        use path_operator_m
+        character(*), intent(in) :: FlowFieldFile
+            !! 流れ場ファイル名
+        character(*), intent(in) :: meshFile
+            !! メッシュファイル
+        character(:), allocatable :: Dir
+        type(FlowFieldUnstructuredGrid) grid
+
+        call grid%setupWithFlowFieldFile(FlowFieldFile, meshFile)
+        call get_DirFromPath(meshFile, Dir)
+        call grid%AdjacencySolvingProcess(Dir)    !流れ場の前処理
+        call grid%setup_kdTree(Dir)
 
     end function
 
