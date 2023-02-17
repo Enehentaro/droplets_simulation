@@ -4,13 +4,32 @@ module flow_field_m
     private
     type, public, extends(FlowFieldUnstructuredGrid) :: FlowField
         private
-        integer INTERVAL                             !気流データ出力間隔
-        integer LoopHead, LoopTail, OFFSET
+        integer INTERVAL
+            !! 気流ファイル出力間隔
+
+        integer LoopHead
+            !! 流れ場ファイルのループの先頭
+
+        integer LoopTail
+            !! 流れ場ファイルのループの末尾
+
+        integer OFFSET
+            !! 流れ場と飛沫の間の時間ステップオフセット
+
         double precision DT
-        integer STEP, NextUpdate
+            !! 流体計算の時間間隔
+
+        integer STEP
+            !! 時間ステップ
+
+        integer NextUpdate
+            !! 次に流れ場更新を行うべき時間ステップ
 
         character(:), allocatable :: FullFileName
+            !! デフォルトの流れ場ファイル名
+
         character(:), allocatable :: FileNameFormat
+            !! 流れ場ファイルのファイル名のフォーマット文字列
 
         contains
         private
@@ -28,53 +47,60 @@ module flow_field_m
 
     contains
 
-    type(FlowField) function FlowField_(&
-        time, PATH2FlowFile, DeltaT, OFFSET, outputINTERVAL, LoopHead, LoopTail, meshFile)
+    function FlowField_(time, PATH2FlowFile, DeltaT, OFFSET, outputINTERVAL, LoopHead, LoopTail, meshFile)&
+        result(flow_field)
         
-        double precision, intent(in) :: time, DeltaT
+        double precision, intent(in) :: time
+            !! 現在無次元時刻
+
+        double precision, intent(in) :: DeltaT
+            !! 流体計算の時間間隔
+
         integer, intent(in) :: OFFSET, outputINTERVAL, LoopHead, LoopTail
         character(*), intent(in) :: PATH2FlowFile
         character(*), intent(in), optional :: meshFile
+        type(FlowField) flow_field
 
-        call FlowField_%set_FileNameFormat(PATH2FlowFile)
+        call flow_field%set_FileNameFormat(PATH2FlowFile)
 
-        FlowField_%INTERVAL  = outputINTERVAL
+        flow_field%INTERVAL  = outputINTERVAL
 
-        if(FlowField_%INTERVAL   <= 0) then
+        if(flow_field%INTERVAL   <= 0) then
             print*, 'AirFlow is Steady'
 
         else
-            print*, 'Interval of AirFlow =', FlowField_%INTERVAL 
+            print*, 'Interval of AirFlow =', flow_field%INTERVAL 
 
-            FlowField_%OFFSET = OFFSET
-            print*, 'OFFSET =', FlowField_%OFFSET
+            flow_field%OFFSET = OFFSET
+            print*, 'OFFSET =', flow_field%OFFSET
 
-            FlowField_%LoopHead = LoopHead
-            FlowField_%LoopTail = LoopTail
-            if(FlowField_%LoopTail - FlowField_%LoopHead > 0) then
-                print*, 'Loop is from', FlowField_%LoopHead, 'to', FlowField_%LoopTail
-            elseif(FlowField_%LoopTail - FlowField_%LoopHead == 0) then 
-                print*, 'After', FlowField_%LoopTail, ', Checkout SteadyFlow'
+            flow_field%LoopHead = LoopHead
+            flow_field%LoopTail = LoopTail
+            if(flow_field%LoopTail - flow_field%LoopHead > 0) then
+                print*, 'Loop is from', flow_field%LoopHead, 'to', flow_field%LoopTail
+            elseif(flow_field%LoopTail - flow_field%LoopHead == 0) then 
+                print*, 'After', flow_field%LoopTail, ', Checkout SteadyFlow'
             end if
 
-            FlowField_%DT = DeltaT
-            print*, 'Delta_Time inFLOW =', FlowField_%DT
+            flow_field%DT = DeltaT
+            print*, 'Delta_Time inFLOW =', flow_field%DT
 
-            call FlowField_%set_time(time)
+            call flow_field%set_time(time)
 
         end if
 
         if(present(meshFile)) then
-            FlowField_%FlowFieldUnstructuredGrid = FlowFieldUnstructuredGrid_withMeshFile(FlowField_%get_requiredFileName(), meshFile)
+            flow_field%FlowFieldUnstructuredGrid = FlowFieldUnstructuredGrid_withMeshFile(flow_field%get_requiredFileName(), meshFile)
         else
-            FlowField_%FlowFieldUnstructuredGrid = FlowFieldUnstructuredGrid_(FlowField_%get_requiredFileName())
+            flow_field%FlowFieldUnstructuredGrid = FlowFieldUnstructuredGrid_(flow_field%get_requiredFileName())
         end if
 
-        call FlowField_%calc_NextUpdate()
+        call flow_field%calc_NextUpdate()
 
     end function
 
     subroutine set_FileNameFormat(self, PATH2FlowFile)
+        !! ファイル名から連番の位置を取得し、ファイル名のフォーマットを推論する
         use path_operator_m
         class(FlowField) self
         character(*), intent(in) :: PATH2FlowFile
@@ -115,6 +141,7 @@ module flow_field_m
     end subroutine
 
     function get_requiredFlowFieldFileName(self) result(FileName)
+        !! 現時刻ステップに対応する流れ場ファイル名を返す
         class(FlowField) self
         character(:), allocatable :: FileName
 
@@ -135,6 +162,7 @@ module flow_field_m
     end function
 
     subroutine update_FlowField(self)
+        !! 流れ場を更新する
         class(FlowField) self
 
         call self%updateWithFlowFieldFile(self%get_requiredFileName())
@@ -146,9 +174,11 @@ module flow_field_m
     end subroutine
 
     logical function isUpdateTiming(self)
+        !! 現在ステップが流れ場更新のタイミングかどうかを判定
         class(FlowField) self
 
         if(self%STEP >= self%NextUpdate .and. self%INTERVAL > 0) then
+            !現在ステップが更新ステップ以降でなおかつ非定常流
             isUpdateTiming = .true.
         else
             isUpdateTiming = .false.
@@ -157,14 +187,17 @@ module flow_field_m
     end function
 
     subroutine set_timeSTEPinFLOW(self, time)
+        !! 流れ場に現在時刻を通知
         class(FlowField) self
         DOUBLE PRECISION, intent(in) :: time
+            !! 飛沫計算における時刻
 
         self%STEP = int(time/self%DT) + self%OFFSET   !気流計算における時刻ステップ数に相当
 
     end subroutine
 
     subroutine calc_NextUpdate(self)
+        !! 次の更新時間ステップを算出
         class(FlowField) self
         integer i
 
@@ -176,21 +209,24 @@ module flow_field_m
 
     end subroutine
 
-    integer function get_FileNumber(self)
+    function get_FileNumber(self) result(FileNumber)
+        !! 現在時刻に対応する流れ場連番ファイル番号を計算
         class(FlowField) self
+        integer FileNumber
 
-        get_FileNumber = self%OFFSET
-        do while(get_FileNumber < self%STEP)
-            get_FileNumber = get_FileNumber + self%INTERVAL
+        FileNumber = self%OFFSET
+        do while(FileNumber < self%STEP)
+            FileNumber = FileNumber + self%INTERVAL
         end do
 
-        get_FileNumber = get_FileNumber + self%INTERVAL     !前進評価
+        FileNumber = FileNumber + self%INTERVAL     !前進評価
 
-        call self%clamp_STEP(get_FileNumber)
+        call self%clamp_STEP(FileNumber)
 
     end function
 
     subroutine clamp_STEP(self, STEP)
+        !! 連番ファイルをループさせる場合を想定し、ファイル番号をclamp
         class(FlowField) self
         integer, intent(inout) :: STEP
         integer Lamda, Delta
@@ -210,9 +246,10 @@ module flow_field_m
 
         end if
 
-    end subroutine clamp_STEP
+    end subroutine
 
     function get_defaultFlowFileName(self) result(fname)
+        !! デフォルトの流れ場ファイル名を返す
         class(FlowField) self
         character(:), allocatable :: fname
 
