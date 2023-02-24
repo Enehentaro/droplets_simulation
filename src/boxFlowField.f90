@@ -25,7 +25,7 @@ program boxFlowField
 
         ! mesh = FlowFieldUnstructuredGrid_(condVal%path2FlowFile, condVal%meshFile)
         if(nc==1) then
-            mesh = FlowFieldUnstructuredGrid_(trim(caseName)//'/field_0000005125.array', './case1.vtk')
+            mesh = FlowFieldUnstructuredGrid_withMeshFile(trim(caseName)//'/field_0000005125.array', './case1.vtk')
         else
             call mesh%updateWithFlowFieldFile(trim(caseName)//'/field_0000005125.array')
         end if

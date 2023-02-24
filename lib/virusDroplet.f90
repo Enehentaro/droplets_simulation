@@ -5,6 +5,8 @@ module virusDroplet_m
     integer, parameter :: statusCSV(4) = [0, 1, -1,-2]
 
     type, public :: virusDroplet_t
+        !! ウイルス飛沫構造体
+
         double precision :: position(3), velocity(3)=0.d0
         double precision, private :: radius, radius_min, initialRadius, deadline
         integer, private :: status=0
@@ -29,6 +31,7 @@ module virusDroplet_m
     contains
 
     logical function isDropletFloating(self)
+        !! 飛沫が浮遊しているか否かを返す
         class(virusDroplet_t), intent(in) :: self
 
         if(self%status==0) then
@@ -41,6 +44,7 @@ module virusDroplet_m
 
 
     double precision function get_radius(self)
+        !! 現時刻の飛沫半径を返す
         class(virusDroplet_t), intent(in) :: self
 
         get_radius = self%radius
@@ -48,6 +52,7 @@ module virusDroplet_m
     end function
 
     logical function isEvaporating(self)
+        !! 飛沫が限界まで蒸発したか否かを返す
         class(virusDroplet_t), intent(in) :: self
 
         if(self%radius > self%radius_min) then
@@ -59,14 +64,17 @@ module virusDroplet_m
     end function
 
     subroutine evaporation(self, dr)
+        !! 蒸発の処理を行う
         class(virusDroplet_t) self
         double precision, intent(in) :: dr
+            !!半径変化量（蒸発ならマイナスの値を指定）
 
         self%radius = max(self%radius + dr, self%radius_min)
 
     end subroutine
 
     integer function dropletCoalescneceID(self)
+        !! 合体飛沫の合体先のIDを返す
         class(virusDroplet_t), intent(in) :: self
 
         dropletCoalescneceID = self%coalesID
@@ -74,7 +82,9 @@ module virusDroplet_m
     end function
 
     integer function get_statusNumber(name)
+        !! 飛沫の状態を対応する整数値で返す
         character(*), intent(in) :: name
+            !! 状態
 
         select case(name)
             case('floating')
@@ -101,21 +111,20 @@ module virusDroplet_m
     end function
 
     subroutine survival_check(droplets, time)
+        !! 飛沫の不活性化判定
         ! use terminalControler_m
         type(virusDroplet_t) droplets(:)
         double precision, intent(in) :: time
-        integer vfloat, vn
+            !! 現在時刻（無次元）
+        integer vn
         ! double precision rand
         ! double precision, save :: death_rate = 0.d0
-            
-        vfloat = count(droplets(:)%status == 0)
-        if(vfloat == 0) return  !浮遊数がゼロならリターン
 
         do vn = 1, size(droplets)
-            if ((droplets(vn)%status == 0).and.&
-                (time > droplets(vn)%deadline)) then
+            !浮遊中であり、時刻が寿命以上であれば不活性化
+            if ((droplets(vn)%isFloating()) .and. (time > droplets(vn)%deadline)) then
 
-                call droplets(vn)%stop_droplet(status=-1)
+                call droplets(vn)%stop_droplet(status='death')
 
             end if
         end do
@@ -138,8 +147,10 @@ module virusDroplet_m
     end subroutine
 
     integer function dropletCounter(droplets, name)
+        !! 指定された状態にある飛沫数をカウント
         type(virusDroplet_t) droplets(:)
         character(*), intent(in) :: name
+            !! キーワード（total, floating, etc.）
 
         select case(name)
             case('total')
@@ -153,9 +164,17 @@ module virusDroplet_m
     end function
 
     function dropletIDinBox(droplets, min_cdn, max_cdn, status) result(ID_array)
+        !! 直方体領域内の飛沫のID配列を返す
         type(virusDroplet_t) droplets(:)
-        double precision, intent(in) :: min_cdn(3), max_cdn(3)
+
+        double precision, intent(in) :: min_cdn(3)
+            !! 直方体領域の最小座標
+        double precision, intent(in) :: max_cdn(3)
+            !! 直方体領域の最大座標
+
         integer, intent(in), optional :: status
+            !! 状態
+
         double precision position(3)
         integer, allocatable :: ID_array(:)
         integer i, id_array_(size(droplets)), cnt
@@ -200,17 +219,6 @@ module virusDroplet_m
         
     end function
 
-    function dropletInBox(droplets, min_cdn, max_cdn) result(dropletsInBox)
-        type(virusDroplet_t) droplets(:)
-        double precision, intent(in) :: min_cdn(3), max_cdn(3)
-        integer, allocatable :: IDinBox(:)
-        type(virusDroplet_t), allocatable :: dropletsInBox(:)
-
-        IDinBox = dropletIDinBox(droplets, min_cdn, max_cdn)
-        dropletsInBox = droplets(IDinBox)
-        
-    end function
-
     double precision function dropletTotalVolume(droplets)
         !! 配列内の全飛沫の総体積（無次元）を計算
 
@@ -229,6 +237,7 @@ module virusDroplet_m
     end function
 
     function dropletIDinState(droplets, status) result(ID_array)
+        !! 任意の状態の飛沫のID配列を返す
         type(virusDroplet_t) droplets(:)
         character(*), intent(in) :: status
         integer, allocatable :: ID_array(:)
@@ -251,6 +260,7 @@ module virusDroplet_m
     end function
 
     subroutine get_dropletsArea(droplets, AreaMin, AreaMax)
+        !! 飛沫配列内の飛沫の座標の最大最小を返す
         type(virusDroplet_t) droplets(:)
         double precision, intent(out) :: AreaMin(3), AreaMax(3)
         integer i, m
@@ -269,6 +279,7 @@ module virusDroplet_m
     end subroutine
 
     subroutine coalescence_check(droplets, stat)
+        !! 合体判定
         type(virusDroplet_t) droplets(:)
         integer, intent(out), optional :: stat
         integer d1, d2, num_droplets, num_coales
@@ -309,11 +320,13 @@ module virusDroplet_m
 
         if(present(stat)) stat = num_coales
 
-    end subroutine coalescence_check
+    end subroutine
 
     subroutine coalescence(droplet1, droplet2, baseID)
+        !! 合体処理
         type(virusDroplet_t), intent(inout) :: droplet1, droplet2
         integer, intent(in) :: baseID
+            !! 合体先（ベースとなる飛沫）のID
         double precision r3_1, r3_2, position_c(3), velocity_c(3)
 
         r3_1 = droplet1%radius**3
@@ -330,12 +343,14 @@ module virusDroplet_m
         droplet2%radius = 0.d0
         droplet2%position(:) = position_c(:)
         droplet2%velocity(:) = velocity_c(:)
-        droplet2%status = -2
+        droplet2%status = get_statusNumber('coalescence')
         droplet2%coalesID = baseID
         
-    end subroutine coalescence
+    end subroutine
 
     subroutine output_backup(droplets, fname)
+        !! backupファイルの出力。
+        !! 配列をループ使わずそのまま書き出すほうが多分ファイルサイズ効率が良いので、いつか修正したい。
         type(virusDroplet_t) droplets(:)
         character(*), intent(in) :: fname
         integer i, n_unit, num_drop
@@ -354,6 +369,7 @@ module virusDroplet_m
     end subroutine
 
     subroutine output_droplet_VTK(droplets, fname, deadline)
+        !! VTK形式でファイル出力
         type(virusDroplet_t) droplets(:)
         character(*), intent(in) :: fname
         logical, optional :: deadline
@@ -416,9 +432,10 @@ module virusDroplet_m
 
         print*, 'writeOUT:', trim(fname)
 
-    end subroutine output_droplet_VTK
+    end subroutine
 
     subroutine output_droplet_CSV(droplets, fname, time, initial)
+        !! CSV形式で時系列データ出力
         type(virusDroplet_t) droplets(:)
         character(*), intent(in) :: fname
         double precision, intent(in) :: time
@@ -448,6 +465,7 @@ module virusDroplet_m
     ! end subroutine
 
     function read_backup(fname) result(droplets)
+        !! backupファイルを読み込み、飛沫配列を返す
         character(*), intent(in) :: fname
         type(virusDroplet_t), allocatable :: droplets(:)
         integer i, n_unit, num_drop
@@ -466,6 +484,7 @@ module virusDroplet_m
     end function
     
     function read_droplet_VTK(fname) result(droplets)
+        !! VTKファイルを読み込み、飛沫配列を返す
         implicit none
         character(*), intent(in) :: fname
         type(virusDroplet_t), allocatable :: droplets(:)
@@ -529,12 +548,13 @@ module virusDroplet_m
     end function
 
     subroutine stop_droplet(self, status)
+        !! 飛沫を静止させる
         class(virusDroplet_t) self
-        integer, optional :: status
+        character(*), intent(in), optional :: status
 
         self%velocity(:) = 0.0d0
         if(present(status)) then
-            self%status = status
+            self%status = get_statusNumber(status)
         else
             self%status = 1
         end if
@@ -542,6 +562,7 @@ module virusDroplet_m
     end subroutine
 
     subroutine set_initialRadius(droplets, radius)
+        !! 飛沫の初期半径を配列からセットする
         type(virusDroplet_t) droplets(:)
         double precision, intent(in) :: radius(:)
 
@@ -551,14 +572,17 @@ module virusDroplet_m
     end subroutine
 
     subroutine set_radiusLowerLimit(droplets, lowerLimitRatio)
+        !! 飛沫の蒸発限界半径をセットする
         type(virusDroplet_t) droplets(:)
         double precision, intent(in) :: lowerLimitRatio
+            !! 限界半径と初期半径の比
 
         droplets(:)%radius_min = droplets(:)%initialRadius*lowerLimitRatio
 
     end subroutine
 
     subroutine set_virusDeadline(droplets, deadline)
+        !! 飛沫の寿命を配列からセットする
         type(virusDroplet_t) droplets(:)
         double precision, intent(in) :: deadline(:)
 
@@ -567,6 +591,8 @@ module virusDroplet_m
     end subroutine
 
     subroutine set_dropletStatus(droplets, status, ID)
+        !! 飛沫の状態を一気にセットする
+        !! 特定のIDの飛沫だけセットしたい場合は、ID配列を引数に渡す
         type(virusDroplet_t) droplets(:)
         character(*), intent(in) :: status
         integer, intent(in), optional :: ID(:)
