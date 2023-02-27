@@ -4,9 +4,16 @@ import glob
 import os
 import sys
 
+"""
+時系列データを操作し、カウントの時間平均値を算出してファイル出力するスクリプト
+"""
+
 def transpose(file_list:list, output_dir:str):
-    """
-    CSVファイルの行列を転置して、別ファイルに保存
+    """CSVファイルの行列を転置して、別ファイルに保存
+
+    Args:
+        file_list (list): CSVファイルリスト
+        output_dir (str): 出力ディレクトリ
     """
 
     if not os.path.exists(output_dir):
@@ -22,8 +29,11 @@ def transpose(file_list:list, output_dir:str):
     
 
 def patientMean(file_list:list, output_dir:str):
-    """
-    感染者5人の平均を求め、別ファイルに保存
+    """感染者5人の平均を求め、別ファイルに保存
+
+    Args:
+        file_list (list): ファイルリスト
+        output_dir (str): 出力ディレクトリ
     """
 
     if not os.path.exists(output_dir):
@@ -62,8 +72,11 @@ def patientMean(file_list:list, output_dir:str):
     # print()
 
 def make_summaryCSV(file_list:list, output_fname:str):
-    """
-    別々に保存されている各オフィスのデータをひとつのファイルにまとめる
+    """別々に保存されている各オフィスのデータをひとつのファイルにまとめる
+
+    Args:
+        file_list (list): ファイルリスト
+        output_fname (str): 出力ファイル名
     """
 
     df_main = pd.DataFrame()
@@ -85,8 +98,11 @@ def make_summaryCSV(file_list:list, output_fname:str):
     df_main.to_csv(output_fname, index=False)
 
 def subtractDataFrame(macro_file_list:list, output_dir:str):
-    """
-    全体観測データから、机の上観測データを引き算して、新規ファイルに保存
+    """全体観測データから、机の上観測データを引き算して、新規ファイルに保存
+
+    Args:
+        macro_file_list (list): 全体観測結果ファイルリスト
+        output_dir (str): 出力ディレクトリ
     """
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)

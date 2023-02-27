@@ -10,6 +10,4 @@ bin/
 !CMakeLists.txt
 /build
 
-/test.py
-
 .vscode

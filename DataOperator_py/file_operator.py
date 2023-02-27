@@ -2,6 +2,10 @@ import glob
 import os
 import shutil
 
+"""
+ファイル操作用スクリプト
+"""
+
 def copy_csv():
 
     csv_list = glob.glob("desks_info/*.csv")
@@ -19,7 +23,17 @@ def copy_csv():
 
 def get_office_list(path2officeDir:str):
     """
+    指定ディレクトリ配下のディレクトリリストから、オフィス名リストを作成する
+    
+    Parameters
+    ----------
+    path2officeDir:str
+        ディレクトリ名
 
+    Returns
+    -------
+    office_list : list
+        オフィス名リスト
     """
     office_list = []
     for item in os.listdir(path2officeDir):
@@ -31,11 +45,23 @@ def get_office_list(path2officeDir:str):
 
 def get_case_list(path2caseDir:str):
     """
+    指定ディレクトリ配下のディレクトリリストから、ケース名リストを作成する
+    
+    Parameters
+    ----------
+    path2caseDir:str
+        ディレクトリ名
 
+    Returns
+    -------
+    office_list : list
+        ケース名リスト
     """
     keys = ["A", "B", "C", "D", "E"]
     case_list = []
     for item in os.listdir(path2caseDir):
+
+        # ディレクトリ名の末尾が、ABCDEのいずれかであるか否か判定
         if item.split("_")[-1] in keys:
             case_list.append(item)
 

@@ -3,6 +3,10 @@ import pandas as pd
 import glob
 import matplotlib.pyplot as plt
 
+"""
+カウント開始時刻を変化させると感染リスクにどう影響するかを調査するためのスクリプト
+"""
+
 
 def patientAverage(df:pd.DataFrame) -> pd.DataFrame:
     df_s = df.sort_index()
