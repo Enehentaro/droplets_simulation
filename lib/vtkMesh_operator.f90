@@ -1,49 +1,45 @@
-module vtkMesh_operator_m
+module VTK_operator_m
+    use unstructuredElement_m
     implicit none
     private
 
-    type node_onVTK_t
-        real coordinate(3)
+    type, extends(cell_t) :: cell_inVTK_t
+        integer, private :: n_TYPE
     end type
 
-    type cell_onVTK_t
-        integer, allocatable :: nodeID(:)
-        integer n_TYPE
-    end type
-
-    type, public :: vtkMesh
-        type(node_onVTK_t), private, allocatable :: node_array(:)
-        type(cell_onVTK_t), private, allocatable :: cell_array(:)
+    type, public :: UnstructuredGrid_inVTK
+        type(node_t), allocatable :: node_array(:)
+        type(cell_inVTK_t), allocatable :: cell_array(:)
 
         contains
 
-        procedure, private :: allocation_node, allocation_cell
-        procedure :: read => read_vtkMesh
-        procedure :: output => output_vtkMesh
-        procedure get_numCell, get_numNode, get_nodeCoordinate, get_cellVertices, get_cellCenter
+        procedure :: read => read_UnstructuredGrid_inVTK
+        procedure :: output => output_UnstructuredGrid_inVTK
+        procedure get_numCell, get_numNode, get_nodeCoordinate, get_cellVertices
         procedure set_nodeCoordinate, set_cellVertices
 
     end type
 
-    public vtkMesh_
+    public UnstructuredGrid_inVTK_
 
     contains
 
-    type(vtkMesh) function vtkMesh_(cdn, vertices, types)
+    type(UnstructuredGrid_inVTK) function UnstructuredGrid_inVTK_(cdn, vertices, types)
         real, intent(in) :: cdn(:,:)
         integer, intent(in) :: vertices(:,:), types(:)
 
-        call vtkMesh_%set_nodeCoordinate(cdn)
-        call vtkMesh_%set_cellVertices(vertices, types)
+        call UnstructuredGrid_inVTK_%set_nodeCoordinate(cdn)
+        call UnstructuredGrid_inVTK_%set_cellVertices(vertices, types)
 
     end function
 
-    subroutine read_vtkMesh(self, FNAME, action, cellScalar, cellVector)
-        class(vtkMesh) self
+    subroutine read_UnstructuredGrid_inVTK(self, FNAME, action, cellScalar, cellVector)
+        class(UnstructuredGrid_inVTK) self
         character(*), intent(in) :: FNAME
         character(*), intent(in), optional ::  action
         real, allocatable, intent(out), optional :: cellScalar(:), cellVector(:,:)
-        integer II,KK,IIH, n_unit, KKMX, IIMX, ios
+        integer II,KK, num_node, n_unit, KKMX, IIMX, ios
+        integer l, nodeID(8)
         character AAA*7, str*99
         logical dataOnly
 
@@ -63,29 +59,27 @@ module vtkMesh_operator_m
                 read(n_unit,'()')
                 read(n_unit,'()')
                 read(n_unit,'()')
+
                 read(n_unit,'()')
                 read(n_unit,*) AAA,KKMX
-                    
-                call self%allocation_node(KKMX)
-                DO KK = 0, KKMX-1
+                allocate(self%node_array(KKMX))
+                DO KK = 1, KKMX
                     read(n_unit,*) self%node_array(KK)%coordinate(:)
                 END DO
                 read(n_unit,'()')
                 read(n_unit, *) AAA,IIMX
-                
-                call self%allocation_cell(IIMX)
-       
-                DO II = 0, IIMX-1
+                allocate(self%cell_array(IIMX))
+                DO II = 1, IIMX
                     read(n_unit, '(A)') str !一旦1行丸ごと読む
-                    read(str, *) IIH
-                    allocate(self%cell_array(II)%nodeID(IIH))
-                    read(str, *) IIH, self%cell_array(II)%nodeID(:)
+                    read(str, *) num_node
+                    read(str, *) num_node, (nodeID(l), l=1,num_node)
+                    self%cell_array(II)%nodeID = nodeID(:num_node) + 1
                 END DO
 
                 read(n_unit,'()')
 
                 read(n_unit,'()')  !CELL_TYPES
-                DO II = 0, IIMX-1
+                DO II = 1, IIMX
                     read(n_unit, *) self%cell_array(II)%n_TYPE
                 END DO
                 if((.not.present(cellScalar)) .and. (.not.present(cellVector))) return
@@ -126,12 +120,13 @@ module vtkMesh_operator_m
             
     end subroutine
 
-    subroutine output_vtkMesh(self, FNAME, cellScalar, cellVector, scalarName, vectorName)
-        class(vtkMesh) self
+    subroutine output_UnstructuredGrid_inVTK(self, FNAME, cellScalar, cellVector, scalarName, vectorName)
+        class(UnstructuredGrid_inVTK) self
         character(*), intent(in) :: FNAME
         real, intent(in), optional :: cellScalar(:), cellVector(:,:)
         character(*), intent(in), optional :: scalarName, vectorName
         integer II,KK, n_unit, KKMX, IIMX, IITOTAL
+        integer, allocatable :: nodeID(:)
 
         print*, 'OUTPUT_VTK:', FNAME
             
@@ -143,33 +138,25 @@ module vtkMesh_operator_m
 
             KKMX = size(self%node_array)
             write(n_unit, '(A,1x,I0,1x,A)') 'POINTS', KKMX, 'float'   
-            DO KK = 0, KKMX-1
+            DO KK = 1, KKMX
                 write(n_unit,'(3(e12.5,2X))') self%node_array(KK)%coordinate(:)
             END DO
             write(n_unit,'()')
 
             IIMX = size(self%cell_array)
             IITOTAL = 0
-            do II = 0, IIMX-1
+            do II = 1, IIMX
                 IITOTAL = IITOTAL + size(self%cell_array(II)%nodeID)  + 1
             end do
             write(n_unit,'(A,I0,2X,I0)') 'CELLS ', IIMX, IITOTAL
-            DO II = 0, IIMX-1
-                select case(self%cell_array(II)%n_TYPE)
-                    case(10)
-                        write(n_unit, '(5(I0,2X))') 4, self%cell_array(II)%nodeID(1:4)
-                    case(11)
-                        write(n_unit, '(9(I0,2X))') 8, self%cell_array(II)%nodeID(1:8)
-                    case(13)
-                        write(n_unit, '(7(I0,2X))') 6, self%cell_array(II)%nodeID(1:6)
-                    case(14)
-                        write(n_unit, '(6(I0,2X))') 5, self%cell_array(II)%nodeID(1:5)
-                end select
+            DO II = 1, IIMX
+                nodeID = self%cell_array(II)%nodeID(:) - 1
+                write(n_unit, '(*(g0:," "))') size(nodeID), nodeID(:)
             END DO
             write(n_unit,'()')
 
             write(n_unit,'(A,I0)') 'CELL_TYPES ', IIMX
-            DO II = 0, IIMX-1
+            DO II = 1, IIMX
                 write(n_unit, '(I0)') self%cell_array(II)%n_TYPE
             END DO
 
@@ -206,32 +193,18 @@ module vtkMesh_operator_m
             
     end subroutine
 
-    subroutine allocation_node(self, num_node)
-        class(vtkMesh) self
-        integer, intent(in) :: num_node
-        if(allocated(self%node_array))  deallocate(self%node_array)
-        allocate(self%node_array(0 : num_node-1))     
-    end subroutine
-
-    subroutine allocation_cell(self, num_cell)
-        class(vtkMesh) self
-        integer, intent(in) :: num_cell
-        if(allocated(self%cell_array))  deallocate(self%cell_array)
-        allocate(self%cell_array(0 : num_cell-1))        
-    end subroutine
-
     integer function get_numNode(self)
-        class(vtkMesh), intent(in) :: self
+        class(UnstructuredGrid_inVTK), intent(in) :: self
         get_numNode = size(self%node_array)
     end function
 
     integer function get_numCell(self)
-        class(vtkMesh), intent(in) :: self
+        class(UnstructuredGrid_inVTK), intent(in) :: self
         get_numCell = size(self%cell_array)
     end function
 
     function get_nodeCoordinate(self) result(cdn)
-        class(vtkMesh), intent(in) :: self
+        class(UnstructuredGrid_inVTK), intent(in) :: self
         real, allocatable :: cdn(:,:)
         integer k, num_node
 
@@ -239,13 +212,13 @@ module vtkMesh_operator_m
         allocate(cdn(3, num_node))
 
         do k = 1, num_node
-            cdn(:,k) = self%node_array(k-1)%coordinate(:)
+            cdn(:,k) = self%node_array(k)%coordinate(:)
         end do
 
     end function
 
     subroutine get_cellVertices(self, vertices, types)
-        class(vtkMesh), intent(in) :: self
+        class(UnstructuredGrid_inVTK), intent(in) :: self
         integer, allocatable, intent(out) :: vertices(:,:), types(:)
         integer i, num_cell, num_node
 
@@ -254,34 +227,34 @@ module vtkMesh_operator_m
         allocate(types(num_cell))
 
         do i = 1, num_cell
-            num_node = size(self%cell_array(i-1)%nodeID)
-            vertices(1:num_node, i) = self%cell_array(i-1)%nodeID(:) + 1
-            types(i) = self%cell_array(i-1)%n_TYPE
+            num_node = size(self%cell_array(i)%nodeID)
+            vertices(1:num_node, i) = self%cell_array(i)%nodeID(:)
+            types(i) = self%cell_array(i)%n_TYPE
         end do
 
     end subroutine
 
     subroutine set_nodeCoordinate(self, cdn)
-        class(vtkMesh) self
+        class(UnstructuredGrid_inVTK) self
         real, intent(in) :: cdn(:,:)
         integer k, num_node
 
         num_node = size(cdn, dim=2)
-        call self%allocation_node(num_node)
+        allocate(self%node_array(num_node))
 
         do k = 1, num_node
-            self%node_array(k-1)%coordinate(:) = cdn(:,k) 
+            self%node_array(k)%coordinate(:) = cdn(:,k) 
         end do
 
     end subroutine
 
     subroutine set_cellVertices(self, vertices, types)
-        class(vtkMesh) self
+        class(UnstructuredGrid_inVTK) self
         integer, intent(in) :: vertices(:,:), types(:)
         integer i, num_cell, num_node
 
         num_cell = size(vertices, dim=2)
-        call self%allocation_cell(num_cell)
+        allocate(self%cell_array(num_cell))
 
         do i = 1, num_cell
             select case(types(i))
@@ -294,31 +267,10 @@ module vtkMesh_operator_m
                 case(14)!pyramid
                     num_node = 5
             end select
-            self%cell_array(i-1)%nodeID = vertices(1:num_node, i) - 1
-            self%cell_array(i-1)%n_TYPE = types(i)
+            self%cell_array(i)%nodeID = vertices(1:num_node, i)
+            self%cell_array(i)%n_TYPE = types(i)
         end do
 
     end subroutine
-
-    function get_cellCenter(self) result(center)
-        class(vtkMesh), intent(in) :: self
-        real, allocatable :: center(:,:)
-        real x(3)
-        integer i, k, num_node, num_cell, nodeID
-
-        num_cell = size(self%cell_array)
-        allocate(center(3, num_cell))
-
-        do i = 1, num_cell
-            x(:) = 0.0
-            num_node = size(self%cell_array(i-1)%nodeID)
-            do k = 1, num_node
-                nodeID = self%cell_array(i-1)%nodeID(k)
-                x(:) = x(:) + self%node_array(nodeID)%coordinate(:)
-            end do
-            center(:,i) = x(:) / real(num_node)
-        end do
-
-    end function
     
-end module vtkMesh_operator_m
+end module VTK_operator_m

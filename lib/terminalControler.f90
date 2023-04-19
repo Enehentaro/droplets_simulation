@@ -1,4 +1,5 @@
 module terminalControler_m
+    !!ターミナル操作を扱うモジュール
     implicit none
     private
 
@@ -9,19 +10,23 @@ module terminalControler_m
     public reset_formatTC, set_formatTC, print_progress, print_sameLine
 
     interface print_progress
+        !!進捗を表示する
         module procedure print_progress_int, print_progress_real
     end interface
 
-    !============================================================================
-    ! How to use EXAMPLE:
+    !|##Example
+    !```Fortran
+    !program sample
+    !   use terminalControler_m
+    !
+    !   call set_formatTC('("PROGRESS [ #progress : ",i6," / ",i6," ]")')
+    !   do i = 1, imax
+    !       call print_progress([i, imax])
+    !   end do
+    !
+    !end program sample
+    !```
 
-    ! call set_formatTC('("CHECK halfFace [ #group : ",i6," / ",i6," ]")')
-    ! do groupID = 1, num_group
-    !     call print_progress([groupID, num_group])
-    ! end do
-
-    !============================================================================
-            
     contains
 
     subroutine reset_formatTC
@@ -31,9 +36,13 @@ module terminalControler_m
     end subroutine 
 
     subroutine set_formatTC(fmt_str)
+        !!進捗を表示するためのフォーマットを指定
+        !!指定時に改行が起こる（あとで戻ってくるため）
         character(*), intent(in) :: fmt_str
 
-        if(fmt_str == format_str) return
+        if(allocated(format_str)) then
+            if(fmt_str == format_str) return
+        end if
 
         format_str = fmt_str
         write(stdOut, '()')     !改行（あとで戻ってくるため）
