@@ -93,7 +93,7 @@ module unstructuredGrid_m
         procedure read_adjacency, read_boundaries, solve_adjacencyOnFlowFieldUnstructuredGrid
         procedure output_boundaries, output_adjacency, boundary_setting, output_STL
         
-        procedure setup_kdTree
+        ! procedure setup_kdTree
 
     end type
 
@@ -113,7 +113,7 @@ module unstructuredGrid_m
         call grid%setupWithFlowFieldFile(FlowFieldFile)
         call get_DirFromPath(FlowFieldFile, Dir)
         call grid%AdjacencySolvingProcess(Dir)    !流れ場の前処理
-        call grid%setup_kdTree(Dir)
+        ! call grid%setup_kdTree(Dir)
 
     end function
 
@@ -131,7 +131,7 @@ module unstructuredGrid_m
         call grid%setupWithFlowFieldFile(FlowFieldFile, meshFile)
         call get_DirFromPath(meshFile, Dir)
         call grid%AdjacencySolvingProcess(Dir)    !流れ場の前処理
-        call grid%setup_kdTree(Dir)
+        ! call grid%setup_kdTree(Dir)
 
     end function
 
@@ -693,8 +693,8 @@ module unstructuredGrid_m
 
         !!@note 厳密探索かkdツリー探索かはここで切り替える
 
-        ! nearestCellID = self%nearest_search_exact(X)
-        nearestCellID = self%nearest_search_kdTree(X)
+        nearestCellID = self%nearest_search_exact(X)
+        ! nearestCellID = self%nearest_search_kdTree(X)
 
     end function
 

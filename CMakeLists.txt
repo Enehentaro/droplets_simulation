@@ -26,7 +26,7 @@ function(SETCOMPILEOPTIONS name)
 
     if(CMAKE_Fortran_COMPILER_ID MATCHES Intel)
         target_compile_options(${name} PRIVATE
-            $<$<CONFIG:Debug>:-O0 -warn all -check all -traceback>
+            $<$<CONFIG:Debug>:-O0 -traceback> # -warn all -check all 
             $<$<CONFIG:Release>:-O2 -fPIC>
         )
     elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
