@@ -132,39 +132,22 @@ module SCF_file_reader_m
         implicit none
         class(scf_grid_t), intent(inout) :: this
         character(*),intent(in) :: filename
-        integer unit ,i, step
+        integer unit
+
+        !割り付けされている物があれば解放する.
+        call destructor(this)
 
         if(.not.open_binary_sequential_(unit,filename))then 
             print*,'cannot open'
             stop 
-        end if 
+        end if
 
-        ! write(6,*)'What is case name?'
-        ! read(5,*) this%case_name
-        ! do step = 0,10000
-        !     call destructor(this) 
-
-        !     !write(fn,'("dam_",i0,".fph")')step
-        !     fn = "A-1.gph"
-        !     path = trim(this%case_name)//'/fph/'//fn 
-
-
-
-        !     print*,'==================='
-        !     print*,'read', fn 
-        !     print*,'==================='
-
-        !     call read_FPH_Header_data(unit, this%NCYC, this%TIME)  
-        !     call read_FPH_Main_data(unit, this%CAN_X, this%CAN_Y, this%CAN_Z, this%CCE_X, this%CCE_Y, this%CCE_Z,this%EC_Scalars, this%EC_Vectors, this%FC_Scalars, this%FC_Vectors, &
-        !                             this%NODES, this%NFACE, this%NELEM ,this%EC_scalar_data_count, this%EC_vector_data_count, this%FC_scalar_data_count, this%FC_vector_data_count, &
-        !                             this%IE1, this%IE2, this%NDNUM, this%NDTOT, this%IDNO) 
-            
-
-        !     call make_face2vertices(this)
-        !     call output_txt(this,step) 
-
-        !     stop
-        ! end do
+        call read_FPH_Header_data(unit, this%NCYC, this%TIME)  
+        call read_FPH_Main_data(unit, this%CAN_X, this%CAN_Y, this%CAN_Z, this%CCE_X, this%CCE_Y, this%CCE_Z, &
+                                this%EC_Scalars, this%EC_Vectors, this%FC_Scalars, this%FC_Vectors, &
+                                this%NODES, this%NFACE, this%NELEM ,this%EC_scalar_data_count, this%EC_vector_data_count, &
+                                this%FC_scalar_data_count, this%FC_vector_data_count, &
+                                this%IE1, this%IE2, this%NDNUM, this%NDTOT, this%IDNO)
 
     end subroutine
 
@@ -177,13 +160,13 @@ module SCF_file_reader_m
         character(32) title_text 
 
         read(unit) header_name
-        print*, 'header_name: ',header_name 
+        ! print*, 'header_name: ',header_name 
         read(unit) version_num
-        print*, 'version_num :',version_num
+        ! print*, 'version_num :',version_num
 
         do 
             read(unit) title_text
-            print*,title_text
+            ! print*,title_text
             if(trim(title_text) == 'HeaderDataEnd') then 
                 exit 
             else if (trim(title_text) == 'Cycle') then 
@@ -238,7 +221,8 @@ module SCF_file_reader_m
         read(unit) main_data_title  !'OverlapStart_n'<バイト数32>
 
         do 
-            read(unit) TITLE ; print*,TITLE 
+            read(unit) TITLE
+            ! print*,TITLE 
 
             if(trim(TITLE) == 'LS_Nodes' ) then 
                 read(unit) !4,1,1
@@ -343,7 +327,7 @@ module SCF_file_reader_m
                 read(unit) !LNX 
                 call get_data_int32_(unit,NLEN)                 !STRXMLのバイト数
                 call get_data_char_(unit,NLEN,STRXML)           !部品とアセンブリの関する情報（xml形式）
-                print*,STRXML
+                ! print*,STRXML
                 read(unit) !0,0,0 
 
             else if(trim(TITLE) == 'LS_PartialInformation') then 
@@ -368,7 +352,7 @@ module SCF_file_reader_m
                 read(unit) !LNX 
                 call get_data_int32_(unit,LENG)                 !TEXTの文字数
                 call get_data_char_(unit,LENG,TEXT)             !SPHファイルの中身のテキスト（いらん?）
-                print*,TEXT
+                ! print*,TEXT
                 read(unit) !0,0,0 
 
             else if(TITLE(1:10) == 'EC_Scalar:') then 
@@ -457,7 +441,7 @@ module SCF_file_reader_m
 
         is_end = .false. 
         read(unit) title
-        print*,title
+        ! print*,title
         select case(title(1:10)) 
             case(EC_Scalar_HeadName)
                 scalar%abbreviated_name = title(11:14) 
@@ -498,7 +482,7 @@ module SCF_file_reader_m
 
         is_end = .false. 
         read(unit) title 
-        print*,title
+        ! print*,title
         select case(title(1:10))
             case(EC_Scalar_HeadName) 
                 backspace(unit) 
@@ -541,7 +525,7 @@ module SCF_file_reader_m
 
         is_end = .false. 
         read(unit) title 
-        print*,title
+        ! print*,title
         select case(title(1:10))
             case(EC_Scalar_HeadName) 
                 backspace(unit) 
@@ -583,7 +567,7 @@ module SCF_file_reader_m
 
         is_end = .false. 
         read(unit) title 
-        print*,title
+        ! print*,title
         select case(title(1:10)) 
             case(EC_Scalar_HeadName) 
                 backspace(unit) 
@@ -775,7 +759,7 @@ module SCF_file_reader_m
                 max_vertices = cnt_vertices
             end if 
         end do
-        print*,'max_vertices in a face is',max_vertices
+        ! print*,'max_vertices in a face is',max_vertices
 
         allocate(this%face2vertices(max_vertices,jjmx)) 
         
@@ -820,7 +804,7 @@ module SCF_file_reader_m
         allocate(this%cell2faces(50,iimx))
         cnt_ref = 0
         do ii = 1,iimx
-            print*,ii ,'/',iimx
+            ! print*,ii ,'/',iimx
             cnt = 0 
             is_faces(:) = .false. 
             !$omp parallel do 
@@ -848,7 +832,7 @@ module SCF_file_reader_m
             end if 
            
         end do
-        print*,'cnt_ref =',cnt_ref,'(<50)'
+        ! print*,'cnt_ref =',cnt_ref,'(<50)'
 
     end subroutine
 
