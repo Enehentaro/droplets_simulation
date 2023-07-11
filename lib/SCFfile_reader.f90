@@ -151,6 +151,7 @@ module SCF_file_reader_m
         
         this%case_name = "tube_fph"
 
+        call make_face2vertices(this)
         call output_txt(this,0)
 
     end subroutine
@@ -898,7 +899,7 @@ module SCF_file_reader_m
             write(unit,'(A)') '要素重心座標: X, Y, Z'
             !要素の中心座標 
             do i = 1, this%NELEM
-                write(unit,'(3F12.5)') this%CCE_X(i),this%CCE_Y(i),this%CCE_Z(i) 
+                write(unit,'(*(g0:," "))') this%CCE_X(i),this%CCE_Y(i),this%CCE_Z(i) 
             end do 
         close(unit)
         print*,'output cell_centers.txt'
@@ -910,7 +911,7 @@ module SCF_file_reader_m
             write(unit,'(A)') '節点座標: X, Y, Z'
             !節点の座標 
             do i = 1, this%NODES
-                write(unit,'(3F12.5)') this%CAN_X(i),this%CAN_Y(i),this%CAN_Z(i) 
+                write(unit,'(*(g0:," "))') this%CAN_X(i),this%CAN_Y(i),this%CAN_Z(i) 
             end do 
         close(unit)
         print*,'output nodes.txt'
@@ -920,7 +921,7 @@ module SCF_file_reader_m
             write(unit,'(A,I8)')'要素界面数:',this%NFACE 
             write(unit,'(A)') 'IE1(境界面裏側の要素番号),IE2(境界面表側の要素番号）(要素番号0〜) ' 
             do i = 1, this%NFACE 
-                write(unit,'(3I8)') this%IE1(i),this%IE2(i) 
+                write(unit,'(*(g0:," "))') this%IE1(i),this%IE2(i) 
             end do 
         close(unit)
         print*,'output IE1&IE2.txt'
@@ -930,7 +931,7 @@ module SCF_file_reader_m
             write(unit,'(A,I8)')'要素界面数:',this%NFACE 
             write(unit,'(A)') 'NDNUM(界面を構成する節点数)' 
             do i = 1, this%NFACE 
-                write(unit,'(I8)') this%NDNUM(i) 
+                write(unit,'(i0)') this%NDNUM(i) 
             end do 
         close(unit)
         print*,'output NDNUM.txt'
@@ -940,7 +941,7 @@ module SCF_file_reader_m
             write(unit,'(A,I9)') 'NDTOT(全界面を構成する節点数):',this%NDTOT  
             write(unit,'(A)') '界面を構成する節点番号（IE1からIE2へ向かう方向へ右ねじ周り）' 
             do i = 1, this%NDTOT
-                write(unit,'(I8)') this%IDNO(i)
+                write(unit,'(i0)') this%IDNO(i)
             end do 
         close(unit) 
         print*,'output IDNO.txt'
@@ -949,7 +950,7 @@ module SCF_file_reader_m
             write(unit,'(A,I8)')'要素界面数:',this%NFACE 
             write(unit,'(A)') '界面を構成する節点番号（-1は存在しないことを表す）'
             do i = 1,this%NFACE 
-                write(unit,'(10I8)') this%face2vertices(:,i) 
+                write(unit,'(*(g0:," "))') this%face2vertices(:,i) 
             end do 
         close(unit) 
         print*,'output face2vertices.txt' 
