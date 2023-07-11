@@ -98,7 +98,7 @@ module SCF_file_reader_m
         type(FC_Scalar_t),allocatable :: FC_Scalars(:) 
         type(FC_Vector_t),allocatable :: FC_Vectors(:) 
 
-        character(len=20) case_name 
+        character(:), allocatable :: case_name 
 
         contains
 
@@ -148,6 +148,10 @@ module SCF_file_reader_m
                                 this%NODES, this%NFACE, this%NELEM ,this%EC_scalar_data_count, this%EC_vector_data_count, &
                                 this%FC_scalar_data_count, this%FC_vector_data_count, &
                                 this%IE1, this%IE2, this%NDNUM, this%NDTOT, this%IDNO)
+        
+        this%case_name = "tube_fph"
+
+        call output_txt(this,0)
 
     end subroutine
 
@@ -855,7 +859,7 @@ module SCF_file_reader_m
         type(scf_grid_t) :: this 
         integer :: i, unit 
 
-        open(newunit=unit,file='./'//trim(this%case_name)//'/txt/namelist.txt',status='replace')
+        open(newunit=unit,file='./'//this%case_name//'/namelist.txt',status='replace')
             write(unit,'(A,I8)') '接点数:',this%NODES
             write(unit,'(A,I8)') '要素境界面数:',this%NFACE
             write(unit,'(A,I8)') '要素数:',this%NELEM
@@ -886,10 +890,10 @@ module SCF_file_reader_m
 
     subroutine output_grid_information(this) 
         type(scf_grid_t) :: this 
-        integer :: i, unit 
+        integer :: i, unit
 
         !セル重心の書き出し
-        open(newunit=unit,file='./'//trim(this%case_name)//'/txt/cell_centers.txt',status='replace')
+        open(newunit=unit,file='./'//this%case_name//'/cell_centers.txt',status='replace')
             write(unit,'(A,I8)') '要素数:',this%NELEM
             write(unit,'(A)') '要素重心座標: X, Y, Z'
             !要素の中心座標 
@@ -901,7 +905,7 @@ module SCF_file_reader_m
     
 
         !節点座標の書き出し
-        open(newunit=unit,file='./'//trim(this%case_name)//'/txt/nodes.txt',status='replace')
+        open(newunit=unit,file='./'//this%case_name//'/nodes.txt',status='replace')
             write(unit,'(A,I8)') '節点数:',this%NODES
             write(unit,'(A)') '節点座標: X, Y, Z'
             !節点の座標 
@@ -912,7 +916,7 @@ module SCF_file_reader_m
         print*,'output nodes.txt'
 
         !面情報の書き出し
-        open(newunit=unit,file='./'//trim(this%case_name)//'/txt/IE1&IE2.txt',status='replace')
+        open(newunit=unit,file='./'//this%case_name//'/IE1&IE2.txt',status='replace')
             write(unit,'(A,I8)')'要素界面数:',this%NFACE 
             write(unit,'(A)') 'IE1(境界面裏側の要素番号),IE2(境界面表側の要素番号）(要素番号0〜) ' 
             do i = 1, this%NFACE 
@@ -922,7 +926,7 @@ module SCF_file_reader_m
         print*,'output IE1&IE2.txt'
 
 
-        open(newunit=unit,file='./'//trim(this%case_name)//'/txt/NDNUM.txt',status='replace')
+        open(newunit=unit,file='./'//this%case_name//'/NDNUM.txt',status='replace')
             write(unit,'(A,I8)')'要素界面数:',this%NFACE 
             write(unit,'(A)') 'NDNUM(界面を構成する節点数)' 
             do i = 1, this%NFACE 
@@ -931,7 +935,7 @@ module SCF_file_reader_m
         close(unit)
         print*,'output NDNUM.txt'
 
-        open(newunit=unit,file='./'//trim(this%case_name)//'/txt/IDNO.txt',status='replace')
+        open(newunit=unit,file='./'//this%case_name//'/IDNO.txt',status='replace')
             write(unit,'(A,I8)')'要素界面数:',this%NFACE 
             write(unit,'(A,I9)') 'NDTOT(全界面を構成する節点数):',this%NDTOT  
             write(unit,'(A)') '界面を構成する節点番号（IE1からIE2へ向かう方向へ右ねじ周り）' 
@@ -941,7 +945,7 @@ module SCF_file_reader_m
         close(unit) 
         print*,'output IDNO.txt'
 
-        open(newunit=unit,file='./'//trim(this%case_name)//'/txt/face2vertices.txt',status='replace')
+        open(newunit=unit,file='./'//this%case_name//'/face2vertices.txt',status='replace')
             write(unit,'(A,I8)')'要素界面数:',this%NFACE 
             write(unit,'(A)') '界面を構成する節点番号（-1は存在しないことを表す）'
             do i = 1,this%NFACE 
@@ -960,7 +964,7 @@ module SCF_file_reader_m
 
         !VOF値の書き出し
         write(fn,'("VOF_",i5.5,".txt")')step
-        open(newunit=unit,file='./'//trim(this%case_name)//'/txt/VOF/'//fn ,status='replace')
+        open(newunit=unit,file='./'//this%case_name//'/VOF/'//fn ,status='replace')
             write(unit,'(A,I8)') '要素数:',size(this%EC_Scalars(2)%data)
             write(unit,'(A)') this%EC_Scalars(2)%name 
             !要素のVOF値 

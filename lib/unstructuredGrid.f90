@@ -544,7 +544,7 @@ module unstructuredGrid_m
     end subroutine
 
     subroutine read_FPH(self,FNAME)
-        !! FLDファイルから流れ場を取得する
+        !! FPHファイルから流れ場を取得する
         use SCF_file_reader_m
         class(FlowFieldUnstructuredGrid) self
         type(scf_grid_t) grid
