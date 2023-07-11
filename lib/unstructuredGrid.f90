@@ -164,6 +164,15 @@ module unstructuredGrid_m
                     call self%read_FLD(FNAME, findTopology= .false., findVelocity = .true.)
                 end if
 
+            case('fph')
+                ! 初期場読み込み
+                block
+                    character(:), allocatable :: topologyFNAME
+                    topologyFNAME = FNAME( : index(FNAME, '_', back=.true.)) // '0' // '.fph' !ゼロ番にアクセス
+                    print*, "topologyFNAME = ", topologyFNAME
+                    call self%read_FPH(topologyFNAME)
+                end block
+
             case('array')
                 call self%read_VTK(meshFile, meshOnly=.true.)
                 call self%read_Array(FNAME)
@@ -538,16 +547,9 @@ module unstructuredGrid_m
         !! FLDファイルから流れ場を取得する
         use SCF_file_reader_m
         class(FlowFieldUnstructuredGrid) self
-        type(sct_grid_t) grid
+        type(scf_grid_t) grid
 
         character(*), intent(in) :: FNAME
-            !! ファイル名
-
-        logical, intent(in) :: findTopology
-            !! トポロジー情報を取得するフラグ
-
-        logical, intent(in) :: findVelocity
-            !! 流速情報を取得するフラグ
 
         print*, 'readFPH : ', trim(FNAME)
 

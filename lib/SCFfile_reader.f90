@@ -132,38 +132,39 @@ module SCF_file_reader_m
         implicit none
         class(scf_grid_t), intent(inout) :: this
         character(*),intent(in) :: filename
-        character(len=100):: fn, path
         integer unit ,i, step
 
-        write(6,*)'What is case name?'
-        read(5,*) this%case_name
-        do step = 0,10000
-            call destructor(this) 
+        if(.not.open_binary_sequential_(unit,filename))then 
+            print*,'cannot open'
+            stop 
+        end if 
 
-            !write(fn,'("dam_",i0,".fph")')step
-            fn = "A-1.gph"
-            path = trim(this%case_name)//'/fph/'//fn 
+        ! write(6,*)'What is case name?'
+        ! read(5,*) this%case_name
+        ! do step = 0,10000
+        !     call destructor(this) 
 
-            if(.not.open_binary_sequential_(unit,path))then 
-                print*,'cannot open'
-                stop 
-            end if 
+        !     !write(fn,'("dam_",i0,".fph")')step
+        !     fn = "A-1.gph"
+        !     path = trim(this%case_name)//'/fph/'//fn 
 
-            print*,'==================='
-            print*,'read', fn 
-            print*,'==================='
 
-            call read_FPH_Header_data(unit, this%NCYC, this%TIME)  
-            call read_FPH_Main_data(unit, this%CAN_X, this%CAN_Y, this%CAN_Z, this%CCE_X, this%CCE_Y, this%CCE_Z,this%EC_Scalars, this%EC_Vectors, this%FC_Scalars, this%FC_Vectors, &
-                                    this%NODES, this%NFACE, this%NELEM ,this%EC_scalar_data_count, this%EC_vector_data_count, this%FC_scalar_data_count, this%FC_vector_data_count, &
-                                    this%IE1, this%IE2, this%NDNUM, this%NDTOT, this%IDNO) 
+
+        !     print*,'==================='
+        !     print*,'read', fn 
+        !     print*,'==================='
+
+        !     call read_FPH_Header_data(unit, this%NCYC, this%TIME)  
+        !     call read_FPH_Main_data(unit, this%CAN_X, this%CAN_Y, this%CAN_Z, this%CCE_X, this%CCE_Y, this%CCE_Z,this%EC_Scalars, this%EC_Vectors, this%FC_Scalars, this%FC_Vectors, &
+        !                             this%NODES, this%NFACE, this%NELEM ,this%EC_scalar_data_count, this%EC_vector_data_count, this%FC_scalar_data_count, this%FC_vector_data_count, &
+        !                             this%IE1, this%IE2, this%NDNUM, this%NDTOT, this%IDNO) 
             
 
-            call make_face2vertices(this)
-            call output_txt(this,step) 
+        !     call make_face2vertices(this)
+        !     call output_txt(this,step) 
 
-            stop
-        end do
+        !     stop
+        ! end do
 
     end subroutine
 
@@ -219,7 +220,7 @@ module SCF_file_reader_m
 
         implicit none 
         integer,intent(in) :: unit 
-        integer :: EC_Scalar_cnt , EC_Vector_cnt , FC_Scalar_cnt , FC_Vector_cnt
+        integer :: EC_Scalar_cnt , EC_Vector_cnt , FC_Scalar_cnt , FC_Vector_cnt, i
         integer :: NODES, NFACE, NDTOT, NMAT, NMLEN, NPART, NPLEN, NREGN, NLEN, NN, NELEM, REV, NSIZE, LENG
         integer,allocatable :: IE1(:),IE2(:),NDNUM(:),NFA(:),FLG(:),ID(:),MAT(:),MAT_PART(:),IDNO(:)
         real(4),allocatable :: CAN_X(:),CAN_Y(:),CAN_Z(:),CCE_X(:),CCE_Y(:),CCE_Z(:) 
