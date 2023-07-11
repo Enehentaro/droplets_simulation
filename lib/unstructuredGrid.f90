@@ -79,7 +79,7 @@ module unstructuredGrid_m
         procedure, public :: get_info => get_gridInformation
 
         procedure set_cellCenter, set_cellThreshold, set_MinMaxCDN, point2cellVelocity
-        procedure, public :: read_VTK, read_array, read_INP, read_FLD
+        procedure, public :: read_VTK, read_array, read_INP, read_FLD, read_FPH
 
         !=====================================================================
 
@@ -196,6 +196,9 @@ module unstructuredGrid_m
 
             case('fld')
                 call self%read_FLD(FNAME, findTopology= .false., findVelocity = .true.)
+
+            case('fph')
+                call self%read_FPH(FNAME)
 
             case('array')
                 call self%read_Array(FNAME)
@@ -529,6 +532,30 @@ module unstructuredGrid_m
             call self%point2cellVelocity(real(velocity))
         end if
           
+    end subroutine
+
+    subroutine read_FPH(self,FNAME)
+        !! FLDファイルから流れ場を取得する
+        use SCF_file_reader_m
+        class(FlowFieldUnstructuredGrid) self
+        type(sct_grid_t) grid
+
+        character(*), intent(in) :: FNAME
+            !! ファイル名
+
+        logical, intent(in) :: findTopology
+            !! トポロジー情報を取得するフラグ
+
+        logical, intent(in) :: findVelocity
+            !! 流速情報を取得するフラグ
+
+        print*, 'readFPH : ', trim(FNAME)
+
+        call grid%read_SCF_file(FNAME)
+
+        print*, "test_stop"
+        stop
+
     end subroutine
 
     subroutine read_adjacency(self, path, success)

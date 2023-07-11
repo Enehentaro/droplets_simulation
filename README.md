@@ -98,3 +98,7 @@ $$ \bar{\mathbf{v}}^{n + 1} \space = \space \frac{\bar{\mathbf{v}}^{n} \space + 
   - コンパイル後、`$ ctest`でCTestが実行可能（buildディレクトリにて）
   - CTestの実行ディレクトリは、`test/`になる（buildディレクトリではない）
   - テスト用プログラムはすべて`test/`で管理しよう
+
+## tube_fphについて
+  - モデル形状:直径0.2、長さ1の円管
+  - 解析条件:LES、dt = 0.001[s]、-x = -0.1の面に0.01[m/s]、x = 0.4の面に静圧(流出)
