@@ -32,7 +32,7 @@ function(SETCOMPILEOPTIONS name)
     elseif(CMAKE_Fortran_COMPILER_ID MATCHES GNU)
         target_compile_options(${name} PRIVATE
             # $<$<CONFIG:Debug>: -O0 -Wall -fcheck=all -fbacktrace>
-            $<$<CONFIG:Debug>: -O0 -fcheck=all -fbacktrace>
+            $<$<CONFIG:Debug>: -O0 -g -fcheck=bounds>
             $<$<CONFIG:Release>: -O2>
         )
     endif()
