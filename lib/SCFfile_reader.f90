@@ -58,8 +58,9 @@ module SCF_file_reader_m
         character(:),allocatable :: abbreviated_name 
     end type
 
-    type :: face2vertices_t
-        integer, allocatable :: vertices(:)
+    type :: content_t
+        integer, allocatable :: vertexIDs(:)
+        integer, allocatable :: adjacentCellIDs(:)
     end type
 
     type :: scf_grid_t 
@@ -89,7 +90,8 @@ module SCF_file_reader_m
             !!界面を構成する節点番号
 
 
-        type(face2vertices_t), allocatable :: face2vertices(:)
+        type(content_t), allocatable :: face2vertices(:)
+        type(content_t), allocatable :: mainCell(:)
         integer,allocatable :: face2cells(:,:) 
         integer,allocatable :: cell2faces(:,:) 
 
@@ -136,11 +138,14 @@ module SCF_file_reader_m
 
     subroutine read_SCF_file(this, filename)
         use path_operator_m
+        use filename_m, only : adjacencyFileName
         implicit none
         class(scf_grid_t), intent(inout) :: this
         character(*),intent(in) :: filename
         character(:), allocatable :: dir
         integer unit
+        logical is_exist
+        character(:), allocatable :: FNAME
 
         !割り付けされている物があれば解放する.
         call destructor(this)
@@ -163,7 +168,19 @@ module SCF_file_reader_m
         call get_face2vertices(this)
         call get_face2cells(this)
         call get_fph_boundFaceIDs(this)
-        call output_fph_boundface(this)
+        call output_fph_boundFace(this)
+        
+        FNAME = this%dir_name//adjacencyFileName
+        print*, 'OUTPUT:', FNAME
+
+        inquire(file = FNAME, exist = is_exist)
+
+        if(.not. is_exist) then
+
+            call get_fph_adjacentCellIDs(this)
+            call output_fph_adjacentCell(this,FNAME)
+
+        end if
 
         call output_txt(this,0)
 
@@ -765,20 +782,19 @@ module SCF_file_reader_m
 
     subroutine get_face2vertices(this) 
         type(scf_grid_t) :: this 
-        integer ::  jj, jjmx, kk, cnt
+        integer ::  jj, kk, cnt
 
-        jjmx = this%NFACE 
+        allocate(this%face2vertices(this%NFACE))
 
-        allocate(this%face2vertices(jjmx))
-
-        do jj = 1, jjmx
-            allocate(this%face2vertices(jj)%vertices(this%NDNUM(jj)))
+        do jj = 1, this%NFACE
+            allocate(this%face2vertices(jj)%vertexIDs(this%NDNUM(jj)))
         end do
 
         cnt = 1
-        do jj = 1, jjmx
+        do jj = 1, this%NFACE
             do kk = 1, this%NDNUM(jj)
-                this%face2vertices(jj)%vertices(kk) = this%IDNO(cnt)
+                ! 頂点番号を0番スタートから1番スタートにする
+                this%face2vertices(jj)%vertexIDs(kk) = this%IDNO(cnt) + 1
                 cnt = cnt + 1
             end do        
         end do
@@ -787,38 +803,36 @@ module SCF_file_reader_m
 
     subroutine get_face2cells(this) 
         type(scf_grid_t) :: this 
-        integer :: jj, jjmx 
+        integer :: jj
 
-        jjmx = this%NFACE 
+        allocate(this%face2cells(2,this%NFACE))
 
-        allocate(this%face2cells(2,jjmx))
-
-        do jj = 1,jjmx 
-            this%face2cells(1,jj) = this%IE1(jj) 
-            this%face2cells(2,jj) = this%IE2(jj)    !-1のときは存在しない 
+        ! セル番号を0番から1番スタートにする
+        do jj = 1,this%NFACE
+            this%face2cells(1,jj) = this%IE1(jj) + 1
+            this%face2cells(2,jj) = this%IE2(jj) + 1   !-1のときは存在しない 
         end do 
 
     end subroutine
 
     subroutine get_fph_boundFaceIDs(this)
         type(scf_grid_t) :: this
-        integer jj, jjmx
+        integer jj
         logical first_flag
-
-        jjmx = this%NFACE 
 
         first_flag = .true.
 
-        do jj = 1,jjmx 
-            if(this%face2cells(1,jj) == -1) this%boundFaceIDs = append2list_int(this%boundFaceIDs,jj,first_flag)
-            if(this%face2cells(2,jj) == -1) this%boundFaceIDs = append2list_int(this%boundFaceIDs,jj,first_flag)
+        ! セル番号0を有する面は境界面(外部表面)
+        do jj = 1,this%NFACE
+            if(this%face2cells(1,jj) == 0) this%boundFaceIDs = append2list_int(this%boundFaceIDs,jj,first_flag)
+            if(this%face2cells(2,jj) == 0) this%boundFaceIDs = append2list_int(this%boundFaceIDs,jj,first_flag)
         end do
 
         this%num_boundFace = size(this%boundFaceIDs)
 
     end subroutine
 
-    subroutine output_fph_boundface(this)
+    subroutine output_fph_boundFace(this)
         use filename_m, only : boundaryFileName
         type(scf_grid_t) :: this
         integer JB, n_unit
@@ -829,55 +843,95 @@ module SCF_file_reader_m
         open(newunit = n_unit, file = FNAME , status = 'replace')
             write(n_unit,*) this%num_boundFace
             do JB = 1, this%num_boundFace
-                write(n_unit,'(*(g0:," "))') this%face2vertices(this%boundFaceIDs(JB))%vertices
+                write(n_unit,'(*(g0:," "))') this%face2vertices(this%boundFaceIDs(JB))%vertexIDs
             end do
         close(n_unit)
 
     end subroutine
 
-    subroutine get_cell2faces(this) 
-        type(scf_grid_t) :: this 
-        integer :: ii, iimx, jj, jjmx, cnt , cnt_ref
-        logical,allocatable :: is_faces(:)
+    subroutine get_fph_adjacentCellIDs(this)
+        type(scf_grid_t) :: this
+        integer ii, jj
+        logical first_flag
 
-        iimx = this%NELEM 
-        jjmx = this%NFACE 
+        first_flag = .true.
 
-        allocate(is_faces(jjmx)) 
-        allocate(this%cell2faces(50,iimx))
-        cnt_ref = 0
-        do ii = 1,iimx
-            ! print*,ii ,'/',iimx
-            cnt = 0 
-            is_faces(:) = .false. 
-            !$omp parallel do 
-            do jj = 1,jjmx
-                if(this%face2cells(1,jj) == ii-1) then      !要素番号にするために-1
-                    is_faces(jj) = .true. 
-                else if(this%face2cells(2,jj) == ii-1) then 
-                    is_faces(jj) = .true. 
-                end if 
-            end do 
-            !$omp end parallel do
+        allocate(this%mainCell(this%NELEM))
 
-            cnt = count(is_faces) 
-            if(cnt > cnt_ref) cnt_ref = cnt 
-
-            cnt = 0 
-            do jj = 1, jjmx 
-                if(is_faces(jj)) then 
-                    cnt = cnt + 1 
-                    this%cell2faces(cnt,ii) = jj-1      !面番号にするために-1
-                end if 
+        ! とんでもなく遅くて草
+        print*, "Now solve adjacent cells ..."
+        do ii = 1, this%NELEM
+            do jj = 1,this%NFACE
+                if(this%face2cells(1,jj) == ii) &
+                    this%mainCell(ii)%adjacentCellIDs &
+                    = append2list_int(this%mainCell(ii)%adjacentCellIDs,this%face2cells(2,jj),first_flag)
+                if(this%face2cells(2,jj) == ii) &
+                    this%mainCell(ii)%adjacentCellIDs &
+                    = append2list_int(this%mainCell(ii)%adjacentCellIDs,this%face2cells(1,jj),first_flag)
             end do
-            if(cnt < cnt_ref) then 
-                this%cell2faces(cnt+1:50,ii) = -1 
-            end if 
-           
+            first_flag = .true.
         end do
-        ! print*,'cnt_ref =',cnt_ref,'(<50)'
 
     end subroutine
+
+    subroutine output_fph_adjacentCell(this,FNAME)
+        type(scf_grid_t) :: this
+        character, intent(in) :: FNAME
+        integer n_unit, ii
+ 
+        open(newunit = n_unit, file = FNAME, status='replace')
+            write(n_unit,'(*(g0:," "))') this%NELEM
+            write(n_unit,'(*(g0:," "))') 100 !任意の数で大丈夫そう
+            do ii = 1, this%NELEM
+                write(n_unit, '(*(g0:," "))') size(this%mainCell(ii)%adjacentCellIDs), this%mainCell(ii)%adjacentCellIDs     
+            end do
+        close(n_unit)
+
+    end subroutine
+
+    ! subroutine get_cell2faces(this) 
+    !     type(scf_grid_t) :: this 
+    !     integer :: ii, iimx, jj, jjmx, cnt , cnt_ref
+    !     logical,allocatable :: is_faces(:)
+
+    !     iimx = this%NELEM 
+    !     jjmx = this%NFACE 
+
+    !     allocate(is_faces(jjmx)) 
+    !     allocate(this%cell2faces(50,iimx))
+    !     cnt_ref = 0
+    !     do ii = 1,iimx
+    !         ! print*,ii ,'/',iimx
+    !         cnt = 0 
+    !         is_faces(:) = .false. 
+    !         !$omp parallel do 
+    !         do jj = 1,jjmx
+    !             if(this%face2cells(1,jj) == ii-1) then      !要素番号にするために-1
+    !                 is_faces(jj) = .true. 
+    !             else if(this%face2cells(2,jj) == ii-1) then 
+    !                 is_faces(jj) = .true. 
+    !             end if 
+    !         end do 
+    !         !$omp end parallel do
+
+    !         cnt = count(is_faces) 
+    !         if(cnt > cnt_ref) cnt_ref = cnt 
+
+    !         cnt = 0 
+    !         do jj = 1, jjmx 
+    !             if(is_faces(jj)) then 
+    !                 cnt = cnt + 1 
+    !                 this%cell2faces(cnt,ii) = jj-1      !面番号にするために-1
+    !             end if 
+    !         end do
+    !         if(cnt < cnt_ref) then 
+    !             this%cell2faces(cnt+1:50,ii) = -1 
+    !         end if 
+           
+    !     end do
+    !     ! print*,'cnt_ref =',cnt_ref,'(<50)'
+
+    ! end subroutine
 
     subroutine output_txt(this,step)  
         type(scf_grid_t) :: this 
@@ -927,13 +981,13 @@ module SCF_file_reader_m
 
     subroutine output_grid_information(this) 
         type(scf_grid_t) :: this 
-        integer :: i, unit
+        integer :: i, unit, jj
 
         open(newunit = unit, file = this%dir_name//'face2vertices.txt',status='replace')
             write(unit,'(A,I8)')'要素界面数:',this%NFACE 
             write(unit,'(A)') '界面を構成する節点番号（-1は存在しないことを表す）'
             do i = 1,this%NFACE 
-                write(unit,'(*(g0:," "))') this%face2vertices(i)%vertices
+                write(unit,'(*(g0:," "))') this%face2vertices(i)%vertexIDs
             end do 
         close(unit) 
         print*,'output face2vertices.txt'
@@ -974,8 +1028,8 @@ module SCF_file_reader_m
         open(newunit = unit,file = this%dir_name//'IE1_IE2.txt',status='replace')
             write(unit,'(A,I8)')'要素界面数:',this%NFACE 
             write(unit,'(A)') 'IE1(境界面裏側の要素番号),IE2(境界面表側の要素番号）(要素番号0〜) ' 
-            do i = 1, this%NFACE 
-                write(unit,'(*(g0:," "))') this%IE1(i),this%IE2(i) 
+            do jj = 1, this%NFACE 
+                write(unit,'(*(g0:," "))') this%face2cells(:,jj)
             end do 
         close(unit)
         print*,'output IE1_IE2.txt'
