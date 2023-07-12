@@ -59,7 +59,7 @@ module SCF_file_reader_m
     end type
 
     type :: face2vertices_t
-        integer, allocatable :: verticies(:)
+        integer, allocatable :: vertices(:)
     end type
 
     type :: scf_grid_t 
@@ -772,13 +772,13 @@ module SCF_file_reader_m
         allocate(this%face2vertices(jjmx))
 
         do jj = 1, jjmx
-            allocate(this%face2vertices(jj)%verticies(this%NDNUM(jj)))
+            allocate(this%face2vertices(jj)%vertices(this%NDNUM(jj)))
         end do
 
         cnt = 1
         do jj = 1, jjmx
             do kk = 1, this%NDNUM(jj)
-                this%face2vertices(jj)%verticies(kk) = this%IDNO(cnt)
+                this%face2vertices(jj)%vertices(kk) = this%IDNO(cnt)
                 cnt = cnt + 1
             end do        
         end do
@@ -829,7 +829,7 @@ module SCF_file_reader_m
         open(newunit = n_unit, file = FNAME , status = 'replace')
             write(n_unit,*) this%num_boundFace
             do JB = 1, this%num_boundFace
-                write(n_unit,'(*(g0:," "))') this%face2vertices(this%boundFaceIDs(JB))%verticies
+                write(n_unit,'(*(g0:," "))') this%face2vertices(this%boundFaceIDs(JB))%vertices
             end do
         close(n_unit)
 
@@ -933,7 +933,7 @@ module SCF_file_reader_m
             write(unit,'(A,I8)')'要素界面数:',this%NFACE 
             write(unit,'(A)') '界面を構成する節点番号（-1は存在しないことを表す）'
             do i = 1,this%NFACE 
-                write(unit,'(*(g0:," "))') this%face2vertices(i)%verticies
+                write(unit,'(*(g0:," "))') this%face2vertices(i)%vertices
             end do 
         close(unit) 
         print*,'output face2vertices.txt'
