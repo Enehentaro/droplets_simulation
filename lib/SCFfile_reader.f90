@@ -136,13 +136,11 @@ module SCF_file_reader_m
         end if
     end function
 
-    subroutine read_SCF_file(this, filename)
-        use path_operator_m
-        use filename_m, only : adjacencyFileName
+    subroutine read_SCF_file(this, filename, dir)
         implicit none
         class(scf_grid_t), intent(inout) :: this
         character(*),intent(in) :: filename
-        character(:), allocatable :: dir
+        character(*),intent(in) :: dir
         integer unit
         logical is_exist
         character(:), allocatable :: FNAME
@@ -155,8 +153,7 @@ module SCF_file_reader_m
             stop 
         end if
 
-        call get_DirFromPath(filename,dir)
-        this%dir_name = trim(dir)
+        this%dir_name = dir
 
         call read_FPH_Header_data(unit, this%NCYC, this%TIME)  
         call read_FPH_Main_data(unit, this%CAN_X, this%CAN_Y, this%CAN_Z, this%CCE_X, this%CCE_Y, this%CCE_Z, &
@@ -167,15 +164,15 @@ module SCF_file_reader_m
 
         call get_face2vertices(this)
         call get_face2cells(this)
-        call get_fph_boundFaceIDs(this)
-        call output_fph_boundFace(this)
         
-        FNAME = this%dir_name//adjacencyFileName
-        print*, 'OUTPUT:', FNAME
+        FNAME = this%dir_name//'adjacency.txt'
 
         inquire(file = FNAME, exist = is_exist)
 
         if(.not. is_exist) then
+
+            call get_fph_boundFaceIDs(this)
+            call output_fph_boundFace(this)
 
             call get_fph_adjacentCellIDs(this)
             call output_fph_adjacentCell(this,FNAME)
@@ -878,7 +875,8 @@ module SCF_file_reader_m
         type(scf_grid_t) :: this
         character, intent(in) :: FNAME
         integer n_unit, ii
- 
+
+        print*, 'OUTPUT:', FNAME 
         open(newunit = n_unit, file = FNAME, status='replace')
             write(n_unit,'(*(g0:," "))') this%NELEM
             write(n_unit,'(*(g0:," "))') 100 !任意の数で大丈夫そう

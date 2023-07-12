@@ -545,15 +545,18 @@ module unstructuredGrid_m
 
     subroutine read_FPH(self,FNAME)
         !! FPHファイルから流れ場を取得する
+        use path_operator_m
         use SCF_file_reader_m
         class(FlowFieldUnstructuredGrid) self
         type(scf_grid_t) grid
+        character(:),allocatable :: dir
 
         character(*), intent(in) :: FNAME
 
         print*, 'readFPH : ', trim(FNAME)
 
-        call grid%read_SCF_file(FNAME)
+        call get_DirFromPath(trim(FNAME),dir)
+        call grid%read_SCF_file(FNAME,trim(dir))
 
         print*, "test_stop"
         stop
