@@ -89,7 +89,6 @@ module SCF_file_reader_m
         integer(4),allocatable :: IDNO(:) 
             !!界面を構成する節点番号
 
-
         type(content_t), allocatable :: face2vertices(:)
         type(content_t), allocatable :: mainCell(:)
         integer,allocatable :: face2cells(:,:) 
@@ -110,7 +109,14 @@ module SCF_file_reader_m
 
         contains
 
-        procedure :: read_SCF_file
+        procedure, public :: read_SCF_file
+        procedure, public :: get_face_count
+        procedure, public :: get_face2vertices
+        procedure, public :: get_face2cells
+        procedure, public :: get_fph_boundFaceIDs
+        procedure, public :: output_fph_boundFace
+        procedure, public :: get_fph_adjacentCellIDs
+        procedure, public :: output_fph_adjacentCell
 
     end type
     
@@ -136,14 +142,11 @@ module SCF_file_reader_m
         end if
     end function
 
-    subroutine read_SCF_file(this, filename, dir)
+    subroutine read_SCF_file(this, filename)
         implicit none
         class(scf_grid_t), intent(inout) :: this
         character(*),intent(in) :: filename
-        character(*),intent(in) :: dir
         integer unit
-        logical is_exist
-        character(:), allocatable :: FNAME
 
         !割り付けされている物があれば解放する.
         call destructor(this)
@@ -153,42 +156,22 @@ module SCF_file_reader_m
             stop 
         end if
 
-        this%dir_name = dir
-
         call read_FPH_Header_data(unit, this%NCYC, this%TIME)  
         call read_FPH_Main_data(unit, this%CAN_X, this%CAN_Y, this%CAN_Z, this%CCE_X, this%CCE_Y, this%CCE_Z, &
                                 this%EC_Scalars, this%EC_Vectors, this%FC_Scalars, this%FC_Vectors, &
-                                this%NODES, this%NFACE, this%NELEM ,this%EC_scalar_data_count, this%EC_vector_data_count, &
+                                this%EC_scalar_data_count, this%EC_vector_data_count, &
                                 this%FC_scalar_data_count, this%FC_vector_data_count, &
-                                this%IE1, this%IE2, this%NDNUM, this%NDTOT, this%IDNO)
-
-        call get_face2vertices(this)
-        call get_face2cells(this)
-        
-        FNAME = this%dir_name//'adjacency.txt'
-
-        inquire(file = FNAME, exist = is_exist)
-
-        if(.not. is_exist) then
-
-            call get_fph_boundFaceIDs(this)
-            call output_fph_boundFace(this)
-
-            call get_fph_adjacentCellIDs(this)
-            call output_fph_adjacentCell(this,FNAME)
-
-        end if
-
-        call output_txt(this,0)
+                                this%NODES, this%NFACE, this%NELEM, this%NDTOT, this%IE1, this%IE2, this%NDNUM, this%IDNO)
 
     end subroutine
 
     subroutine read_FPH_Header_data(unit,NCYC,TIME) 
         implicit none 
-        integer,intent(in) :: unit 
+        integer,intent(in) :: unit
+        integer(4), intent(inout) :: NCYC
+        real(4), intent(inout) :: TIME
         character(8) header_name       
-        integer(4) version_num , NCYC, NNAMS , n     
-        real(4) TIME 
+        integer(4) version_num, NNAMS , n     
         character(32) title_text 
 
         read(unit) header_name
@@ -229,24 +212,30 @@ module SCF_file_reader_m
         end do 
     end subroutine
 
-    subroutine read_FPH_Main_data(unit, CAN_X, CAN_Y, CAN_Z, CCE_X, CCE_Y, CCE_Z,EC_Scalars, EC_Vectors, FC_Scalars, FC_Vectors ,&
-                                    NODES, NFACE, NELEM, EC_Scalar_cnt, EC_Vector_cnt , FC_Scalar_cnt , FC_Vector_cnt, & 
-                                    IE1, IE2, NDNUM, NDTOT, IDNO)  
+    subroutine read_FPH_Main_data(unit, CAN_X, CAN_Y, CAN_Z, CCE_X, CCE_Y, CCE_Z,&
+                                    EC_Scalars, EC_Vectors, FC_Scalars, FC_Vectors ,&
+                                    EC_Scalar_cnt, EC_Vector_cnt , FC_Scalar_cnt , FC_Vector_cnt,&
+                                    NODES, NFACE, NELEM, NDTOT, IE1, IE2, NDNUM, IDNO)  
 
         implicit none 
-        integer,intent(in) :: unit 
-        integer :: EC_Scalar_cnt , EC_Vector_cnt , FC_Scalar_cnt , FC_Vector_cnt, i
-        integer :: NODES, NFACE, NDTOT, NMAT, NMLEN, NPART, NPLEN, NREGN, NLEN, NN, NELEM, REV, NSIZE, LENG
-        integer,allocatable :: IE1(:),IE2(:),NDNUM(:),NFA(:),FLG(:),ID(:),MAT(:),MAT_PART(:),IDNO(:)
-        real(4),allocatable :: CAN_X(:),CAN_Y(:),CAN_Z(:),CCE_X(:),CCE_Y(:),CCE_Z(:) 
+        integer,intent(in) :: unit
+        real(4), allocatable, intent(inout) :: CAN_X(:),CAN_Y(:),CAN_Z(:),CCE_X(:),CCE_Y(:),CCE_Z(:) 
+        type(EC_Scalar_t), allocatable, intent(inout) :: EC_Scalars(:)
+        type(EC_Vector_t), allocatable, intent(inout) :: EC_Vectors(:)
+        type(FC_Scalar_t), allocatable, intent(inout) :: FC_Scalars(:)
+        type(FC_Vector_t), allocatable, intent(inout) :: FC_Vectors(:)
+        integer, intent(inout) :: EC_Scalar_cnt , EC_Vector_cnt , FC_Scalar_cnt , FC_Vector_cnt
+        integer, intent(inout) :: NODES, NFACE, NELEM, NDTOT
+        integer, allocatable, intent(inout) :: IE1(:), IE2(:), NDNUM(:), IDNO(:)
+        integer :: NMAT, NMLEN, NPART, NPLEN, NREGN, NLEN, NN,  REV, NSIZE, LENG
+        integer,allocatable :: NFA(:),FLG(:),ID(:),MAT(:),MAT_PART(:)
+        integer i
+
         character(32) main_data_title 
         character(32) TITLE
         character,allocatable :: LMAT(:),LPART(:),LRGN(:),LRGN_S(:)
         character(:),allocatable ::  TEXT,STRXML
-        type(EC_Scalar_t),allocatable :: EC_Scalars(:)
-        type(EC_Vector_t),allocatable :: EC_Vectors(:)
-        type(FC_Scalar_t),allocatable :: FC_Scalars(:)
-        type(FC_Vector_t),allocatable :: FC_Vectors(:)
+
 
         
 
@@ -777,8 +766,15 @@ module SCF_file_reader_m
         this%FC_vector_data_count = 0 
     end subroutine
 
+    integer function get_face_count(this) result(num_face)
+        class(scf_grid_t), intent(in) :: this
+
+        num_face = this%NFACE
+
+    end function
+
     subroutine get_face2vertices(this) 
-        type(scf_grid_t) :: this 
+        class(scf_grid_t), intent(inout) :: this
         integer ::  jj, kk, cnt
 
         allocate(this%face2vertices(this%NFACE))
@@ -796,10 +792,10 @@ module SCF_file_reader_m
             end do        
         end do
             
-    end subroutine 
+    end subroutine
 
     subroutine get_face2cells(this) 
-        type(scf_grid_t) :: this 
+        class(scf_grid_t), intent(inout) :: this 
         integer :: jj
 
         allocate(this%face2cells(2,this%NFACE))
@@ -807,13 +803,13 @@ module SCF_file_reader_m
         ! セル番号を0番から1番スタートにする
         do jj = 1,this%NFACE
             this%face2cells(1,jj) = this%IE1(jj) + 1
-            this%face2cells(2,jj) = this%IE2(jj) + 1   !-1のときは存在しない 
+            this%face2cells(2,jj) = this%IE2(jj) + 1   !0のときは存在しない 
         end do 
 
     end subroutine
 
     subroutine get_fph_boundFaceIDs(this)
-        type(scf_grid_t) :: this
+        class(scf_grid_t), intent(inout) :: this
         integer jj
         logical first_flag
 
@@ -829,15 +825,13 @@ module SCF_file_reader_m
 
     end subroutine
 
-    subroutine output_fph_boundFace(this)
-        use filename_m, only : boundaryFileName
-        type(scf_grid_t) :: this
+    subroutine output_fph_boundFace(this, dir)
+        class(scf_grid_t), intent(inout) :: this
+        character(*), intent(in) :: dir
         integer JB, n_unit
-        character(:), allocatable :: FNAME
 
-        FNAME = this%dir_name//boundaryFileName
-        print*, 'OUTPUT:', FNAME
-        open(newunit = n_unit, file = FNAME , status = 'replace')
+        print*, 'OUTPUT:', dir//"boundary.txt"
+        open(newunit = n_unit, file = dir//"boundary.txt" , status = 'replace')
             write(n_unit,*) this%num_boundFace
             do JB = 1, this%num_boundFace
                 write(n_unit,'(*(g0:," "))') this%face2vertices(this%boundFaceIDs(JB))%vertexIDs
@@ -847,7 +841,8 @@ module SCF_file_reader_m
     end subroutine
 
     subroutine get_fph_adjacentCellIDs(this)
-        type(scf_grid_t) :: this
+        use terminalControler_m
+        class(scf_grid_t), intent(inout) :: this
         integer ii, jj
         logical first_flag
 
@@ -855,10 +850,14 @@ module SCF_file_reader_m
 
         allocate(this%mainCell(this%NELEM))
 
-        ! とんでもなく遅くて草
+        ! 計算コスト大,要改善
         print*, "Now solve adjacent cells ..."
+        call set_formatTC('("Now solve fph adjacent cells ... [ #cellID : ",i6," / ",i6," ]")')
         do ii = 1, this%NELEM
+            call print_progress([ii, this%NELEM])
+
             do jj = 1,this%NFACE
+                if(this%face2cells(1,jj) == 0 .or. this%face2cells(2,jj) == 0) cycle
                 if(this%face2cells(1,jj) == ii) &
                     this%mainCell(ii)%adjacentCellIDs &
                     = append2list_int(this%mainCell(ii)%adjacentCellIDs,this%face2cells(2,jj),first_flag)
@@ -866,18 +865,19 @@ module SCF_file_reader_m
                     this%mainCell(ii)%adjacentCellIDs &
                     = append2list_int(this%mainCell(ii)%adjacentCellIDs,this%face2cells(1,jj),first_flag)
             end do
+            
             first_flag = .true.
         end do
 
     end subroutine
 
-    subroutine output_fph_adjacentCell(this,FNAME)
-        type(scf_grid_t) :: this
-        character, intent(in) :: FNAME
+    subroutine output_fph_adjacentCell(this,dir)
+        class(scf_grid_t), intent(inout) :: this
+        character(*), intent(in) :: dir
         integer n_unit, ii
 
-        print*, 'OUTPUT:', FNAME 
-        open(newunit = n_unit, file = FNAME, status='replace')
+        print*, 'OUTPUT:', dir//"adjacency.txt" 
+        open(newunit = n_unit, file = dir//"adjacency.txt", status='replace')
             write(n_unit,'(*(g0:," "))') this%NELEM
             write(n_unit,'(*(g0:," "))') 100 !任意の数で大丈夫そう
             do ii = 1, this%NELEM
@@ -980,15 +980,6 @@ module SCF_file_reader_m
     subroutine output_grid_information(this) 
         type(scf_grid_t) :: this 
         integer :: i, unit, jj
-
-        open(newunit = unit, file = this%dir_name//'face2vertices.txt',status='replace')
-            write(unit,'(A,I8)')'要素界面数:',this%NFACE 
-            write(unit,'(A)') '界面を構成する節点番号（-1は存在しないことを表す）'
-            do i = 1,this%NFACE 
-                write(unit,'(*(g0:," "))') this%face2vertices(i)%vertexIDs
-            end do 
-        close(unit) 
-        print*,'output face2vertices.txt'
 
         open(newunit = unit, file = this%dir_name//'NDNUM.txt', status = 'replace')
             write(unit,'(A,I8)')'要素界面数:',this%NFACE 

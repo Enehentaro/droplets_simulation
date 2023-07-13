@@ -42,6 +42,11 @@ module unstructuredGrid_m
 
     end type
 
+    type :: content_t
+        integer, allocatable :: vertexIDs(:)
+        integer, allocatable :: pairCellIDs(:)
+    end type
+
     type, public :: FlowFieldUnstructuredGrid
         !! 流れ場非構造格子クラス
         private
@@ -165,13 +170,17 @@ module unstructuredGrid_m
                 end if
 
             case('fph')
-                ! 初期場読み込み
-                block
-                    character(:), allocatable :: topologyFNAME
-                    topologyFNAME = FNAME( : index(FNAME, '_', back=.true.)) // '0' // '.fph' !ゼロ番にアクセス
-                    print*, "topologyFNAME = ", topologyFNAME
-                    call self%read_FPH(topologyFNAME)
-                end block
+                ! call self%read_FPH(FNAME, findTopology= .true., findVelocity = .true.)
+
+                if(.not.allocated(self%CELLs)) then !まだ未割り当てのとき
+                    block
+                        character(:), allocatable :: topologyFNAME
+                        topologyFNAME = FNAME( : index(FNAME, '_', back=.true.)) // '0' // '.fph' !ゼロ番にアクセス
+                        call self%read_FPH(topologyFNAME, findTopology= .true., findVelocity = .false.)
+                    end block
+
+                    call self%read_FPH(FNAME, findTopology= .false., findVelocity = .true.)
+                end if
 
             case('array')
                 call self%read_VTK(meshFile, meshOnly=.true.)
@@ -207,7 +216,7 @@ module unstructuredGrid_m
                 call self%read_FLD(FNAME, findTopology= .false., findVelocity = .true.)
 
             case('fph')
-                call self%read_FPH(FNAME)
+                call self%read_FPH(FNAME, findTopology= .false., findVelocity = .true.)
 
             case('array')
                 call self%read_Array(FNAME)
@@ -540,26 +549,60 @@ module unstructuredGrid_m
             call grid%search_vector_data("VEL",velocity)
             call self%point2cellVelocity(real(velocity))
         end if
-          
+        
     end subroutine
 
-    subroutine read_FPH(self,FNAME)
+    subroutine read_FPH(self, FNAME, findTopology, findVelocity)
         !! FPHファイルから流れ場を取得する
-        use path_operator_m
         use SCF_file_reader_m
+        use path_operator_m
         class(FlowFieldUnstructuredGrid) self
         type(scf_grid_t) grid
         character(:),allocatable :: dir
+        logical is_exist
+        integer num_face
 
         character(*), intent(in) :: FNAME
+            !! ファイル名
+
+        logical, intent(in) :: findTopology
+            !! トポロジー情報を取得するフラグ
+
+        logical, intent(in) :: findVelocity
+            !! 流速情報を取得するフラグ
 
         print*, 'readFPH : ', trim(FNAME)
 
-        call get_DirFromPath(trim(FNAME),dir)
-        call grid%read_SCF_file(FNAME,trim(dir))
+        call grid%read_SCF_file(FNAME)
+
+        call get_DirFromPath(FNAME,dir)
+
+        if(findTopology) then
+            call grid%get_face2vertices()
+            call grid%get_face2cells()
+
+            inquire(file = dir//'adjacency.txt', exist = is_exist)
+
+            if(.not. is_exist) then
+
+                call grid%get_fph_boundFaceIDs()
+                call grid%output_fph_boundFace(dir)
+
+                call grid%get_fph_adjacentCellIDs()
+                call grid%output_fph_adjacentCell(dir)
+
+            end if
+        end if
+
+        if(findVelocity) then
+            
+            ! self%CELLs(II)%flowVelocity(:) = 
+
+        end if
 
         print*, "test_stop"
         stop
+
 
     end subroutine
 
