@@ -559,8 +559,9 @@ module unstructuredGrid_m
         class(FlowFieldUnstructuredGrid) self
         type(scf_grid_t) grid
         character(:),allocatable :: dir
+        real(4),allocatable :: points(:,:)
         logical is_exist
-        integer num_face
+        integer iimx, kkmx, kk
 
         character(*), intent(in) :: FNAME
             !! ファイル名
@@ -578,12 +579,24 @@ module unstructuredGrid_m
         call get_DirFromPath(FNAME,dir)
 
         if(findTopology) then
-            call grid%get_face2vertices()
-            call grid%get_face2cells()
+            iimx = grid%get_fph_element_count()
+            kkmx = grid%get_fph_vertex_count()
+
+            allocate(self%CELLs(iimx))
+            allocate(self%NODEs(kkmx))
+
+            call grid%get_fph_2d_array_of_point_coords(points)
+
+            do kk = 1, kkmx
+                self%NODEs(kk)%coordinate(:) = real(points(:,kk))
+            end do
 
             inquire(file = dir//'adjacency.txt', exist = is_exist)
 
             if(.not. is_exist) then
+
+                call grid%get_face2vertices()
+                call grid%get_face2cells()
 
                 call grid%get_fph_boundFaceIDs()
                 call grid%output_fph_boundFace(dir)

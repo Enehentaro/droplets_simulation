@@ -65,52 +65,53 @@ module SCF_file_reader_m
 
     type :: scf_grid_t 
         
-        real(4) :: TIME = 0 
+        real(4), private :: TIME = 0 
             !!時間　
-        integer(4) :: NCYC = 0 
+        integer(4), private :: NCYC = 0 
             !!サイクル数
 
-        integer(4) :: NODES = 0                               
+        integer(4), private :: NODES = 0                               
             !!節点数
-        real(4),allocatable :: CAN_X(:),CAN_Y(:),CAN_Z(:)   
+        real(4), allocatable, private :: CAN_X(:),CAN_Y(:),CAN_Z(:)   
             !!節点座標
-        integer(4) :: NFACE = 0 
+        integer(4), private :: NFACE = 0 
             !!要素界面数
-        integer(4) :: NELEM = 0
+        integer(4), private :: NELEM = 0
             !!要素数
-        real(4),allocatable :: CCE_X(:),CCE_Y(:),CCE_Z(:)
+        real(4),allocatable, private :: CCE_X(:),CCE_Y(:),CCE_Z(:)
             !!要素中心座標
-        integer(4),allocatable :: IE1(:),IE2(:) 
+        integer(4),allocatable, private :: IE1(:),IE2(:) 
             !!面の裏表の要素番号
-        integer(4),allocatable :: NDNUM(:) 
+        integer(4),allocatable, private :: NDNUM(:) 
             !!界面を構成する節点数
-        integer(4) :: NDTOT
+        integer(4), private :: NDTOT
             !!全界面を構成する節点数
-        integer(4),allocatable :: IDNO(:) 
+        integer(4),allocatable, private :: IDNO(:) 
             !!界面を構成する節点番号
 
-        type(content_t), allocatable :: face2vertices(:)
-        type(content_t), allocatable :: mainCell(:)
-        integer,allocatable :: face2cells(:,:) 
-        integer,allocatable :: cell2faces(:,:) 
+        type(content_t), allocatable, private :: face2vertices(:)
+        type(content_t), allocatable, private :: mainCell(:)
+        integer,allocatable, private :: face2cells(:,:) 
+        integer,allocatable, private :: cell2faces(:,:) 
 
-        integer :: EC_scalar_data_count = 0 
-        integer :: EC_vector_data_count = 0 
-        integer :: FC_scalar_data_count = 0 
-        integer :: FC_vector_data_count = 0
-        type(EC_Scalar_t),allocatable :: EC_Scalars(:) 
-        type(EC_Vector_t),allocatable :: EC_Vectors(:) 
-        type(FC_Scalar_t),allocatable :: FC_Scalars(:) 
-        type(FC_Vector_t),allocatable :: FC_Vectors(:) 
+        integer, private :: EC_scalar_data_count = 0 
+        integer, private :: EC_vector_data_count = 0 
+        integer, private :: FC_scalar_data_count = 0 
+        integer, private :: FC_vector_data_count = 0
+        type(EC_Scalar_t),allocatable, private :: EC_Scalars(:) 
+        type(EC_Vector_t),allocatable, private :: EC_Vectors(:) 
+        type(FC_Scalar_t),allocatable, private :: FC_Scalars(:) 
+        type(FC_Vector_t),allocatable, private :: FC_Vectors(:) 
 
-        character(:), allocatable :: dir_name
-        integer num_boundFace
-        integer, allocatable :: boundFaceIDs(:)
+        integer, private :: num_boundFace
+        integer, allocatable, private :: boundFaceIDs(:)
 
         contains
 
         procedure, public :: read_SCF_file
-        procedure, public :: get_face_count
+        procedure, public :: get_fph_element_count
+        procedure, public :: get_fph_vertex_count
+        procedure, public :: get_fph_2d_array_of_point_coords
         procedure, public :: get_face2vertices
         procedure, public :: get_face2cells
         procedure, public :: get_fph_boundFaceIDs
@@ -766,12 +767,33 @@ module SCF_file_reader_m
         this%FC_vector_data_count = 0 
     end subroutine
 
-    integer function get_face_count(this) result(num_face)
+    integer function get_fph_element_count(this)
         class(scf_grid_t), intent(in) :: this
 
-        num_face = this%NFACE
+        get_fph_element_count = this%NELEM
 
     end function
+
+    integer function get_fph_vertex_count(this)
+        class(scf_grid_t), intent(in) :: this
+
+        get_fph_vertex_count = this%NODES
+
+    end function
+
+    subroutine get_fph_2d_array_of_point_coords(this, points)
+        !! 節点座標を2次元配列で出力する. 
+        implicit none
+        class(scf_grid_t),intent(in) :: this
+        real(4), allocatable, intent(inout) :: points(:,:)
+
+        allocate(points(3,this%NODES))
+
+        points(1,:) = this%CAN_X(:)
+        points(2,:) = this%CAN_Y(:)
+        points(3,:) = this%CAN_Z(:)
+        
+    end subroutine
 
     subroutine get_face2vertices(this) 
         class(scf_grid_t), intent(inout) :: this
@@ -784,9 +806,9 @@ module SCF_file_reader_m
         end do
 
         cnt = 1
+        ! 頂点番号を0番スタートから1番スタートにする
         do jj = 1, this%NFACE
             do kk = 1, this%NDNUM(jj)
-                ! 頂点番号を0番スタートから1番スタートにする
                 this%face2vertices(jj)%vertexIDs(kk) = this%IDNO(cnt) + 1
                 cnt = cnt + 1
             end do        
@@ -887,154 +909,6 @@ module SCF_file_reader_m
 
     end subroutine
 
-    ! subroutine get_cell2faces(this) 
-    !     type(scf_grid_t) :: this 
-    !     integer :: ii, iimx, jj, jjmx, cnt , cnt_ref
-    !     logical,allocatable :: is_faces(:)
-
-    !     iimx = this%NELEM 
-    !     jjmx = this%NFACE 
-
-    !     allocate(is_faces(jjmx)) 
-    !     allocate(this%cell2faces(50,iimx))
-    !     cnt_ref = 0
-    !     do ii = 1,iimx
-    !         ! print*,ii ,'/',iimx
-    !         cnt = 0 
-    !         is_faces(:) = .false. 
-    !         !$omp parallel do 
-    !         do jj = 1,jjmx
-    !             if(this%face2cells(1,jj) == ii-1) then      !要素番号にするために-1
-    !                 is_faces(jj) = .true. 
-    !             else if(this%face2cells(2,jj) == ii-1) then 
-    !                 is_faces(jj) = .true. 
-    !             end if 
-    !         end do 
-    !         !$omp end parallel do
-
-    !         cnt = count(is_faces) 
-    !         if(cnt > cnt_ref) cnt_ref = cnt 
-
-    !         cnt = 0 
-    !         do jj = 1, jjmx 
-    !             if(is_faces(jj)) then 
-    !                 cnt = cnt + 1 
-    !                 this%cell2faces(cnt,ii) = jj-1      !面番号にするために-1
-    !             end if 
-    !         end do
-    !         if(cnt < cnt_ref) then 
-    !             this%cell2faces(cnt+1:50,ii) = -1 
-    !         end if 
-           
-    !     end do
-    !     ! print*,'cnt_ref =',cnt_ref,'(<50)'
-
-    ! end subroutine
-
-    subroutine output_txt(this,step)  
-        type(scf_grid_t) :: this 
-        integer :: step 
-        
-        !!必要ないものはコメントアウト!!
-        if (step == 0) then 
-            call output_name_list(this) 
-            call output_grid_information(this) 
-        end if 
-
-    end subroutine
-
-
-    subroutine output_name_list(this)
-        type(scf_grid_t) :: this 
-        integer :: i, unit 
-
-        open(newunit = unit,file = this%dir_name//'namelist.txt',status='replace')
-            write(unit,'(A,I8)') '接点数:',this%NODES
-            write(unit,'(A,I8)') '要素境界面数:',this%NFACE
-            write(unit,'(A,I8)') '要素数:',this%NELEM
-            write(unit,'(A)')
-            write(unit,'(A)')'EC_Sclar_Data' 
-            do i = 1,this%EC_scalar_data_count
-                write(unit,'(2A)') this%EC_Scalars(i)%name , this%EC_Scalars(i)%abbreviated_name 
-            end do 
-            write(unit,'(A)')
-            write(unit,'(A)')'EC_Vectors_Data' 
-            do i = 1,this%EC_vector_data_count
-                write(unit,'(2A)') this%EC_Vectors(i)%name , this%EC_Vectors(i)%abbreviated_name 
-            end do 
-            write(unit,'(A)') 
-            write(unit,'(A)')'FC_Sclar_Data' 
-            do i = 1,this%FC_scalar_data_count
-                write(unit,'(2A)') this%FC_Scalars(i)%name , this%FC_Scalars(i)%abbreviated_name 
-            end do 
-            write(unit,'(A)') 
-            write(unit,'(A)')'FC_Vectors_Data' 
-            do i = 1,this%FC_vector_data_count
-                write(unit,'(2A)') this%FC_Vectors(i)%name , this%FC_Vectors(i)%abbreviated_name 
-            end do 
-        close(unit) 
-        print*,'output namelist.txt'
-    end subroutine
-
-
-    subroutine output_grid_information(this) 
-        type(scf_grid_t) :: this 
-        integer :: i, unit, jj
-
-        open(newunit = unit, file = this%dir_name//'NDNUM.txt', status = 'replace')
-            write(unit,'(A,I8)')'要素界面数:',this%NFACE 
-            write(unit,'(A)') 'NDNUM(界面を構成する節点数)' 
-            do i = 1, this%NFACE 
-                write(unit,'(i0)') this%NDNUM(i) 
-            end do 
-        close(unit)
-        print*,'output NDNUM.txt'
-
-        !セル重心の書き出し
-        open(newunit = unit, file = this%dir_name//'cell_centers.txt',status='replace')
-            write(unit,'(A,I8)') '要素数:',this%NELEM
-            write(unit,'(A)') '要素重心座標: X, Y, Z'
-            !要素の中心座標 
-            do i = 1, this%NELEM
-                write(unit,'(*(g0:," "))') this%CCE_X(i),this%CCE_Y(i),this%CCE_Z(i) 
-            end do 
-        close(unit)
-        print*,'output cell_centers.txt'
-    
-
-        !節点座標の書き出し
-        open(newunit = unit, file = this%dir_name//'nodes.txt',status='replace')
-            write(unit,'(A,I8)') '節点数:',this%NODES
-            write(unit,'(A)') '節点座標: X, Y, Z'
-            !節点の座標 
-            do i = 1, this%NODES
-                write(unit,'(*(g0:," "))') this%CAN_X(i),this%CAN_Y(i),this%CAN_Z(i) 
-            end do 
-        close(unit)
-        print*,'output nodes.txt'
-
-        !面情報の書き出し
-        open(newunit = unit,file = this%dir_name//'IE1_IE2.txt',status='replace')
-            write(unit,'(A,I8)')'要素界面数:',this%NFACE 
-            write(unit,'(A)') 'IE1(境界面裏側の要素番号),IE2(境界面表側の要素番号）(要素番号0〜) ' 
-            do jj = 1, this%NFACE 
-                write(unit,'(*(g0:," "))') this%face2cells(:,jj)
-            end do 
-        close(unit)
-        print*,'output IE1_IE2.txt'
-
-        open(newunit = unit, file = this%dir_name//'IDNO.txt', status = 'replace')
-            write(unit,'(A,I8)')'要素界面数:',this%NFACE 
-            write(unit,'(A,I9)') 'NDTOT(全界面を構成する節点数):',this%NDTOT  
-            write(unit,'(A)') '界面を構成する節点番号（IE1からIE2へ向かう方向へ右ねじ周り）' 
-            do i = 1, this%NDTOT
-                write(unit,'(i0)') this%IDNO(i)
-            end do 
-        close(unit) 
-        print*,'output IDNO.txt'
-
-    end subroutine
-
     function append2list_int(list, element, first_flag) result(after_list)
         integer, intent(in) :: list(:)
         integer, intent(in) :: element
@@ -1055,24 +929,5 @@ module SCF_file_reader_m
         first_flag = .false.
 
     end function
-
-    ! subroutine output_VOF(this,step)  
-    !     type(scf_grid_t) :: this 
-    !     integer :: i, unit 
-    !     integer :: step 
-    !     character(len=13) :: fn 
-
-    !     !VOF値の書き出し
-    !     write(fn,'("VOF_",i5.5,".txt")')step
-    !     open(newunit = unit, file = this%dir_name//fn ,status='replace')
-    !         write(unit,'(A,I8)') '要素数:',size(this%EC_Scalars(2)%data)
-    !         write(unit,'(A)') this%EC_Scalars(2)%name 
-    !         !要素のVOF値 
-    !         do i = 1, size(this%EC_Scalars(2)%data)
-    !             write(unit,'(3F12.5)') this%EC_Scalars(2)%data(i)  
-    !         end do 
-    !     close(unit)
-    !     print*,'output',fn  
-    ! end subroutine
 
 end module
