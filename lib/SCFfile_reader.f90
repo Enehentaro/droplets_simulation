@@ -117,10 +117,10 @@ module SCF_file_reader_m
         procedure, public :: get_face2cells
         procedure, public :: get_fph_boundFaceIDs
         procedure, public :: output_fph_boundFace
+        procedure, public :: get_cell2boundFace
         procedure, public :: get_fph_adjacentCellIDs
         procedure, public :: output_fph_adjacentCell
         procedure, public :: search_fph_vector_data
-        procedure, public :: get_cell2boundFace
 
     end type
     
@@ -867,6 +867,49 @@ module SCF_file_reader_m
 
     end subroutine
 
+    subroutine get_cell2boundFace(this)
+        implicit none
+        class(scf_grid_t), intent(inout) :: this
+        integer JB, boundFace2cellID, n_unit, ii
+        logical first_flag
+
+        if(.not.allocated(this%mainCell)) allocate(this%mainCell(this%NELEM))
+
+        ! 境界セルに境界面番号を割り当てる
+        do JB = 1, this%num_boundFace
+            first_flag = .true.
+            if(this%face2cells(1,this%boundFaceIDs(JB)) == 0) then
+
+                boundFace2cellID = this%face2cells(2,this%boundFaceIDs(JB))
+
+                if(allocated(this%mainCell(boundFace2cellID)%boundFaceID)) first_flag = .false.
+
+                this%mainCell(boundFace2cellID)%boundFaceID &
+                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,JB,first_flag)
+
+            end if
+            if(this%face2cells(2,this%boundFaceIDs(JB)) == 0) then
+                
+                boundFace2cellID = this%face2cells(1,this%boundFaceIDs(JB))
+
+                if(allocated(this%mainCell(boundFace2cellID)%boundFaceID)) first_flag = .false.
+
+                this%mainCell(boundFace2cellID)%boundFaceID &
+                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,JB,first_flag)
+            
+            end if
+        end do
+
+        ! 未割り当ての配列は内部セル
+        do ii = 1, this%NELEM
+            if(.not. allocated(this%mainCell(ii)%boundFaceID)) then
+                allocate(this%mainCell(ii)%boundFaceID(1))
+                this%mainCell(ii)%boundFaceID(1) = 0
+            end if
+        end do     
+
+    end subroutine
+
     subroutine get_fph_adjacentCellIDs(this)
         use terminalControler_m
         implicit none
@@ -875,8 +918,6 @@ module SCF_file_reader_m
         logical first_flag
 
         first_flag = .true.
-
-        if(.not.allocated(this%mainCell)) allocate(this%mainCell(this%NELEM))
 
         ! 計算コスト大,要改善
         print*, "Now solve adjacent cells ..."
@@ -899,40 +940,6 @@ module SCF_file_reader_m
 
     end subroutine
 
-    subroutine get_cell2boundFace(this)
-        implicit none
-        class(scf_grid_t), intent(inout) :: this
-        integer JB, boundFace2cellID, n_unit, ii
-        logical first_flag
-
-        if(.not.allocated(this%mainCell)) allocate(this%mainCell(this%NELEM))
-
-        do JB = 1, this%num_boundFace
-            first_flag = .true.
-            if(this%face2cells(1,this%boundFaceIDs(JB)) == 0) then
-
-                boundFace2cellID = this%face2cells(2,this%boundFaceIDs(JB))
-
-                if(allocated(this%mainCell(boundFace2cellID)%boundFaceID)) first_flag = .false.
-
-                this%mainCell(boundFace2cellID)%boundFaceID &
-                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,this%boundFaceIDs(JB),first_flag)
-
-            end if
-            if(this%face2cells(2,this%boundFaceIDs(JB)) == 0) then
-                
-                boundFace2cellID = this%face2cells(1,this%boundFaceIDs(JB))
-
-                if(allocated(this%mainCell(boundFace2cellID)%boundFaceID)) first_flag = .false.
-
-                this%mainCell(boundFace2cellID)%boundFaceID &
-                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,this%boundFaceIDs(JB),first_flag)
-            
-            end if
-        end do
-
-    end subroutine
-
     subroutine output_fph_adjacentCell(this,dir)
         implicit none
         class(scf_grid_t), intent(inout) :: this
@@ -947,7 +954,11 @@ module SCF_file_reader_m
                 write(n_unit, '(*(g0:," "))') size(this%mainCell(ii)%adjacentCellIDs), this%mainCell(ii)%adjacentCellIDs     
             end do
             do ii = 1, this%NELEM
-                write(n_unit, '(*(g0:," "))') size(this%mainCell(ii)%boundFaceID), this%mainCell(ii)%boundFaceID
+                if(this%mainCell(ii)%boundFaceID(1) == 0) then
+                    write(n_unit, '(*(g0:," "))') 0
+                else
+                    write(n_unit, '(*(g0:," "))') size(this%mainCell(ii)%boundFaceID), this%mainCell(ii)%boundFaceID                
+                end if
             end do
         close(n_unit)
 
