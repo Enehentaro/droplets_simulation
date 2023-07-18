@@ -559,9 +559,9 @@ module unstructuredGrid_m
         class(FlowFieldUnstructuredGrid) self
         type(scf_grid_t) grid
         character(:),allocatable :: dir
-        real(4),allocatable :: points(:,:)
+        real(4),allocatable :: points(:,:), velocity(:,:)
         logical is_exist
-        integer iimx, kkmx, kk
+        integer iimx, kkmx, kk, ii
 
         character(*), intent(in) :: FNAME
             !! ファイル名
@@ -601,6 +601,7 @@ module unstructuredGrid_m
                 call grid%get_fph_boundFaceIDs()
                 call grid%output_fph_boundFace(dir)
 
+                call grid%get_cell2boundFace()
                 call grid%get_fph_adjacentCellIDs()
                 call grid%output_fph_adjacentCell(dir)
 
@@ -608,14 +609,16 @@ module unstructuredGrid_m
         end if
 
         if(findVelocity) then
-            
-            ! self%CELLs(II)%flowVelocity(:) = 
+
+            call grid%search_fph_vector_data("VEL",velocity)
+            do ii = 1, iimx
+                self%CELLs(II)%flowVelocity(:) = velocity(:,II)
+            end do
 
         end if
 
         print*, "test_stop"
         stop
-
 
     end subroutine
 

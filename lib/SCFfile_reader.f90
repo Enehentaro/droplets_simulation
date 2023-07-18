@@ -61,6 +61,7 @@ module SCF_file_reader_m
     type :: content_t
         integer, allocatable :: vertexIDs(:)
         integer, allocatable :: adjacentCellIDs(:)
+        integer, allocatable :: boundFaceID(:)
     end type
 
     type :: scf_grid_t 
@@ -118,6 +119,8 @@ module SCF_file_reader_m
         procedure, public :: output_fph_boundFace
         procedure, public :: get_fph_adjacentCellIDs
         procedure, public :: output_fph_adjacentCell
+        procedure, public :: search_fph_vector_data
+        procedure, public :: get_cell2boundFace
 
     end type
     
@@ -768,6 +771,7 @@ module SCF_file_reader_m
     end subroutine
 
     integer function get_fph_element_count(this)
+        implicit none
         class(scf_grid_t), intent(in) :: this
 
         get_fph_element_count = this%NELEM
@@ -775,6 +779,7 @@ module SCF_file_reader_m
     end function
 
     integer function get_fph_vertex_count(this)
+        implicit none
         class(scf_grid_t), intent(in) :: this
 
         get_fph_vertex_count = this%NODES
@@ -787,15 +792,12 @@ module SCF_file_reader_m
         class(scf_grid_t),intent(in) :: this
         real(4), allocatable, intent(inout) :: points(:,:)
 
-        allocate(points(3,this%NODES))
-
-        points(1,:) = this%CAN_X(:)
-        points(2,:) = this%CAN_Y(:)
-        points(3,:) = this%CAN_Z(:)
+        call packing_vector_into_2Darray_(points, this%CAN_X, this%CAN_Y, this%CAN_Z)
         
     end subroutine
 
-    subroutine get_face2vertices(this) 
+    subroutine get_face2vertices(this)
+        implicit none
         class(scf_grid_t), intent(inout) :: this
         integer ::  jj, kk, cnt
 
@@ -816,7 +818,8 @@ module SCF_file_reader_m
             
     end subroutine
 
-    subroutine get_face2cells(this) 
+    subroutine get_face2cells(this)
+        implicit none
         class(scf_grid_t), intent(inout) :: this 
         integer :: jj
 
@@ -831,6 +834,7 @@ module SCF_file_reader_m
     end subroutine
 
     subroutine get_fph_boundFaceIDs(this)
+        implicit none
         class(scf_grid_t), intent(inout) :: this
         integer jj
         logical first_flag
@@ -848,6 +852,7 @@ module SCF_file_reader_m
     end subroutine
 
     subroutine output_fph_boundFace(this, dir)
+        implicit none
         class(scf_grid_t), intent(inout) :: this
         character(*), intent(in) :: dir
         integer JB, n_unit
@@ -864,13 +869,14 @@ module SCF_file_reader_m
 
     subroutine get_fph_adjacentCellIDs(this)
         use terminalControler_m
+        implicit none
         class(scf_grid_t), intent(inout) :: this
         integer ii, jj
         logical first_flag
 
         first_flag = .true.
 
-        allocate(this%mainCell(this%NELEM))
+        if(.not.allocated(this%mainCell)) allocate(this%mainCell(this%NELEM))
 
         ! 計算コスト大,要改善
         print*, "Now solve adjacent cells ..."
@@ -893,7 +899,42 @@ module SCF_file_reader_m
 
     end subroutine
 
+    subroutine get_cell2boundFace(this)
+        implicit none
+        class(scf_grid_t), intent(inout) :: this
+        integer JB, boundFace2cellID, n_unit, ii
+        logical first_flag
+
+        if(.not.allocated(this%mainCell)) allocate(this%mainCell(this%NELEM))
+
+        do JB = 1, this%num_boundFace
+            first_flag = .true.
+            if(this%face2cells(1,this%boundFaceIDs(JB)) == 0) then
+
+                boundFace2cellID = this%face2cells(2,this%boundFaceIDs(JB))
+
+                if(allocated(this%mainCell(boundFace2cellID)%boundFaceID)) first_flag = .false.
+
+                this%mainCell(boundFace2cellID)%boundFaceID &
+                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,this%boundFaceIDs(JB),first_flag)
+
+            end if
+            if(this%face2cells(2,this%boundFaceIDs(JB)) == 0) then
+                
+                boundFace2cellID = this%face2cells(1,this%boundFaceIDs(JB))
+
+                if(allocated(this%mainCell(boundFace2cellID)%boundFaceID)) first_flag = .false.
+
+                this%mainCell(boundFace2cellID)%boundFaceID &
+                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,this%boundFaceIDs(JB),first_flag)
+            
+            end if
+        end do
+
+    end subroutine
+
     subroutine output_fph_adjacentCell(this,dir)
+        implicit none
         class(scf_grid_t), intent(inout) :: this
         character(*), intent(in) :: dir
         integer n_unit, ii
@@ -905,8 +946,49 @@ module SCF_file_reader_m
             do ii = 1, this%NELEM
                 write(n_unit, '(*(g0:," "))') size(this%mainCell(ii)%adjacentCellIDs), this%mainCell(ii)%adjacentCellIDs     
             end do
+            do ii = 1, this%NELEM
+                write(n_unit, '(*(g0:," "))') size(this%mainCell(ii)%boundFaceID), this%mainCell(ii)%boundFaceID
+            end do
         close(n_unit)
 
+    end subroutine
+
+    subroutine search_fph_vector_data(this, key, vector)
+        implicit none
+        class(scf_grid_t), intent(in) :: this
+        character(*),intent(in) :: key
+        real(4), allocatable, intent(inout) :: vector(:,:)
+        integer i
+
+        do i = 1, size(this%EC_Vectors)
+            if ( trim(this%EC_Vectors(i)%abbreviated_name) == trim(key) ) then
+                call packing_vector_into_2Darray_(vector, &
+                this%EC_Vectors(i)%x, this%EC_Vectors(i)%y, this%EC_Vectors(i)%z)
+                return
+            end if
+        end do
+
+    end subroutine
+
+    subroutine packing_vector_into_2Darray_(array, x, y, z)
+        !! 実数のベクトル配列を2次元配列に詰め直す
+        implicit none
+        real(4), allocatable, intent(out) :: array(:,:)
+        real(4), intent(in) :: x(:), y(:), z(:)
+
+        integer size_of_array
+
+        size_of_array = size(x)
+        
+        if(size_of_array /= size(y) .or. size_of_array /= size(z)) then
+            print "('ERROR(SCTfile_reader, packing_): size of x is different from y or z')"
+            return
+        end if
+        if(.not. allocated(array)) allocate(array(3, size_of_array))
+
+        array(1,:) = x(:)
+        array(2,:) = y(:)
+        array(3,:) = z(:)
     end subroutine
 
     function append2list_int(list, element, first_flag) result(after_list)
