@@ -23,6 +23,8 @@ module unstructuredGrid_m
         real threshold
             !! 近傍セル判定の閾値
 
+        integer, allocatable :: faceID(:)
+
     end type
 
     type boundaryTriangle_t
@@ -42,11 +44,6 @@ module unstructuredGrid_m
 
     end type
 
-    type :: content_t
-        integer, allocatable :: vertexIDs(:)
-        integer, allocatable :: pairCellIDs(:)
-    end type
-
     type, public :: FlowFieldUnstructuredGrid
         !! 流れ場非構造格子クラス
         private
@@ -60,6 +57,8 @@ module unstructuredGrid_m
         type(boundaryTriangle_t), allocatable :: BoundFACEs(:)
             !! 境界面配列
 
+        type(boundaryTriangle_t), allocatable :: FACEs(:)
+
         type(kdTree) kd_tree
             !! kd-tree（近傍セル探索用）
 
@@ -72,6 +71,8 @@ module unstructuredGrid_m
             !! 参照セル探索結果が悪いと判断された回数
         integer :: num_refCellSearch = 0
             !! 参照セル探索が行われた回数
+
+        logical :: fph_flag = .false.
 
         contains
         private
@@ -97,6 +98,7 @@ module unstructuredGrid_m
         procedure AdjacencySolvingProcess
         procedure read_adjacency, read_boundaries, solve_adjacencyOnFlowFieldUnstructuredGrid
         procedure output_boundaries, output_adjacency, boundary_setting, output_STL
+        procedure read_cell2face
         
         ! procedure setup_kdTree
 
@@ -193,7 +195,7 @@ module unstructuredGrid_m
         end select
 
         call self%set_MinMaxCDN()
-        call self%set_cellCenter()
+        if(.not. self%fph_flag) call self%set_cellCenter()
         call self%set_cellThreshold()
 
     end subroutine
@@ -228,7 +230,7 @@ module unstructuredGrid_m
         end select
 
         call self%set_MinMaxCDN()
-        call self%set_cellCenter()
+        if(.not. self%fph_flag) call self%set_cellCenter()
         call self%set_cellThreshold()
 
         call self%boundary_setting(first=.false.)
@@ -255,7 +257,7 @@ module unstructuredGrid_m
 
         call self%boundary_setting(first=.true.)
 
-        call self%output_STL(dir//'shape.stl')
+        if(.not. self%fph_flag) call self%output_STL(dir//'shape.stl')
 
     end subroutine
 
@@ -303,21 +305,40 @@ module unstructuredGrid_m
     subroutine set_cellThreshold(self)
         !! セル閾値の算出
         class(FlowFieldUnstructuredGrid) self
-        integer II,IIMX, n, num_node, nodeID
+        integer II,IIMX, n, num_node, nodeID, num_face, faceID
         real x, vector(3)
 
         IIMX = size(self%CELLs)
-        DO II = 1, IIMX
-            num_node = size(self%CELLs(II)%nodeID)
-            x = 0.0
-            do n = 1, num_node
-                nodeID = self%CELLs(II)%nodeID(n)
-                vector(:) = self%NODEs(nodeID)%coordinate(:) - self%CELLs(II)%center(:)
-                x = max(x, norm2(vector)) 
+
+        if(.not. self%fph_flag) then
+
+            DO II = 1, IIMX
+                num_node = size(self%CELLs(II)%nodeID)
+                x = 0.0
+                do n = 1, num_node
+                    nodeID = self%CELLs(II)%nodeID(n)
+                    vector(:) = self%NODEs(nodeID)%coordinate(:) - self%CELLs(II)%center(:)
+                    x = max(x, norm2(vector)) 
+                end do
+                self%CELLs(II)%threshold = x
+                ! print*, self%CELLs(II)%threshold
+            END DO
+
+        else
+
+            do II = 1, IIMX
+                num_face = size(self%CELLs(II)%faceID)
+                x = 0.0
+                do n = 1, num_face
+                    faceID = self%CELLs(II)%faceID(n)
+                    vector(:) = self%FACEs(faceID)%center(:) - self%CELLs(II)%center(:)
+                    x = max(x, norm2(vector)) 
+                end do
+                self%CELLs(II)%threshold = x
+
             end do
-            self%CELLs(II)%threshold = x
-            ! print*, self%CELLs(II)%threshold
-        END DO
+
+        end if
 
     end subroutine
 
@@ -559,9 +580,9 @@ module unstructuredGrid_m
         class(FlowFieldUnstructuredGrid) self
         type(scf_grid_t) grid
         character(:),allocatable :: dir
-        real(4),allocatable :: points(:,:), velocity(:,:)
-        logical is_exist
-        integer iimx, kkmx, kk, ii
+        real(4),allocatable :: points(:,:), velocity(:,:), bound_center(:,:), face_center(:,:)
+        logical is_adjacencyFile, is_cell2faceFile
+        integer iimx, kkmx, jjmx, ii, jj, kk, JB, num_boundFaces
 
         character(*), intent(in) :: FNAME
             !! ファイル名
@@ -572,6 +593,8 @@ module unstructuredGrid_m
         logical, intent(in) :: findVelocity
             !! 流速情報を取得するフラグ
 
+        self%fph_flag = .true.
+
         print*, 'readFPH : ', trim(FNAME)
 
         call grid%read_SCF_file(FNAME)
@@ -581,6 +604,7 @@ module unstructuredGrid_m
         if(findTopology) then
             iimx = grid%get_fph_element_count()
             kkmx = grid%get_fph_vertex_count()
+            jjmx = grid%get_fph_face_count()
 
             allocate(self%CELLs(iimx))
             allocate(self%NODEs(kkmx))
@@ -591,21 +615,45 @@ module unstructuredGrid_m
                 self%NODEs(kk)%coordinate(:) = real(points(:,kk))
             end do
 
-            inquire(file = dir//'adjacency.txt', exist = is_exist)
+            inquire(file = dir//'adjacency.txt', exist = is_adjacencyFile)
+            inquire(file = dir//'cell2face.txt', exist = is_cell2faceFile)
 
-            if(.not. is_exist) then
+            call grid%get_face2vertices()
+            call grid%get_face2cells()
 
-                call grid%get_face2vertices()
-                call grid%get_face2cells()
+            call grid%get_fph_faceCenter(face_center)
+            call grid%get_fph_boundFaceIDs(num_boundFaces)
+            call grid%get_fph_boundFaceCenter(bound_center)
 
-                call grid%get_fph_boundFaceIDs()
-                call grid%output_fph_boundFace(dir)
+            allocate(self%FACEs(jjmx))
+            do jj = 1, jjmx
+                self%FACEs(jj)%center(:) = real(face_center(:,jj))
+            end do
+
+            allocate(self%BoundFACEs(num_boundFaces))
+            do JB = 1, num_boundFaces
+                self%BoundFACEs(JB)%center(:) = real(bound_center(:,JB))
+            end do
+
+            if(.not. is_cell2faceFile) then
+
+                call grid%get_cell2faces()                
+                call grid%output_fph_cell2face(dir)
+
+            end if
+
+            call self%read_cell2face(dir)
+
+            if(.not. is_adjacencyFile) then
 
                 call grid%get_cell2boundFace()
                 call grid%get_fph_adjacentCellIDs()
+
+                call grid%output_fph_boundFace(dir)
                 call grid%output_fph_adjacentCell(dir)
 
             end if
+
         end if
 
         if(findVelocity) then
@@ -617,8 +665,24 @@ module unstructuredGrid_m
 
         end if
 
-        print*, "test_stop"
-        stop
+    end subroutine
+
+    subroutine read_cell2face(self,dir)
+        class(FlowFieldUnstructuredGrid) self
+        character(*), intent(in) :: dir
+        integer n_unit, num_cell2face, NF, ii, iimx
+        character(255) str
+
+        iimx = size(self%CELLs)
+
+        open(newunit = n_unit, file = dir//'cell2face.txt', status = 'old')
+            do ii = 1, iimx
+                read(n_unit,'(A)') str
+                read(str, *) num_cell2face
+                allocate(self%CELLs(II)%faceID(num_cell2face))
+                read(str, *) NF, self%CELLs(II)%faceID(:)
+            end do
+        close(n_unit)
 
     end subroutine
 
@@ -717,7 +781,7 @@ module unstructuredGrid_m
         print*, 'READ : ', FNAME
         open(newunit=n_unit, FILE=FNAME , status='old', action='read')
             read(n_unit,*) JBMX
-            allocate(self%BoundFACEs(JBMX))
+            if(.not. allocated(self%BoundFACEs)) allocate(self%BoundFACEs(JBMX))
             do JB = 1, JBMX
                 read(n_unit,*) self%BoundFACEs(JB)%nodeID(:)
             end do
@@ -948,10 +1012,12 @@ module unstructuredGrid_m
                 JB = self%CELLs(II)%boundFaceID(JJ)
                 nodeID(:) = self%BoundFACEs(JB)%nodeID(:)
                 
-                self%BoundFACEs(JB)%center(:) = ( self%NODEs(nodeID(1))%coordinate(:) &
-                                            + self%NODEs(nodeID(2))%coordinate(:) &
-                                            + self%NODEs(nodeID(3))%coordinate(:) ) / 3.0
-            
+                if(.not. self%fph_flag) then
+                    self%BoundFACEs(JB)%center(:) = ( self%NODEs(nodeID(1))%coordinate(:) &
+                                                + self%NODEs(nodeID(2))%coordinate(:) &
+                                                + self%NODEs(nodeID(3))%coordinate(:) ) / 3.0
+                end if
+
                 a(:) =  self%NODEs(nodeID(2))%coordinate(:) - self%NODEs(nodeID(1))%coordinate(:)
                 b(:) =  self%NODEs(nodeID(3))%coordinate(:) - self%NODEs(nodeID(1))%coordinate(:)
                 normalVector(:) = cross_product(a, b)
@@ -970,6 +1036,7 @@ module unstructuredGrid_m
         
         end do
 
+        ! movevectorが上手くいってない?
         JBMX = size(self%BoundFACEs)
         if(first) then
             do JB = 1, JBMX

@@ -60,8 +60,11 @@ module SCF_file_reader_m
 
     type :: content_t
         integer, allocatable :: vertexIDs(:)
+        integer, allocatable :: faceIDs(:)
         integer, allocatable :: adjacentCellIDs(:)
         integer, allocatable :: boundFaceID(:)
+        real(4) center(3)
+        real(4) coordinate(3)
     end type
 
     type :: scf_grid_t 
@@ -92,8 +95,10 @@ module SCF_file_reader_m
 
         type(content_t), allocatable, private :: face2vertices(:)
         type(content_t), allocatable, private :: mainCell(:)
+        type(content_t), allocatable, private :: cell2faces(:)
+        type(content_t), allocatable :: node(:)
+        type(content_t), allocatable :: face(:)
         integer,allocatable, private :: face2cells(:,:) 
-        integer,allocatable, private :: cell2faces(:,:) 
 
         integer, private :: EC_scalar_data_count = 0 
         integer, private :: EC_vector_data_count = 0 
@@ -112,10 +117,15 @@ module SCF_file_reader_m
         procedure, public :: read_SCF_file
         procedure, public :: get_fph_element_count
         procedure, public :: get_fph_vertex_count
+        procedure, public :: get_fph_face_count
         procedure, public :: get_fph_2d_array_of_point_coords
         procedure, public :: get_face2vertices
         procedure, public :: get_face2cells
+        procedure, public :: get_cell2faces
         procedure, public :: get_fph_boundFaceIDs
+        procedure, public :: get_fph_faceCenter
+        procedure, public :: get_fph_boundFaceCenter
+        procedure, public :: output_fph_cell2face
         procedure, public :: output_fph_boundFace
         procedure, public :: get_cell2boundFace
         procedure, public :: get_fph_adjacentCellIDs
@@ -786,14 +796,28 @@ module SCF_file_reader_m
 
     end function
 
+    integer function get_fph_face_count(this)
+        implicit none
+        class(scf_grid_t), intent(in) :: this
+
+        get_fph_face_count = this%NFACE
+
+    end function
+
     subroutine get_fph_2d_array_of_point_coords(this, points)
         !! 節点座標を2次元配列で出力する. 
         implicit none
-        class(scf_grid_t),intent(in) :: this
+        class(scf_grid_t),intent(inout) :: this
         real(4), allocatable, intent(inout) :: points(:,:)
 
-        call packing_vector_into_2Darray_(points, this%CAN_X, this%CAN_Y, this%CAN_Z)
+        allocate(this%node(this%NODES))
         
+        this%node(:)%coordinate(1) = this%CAN_X(:)
+        this%node(:)%coordinate(2) = this%CAN_Y(:)
+        this%node(:)%coordinate(3) = this%CAN_Z(:)
+
+        call packing_vector_into_2Darray_(points, this%CAN_X, this%CAN_Y, this%CAN_Z)
+
     end subroutine
 
     subroutine get_face2vertices(this)
@@ -833,9 +857,35 @@ module SCF_file_reader_m
 
     end subroutine
 
-    subroutine get_fph_boundFaceIDs(this)
+    subroutine get_cell2faces(this)
+        use terminalControler_m
         implicit none
         class(scf_grid_t), intent(inout) :: this
+        integer cellID, faceID, contentID
+        logical first_flag
+
+        allocate(this%cell2faces(this%NFACE))
+
+        print*, "Now get cell2face ..."
+        call set_formatTC('("completed ... [ #cellID : ",i6," / ",i6," ]")')
+        do cellID = 1, this%NELEM
+            call print_progress([cellID, this%NELEM])
+            first_flag = .true.
+            do faceID = 1, this%NFACE
+                do contentID = 1, 2
+                    if(this%face2cells(contentID,faceID) == cellID) &
+                        this%cell2faces(cellID)%faceIDs &
+                        = append2list_int(this%cell2faces(cellID)%faceIDs,faceID,first_flag)
+                end do
+            end do
+        end do
+
+    end subroutine
+
+    subroutine get_fph_boundFaceIDs(this, num_boundFaces)
+        implicit none
+        class(scf_grid_t), intent(inout) :: this
+        integer, intent(out) :: num_boundFaces
         integer jj
         logical first_flag
 
@@ -848,6 +898,62 @@ module SCF_file_reader_m
         end do
 
         this%num_boundFace = size(this%boundFaceIDs)
+        num_boundFaces = this%num_boundFace
+
+    end subroutine
+
+    subroutine get_fph_faceCenter(this,face_center)
+        implicit none
+        class(scf_grid_t), intent(inout) :: this
+        real(4), allocatable, intent(out) :: face_center(:,:)
+        real(4) sum_vertices(3)
+        integer jj, vertexID
+
+        allocate(face_center(3,this%NFACE))
+        allocate(this%face(this%NFACE))
+
+        do jj = 1, this%NFACE
+
+            sum_vertices(:) = 0.0
+            do vertexID = 1, size(this%face2vertices(jj)%vertexIDs)
+                sum_vertices = sum_vertices + &
+                this%node(this%face2vertices(jj)%vertexIDs(vertexID))%coordinate
+            end do
+
+            this%face(jj)%center(:) = sum_vertices / size(this%face2vertices(jj)%vertexIDs)
+            face_center(:,jj) = this%face(jj)%center(:)
+            
+        end do
+        
+    end subroutine
+
+    subroutine get_fph_boundFaceCenter(this, bound_center)
+        implicit none
+        class(scf_grid_t), intent(in) :: this
+        real(4), allocatable, intent(inout) :: bound_center(:,:)
+        integer JB
+
+        allocate(bound_center(3,this%num_boundFace))
+
+        do JB = 1, this%num_boundFace
+            bound_center(:,JB) = this%face(this%boundFaceIDs(JB))%center(:)
+        end do
+
+    end subroutine
+
+    subroutine output_fph_cell2face(this, dir)
+        implicit none
+        class(scf_grid_t), intent(in) :: this
+        character(*), intent(in) :: dir
+        integer n_unit, cellID
+
+        print*, 'OUTPUT:', dir//"cell2face.txt"
+        open(newunit = n_unit, file = dir//"cell2face.txt", status = 'replace')
+            do cellID = 1, this%NELEM
+                write(n_unit, '(*(g0:," "))') size(this%cell2faces(cellID)%faceIDs), &
+                this%cell2faces(cellID)%faceIDs
+            end do
+        close(n_unit)        
 
     end subroutine
 
@@ -870,7 +976,7 @@ module SCF_file_reader_m
     subroutine get_cell2boundFace(this)
         implicit none
         class(scf_grid_t), intent(inout) :: this
-        integer JB, boundFace2cellID, n_unit, ii
+        integer JB, boundFace2cellID, ii
         logical first_flag
 
         if(.not.allocated(this%mainCell)) allocate(this%mainCell(this%NELEM))
@@ -921,7 +1027,7 @@ module SCF_file_reader_m
 
         ! 計算コスト大,要改善
         print*, "Now solve adjacent cells ..."
-        call set_formatTC('("Now solve fph adjacent cells ... [ #cellID : ",i6," / ",i6," ]")')
+        call set_formatTC('("Completed ... [ #cellID : ",i6," / ",i6," ]")')
         do ii = 1, this%NELEM
             call print_progress([ii, this%NELEM])
 
