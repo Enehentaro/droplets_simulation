@@ -111,6 +111,8 @@ module SCF_file_reader_m
 
         integer, private :: num_boundFace
         integer, allocatable, private :: boundFaceIDs(:)
+        integer, allocatable, private :: num_face2vertex(:)
+        integer, allocatable, private :: offsets(:)
 
         contains
 
@@ -122,11 +124,13 @@ module SCF_file_reader_m
         procedure, public :: get_face2vertices
         procedure, public :: get_face2cells
         procedure, public :: get_cell2faces
+        procedure, public :: get_cell_offsets
         procedure, public :: get_fph_boundFaceIDs
         procedure, public :: get_fph_faceCenter
         procedure, public :: get_fph_boundFaceCenter
         procedure, public :: output_fph_cell2face
         procedure, public :: output_fph_boundFace
+        procedure, public :: output_fph_vtk
         procedure, public :: get_cell2boundFace
         procedure, public :: get_fph_adjacentCellIDs
         procedure, public :: output_fph_adjacentCell
@@ -826,6 +830,7 @@ module SCF_file_reader_m
         integer ::  jj, kk, cnt
 
         allocate(this%face2vertices(this%NFACE))
+        allocate(this%num_face2vertex(this%NFACE))
 
         do jj = 1, this%NFACE
             allocate(this%face2vertices(jj)%vertexIDs(this%NDNUM(jj)))
@@ -837,9 +842,44 @@ module SCF_file_reader_m
             do kk = 1, this%NDNUM(jj)
                 this%face2vertices(jj)%vertexIDs(kk) = this%IDNO(cnt) + 1
                 cnt = cnt + 1
-            end do        
+            end do
+            this%num_face2vertex(JJ) = size(this%face2vertices(jj)%vertexIDs)        
         end do
             
+    end subroutine
+
+    subroutine get_cell_offsets(this)
+        implicit none
+        class(scf_grid_t), intent(inout) :: this
+        integer cell_id, sum_content, sum_vertex, element_id
+        integer, allocatable :: offset(:)
+
+        allocate(offset(this%NELEM))
+
+        ! offset(n)は第nセルの面数,面を構成する頂点数,各面を構成する頂点番号の合計情報数となる
+        ! 例えば第nセルがテトラの場合,面数は4(情報1個),第1面を構成する頂点数は3(情報1個),第1面を構成する各頂点番号(情報3個)
+        ! 第2~4面も同様にして合計情報数17をoffset(n)に格納する
+        do cell_id = 1, this%NELEM
+            sum_vertex = 1
+            do element_id = 1, size(this%cell2faces(cell_id)%faceIDs)
+                sum_vertex = sum_vertex + 1 + this%num_face2vertex(this%cell2faces(cell_id)%faceIDs(element_id))
+            end do
+            offset(cell_id) = sum_vertex
+        end do
+
+        allocate(this%offsets(this%NELEM+1))
+
+        ! self%offsets(n)は第nセル情報のスタート位置を格納する
+        ! 例えば第1~2セルがテトラ格子の場合
+        ! self%offsets(1)(=第1セル情報スタート位置)は0
+        ! self%offsets(2)(=第2セル情報スタート位置)は17
+        ! self%offsets(3)(=第3セル情報スタート位置)は34
+        sum_content = 0
+        this%offsets(1) = 0
+        do cell_id = 2, this%NELEM+1
+            this%offsets(cell_id) = this%offsets(cell_id-1) + offset(cell_id-1)
+        end do
+
     end subroutine
 
     subroutine get_face2cells(this)
@@ -1067,6 +1107,63 @@ module SCF_file_reader_m
                 end if
             end do
         close(n_unit)
+
+    end subroutine
+
+    subroutine output_fph_vtk(this, dir)
+        implicit none
+        class(scf_grid_t), intent(in) :: this
+        character(*), intent(in) :: dir
+        integer n_unit, node_id, cell_id, element_id
+
+        print*, 'OUTPUT:', dir//"shape.vtk"
+        open(newunit = n_unit, file = dir//"shape.vtk", status = "replace")
+            write(n_unit, '(a)') '# vtk DataFile Version 5.1'
+            write(n_unit, '(a)') 'vtk output'
+            write(n_unit, '(a)') 'ASCII'
+            write(n_unit, '(a)') 'DATASET UNSTRUCTURED_GRID'
+
+            write(n_unit, '(a,1x,i0,1x,a)') 'POINTS', this%NODES, 'float'
+
+            do node_id = 1, this%NODES
+                write(n_unit,'(3(e12.5,2x))') this%node(node_id)%coordinate(:)
+            end do
+
+            write(n_unit,'()')
+
+            write(n_unit,'(a,i0,2x,i0)') 'CELLS ', this%NELEM+1, this%offsets(this%NELEM+1)
+            write(n_unit,'(a)') 'OFFSETS vtktypeint64'
+            write(n_unit,'(*(g0:," "))') this%offsets(:)
+            
+            write(n_unit,'()')
+
+            ! 第nセルがテトラの場合,以下のような記述になる
+            ! 4         (第nセルの面数)
+            ! 3 0 1 3   (第nセル第1面を構成する頂点数),(第1面を構成する第1~3頂点の番号)
+            ! 3 0 1 2   (第nセル第2面を構成する頂点数),(第2面を構成する第1~3頂点の番号)
+            ! 3 0 2 3   (第nセル第3面を構成する頂点数),(第3面を構成する第1~3頂点の番号)
+            ! 3 1 2 3   (第nセル第4面を構成する頂点数),(第4面を構成する第1~3頂点の番号)
+            write(n_unit,'(a)') "CONNECTIVITY vtktypeint64"
+            do cell_id = 1, this%NELEM
+                write(n_unit, '(i0)') size(this%cell2faces(cell_id)%faceIDs)
+                do element_id = 1, size(this%cell2faces(cell_id)%faceIDs)
+                    write(n_unit, '(*(g0:," "))') &
+                    this%num_face2vertex(this%cell2faces(cell_id)%faceIDs(element_id)), &
+                    this%face2vertices(this%cell2faces(cell_id)%faceIDs(element_id))%vertexIDs - 1
+                end do
+            end do
+            
+            write(n_unit,'()')
+
+            write(n_unit,'(a,i0)') "CELL_TYPES ", this%NELEM
+            do cell_id = 1, this%NELEM
+                write(n_unit,'(i0)') 42
+            end do
+            
+            write(n_unit,'()')
+        
+        close(n_unit)
+
 
     end subroutine
 

@@ -606,31 +606,30 @@ module unstructuredGrid_m
             kkmx = grid%get_fph_vertex_count()
             jjmx = grid%get_fph_face_count()
 
-            allocate(self%CELLs(iimx))
-            allocate(self%NODEs(kkmx))
-
             call grid%get_fph_2d_array_of_point_coords(points)
-
-            do kk = 1, kkmx
-                self%NODEs(kk)%coordinate(:) = real(points(:,kk))
-            end do
-
-            inquire(file = dir//'adjacency.txt', exist = is_adjacencyFile)
-            inquire(file = dir//'cell2face.txt', exist = is_cell2faceFile)
-
             call grid%get_face2vertices()
             call grid%get_face2cells()
 
             call grid%get_fph_faceCenter(face_center)
             call grid%get_fph_boundFaceIDs(num_boundFaces)
             call grid%get_fph_boundFaceCenter(bound_center)
-
+            
+            allocate(self%CELLs(iimx))
+            allocate(self%NODEs(kkmx))
             allocate(self%FACEs(jjmx))
+            allocate(self%BoundFACEs(num_boundFaces))
+
+            inquire(file = dir//'adjacency.txt', exist = is_adjacencyFile)
+            inquire(file = dir//'cell2face.txt', exist = is_cell2faceFile)
+
+            do kk = 1, kkmx
+                self%NODEs(kk)%coordinate(:) = real(points(:,kk))
+            end do
+
             do jj = 1, jjmx
                 self%FACEs(jj)%center(:) = real(face_center(:,jj))
             end do
 
-            allocate(self%BoundFACEs(num_boundFaces))
             do JB = 1, num_boundFaces
                 self%BoundFACEs(JB)%center(:) = real(bound_center(:,JB))
             end do
@@ -646,11 +645,13 @@ module unstructuredGrid_m
 
             if(.not. is_adjacencyFile) then
 
+                call grid%get_cell_offsets()
                 call grid%get_cell2boundFace()
                 call grid%get_fph_adjacentCellIDs()
 
                 call grid%output_fph_boundFace(dir)
                 call grid%output_fph_adjacentCell(dir)
+                call grid%output_fph_vtk(dir)
 
             end if
 
@@ -664,7 +665,7 @@ module unstructuredGrid_m
             end do
 
         end if
-
+        
     end subroutine
 
     subroutine read_cell2face(self,dir)
