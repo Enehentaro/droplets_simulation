@@ -582,7 +582,7 @@ module unstructuredGrid_m
         character(:),allocatable :: dir
         real(4),allocatable :: points(:,:), velocity(:,:), bound_center(:,:), face_center(:,:)
         logical is_adjacencyFile, is_cell2faceFile
-        integer iimx, kkmx, jjmx, ii, jj, kk, JB, num_boundFaces
+        integer iimx, kkmx, jjmx, ii, jj, kk, JB, num_boundFaces, n_unit
 
         character(*), intent(in) :: FNAME
             !! ファイル名
@@ -660,8 +660,10 @@ module unstructuredGrid_m
         if(findVelocity) then
 
             call grid%search_fph_vector_data("VEL",velocity)
+
+            iimx = size(self%CELLs)            
             do ii = 1, iimx
-                self%CELLs(II)%flowVelocity(:) = velocity(:,II)
+                self%CELLs(II)%flowVelocity(:) = real(velocity(:,II))
             end do
 
         end if
