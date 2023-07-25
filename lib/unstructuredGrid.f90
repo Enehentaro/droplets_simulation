@@ -1039,7 +1039,6 @@ module unstructuredGrid_m
         
         end do
 
-        ! movevectorが上手くいってない?
         JBMX = size(self%BoundFACEs)
         if(first) then
             do JB = 1, JBMX
