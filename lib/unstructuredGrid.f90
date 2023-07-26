@@ -42,6 +42,9 @@ module unstructuredGrid_m
         real moveVector(3)
             !! 移動量ベクトル（格子移動がある場合に必要になる）
 
+        integer, allocatable :: multi_nodeID(:)
+            !! 多面体接点ID配列
+
     end type
 
     type, public :: FlowFieldUnstructuredGrid
@@ -580,7 +583,8 @@ module unstructuredGrid_m
         class(FlowFieldUnstructuredGrid) self
         type(scf_grid_t) grid
         character(:),allocatable :: dir
-        real(4),allocatable :: points(:,:), velocity(:,:), bound_center(:,:), face_center(:,:)
+        real(4),allocatable :: points(:,:), velocity(:,:), bound_center(:,:)
+        real(4),allocatable :: cells(:,:), face_center(:,:)
         logical is_adjacencyFile, is_cell2faceFile
         integer iimx, kkmx, jjmx, ii, jj, kk, JB, num_boundFaces, n_unit
 
@@ -607,6 +611,7 @@ module unstructuredGrid_m
             jjmx = grid%get_fph_face_count()
 
             call grid%get_fph_2d_array_of_point_coords(points)
+            call grid%get_fph_2d_array_of_cell_coords(cells)
             call grid%get_face2vertices()
             call grid%get_face2cells()
 
@@ -621,6 +626,10 @@ module unstructuredGrid_m
 
             inquire(file = dir//'adjacency.txt', exist = is_adjacencyFile)
             inquire(file = dir//'cell2face.txt', exist = is_cell2faceFile)
+
+            do ii = 1, iimx
+                self%CELLs(ii)%center(:) = real(cells(:,ii))
+            end do
 
             do kk = 1, kkmx
                 self%NODEs(kk)%coordinate(:) = real(points(:,kk))
@@ -777,17 +786,27 @@ module unstructuredGrid_m
         use filename_m, only : boundaryFileName
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
-        integer JB, n_unit, JBMX
+        integer JB, n_unit, JBMX, num_BF_vertex, NBV
         character(:), allocatable :: FNAME
+        character(255) str
 
         FNAME = trim(path)//boundaryFileName
         print*, 'READ : ', FNAME
         open(newunit=n_unit, FILE=FNAME , status='old', action='read')
             read(n_unit,*) JBMX
             if(.not. allocated(self%BoundFACEs)) allocate(self%BoundFACEs(JBMX))
-            do JB = 1, JBMX
-                read(n_unit,*) self%BoundFACEs(JB)%nodeID(:)
-            end do
+            if(.not. self%fph_flag) then
+                do JB = 1, JBMX
+                    read(n_unit,*) self%BoundFACEs(JB)%nodeID(:)
+                end do
+            else
+                do JB = 1, JBMX
+                    read(n_unit,'(A)') str
+                    read(str, *) num_BF_vertex
+                    allocate(self%BoundFACEs(JB)%multi_nodeID(num_BF_vertex))
+                    read(str, *) NBV, self%BoundFACEs(JB)%multi_nodeID(:)
+                end do
+            end if
         close(n_unit)
         
     end subroutine
@@ -950,7 +969,8 @@ module unstructuredGrid_m
 
         !遠くのセルを参照していないかどうかのチェック
         !参照セルとの距離がセル閾値未満であればOK（この条件は経験則でしかない）
-        isNear = (distance < self%CELLs(NCN)%threshold)
+        !fph読み込みの場合,計算速度が遅いので閾値を2倍にする
+        isNear = (distance < 2*self%CELLs(NCN)%threshold)
 
     end function
 
@@ -1003,6 +1023,7 @@ module unstructuredGrid_m
             !! 初期ステップであるか否か
         integer II, JJ, JB, IIMX, JBMX, nodeID(3)
         real :: a(3), b(3), r(3), normalVector(3)
+        integer, allocatable :: multi_nodeID(:)
         type(boundaryTriangle_t), allocatable :: BoundFACEs_pre(:)
 
         IIMX = size(self%CELLs)
@@ -1013,16 +1034,22 @@ module unstructuredGrid_m
             
             do JJ = 1, size(self%CELLs(II)%boundFaceID)
                 JB = self%CELLs(II)%boundFaceID(JJ)
-                nodeID(:) = self%BoundFACEs(JB)%nodeID(:)
                 
                 if(.not. self%fph_flag) then
+                    nodeID(:) = self%BoundFACEs(JB)%nodeID(:)
                     self%BoundFACEs(JB)%center(:) = ( self%NODEs(nodeID(1))%coordinate(:) &
                                                 + self%NODEs(nodeID(2))%coordinate(:) &
                                                 + self%NODEs(nodeID(3))%coordinate(:) ) / 3.0
+                    a(:) =  self%NODEs(nodeID(2))%coordinate(:) - self%NODEs(nodeID(1))%coordinate(:)
+                    b(:) =  self%NODEs(nodeID(3))%coordinate(:) - self%NODEs(nodeID(1))%coordinate(:)
+                else
+                    allocate(multi_nodeID(size(self%BoundFACEs(JB)%multi_nodeID)))
+                    multi_nodeID(:) = self%BoundFACEs(JB)%multi_nodeID(:)
+                    a(:) =  self%NODEs(multi_nodeID(1))%coordinate(:) - self%NODEs(multi_nodeID(2))%coordinate(:)
+                    b(:) =  self%NODEs(multi_nodeID(3))%coordinate(:) - self%NODEs(multi_nodeID(2))%coordinate(:)
+                    deallocate(multi_nodeID)                
                 end if
 
-                a(:) =  self%NODEs(nodeID(2))%coordinate(:) - self%NODEs(nodeID(1))%coordinate(:)
-                b(:) =  self%NODEs(nodeID(3))%coordinate(:) - self%NODEs(nodeID(1))%coordinate(:)
                 normalVector(:) = cross_product(a, b)
 
                 normalVector(:) = normalize_vector(normalVector(:))

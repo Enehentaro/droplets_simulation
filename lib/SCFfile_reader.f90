@@ -121,6 +121,7 @@ module SCF_file_reader_m
         procedure, public :: get_fph_vertex_count
         procedure, public :: get_fph_face_count
         procedure, public :: get_fph_2d_array_of_point_coords
+        procedure, public :: get_fph_2d_array_of_cell_coords
         procedure, public :: get_face2vertices
         procedure, public :: get_face2cells
         procedure, public :: get_cell2faces
@@ -824,6 +825,16 @@ module SCF_file_reader_m
 
     end subroutine
 
+    subroutine get_fph_2d_array_of_cell_coords(this, cells)
+        !! 要素中心座標を2次元配列で出力する. 
+        implicit none
+        class(scf_grid_t),intent(inout) :: this
+        real(4), allocatable, intent(inout) :: cells(:,:)
+
+        call packing_vector_into_2Darray_(cells, this%CCE_X, this%CCE_Y, this%CCE_Z)
+        
+    end subroutine
+
     subroutine get_face2vertices(this)
         implicit none
         class(scf_grid_t), intent(inout) :: this
@@ -1005,9 +1016,10 @@ module SCF_file_reader_m
 
         print*, 'OUTPUT:', dir//"boundary.txt"
         open(newunit = n_unit, file = dir//"boundary.txt" , status = 'replace')
-            write(n_unit,*) this%num_boundFace
+            write(n_unit,'(i0)') this%num_boundFace
             do JB = 1, this%num_boundFace
-                write(n_unit,'(*(g0:," "))') this%face2vertices(this%boundFaceIDs(JB))%vertexIDs
+                write(n_unit,'(*(g0:," "))') size(this%face2vertices(this%boundFaceIDs(JB))%vertexIDs) ,&
+                this%face2vertices(this%boundFaceIDs(JB))%vertexIDs
             end do
         close(n_unit)
 
