@@ -4,7 +4,7 @@
 
 mkdir -v build
 cd build
-cmake .. -D CMAKE_BUILD_TYPE=debug
+cmake .. -D CMAKE_BUILD_TYPE=Debug
 make
 #ctest
 cd ..
