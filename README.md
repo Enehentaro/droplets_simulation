@@ -9,7 +9,7 @@ https://enehentaro.github.io/droplets_simulation/
 ## 使い方
   
 ### 依存関係解決・コンパイル&実行
-  - ビルドに`cmake`コマンドと`make`コマンドを使います.
+  - ビルドに`cmake`コマンドと`make`コマンドを使うので, 要インストール.
   - [CMakeに関する説明はこちら](https://qiita.com/ijknabla/items/05270ae5e597705d0dae#cmake-%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB)
 
   ルートディレクトリ(README.mdのある階層)での作業.
@@ -89,9 +89,9 @@ $$ \bar{\mathbf{v}}^{n + 1} \space = \space \frac{\bar{\mathbf{v}}^{n} \space + 
   - droplet2CSV
     - 飛沫計算結果を再度読み込み, 統計データ(浮遊数推移など)をCSVファイルに書き出す.
   - dropletCount
-    - 飛沫計算結果を再度読み込み, カウントボックスを通過した飛沫数を調べる.optionディレクトリ内の"boxList.csv"を, ケースディレクトリに配置する必要がある.
+    - 飛沫計算結果を再度読み込み, カウントボックスを通過した飛沫数を調べる. optionディレクトリ内の"boxList.csv"を, ケースディレクトリに配置する必要がある.
   - initialTranslate
-    - 飛沫の初期配置データを読み込み, 任意の座標への回転, 平行移動を行う.**by Konishi**
+    - 飛沫の初期配置データを読み込み, 任意の座標への回転, 平行移動を行う. **by Konishi**
 
 ## おまけ機能
   - **複数ケース連続実行**
