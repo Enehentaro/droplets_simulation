@@ -918,7 +918,7 @@ module SCF_file_reader_m
         allocate(this%cell2faces(this%NFACE))
 
         print*, "Now get cell2face ..."
-        call set_formatTC('("completed ... [ #cellID : ",i6," / ",i6," ]")')
+        call set_formatTC('("completed ... [ #cellID : ",i8," / ",i8," ]")')
         do cellID = 1, this%NELEM
             call print_progress([cellID, this%NELEM])
             first_flag = .true.
@@ -1079,7 +1079,7 @@ module SCF_file_reader_m
 
         ! 計算コスト大,要改善
         print*, "Now solve adjacent cells ..."
-        call set_formatTC('("Completed ... [ #cellID : ",i6," / ",i6," ]")')
+        call set_formatTC('("Completed ... [ #cellID : ",i8," / ",i8," ]")')
         do ii = 1, this%NELEM
             call print_progress([ii, this%NELEM])
 
