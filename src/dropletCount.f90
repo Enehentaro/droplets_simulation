@@ -1,15 +1,18 @@
 program dropletCount
+    !!ボックスを通過した飛沫をカウントする。
+    !!飛沫計算の出力ファイルを順に読み込み、各ボックスに対して内外判定を行う。
+    !!ボックス側では、通過した飛沫のIDしか見ておらず、同じIDの飛沫のダブルカウントなどは起こらない。
     use virusDroplet_m
     use conditionValue_m
     ! use dropletEquation_m
     use boxCounter_m
     use caseName_m
     implicit none
-    integer n, i_box, num_box, nc_max
-    integer, pointer :: nc => nowCase
-    character(255) caseName, fname
+    integer n, i_box, num_box, caseID
+    character(50), allocatable :: caseName_array(:)
+    character(:), allocatable :: caseName, fname
     integer, allocatable :: id_array(:)
-    type(DropletGroup) mainDroplet, dGroup
+    type(virusDroplet_t), allocatable :: mainDroplets(:), droplets(:)
     type(conditionValue_t) condVal
     ! type(BasicParameter) baseParam
     type(boxCounter), allocatable :: box_array(:)
@@ -20,30 +23,34 @@ program dropletCount
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
-    call case_check(num_case = nc_max)
+    call case_check(caseName_array)
     !print*, 'caseName = ?'
     !read(5, *) caseName
 
-    do nc = 1, nc_max
-        caseName = get_caseName()
-        call condVal%read(trim(caseName))
+    do caseID = 1, size(caseName_array)
+        caseName = trim(caseName_array(caseID))
+        condVal = read_condition(caseName)
         ! baseParam = BasicParameter_(condVal%dt, condVal%L, condVal%U)
     
-        box_array = get_box_array(trim(caseName), condVal%num_drop)
+        box_array = get_box_array(caseName, condVal%num_drop)
     
         num_box = size(box_array)
     
         do n = 0, condVal%stepEnd, condVal%outputInterval
             if(n==0) then
-                fname = trim(caseName)//'/backup/InitialDistribution.bu'
+                fname = caseName//'/backup/InitialDistribution.bu'
             else
-                write(fname,'("'//trim(caseName)//'/backup/backup_", i0 , ".bu")') n
+                block
+                    character(255) str
+                    write(str,'("'//caseName//'/backup/backup_", i0 , ".bu")') n
+                    fname = trim(str)
+                end block
             end if
     
-            mainDroplet = read_backup(fname)
+            mainDroplets = read_backup(fname)
     
             do i_box = 1, num_box
-                id_array = mainDroplet%IDinBox(dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
+                id_array = dropletIDinBox(mainDroplets, dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
                 call box_array(i_box)%add_Flag(id_array)
             end do
     
@@ -53,9 +60,9 @@ program dropletCount
 
         do i_box = 1, num_box
             id_array = box_array(i_box)%get_FlagID()
-            dGroup%droplet = mainDroplet%droplet(id_array)
-            bResult(i_box)%num_droplet = size(dGroup%droplet)
-            bResult(i_box)%volume = real(dGroup%totalVolume() *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
+            droplets = mainDroplets(id_array)
+            bResult(i_box)%num_droplet = size(droplets)
+            bResult(i_box)%volume = real(dropletTotalVolume(droplets) *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
         end do
 
         bResult(:)%RoI = RateOfInfection(bResult(:)%volume) !1分間あたりの感染確率を計算
@@ -73,7 +80,7 @@ program dropletCount
         integer n_unit, i
         character(:), allocatable :: csvFName
 
-        csvFName = trim(caseName)//'/BoxCount.csv'
+        csvFName = caseName//'/BoxCount.csv'
         print*, 'output: ', csvFName
 
         open(newunit=n_unit, file=csvFName, status='replace')
@@ -89,8 +96,8 @@ program dropletCount
     end subroutine
 
     subroutine output_boxVTK
-        use vtkMesh_operator_m
-        type(vtkMesh) mesh
+        use VTK_operator_m
+        type(UnstructuredGrid_inVTK) mesh
         integer i, j, k
         real, parameter :: trans(3,8) = reshape([ &
                                             0.0,0.0,0.0, 1.0,0.0,0.0, 0.0,1.0,0.0, 1.0,1.0,0.0, &
@@ -113,14 +120,14 @@ program dropletCount
 
         end do
 
-        mesh = vtkMesh_(xyz, vertices, types)
+        mesh = UnstructuredGrid_inVTK_(xyz, vertices, types)
 
-        call mesh%output(trim(caseName)//'/Box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
+        call mesh%output(caseName//'/Box.vtk', cellScalar=bResult(:)%RoI, scalarName='RoI')
 
     end subroutine
 
+    !>1分間あたりの感染確率を計算（もとの資料では1時間あたりの感染確率だが、1分間あたりに換算）
     elemental real function RateOfInfection(volume)
-        !1分間あたりの感染確率を計算（もとの資料では1時間あたりの感染確率だが、1分間あたりに換算）
         real, intent(in) :: volume
 
         RateOfInfection = 1. - exp(-volume*1.e7 / (900./60.))

@@ -1,14 +1,14 @@
+!>簡単なファイル（CSV、TXTなど）の読込手続き集モジュール
 module simpleFile_reader
     implicit none
     private
-    !簡単なファイル（CSV、TXTなど）の操作手続き集モジュール
 
+    !>CSV読込手続き
     interface read_CSV
         module procedure read_csv_dble, read_csv_int, read_csv_char
     end interface
 
-    public read_CSV, read_textRecord, read_array_real
-    public read_array_asBinary, output_array_asBinary
+    public read_CSV, read_textRecord
 
     contains
 
@@ -105,10 +105,17 @@ module simpleFile_reader
 
     end subroutine read_csv_int
 
+    !>TXTファイルを、全行読み込む。
+    !>1行あたりの文字数は引数に依存。
     subroutine read_textRecord(filename, array)
-        integer i, Num_unit
         character(*), intent(in) :: filename
+            !!ファイル名（パス）
+
         character(*), intent(out), allocatable :: array(:)
+            !!文字列配列
+            !!要素数はallocatableだが、1要素あたりの文字数は予め指定
+
+        integer i, Num_unit
         integer :: num_record
 
         print*, 'simpleREADER : ', filename
@@ -184,60 +191,5 @@ module simpleFile_reader
         end do
         
     end function
-
-    subroutine output_array_asBinary(fname, array)
-        character(*), intent(in)  :: fname
-        real, intent(in) :: array(:,:)
-        integer n_unit
-
-        print*, 'output_binArray : ', fname
-
-        open(newunit=n_unit, file=fname, form='unformatted', status='replace')
-
-            write(n_unit) shape(array)
-
-            write(n_unit) array
-
-        close(n_unit)
-
-    end subroutine
-
-    subroutine read_array_asBinary(fname, array)
-        character(*), intent(in)  :: fname
-        real, allocatable, intent(out) :: array(:,:)
-        integer n_unit, arrayShape(2)
-
-        print*, 'read_binArray : ', fname
-
-        open(newunit=n_unit, file=fname, form='unformatted', status='old', action='read')
-
-            read(n_unit) arrayShape(:)
-
-            allocate(array(arrayShape(1), arrayShape(2)))
-
-            read(n_unit) array
-
-        close(n_unit)
-
-    end subroutine
-
-    subroutine read_array_real(fname, array)
-        character(*), intent(in)  :: fname
-        real, allocatable, intent(out) :: array(:)
-        integer n_unit, size
-
-        print*, 'read_array : ', fname
-
-        open(newunit=n_unit, file=fname, status='old', action='read')
-
-            read(n_unit, *) size
-
-            allocate(array(size))
-
-            read(n_unit, *) array
-
-        close(n_unit)
-
-    end subroutine
 
 end module simpleFile_reader
