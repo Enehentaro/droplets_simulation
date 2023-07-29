@@ -6,17 +6,22 @@ https://enehentaro.github.io/droplets_simulation/
 
 ※[FORD](https://github.com/Fortran-FOSS-Programmers/ford)を使用しています
 
-  Fordは導入手順は下記の通りです.
+  Fordは導入&生成手順は下記の通りです.
 
   **Linuxの場合**
+
   - `$ pip install ford`
+  - `$ source build.sh`で先にコンパイルして下さい.
   - `$ ford api-doc-ford-settings.md`
 
   **Windowsの場合**
+
   - Anacondaをインストールして下さい.
   - Anaconda Promptにて
     - `> conda install -c conda-forge ford`
     - `> conda install graphviz`
+  - `> .\build.bat`で先にコンパイルして下さい.
+  - `> ford api-doc-ford-settings.md`
 
 ## 使い方
   

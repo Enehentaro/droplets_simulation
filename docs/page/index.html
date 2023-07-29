@@ -102,15 +102,24 @@
 <h2>ドキュメント</h2>
 <p>https://enehentaro.github.io/droplets_simulation/</p>
 <p>※<a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>を使用しています</p>
-<p>Fordは導入手順は下記の通りです.</p>
-<p><strong>Linuxの場合</strong>
-  - <code>$ pip install ford</code>
-  - <code>$ ford api-doc-ford-settings.md</code></p>
-<p><strong>Windowsの場合</strong>
-  - Anacondaをインストールして下さい.
-  - Anaconda Promptにて
-    - <code>&gt; conda install -c conda-forge ford</code>
-    - <code>&gt; conda install graphviz</code></p>
+<p>Fordは導入&amp;生成手順は下記の通りです.</p>
+<p><strong>Linuxの場合</strong></p>
+<ul>
+<li><code>$ pip install ford</code></li>
+<li><code>$ source build.sh</code>で先にコンパイルして下さい.</li>
+<li><code>$ ford api-doc-ford-settings.md</code></li>
+</ul>
+<p><strong>Windowsの場合</strong></p>
+<ul>
+<li>Anacondaをインストールして下さい.</li>
+<li>Anaconda Promptにて<ul>
+<li><code>&gt; conda install -c conda-forge ford</code></li>
+<li><code>&gt; conda install graphviz</code></li>
+</ul>
+</li>
+<li><code>&gt; .\build.bat</code>で先にコンパイルして下さい.</li>
+<li><code>&gt; ford api-doc-ford-settings.md</code></li>
+</ul>
 <h2>使い方</h2>
 <h3>依存関係解決・コンパイル&amp;実行</h3>
 <ul>
