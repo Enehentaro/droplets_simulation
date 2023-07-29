@@ -7,11 +7,11 @@ module caseName_m
         !!case名をキーボードから取得する。
         !!TXTファイルを指定すると、それを全行読み込んで配列に格納。
         use simpleFile_reader
-        use filename_m, only : conditionFName => conditionFileName
         character(*), allocatable, intent(out) :: caseName_array(:)
         character(255) caseName
         integer i
         logical existance
+        character(21), parameter :: conditionFName = 'condition.nml'
 
         print*, 'Case Name ?'
         read(5, '(A)') caseName

@@ -9,7 +9,6 @@ add_library(lib
     path_operator.f90
     unstructuredGrid.f90
     adjacency_solver.f90
-    filename_mod.f90
     plot3d_operator.f90
     vector.f90
     boxCounter.f90

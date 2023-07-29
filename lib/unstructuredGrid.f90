@@ -700,7 +700,6 @@ module unstructuredGrid_m
 
     subroutine read_adjacency(self, path, success)
         !! セルの隣接関係情報をTXTファイルから読み込む
-        use filename_m, only : adjacencyFileName
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
             !! 隣接関係ファイルへのパス
@@ -711,6 +710,7 @@ module unstructuredGrid_m
         integer II,NA, n_unit, num_cells, num_adj, num_BF, NCMAX
         character(:), allocatable :: FNAME
         character(255) str
+        character(13), parameter :: adjacencyFileName = 'adjacency.txt'
                 
         FNAME = trim(path)//adjacencyFileName
         inquire(file = FNAME, exist = success)
@@ -752,11 +752,11 @@ module unstructuredGrid_m
 
     subroutine output_adjacency(self, path)
         !! セルの隣接関係情報をTXTファイルに出力
-        use filename_m, only : adjacencyFileName
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
         integer II, n_unit, num_cells, NCMAX
         character(:), allocatable :: FNAME
+        character(13), parameter :: adjacencyFileName = 'adjacency.txt'
                 
         FNAME = trim(path)//adjacencyFileName
 
@@ -783,12 +783,12 @@ module unstructuredGrid_m
 
     subroutine read_boundaries(self, path)
         !! 境界面情報をTXTファイルから読み込む
-        use filename_m, only : boundaryFileName
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX, num_BF_vertex, NBV
         character(:), allocatable :: FNAME
         character(255) str
+        character(12), parameter :: boundaryFileName = 'boundary.txt'
 
         FNAME = trim(path)//boundaryFileName
         print*, 'READ : ', FNAME
@@ -813,11 +813,11 @@ module unstructuredGrid_m
 
     subroutine output_boundaries(self, path)
         !! 境界面情報をTXTファイルに出力
-        use filename_m, only : boundaryFileName
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
         integer JB, n_unit, JBMX
         character(:), allocatable :: FNAME
+        character(12), parameter :: boundaryFileName = 'boundary.txt'
 
         FNAME = trim(path)//boundaryFileName
         print*, 'OUTPUT:', FNAME
@@ -833,12 +833,12 @@ module unstructuredGrid_m
 
     subroutine setup_kdTree(self, path)
         !! kd-treeの構築
-        use filename_m, only : kdTreeFName 
         class(FlowFieldUnstructuredGrid) self
         character(*), intent(in) :: path
         character(:), allocatable :: FNAME
         real, allocatable :: xyz(:,:)
         logical existance
+        character(20), parameter :: kdTreeFName = 'kdTree.txt'
 
         FNAME = trim(path)//kdTreeFName
 
