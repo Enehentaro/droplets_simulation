@@ -4,4 +4,3 @@ cmake .. -D CMAKE_BUILD_TYPE=Debug
 make
 @REM ctest
 cd ..
-.\build\bin\main.exe
