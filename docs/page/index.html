@@ -43,7 +43,7 @@
         </div>
         <div id="navbar" class="navbar-collapse collapse">
           <ul class="nav navbar-nav">
-            <li><a href='../page/index.html'>Read Me</a></li>
+            <li><a href='..\page\index.html'>Read Me</a></li>
             <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
               <a href="#" class="dropdown-toggle"
               data-toggle="dropdown" role="button"
@@ -102,130 +102,140 @@
 <h2>ドキュメント</h2>
 <p>https://enehentaro.github.io/droplets_simulation/</p>
 <p>※<a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>を使用しています</p>
+<p>Fordは導入手順は下記の通りです.</p>
+<p><strong>Linuxの場合</strong>
+  - <code>$ pip install ford</code>
+  - <code>$ ford api-doc-ford-settings.md</code></p>
+<p><strong>Windowsの場合</strong>
+  - Anacondaをインストールして下さい.
+  - Anaconda Promptにて
+    - <code>&gt; conda install -c conda-forge ford</code>
+    - <code>&gt; conda install graphviz</code></p>
 <h2>使い方</h2>
-<h3>依存関係解決・コンパイル</h3>
+<h3>依存関係解決・コンパイル&amp;実行</h3>
 <ul>
-<li>
-<p>ビルドに<code>cmake</code>コマンドを使います（<a href="https://qiita.com/ijknabla/items/05270ae5e597705d0dae#cmake-%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB">CMakeのインストール</a>が必要）。</p>
-</li>
-<li>
-<p><code>$ source build.sh</code>でビルド・CTest・パス通しまで出来る(コンパイル手法を変える場合は各自で編集)</p>
-</li>
-<li><code>$ MAIN</code>で実行</li>
+<li>ビルドに<code>cmake</code>コマンドと<code>make</code>コマンドを使うので, 要インストール.</li>
+<li><a href="https://qiita.com/ijknabla/items/05270ae5e597705d0dae#cmake-%E3%81%AE%E3%82%A4%E3%83%B3%E3%82%B9%E3%83%88%E3%83%BC%E3%83%AB">CMakeに関する説明はこちら</a></li>
 </ul>
-<h4><code>build.sh</code>を使わない場合（Windowsだとそもそもシェルスクリプト使えないかも）</h4>
+<p>ルートディレクトリ(README.mdのある階層)での作業.
+  1. 「SampleCase」ディレクトリを複製したのち, 名前を変更する. (ケース名を付ける)
+  1. ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集する.
+  1. 以下OSに応じてコンパイル&amp;実行する.</p>
+<p><strong>Linuxの場合</strong></p>
+<ul>
+<li><code>$ source build.sh</code>でビルド・CTest・パス通しまで出来る. (コンパイル手法を変える場合は各自で編集)</li>
+<li><code>$ MAIN</code>で実行. (プログラム名は自分で変える)</li>
+</ul>
+<p><strong>Windowsの場合</strong>
+  - <code>&gt; .\build.bat</code>(Windows powershellにて実行)でビルドする. 
+    - batファイル内の<code>cmake ..</code>の後に<code>-G "MinGW Makefiles"</code>でGeneratorを指定する.
+  - <code>&gt; .\build\bin\main.exe</code>で実行. (プログラム名は自分で変える)
+  ※おそらくVSCodeでコンパイラ指定のポップアップウィンドウが出るので, そこでgfortranのパスを通す.</p>
+<h3>シェルスクリプトを使わない場合</h3>
 <ol>
-<li><code>$ mkdir build</code>でビルドディレクトリ作成</li>
-<li><code>$ cd build</code>で移動</li>
-<li><code>$ cmake ..</code>で依存関係解決<ul>
-<li>一部の環境(Windows等)では、<code>-G "MinGW Makefiles"</code>でGenerator指定</li>
-<li><code>-D CMAKE_Fortran_COMPILER=[ifort/gfortran]</code>でコンパイラ指定</li>
-<li><code>-D CMAKE_BUILD_TYPE=debug</code>でデバッグ用コンパイルオプション付与</li>
+<li><code>$ mkdir build</code>でビルドディレクトリ作成する. </li>
+<li><code>$ cd build</code>で移動する. </li>
+<li><code>$ cmake ..</code>で依存関係解決.<ul>
+<li><code>-D CMAKE_Fortran_COMPILER=[ifort/gfortran]</code>でコンパイラ指定.</li>
+<li><code>-D CMAKE_BUILD_TYPE=Debug</code>でデバッグ用コンパイルオプション付与.</li>
 </ul>
 </li>
-<li><code>$ make</code>でコンパイル</li>
-</ol>
-<h4>実行</h4>
-<p>ルートディレクトリ（README.mdのあるディレクトリ）での作業</p>
-<ol>
-<li>「SampleCase」ディレクトリを複製したのち、名前を変更する（ケース名を付ける）</li>
-<li>ケースディレクトリ内の条件ファイル(condition.nml, initial_position.csv)を編集 </li>
-<li><code>./build/bin/main</code>で実行。ケース名を入力して計算開始。</li>
+<li><code>$ make</code>でコンパイル.</li>
 </ol>
 <h2>条件ファイル(condition.nml, initial_position.csv)解説</h2>
 <h3>condition.nml</h3>
 <ul>
 <li><strong>リスタート位置 num_restart</strong><ul>
-<li>通常は<code>0</code>を指定</li>
-<li><code>1以上</code>にすると、その値に対応するbackupファイルが読み込まれ、そこからリスタートが始まる</li>
+<li>通常は<code>0</code>を指定する.</li>
+<li><code>1以上</code>にすると, その値に対応するbackupファイルが読み込まれ, そこからリスタートが始まる.</li>
 </ul>
 </li>
 <li><strong>初期分布ファイル名 initialDistributionFName</strong><ul>
-<li>指定したbackupファイル(.bu)が読み込まれ、それを飛沫初期分布とする</li>
-<li>初期分布を固定したくない場合はコメントアウトすること</li>
+<li>指定したbackupファイル(.bu)が読み込まれ, それを飛沫初期分布とする.</li>
+<li>初期分布を固定したくない場合はコメントアウトする.</li>
 </ul>
 </li>
 <li><strong>飛沫周期発生 periodicGeneration</strong><ul>
-<li>1秒当たりの発生飛沫数（整数）を指定</li>
-<li>初期配置飛沫をすべてNonActiveにしたのち、順次Activateしていくので、初期配置数が飛沫数の上限となる</li>
+<li>1秒当たりの発生飛沫数(整数)を指定する.</li>
+<li>初期配置飛沫をすべてNonActiveにしたのち, 順次Activateしていくので, 初期配置数が飛沫数の上限となる.</li>
 </ul>
 </li>
 <li><strong>気流データファイル名 path2FlowFile</strong><ul>
-<li>実行ディレクトリからの相対パス、もしくは絶対パスを指定</li>
-<li>現在可能な流れ場ファイル：</li>
+<li>実行ディレクトリからの相対パス, もしくは絶対パスを指定する.</li>
+<li>現在可能な流れ場ファイル:</li>
 <li>VTK</li>
 <li>INP</li>
 <li>FLD</li>
-<li>CUBE格子(PLOT3D)は、予め非構造格子に変換してから計算してください。</li>
-<li>.arrayファイルを指定する場合、別途メッシュファイルが必要なので、<code>meshFile = ***</code>と指定する</li>
+<li>CUBE格子(PLOT3D)は、予め非構造格子に変換してから計算してください.</li>
+<li>.arrayファイルを指定する場合、別途メッシュファイルが必要なので,<code>meshFile = ***</code>と指定する.</li>
 </ul>
 </li>
 <li><strong>ステップ数オフセット OFFSET</strong><ul>
-<li>飛沫計算を、流体連番ファイルの途中の番号から始めたいときに指定</li>
+<li>飛沫計算を, 流体連番ファイルの途中の番号から始めたいときに指定する.</li>
 </ul>
 </li>
 <li><strong>気流データを周期的に用いる場合の先頭と末尾 LoopHead, LoopTail</strong><ul>
-<li>任意の区間の流体連番ファイルを繰り返し用いるときに指定（例えば呼吸のサイクル）</li>
-<li><code>(先頭) = (末尾)</code> とすると、そのステップ数到達後は流れ場の更新が起こらなくなる</li>
-<li><code>(先頭) &gt; (末尾)</code> とすれば、特殊な処理は起こらず、流体連番ファイルが順番に読み込まれる</li>
+<li>任意の区間の流体連番ファイルを繰り返し用いるときに指定する. (例えば呼吸のサイクル)</li>
+<li><code>(先頭) = (末尾)</code> とすると, そのステップ数到達後は流れ場の更新が起こらなくなる.</li>
+<li><code>(先頭) &gt; (末尾)</code> とすれば, 特殊な処理は起こらず, 流体連番ファイルが順番に読み込まれる.</li>
 </ul>
 </li>
 </ul>
 <h3>initial_position.csv</h3>
 <ul>
-<li>初期飛沫の配置帯（直方体）を設定する</li>
-<li>左から順に、直方体の中心座標(x,y,z), 直方体の幅(x,y,z)</li>
-<li>改行すれば配置帯を複数設定できる</li>
+<li>初期飛沫の配置帯（直方体）を設定する.</li>
+<li>左から順に, 直方体の中心座標(x,y,z), 直方体の幅(x,y,z).</li>
+<li>改行すれば配置帯を複数設定できる.</li>
 </ul>
 <h2>方程式</h2>
 <h3>飛沫の蒸発方程式</h3>
 <p>
 <script type="math/tex; mode=display"> \frac{dr}{dt} \space = \space -\left(1-\frac{RH}{100}\right) \cdot \frac{D e_{s}(T)}{\rho_{w} R_{v} T} \cdot \frac{1}{r} </script>
 </p>
-<p>プログラム内では、２次精度ルンゲクッタ法で解いている。</p>
+<p>プログラム内では,2次精度ルンゲクッタ法で解いている.</p>
 <h3>飛沫の運動方程式</h3>
 <p>
 <script type="math/tex; mode=display"> m \frac{d \mathbf{v}}{dt} \space = \space m \mathbf{g} \space + \space C_D (\mathbf{v}) \space \cdot \space \frac{1}{2} \rho_a S \left | \mathbf{u}_a - \mathbf{v} \right | (\mathbf{u}_a - \mathbf{v}) </script>
 </p>
-<p>プログラム内では、上式を無次元化・離散化した次式を解いている。</p>
+<p>プログラム内では,上式を無次元化・離散化した次式を解いている.</p>
 <p>
 <script type="math/tex; mode=display"> \bar{\mathbf{v}}^{n + 1} \space = \space \frac{\bar{\mathbf{v}}^{n} \space + \space (\bar{\mathbf{g}} \space + \space C \bar{\mathbf{u}}_a)\Delta \bar{t}}{1 \space + \space C\Delta \bar{t}} \quad \left ( C \space = \space \frac{3 \rho_a}{8 \rho_w} \frac{C_D ( \mathbf{v}^{n} ) \left | \bar{\mathbf{u}}_a - \bar{\mathbf{v}}^{n} \right |}{\bar{r}^{n+1}} \right ) </script>
 </p>
 <h2>サブプログラム</h2>
 <ul>
 <li>CUBE2USG<ul>
-<li>CUBE格子を、非構造格子に変換できる</li>
+<li>CUBE格子を非構造格子に変換できる.</li>
 </ul>
 </li>
 <li>droplet2CSV<ul>
-<li>飛沫計算結果を再度読み込み、統計データ（浮遊数推移など）をCSVファイルに書き出す</li>
+<li>飛沫計算結果を再度読み込み, 統計データ(浮遊数推移など)をCSVファイルに書き出す.</li>
 </ul>
 </li>
 <li>dropletCount<ul>
-<li>飛沫計算結果を再度読み込み、カウントボックスを通過した飛沫数を調べる。optionディレクトリ内の"boxList.csv"を、ケースディレクトリに配置する必要がある。</li>
+<li>飛沫計算結果を再度読み込み, カウントボックスを通過した飛沫数を調べる. optionディレクトリ内の"boxList.csv"を, ケースディレクトリに配置する必要がある.</li>
 </ul>
 </li>
 <li>initialTranslate<ul>
-<li>飛沫の初期配置データを読み込み、任意の座標への回転、平行移動を行う。<strong>by Konishi</strong></li>
+<li>飛沫の初期配置データを読み込み, 任意の座標への回転, 平行移動を行う. <strong>by Konishi</strong></li>
 </ul>
 </li>
 </ul>
 <h2>おまけ機能</h2>
 <ul>
 <li><strong>複数ケース連続実行</strong><ul>
-<li>実行時にTXTファイル名を入力すると、そのファイルに列挙された複数ケースを連続実行できる</li>
+<li>実行時にTXTファイル名を入力すると, そのファイルに列挙された複数ケースを連続実行できる.</li>
 </ul>
 </li>
 <li><strong>basicSetting.nml</strong><ul>
-<li>optionディレクトリ内にある。付着判定のオンオフや、飛沫間合体の設定が可能。初期半径分布ファイルの指定も可能。</li>
+<li>optionディレクトリ内にある, 付着判定のオンオフや, 飛沫間合体の設定が可能.初期半径分布ファイルの指定も可能.</li>
 </ul>
 </li>
 </ul>
 <h2>CTest</h2>
 <ul>
-<li>コンパイル後、<code>$ ctest</code>でCTestが実行可能（buildディレクトリにて）</li>
-<li>CTestの実行ディレクトリは、<code>test/</code>になる（buildディレクトリではない）</li>
-<li>テスト用プログラムはすべて<code>test/</code>で管理しよう</li>
+<li>コンパイル後, <code>$ ctest</code>でCTestが実行可. (buildディレクトリにて)</li>
+<li>CTestの実行ディレクトリは、<code>test/</code>になる. (buildディレクトリではない)</li>
+<li>テスト用プログラムはすべて<code>test/</code>で管理しよう.</li>
 </ul>
     </div>
   </div>
@@ -234,7 +244,7 @@
     <footer>
       <div class="container">
       <div class="row">
-        <div class="col-xs-6 col-md-6"><p>Droplets Simulation was developed by Y.Ida<br>&copy; 2022 <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>
+        <div class="col-xs-6 col-md-6"><p>Droplets Simulation was developed by Y.Ida<br>&copy; 2023 <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>
 </p>
         </div>
         <div class="col-xs-6 col-md-6">

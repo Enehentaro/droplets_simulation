@@ -35,7 +35,6 @@ module conditionValue_m
         !!このサブルーチン実装当時、構造体をそのままnamelistにできることを知らず、わざわざ変数ひとつひとつ定義した。
         !!現在ここを変えると進行中のプロジェクト（オフィス飛沫計算など）に影響が出るおそれがあり、触れない。
         !!いつか修正したい。
-        use filename_m, only : conditionFName => conditionFileName
         type(conditionValue_t) self
         character(*), intent(in) :: dir
         integer n_unit
@@ -48,6 +47,7 @@ module conditionValue_m
         character(255) PATH2FlowFile, meshFile
         double precision DT_FLOW
         integer OFFSET, INTERVAL_FLOW, LoopHead, LoopTail
+        character(21), parameter :: conditionFName = 'condition.nml'
 
         namelist /dropletSetting/ num_restart, n_end, delta_t, outputInterval, temperature, relativeHumidity,&
                                     num_droplets, direction_g, initialDistributionFName, periodicGeneration
