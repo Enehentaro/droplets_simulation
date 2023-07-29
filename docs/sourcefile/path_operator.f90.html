@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+   <meta name="description" content="Simulation of Virus-Laden Droplets Behavior in AFDET">
+    <meta name="author" content="Y.Ida" >
+    <link rel="icon" href="../favicon.png">
+
+    <title>path_operator.f90 &ndash; Droplets Simulation</title>
+
+    <link href="../css/bootstrap.min.css" rel="stylesheet">
+    <link href="../css/pygments.css" rel="stylesheet">
+    <link href="../css/font-awesome.min.css" rel="stylesheet">
+    <link href="../css/local.css" rel="stylesheet">
+    <link  href="../tipuesearch/tipuesearch.css" rel="stylesheet">
+
+    <!-- HTML5 shim and Respond.js for IE8 support of HTML5 elements and media queries -->
+    <!--[if lt IE 9]>
+      <script src="https://oss.maxcdn.com/html5shiv/3.7.2/html5shiv.min.js"></script>
+      <script src="https://oss.maxcdn.com/respond/1.4.2/respond.min.js"></script>
+    <![endif]-->
+    
+    <script src="../js/jquery-2.1.3.min.js"></script>
+    <script src="../js/svg-pan-zoom.min.js"></script>
+
+  </head>
+
+  <body>
+
+    <!-- Fixed navbar -->
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="../index.html">Droplets Simulation </a>
+        </div>
+        <div id="navbar" class="navbar-collapse collapse">
+          <ul class="nav navbar-nav">
+            <li><a href='../page/index.html'>Read Me</a></li>
+            <li class="dropdown hidden-xs visible-sm visible-md hidden-lg">
+              <a href="#" class="dropdown-toggle"
+              data-toggle="dropdown" role="button"
+              aria-haspopup="true"
+     aria-expanded="false">Contents <span class="caret"></span></a>
+        <ul class="dropdown-menu">
+            <li><a href="../lists/files.html">Source Files</a></li>
+            <li><a href="../lists/modules.html">Modules</a></li>
+            <li><a href="../lists/procedures.html">Procedures</a></li>
+                   <li><a href="../lists/types.html">Derived Types</a></li>
+            <li><a href="../lists/programs.html">Programs</a></li>
+       
+            </ul>
+        
+            </li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/files.html">Source Files</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/modules.html">Modules</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/procedures.html">Procedures</a></li>
+                             <li class="visible-xs hidden-sm visible-lg"><a href="../lists/types.html">Derived Types</a></li>
+<li class="visible-xs hidden-sm visible-lg"><a href="../lists/programs.html">Programs</a></li>
+          </ul>
+        <form action="../search.html" class="navbar-form navbar-right" role="search">
+        <div class="form-group">
+          <input type="text" class="form-control" placeholder="Search" name="q" id="tipue_search_input" autocomplete="off" required>
+        </div>
+<!--
+        <button type="submit" class="btn btn-default">Submit</button>
+-->
+        </form>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+  <div class="row">
+    <h1>path_operator.f90
+    <small>Source File</small>
+    </h1>
+    <div class="row">
+  <div class="col-lg-12">
+<div class="well well-sm">
+  <ul class="list-inline" style="margin-bottom:0px;display:inline">
+    <li><i class="fa fa-legal"></i> <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a></li> 
+     <li><i class="fa fa-list-ol"></i>
+       <a data-toggle="tooltip"
+    data-placement="bottom" data-html="true"
+    title=" 1.0% of total for source files.">54 statements</a>
+     </li> 
+    <li><i class="fa fa-code"></i><a href="../src/path_operator.f90"> Source File</a></li>
+  </ul>
+  <ol class="breadcrumb in-well text-right">
+     <li class="active">path_operator.f90</li>
+  </ol>
+</div>
+</div>
+</div>
+<script>
+  $(function () {
+  $('[data-toggle="tooltip"]').tooltip()
+  })
+</script>
+
+  </div>
+  <div class="row">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+    <div id="sidebar">
+  <h3>Contents</h3>
+ 
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#mods-0">Modules</a></h3></div>
+  <div id="mods-0" class="panel-collapse collapse">
+    <div class="list-group">
+      <a class="list-group-item" href="../module/path_operator_m.html">path_operator_m</a>
+    </div>
+  </div>
+</div>
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+  <div class="list-group">
+    <a class="list-group-item" href="../sourcefile/path_operator.f90.html#src">path_operator.f90</a>
+  </div>
+</div>
+
+</div>
+
+    </div>
+    <div class="col-md-9" id='text'>
+      
+      <br>
+    <div class="panel panel-default">
+      <div class="panel-heading">
+  <h3 class="panel-title">Files dependent on this one</h3>
+      </div>
+      <div class="panel-body">
+  <div class="depgraph"><?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: sourcefile~~path_operator.f90~~AfferentGraph Pages: 1 -->
+<svg id="sourcefilepath_operatorf90AfferentGraph" width="641pt" height="211pt"
+ viewBox="0.00 0.00 641.00 211.22" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="sourcefile~~path_operator.f90~~AfferentGraph" class="graph" transform="scale(1.16 1.16) rotate(0) translate(4 240.18)">
+<title>sourcefile~~path_operator.f90~~AfferentGraph</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-240.18 737,-240.18 737,4 -4,4"/>
+<!-- sourcefile~path_operator.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_node1" class="node">
+<title>sourcefile~path_operator.f90</title>
+<polygon fill="none" stroke="black" points="107,-156.18 0,-156.18 0,-132.18 107,-132.18 107,-156.18"/>
+<text text-anchor="middle" x="53.5" y="-141.78" font-family="Helvetica,sans-Serif" font-size="10.50">path_operator.f90</text>
+</g>
+<!-- sourcefile~unstructuredgrid.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_node2" class="node">
+<title>sourcefile~unstructuredgrid.f90</title>
+<g id="a_sourcefile~~path_operator.f90~~AfferentGraph_node2"><a xlink:href=".././sourcefile/unstructuredgrid.f90.html" xlink:title="unstructuredGrid.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="266,-156.18 143,-156.18 143,-132.18 266,-132.18 266,-156.18"/>
+<text text-anchor="middle" x="204.5" y="-141.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">unstructuredGrid.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~unstructuredgrid.f90&#45;&gt;sourcefile~path_operator.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_edge1" class="edge">
+<title>sourcefile~unstructuredgrid.f90&#45;&gt;sourcefile~path_operator.f90</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M142.9,-144.18C134.53,-144.18 125.93,-144.18 117.52,-144.18"/>
+<polygon fill="#000000" stroke="#000000" points="117.4,-140.68 107.4,-144.18 117.4,-147.68 117.4,-140.68"/>
+</g>
+<!-- sourcefile~flow_field.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_node3" class="node">
+<title>sourcefile~flow_field.f90</title>
+<g id="a_sourcefile~~path_operator.f90~~AfferentGraph_node3"><a xlink:href=".././sourcefile/flow_field.f90.html" xlink:title="flow_field.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="411.5,-236.18 328.5,-236.18 328.5,-212.18 411.5,-212.18 411.5,-236.18"/>
+<text text-anchor="middle" x="370" y="-221.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">flow_field.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~flow_field.f90&#45;&gt;sourcefile~path_operator.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_edge2" class="edge">
+<title>sourcefile~flow_field.f90&#45;&gt;sourcefile~path_operator.f90</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M328.21,-213.8C272.99,-199.75 174.19,-174.62 111.61,-158.7"/>
+<polygon fill="#000000" stroke="#000000" points="112.45,-155.31 101.89,-156.23 110.72,-162.09 112.45,-155.31"/>
+</g>
+<!-- sourcefile~flow_field.f90&#45;&gt;sourcefile~unstructuredgrid.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_edge6" class="edge">
+<title>sourcefile~flow_field.f90&#45;&gt;sourcefile~unstructuredgrid.f90</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M335.21,-212.12C324.46,-208.01 312.61,-203.17 302,-198.18 278.57,-187.14 253.03,-172.74 234.11,-161.58"/>
+<polygon fill="#000000" stroke="#000000" points="235.78,-158.5 225.4,-156.4 232.2,-164.52 235.78,-158.5"/>
+</g>
+<!-- sourcefile~dropletmotionsimulation.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_node4" class="node">
+<title>sourcefile~dropletmotionsimulation.f90</title>
+<g id="a_sourcefile~~path_operator.f90~~AfferentGraph_node4"><a xlink:href=".././sourcefile/dropletmotionsimulation.f90.html" xlink:title="dropletMotionSimulation.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="637,-196.18 474,-196.18 474,-172.18 637,-172.18 637,-196.18"/>
+<text text-anchor="middle" x="555.5" y="-181.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">dropletMotionSimulation.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~dropletmotionsimulation.f90&#45;&gt;sourcefile~path_operator.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_edge3" class="edge">
+<title>sourcefile~dropletmotionsimulation.f90&#45;&gt;sourcefile~path_operator.f90</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M549.03,-172.05C535.23,-143.07 495.91,-69.9 438,-39.18 346.41,9.41 305.04,8.84 205.5,-20.18"/>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M203.5,-20.18C144.39,-37.41 93.67,-93.33 69.54,-123.85"/>
+<polygon fill="#000000" stroke="#000000" points="66.52,-122.03 63.18,-132.09 72.06,-126.31 66.52,-122.03"/>
+</g>
+<!-- sourcefile~dropletmotionsimulation.f90&#45;&gt;sourcefile~unstructuredgrid.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_edge8" class="edge">
+<title>sourcefile~dropletmotionsimulation.f90&#45;&gt;sourcefile~unstructuredgrid.f90</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M473.73,-180.96C424.02,-178.28 359.1,-173.5 302,-165.18 289.68,-163.38 276.59,-160.92 264.16,-158.3"/>
+<polygon fill="#000000" stroke="#000000" points="264.86,-154.88 254.35,-156.19 263.39,-161.72 264.86,-154.88"/>
+</g>
+<!-- sourcefile~dropletmotionsimulation.f90&#45;&gt;sourcefile~flow_field.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_edge10" class="edge">
+<title>sourcefile~dropletmotionsimulation.f90&#45;&gt;sourcefile~flow_field.f90</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M499.44,-196.18C474.78,-201.55 445.88,-207.85 421.75,-213.11"/>
+<polygon fill="#000000" stroke="#000000" points="420.75,-209.75 411.72,-215.3 422.24,-216.59 420.75,-209.75"/>
+</g>
+<!-- sourcefile~kdtree_test.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_node5" class="node">
+<title>sourcefile~kdtree_test.f90</title>
+<g id="a_sourcefile~~path_operator.f90~~AfferentGraph_node5"><a xlink:href=".././sourcefile/kdtree_test.f90.html" xlink:title="kdTree_test.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="416,-72.18 324,-72.18 324,-48.18 416,-48.18 416,-72.18"/>
+<text text-anchor="middle" x="370" y="-57.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">kdTree_test.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~kdtree_test.f90&#45;&gt;sourcefile~path_operator.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_edge4" class="edge">
+<title>sourcefile~kdtree_test.f90&#45;&gt;sourcefile~path_operator.f90</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M336.24,-48.06C295.9,-33.86 229.77,-13.1 205.5,-20.18"/>
+</g>
+<!-- sourcefile~kdtree_test.f90&#45;&gt;sourcefile~unstructuredgrid.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_edge9" class="edge">
+<title>sourcefile~kdtree_test.f90&#45;&gt;sourcefile~unstructuredgrid.f90</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M324.37,-72.27C316.77,-74.87 309.05,-77.85 302,-81.18 275.64,-93.62 248.03,-112.3 229.13,-126.1"/>
+<polygon fill="#000000" stroke="#000000" points="227.05,-123.28 221.09,-132.05 231.21,-128.91 227.05,-123.28"/>
+</g>
+<!-- sourcefile~boxflowfield.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_node6" class="node">
+<title>sourcefile~boxflowfield.f90</title>
+<g id="a_sourcefile~~path_operator.f90~~AfferentGraph_node6"><a xlink:href=".././sourcefile/boxflowfield.f90.html" xlink:title="boxFlowField.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="420,-156.18 320,-156.18 320,-132.18 420,-132.18 420,-156.18"/>
+<text text-anchor="middle" x="370" y="-141.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">boxFlowField.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~boxflowfield.f90&#45;&gt;sourcefile~unstructuredgrid.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_edge5" class="edge">
+<title>sourcefile~boxflowfield.f90&#45;&gt;sourcefile~unstructuredgrid.f90</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M319.94,-144.18C306.19,-144.18 290.95,-144.18 276.21,-144.18"/>
+<polygon fill="#000000" stroke="#000000" points="276.1,-140.68 266.1,-144.18 276.1,-147.68 276.1,-140.68"/>
+</g>
+<!-- sourcefile~cellcentercalc_test.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_node7" class="node">
+<title>sourcefile~cellcentercalc_test.f90</title>
+<g id="a_sourcefile~~path_operator.f90~~AfferentGraph_node7"><a xlink:href=".././sourcefile/cellcentercalc_test.f90.html" xlink:title="cellCenterCalc_test.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="438,-114.18 302,-114.18 302,-90.18 438,-90.18 438,-114.18"/>
+<text text-anchor="middle" x="370" y="-99.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">cellCenterCalc_test.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~cellcentercalc_test.f90&#45;&gt;sourcefile~unstructuredgrid.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_edge7" class="edge">
+<title>sourcefile~cellcentercalc_test.f90&#45;&gt;sourcefile~unstructuredgrid.f90</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M322.15,-114.21C303.42,-119.02 281.68,-124.61 262.08,-129.64"/>
+<polygon fill="#000000" stroke="#000000" points="261.17,-126.26 252.36,-132.14 262.92,-133.04 261.17,-126.26"/>
+</g>
+<!-- sourcefile~main.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_node8" class="node">
+<title>sourcefile~main.f90</title>
+<g id="a_sourcefile~~path_operator.f90~~AfferentGraph_node8"><a xlink:href=".././sourcefile/main.f90.html" xlink:title="MAIN.f90">
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="733,-196.18 673,-196.18 673,-172.18 733,-172.18 733,-196.18"/>
+<text text-anchor="middle" x="703" y="-181.78" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">MAIN.f90</text>
+</a>
+</g>
+</g>
+<!-- sourcefile~main.f90&#45;&gt;sourcefile~dropletmotionsimulation.f90 -->
+<g id="sourcefile~~path_operator.f90~~AfferentGraph_edge11" class="edge">
+<title>sourcefile~main.f90&#45;&gt;sourcefile~dropletmotionsimulation.f90</title>
+<path fill="none" stroke="#000000" stroke-dasharray="5,2" d="M672.91,-184.18C665.17,-184.18 656.39,-184.18 647.2,-184.18"/>
+<polygon fill="#000000" stroke="#000000" points="647.11,-180.68 637.11,-184.18 647.11,-187.68 647.11,-180.68"/>
+</g>
+</g>
+</svg>
+</div><script>var pansourcefilepath_operatorf90AfferentGraph = svgPanZoom('#sourcefilepath_operatorf90AfferentGraph', {zoomEnabled: true,controlIconsEnabled: true, fit: true, center: true,}); </script><div><a type="button" class="graph-help" data-toggle="modal" href="#graph-help-text">Help</a></div><div class="modal fade" id="graph-help-text" tabindex="-1" role="dialog"><div class="modal-dialog modal-lg" role="document"><div class="modal-content"><div class="modal-header"><button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button><h4 class="modal-title" id="-graph-help-label">Graph Key</h4></div><div class="modal-body">
+    <p>Nodes of different colours represent the following: </p>
+    <?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
+ "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<!-- Generated by graphviz version 2.43.0 (0)
+ -->
+<!-- Title: Graph Key Pages: 1 -->
+<svg width="202pt" height="32pt"
+ viewBox="0.00 0.00 201.50 32.00" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink">
+<g id="graph0" class="graph" transform="scale(1 1) rotate(0) translate(4 28)">
+<title>Graph Key</title>
+<polygon fill="white" stroke="transparent" points="-4,4 -4,-28 197.5,-28 197.5,4 -4,4"/>
+<!-- Source File -->
+<g id="node1" class="node">
+<title>Source File</title>
+<polygon fill="#f0ad4e" stroke="#f0ad4e" points="70,-24 0,-24 0,0 70,0 70,-24"/>
+<text text-anchor="middle" x="35" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50" fill="white">Source File</text>
+</g>
+<!-- This Page&#39;s Entity -->
+<g id="node2" class="node">
+<title>This Page&#39;s Entity</title>
+<polygon fill="none" stroke="black" points="193.5,-24 88.5,-24 88.5,0 193.5,0 193.5,-24"/>
+<text text-anchor="middle" x="141" y="-9.6" font-family="Helvetica,sans-Serif" font-size="10.50">This Page&#39;s Entity</text>
+</g>
+</g>
+</svg>
+
+    
+    <p>Solid arrows point from a file to a file which it depends on. A file
+    is dependent upon another if the latter must be compiled before the former
+    can be.
+    </p>
+    </div></div></div></div>
+      </div>
+    </div>
+<br>
+    <section class="visible-xs visible-sm hidden-md">
+      <h3>Contents</h3>
+ 
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title"><a data-toggle="collapse" href="#mods-1">Modules</a></h3></div>
+  <div id="mods-1" class="panel-collapse collapse">
+    <div class="list-group">
+      <a class="list-group-item" href="../module/path_operator_m.html">path_operator_m</a>
+    </div>
+  </div>
+</div>
+<div class="panel panel-primary">
+  <div class="panel-heading text-left"><h3 class="panel-title">Source Code</h3></div>
+  <div class="list-group">
+    <a class="list-group-item" href="../sourcefile/path_operator.f90.html#src">path_operator.f90</a>
+  </div>
+</div>
+
+    </section>
+    <br class="visible-xs visible-sm hidden-md">
+
+    <section>
+      <h2><span class="anchor" id="src"></span>Source Code</h2>
+    <div class="hl"><pre><span></span><a id="ln-1" name="ln-1" href="#ln-1"></a><span class="k">module </span><span class="n">path_operator_m</span><span class="w"></span>
+<a id="ln-2" name="ln-2" href="#ln-2"></a><span class="w">    </span><span class="k">implicit none</span>
+<a id="ln-3" name="ln-3" href="#ln-3"></a>
+<a id="ln-4" name="ln-4" href="#ln-4"></a><span class="k">    </span><span class="kt">character</span><span class="p">(</span><span class="mi">7</span><span class="p">),</span><span class="w"> </span><span class="k">parameter</span><span class="p">,</span><span class="w"> </span><span class="k">private</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">OS</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;Linux&#39;</span><span class="w"></span>
+<a id="ln-5" name="ln-5" href="#ln-5"></a>
+<a id="ln-6" name="ln-6" href="#ln-6"></a><span class="w">    </span><span class="k">contains</span>
+<a id="ln-7" name="ln-7" href="#ln-7"></a>
+<a id="ln-8" name="ln-8" href="#ln-8"></a><span class="k">    subroutine </span><span class="n">make_directory</span><span class="p">(</span><span class="n">path</span><span class="p">)</span><span class="w"></span>
+<a id="ln-9" name="ln-9" href="#ln-9"></a><span class="w">        </span><span class="kt">character</span><span class="p">(</span><span class="o">*</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">path</span><span class="w"></span>
+<a id="ln-10" name="ln-10" href="#ln-10"></a><span class="w">        </span><span class="kt">character</span><span class="p">(:),</span><span class="w"> </span><span class="k">allocatable</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">directory</span><span class="w"></span>
+<a id="ln-11" name="ln-11" href="#ln-11"></a><span class="w">    </span>
+<a id="ln-12" name="ln-12" href="#ln-12"></a><span class="w">        </span><span class="k">select case</span><span class="p">(</span><span class="nb">trim</span><span class="p">(</span><span class="n">OS</span><span class="p">))</span><span class="w"></span>
+<a id="ln-13" name="ln-13" href="#ln-13"></a><span class="w">            </span><span class="k">case</span><span class="w"> </span><span class="p">(</span><span class="s1">&#39;Linux&#39;</span><span class="p">)</span><span class="w">  </span><span class="c">!for_Linux</span>
+<a id="ln-14" name="ln-14" href="#ln-14"></a><span class="w">                </span><span class="n">directory</span><span class="w"> </span><span class="o">=</span><span class="w">  </span><span class="n">replace_str</span><span class="p">(</span><span class="n">path</span><span class="p">,</span><span class="w"> </span><span class="n">from</span><span class="o">=</span><span class="s1">&#39;\&#39;, to=&#39;</span><span class="o">/</span><span class="s1">&#39; )</span>
+<a id="ln-15" name="ln-15" href="#ln-15"></a><span class="s1">                call system(&#39;</span><span class="n">mkdir</span><span class="w"> </span><span class="o">-</span><span class="n">p</span><span class="w"> </span><span class="o">-</span><span class="n">v</span><span class="w"> </span><span class="s1">&#39;//directory)</span>
+<a id="ln-16" name="ln-16" href="#ln-16"></a>
+<a id="ln-17" name="ln-17" href="#ln-17"></a><span class="s1">            case (&#39;</span><span class="n">Windows</span><span class="s1">&#39;)  !for_Windows</span>
+<a id="ln-18" name="ln-18" href="#ln-18"></a><span class="s1">                directory =  replace_str(path, from=&#39;</span><span class="o">/</span><span class="s1">&#39;, to=&#39;</span><span class="err">\</span><span class="s1">&#39; )</span>
+<a id="ln-19" name="ln-19" href="#ln-19"></a><span class="s1">                call system(&#39;</span><span class="n">md</span><span class="w"> </span><span class="s1">&#39;//directory)</span>
+<a id="ln-20" name="ln-20" href="#ln-20"></a>
+<a id="ln-21" name="ln-21" href="#ln-21"></a><span class="s1">            case default</span>
+<a id="ln-22" name="ln-22" href="#ln-22"></a><span class="s1">                print*, &#39;</span><span class="n">OS</span><span class="w"> </span><span class="n">ERROR</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="s1">&#39;, OS</span>
+<a id="ln-23" name="ln-23" href="#ln-23"></a><span class="s1">                error stop</span>
+<a id="ln-24" name="ln-24" href="#ln-24"></a><span class="s1">                </span>
+<a id="ln-25" name="ln-25" href="#ln-25"></a><span class="s1">        end select</span>
+<a id="ln-26" name="ln-26" href="#ln-26"></a>
+<a id="ln-27" name="ln-27" href="#ln-27"></a><span class="s1">    end subroutine make_directory</span>
+<a id="ln-28" name="ln-28" href="#ln-28"></a><span class="s1">    </span>
+<a id="ln-29" name="ln-29" href="#ln-29"></a><span class="s1">    subroutine get_DirFromPath(path, directory, filename)</span>
+<a id="ln-30" name="ln-30" href="#ln-30"></a><span class="s1">        character(*), intent(in) :: path</span>
+<a id="ln-31" name="ln-31" href="#ln-31"></a><span class="s1">        character(:), intent(out), allocatable :: directory</span>
+<a id="ln-32" name="ln-32" href="#ln-32"></a><span class="s1">        character(:), intent(out), allocatable , optional :: filename</span>
+<a id="ln-33" name="ln-33" href="#ln-33"></a><span class="s1">        character(1) delimiter</span>
+<a id="ln-34" name="ln-34" href="#ln-34"></a><span class="s1">        integer i</span>
+<a id="ln-35" name="ln-35" href="#ln-35"></a>
+<a id="ln-36" name="ln-36" href="#ln-36"></a><span class="s1">        if(index(path, &#39;</span><span class="o">/</span><span class="s1">&#39;) &gt; 0) then</span>
+<a id="ln-37" name="ln-37" href="#ln-37"></a><span class="s1">            delimiter = &#39;</span><span class="o">/</span><span class="s1">&#39;</span>
+<a id="ln-38" name="ln-38" href="#ln-38"></a>
+<a id="ln-39" name="ln-39" href="#ln-39"></a><span class="s1">        else if(index(path, &#39;</span><span class="err">\</span><span class="s1">&#39;) &gt; 0) then</span>
+<a id="ln-40" name="ln-40" href="#ln-40"></a><span class="s1">            delimiter = &#39;</span><span class="err">\</span><span class="s1">&#39;</span>
+<a id="ln-41" name="ln-41" href="#ln-41"></a>
+<a id="ln-42" name="ln-42" href="#ln-42"></a><span class="s1">        else</span>
+<a id="ln-43" name="ln-43" href="#ln-43"></a><span class="s1">            print*, &#39;</span><span class="n">Delimiter</span><span class="w"> </span><span class="n">was</span><span class="w"> </span><span class="nb">not </span><span class="n">found</span><span class="p">.</span><span class="s1">&#39;</span>
+<a id="ln-44" name="ln-44" href="#ln-44"></a><span class="s1">            if(present(filename)) filename = path</span>
+<a id="ln-45" name="ln-45" href="#ln-45"></a><span class="s1">            directory = &#39;&#39;</span>
+<a id="ln-46" name="ln-46" href="#ln-46"></a><span class="s1">            return</span>
+<a id="ln-47" name="ln-47" href="#ln-47"></a>
+<a id="ln-48" name="ln-48" href="#ln-48"></a><span class="s1">        end if</span>
+<a id="ln-49" name="ln-49" href="#ln-49"></a>
+<a id="ln-50" name="ln-50" href="#ln-50"></a><span class="s1">        i = index(path, delimiter, back=.true.)</span>
+<a id="ln-51" name="ln-51" href="#ln-51"></a>
+<a id="ln-52" name="ln-52" href="#ln-52"></a><span class="s1">        if(present(filename)) filename = trim(path(i+1:))</span>
+<a id="ln-53" name="ln-53" href="#ln-53"></a><span class="s1">        directory = path(:i)</span>
+<a id="ln-54" name="ln-54" href="#ln-54"></a>
+<a id="ln-55" name="ln-55" href="#ln-55"></a><span class="s1">        print*, &#39;</span><span class="n">Path</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;, trim(path)</span>
+<a id="ln-56" name="ln-56" href="#ln-56"></a><span class="s1">        print*, &#39;</span><span class="n">Directory</span><span class="o">=</span><span class="w"> </span><span class="s1">&#39;, directory</span>
+<a id="ln-57" name="ln-57" href="#ln-57"></a><span class="s1">        if(present(filename)) print*, &#39;</span><span class="n">Filename</span><span class="o">=</span><span class="w"> </span><span class="err">&#39;</span><span class="p">,</span><span class="w"> </span><span class="n">filename</span><span class="w"></span>
+<a id="ln-58" name="ln-58" href="#ln-58"></a>
+<a id="ln-59" name="ln-59" href="#ln-59"></a><span class="w">    </span><span class="k">end subroutine</span>
+<a id="ln-60" name="ln-60" href="#ln-60"></a>
+<a id="ln-61" name="ln-61" href="#ln-61"></a><span class="k">    function </span><span class="n">replace_str</span><span class="p">(</span><span class="w"> </span><span class="n">str</span><span class="p">,</span><span class="w"> </span><span class="n">from</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"> </span><span class="p">)</span><span class="w"></span>
+<a id="ln-62" name="ln-62" href="#ln-62"></a><span class="w">        </span><span class="kt">character</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="p">),</span><span class="k">intent</span><span class="w"> </span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">str</span><span class="w"></span>
+<a id="ln-63" name="ln-63" href="#ln-63"></a><span class="w">        </span><span class="kt">character</span><span class="w"> </span><span class="p">(</span><span class="mi">1</span><span class="p">),</span><span class="k">intent</span><span class="w"> </span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">from</span><span class="p">,</span><span class="w"> </span><span class="n">to</span><span class="w"></span>
+<a id="ln-64" name="ln-64" href="#ln-64"></a><span class="w">        </span><span class="kt">character</span><span class="w"> </span><span class="p">(</span><span class="nb">len_trim</span><span class="p">(</span><span class="n">str</span><span class="p">))</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">replace_str</span><span class="w"></span>
+<a id="ln-65" name="ln-65" href="#ln-65"></a><span class="w">        </span><span class="kt">integer</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="w"></span>
+<a id="ln-66" name="ln-66" href="#ln-66"></a>
+<a id="ln-67" name="ln-67" href="#ln-67"></a><span class="w">        </span><span class="n">replace_str</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">str</span><span class="w"></span>
+<a id="ln-68" name="ln-68" href="#ln-68"></a><span class="w">        </span><span class="n">l</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">len_trim</span><span class="p">(</span><span class="n">str</span><span class="p">)</span><span class="w"></span>
+<a id="ln-69" name="ln-69" href="#ln-69"></a><span class="w">        </span><span class="k">do </span><span class="n">i</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">l</span><span class="w"></span>
+<a id="ln-70" name="ln-70" href="#ln-70"></a><span class="w">            </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="w"> </span><span class="n">str</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">from</span><span class="w"> </span><span class="p">)</span><span class="w"> </span><span class="n">replace_str</span><span class="p">(</span><span class="n">i</span><span class="p">:</span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">to</span><span class="w"></span>
+<a id="ln-71" name="ln-71" href="#ln-71"></a><span class="w">        </span><span class="k">end do</span>
+<a id="ln-72" name="ln-72" href="#ln-72"></a>
+<a id="ln-73" name="ln-73" href="#ln-73"></a><span class="k">    end function</span>
+<a id="ln-74" name="ln-74" href="#ln-74"></a>
+<a id="ln-75" name="ln-75" href="#ln-75"></a><span class="k">end module </span><span class="n">path_operator_m</span><span class="w"></span>
+</pre></div>
+
+    </section>
+    </div>
+  </div>
+
+    <hr>    
+    </div> <!-- /container -->
+    <footer>
+      <div class="container">
+      <div class="row">
+        <div class="col-xs-6 col-md-6"><p>Droplets Simulation was developed by Y.Ida<br>&copy; 2022 <a rel="license" href="http://creativecommons.org/licenses/by-nc-sa/4.0/"><img alt="Creative Commons License" style="border-width:0" src="https://i.creativecommons.org/l/by-nc-sa/4.0/80x15.png" /></a>
+</p>
+        </div>
+        <div class="col-xs-6 col-md-6">
+          <p class="text-right">
+            Documentation generated by 
+            <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
+          </p>
+        </div>
+      </div>
+      <br>
+      </div> <!-- /container -->    
+    </footer>
+
+    <!-- Bootstrap core JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+<!--
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.1/jquery.min.js"></script>
+-->
+    <script src="../js/bootstrap.min.js"></script>
+    <!-- IE10 viewport hack for Surface/desktop Windows 8 bug -->
+    <script src="../js/ie10-viewport-bug-workaround.js"></script>
+
+    <!-- MathJax JavaScript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <script type="text/x-mathjax-config">
+      MathJax.Hub.Config({
+        TeX: { extensions: ['AMSmath.js','AMSsymbols.js','noErrors.js','noUndefined.js'], equationNumbers: { autoNumber: 'AMS' } },
+        jax: ['input/TeX','input/MathML','output/HTML-CSS'],
+        extensions: ['tex2jax.js','mml2jax.js','MathMenu.js','MathZoom.js']
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    
+    <script src="../tipuesearch/tipuesearch_content.js"></script>
+    <script src="../tipuesearch/tipuesearch_set.js"></script>
+    <script src="../tipuesearch/tipuesearch.js"></script>
+    
+  </body>
+</html>
