@@ -384,12 +384,12 @@ module dropletMotionSimulation
     subroutine output_droplet_process(case_dir, initial, droplets, timeStep, real_time)
         !!飛沫情報のファイル出力
         !!VTK, CSV, backupファイルを出力
-        use filename_m, only : IniDistributionFName => InitialDistributionFileName
         character(*), intent(in) :: case_dir
         logical, intent(in) :: initial
         type(virusDroplet_t), intent(in) :: droplets(:)
         integer, intent(in) :: timeStep
         double precision, intent(in) :: real_time
+        character(22), parameter :: IniDistributionFName = 'InitialDistribution.bu'
 
         character(255) fname
 
