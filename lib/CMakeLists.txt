@@ -3,6 +3,7 @@ add_library(lib
     dropletGenerator.f90
     timeKeeper.f90
     SCTfile_reader.f90
+    SCFfile_reader.f90
     conditionValue.f90
     dropletMotionSimulation.f90
     path_operator.f90

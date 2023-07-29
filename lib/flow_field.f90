@@ -89,7 +89,7 @@ module flow_field_m
             call flow_field%set_time(time)
 
         end if
-
+        
         if(present(meshFile)) then
             flow_field%FlowFieldUnstructuredGrid = FlowFieldUnstructuredGrid_withMeshFile(&
                 flow_field%get_requiredFileName(), meshFile&
@@ -129,7 +129,7 @@ module flow_field_m
         block
             character(2*(num_digit/10 +1) + 2) digitsFormat
 
-            if(suffix=='.fld') then
+            if(suffix=='.fld' .or. suffix=='.fph') then
                 digitsFormat = 'i0'
             else
                 write(digitsFormat,'("i", i0, ".", i0)') num_digit, num_digit
