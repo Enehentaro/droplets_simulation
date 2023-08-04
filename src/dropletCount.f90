@@ -8,7 +8,7 @@ program dropletCount
     use boxCounter_m
     use caseName_m
     implicit none
-    integer n, i_box, num_box, caseID
+    integer n, i_box, num_box, caseID,i
     character(50), allocatable :: caseName_array(:)
     character(:), allocatable :: caseName, fname
     integer, allocatable :: id_array(:)
@@ -20,6 +20,7 @@ program dropletCount
     type boxResult_t
         integer num_droplet
         real volume, RoI
+        integer num_adhes
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
@@ -36,26 +37,34 @@ program dropletCount
     
         num_box = size(box_array)
     
-        do n = 0, condVal%stepEnd, condVal%outputInterval
-            if(n==0) then
-                fname = caseName//'/backup/InitialDistribution.bu'
-            else
-                block
-                    character(255) str
-                    write(str,'("'//caseName//'/backup/backup_", i0 , ".bu")') n
-                    fname = trim(str)
-                end block
-            end if
+        ! do n = 0, condVal%stepEnd, condVal%outputInterval
+        !     if(n==0) then
+        !         fname = caseName//'/backup/InitialDistribution.bu'
+        !     else
+        !         block
+        !             character(255) str
+        !             write(str,'("'//caseName//'/backup/backup_", i0 , ".bu")') n
+        !             fname = trim(str)
+        !         end block
+        !     end if
     
-            mainDroplets = read_backup(fname)
+        !     mainDroplets = read_backup(fname)
     
-            do i_box = 1, num_box
-                id_array = dropletIDinBox(mainDroplets, dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
-                call box_array(i_box)%add_Flag(id_array)
-            end do
+        !     do i_box = 1, num_box
+        !         id_array = dropletIDinBox(mainDroplets, dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
+        !         call box_array(i_box)%add_Flag(id_array)
+        !     end do
     
+        ! end do
+    
+        fname = caseName//'/backup/backup_10000.bu'
+        mainDroplets = read_backup(fname)
+    
+        do i_box = 1, num_box
+            id_array = dropletIDinBox(mainDroplets, dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
+            call box_array(i_box)%add_Flag(id_array)
         end do
-    
+
         allocate(bResult(num_box))
 
         do i_box = 1, num_box
@@ -63,6 +72,12 @@ program dropletCount
             droplets = mainDroplets(id_array)
             bResult(i_box)%num_droplet = size(droplets)
             bResult(i_box)%volume = real(dropletTotalVolume(droplets) *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
+            bResult(i_box)%num_adhes = 0
+            do i = 1, size(droplets)
+                if(.not.droplets(i)%isFloating())then
+                    bResult(i_box)%num_adhes = bResult(i_box)%num_adhes +1
+                endif
+            enddo
         end do
 
         bResult(:)%RoI = RateOfInfection(bResult(:)%volume) !1分間あたりの感染確率を計算
@@ -85,10 +100,11 @@ program dropletCount
 
         open(newunit=n_unit, file=csvFName, status='replace')
         
-            write(n_unit, '("x,y,z,num_drop,volume[ml],RoI")')
+            write(n_unit, '("x,y,z,num_drop,volume[ml],RoI,num_adhes")')
             
             do i = 1, size(box_array)
-                write(n_unit,'(*(g0:,","))') box_array(i)%center, bResult(i)%num_droplet, bResult(i)%volume, bResult(i)%RoI
+                write(n_unit,'(*(g0:,","))') box_array(i)%center, bResult(i)%num_droplet,&
+                bResult(i)%volume, bResult(i)%RoI,bResult(i)%num_adhes
             end do
 
         close(n_unit)
