@@ -289,7 +289,7 @@ module virusDroplet_m
 
         num_droplets = size(droplets)
 
-        !$OMP parallel do private(distance, r1, r2)
+        !!$OMP parallel do private(distance, r1, r2)
         drop1 : do d1 = 1, num_droplets - 1
             if(droplets(d1)%status/=0) cycle drop1
 
@@ -316,7 +316,7 @@ module virusDroplet_m
             end do drop2
 
         end do drop1
-        !$OMP end parallel do
+        !!$OMP end parallel do
 
         if(present(stat)) stat = num_coales
 

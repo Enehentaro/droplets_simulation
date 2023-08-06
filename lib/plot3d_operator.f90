@@ -173,8 +173,8 @@ module plot3d_operator
 
         cubeShape = shape(self%nodes)
         allocate(distance(cubeShape(1), cubeShape(2), cubeShape(3)), source=1.e9)
-        !$OMP parallel private(relation)
-        !$OMP do collapse(3)
+        !!$OMP parallel private(relation)
+        !!$OMP do collapse(3)
         do k = 1, cubeShape(3)
             do j = 1, cubeShape(2)
                 do i = 1, cubeShape(1)
@@ -183,8 +183,8 @@ module plot3d_operator
                 end do
             end do
         end do
-        !$OMP end do
-        !$OMP end parallel
+        !!$OMP end do
+        !!$OMP end parallel
 
         nodeID = minloc(distance)
 

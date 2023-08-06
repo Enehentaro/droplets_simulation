@@ -910,6 +910,7 @@ module SCF_file_reader_m
 
     subroutine get_cell2faces(this)
         use terminalControler_m
+        !$ use omp_lib
         implicit none
         class(scf_grid_t), intent(inout) :: this
         integer cellID, faceID, contentID
@@ -918,6 +919,8 @@ module SCF_file_reader_m
 
         print*, "Now get cell2face ..."
         call set_formatTC('("completed ... [ #cellID : ",i8," / ",i8," ]")')
+
+        !$omp parallel do
         do cellID = 1, this%NELEM
             call print_progress([cellID, this%NELEM])
             do faceID = 1, this%NFACE
@@ -928,6 +931,7 @@ module SCF_file_reader_m
                 end do
             end do
         end do
+        !$omp end parallel do
 
     end subroutine
 
@@ -1062,6 +1066,7 @@ module SCF_file_reader_m
 
     subroutine get_fph_adjacentCellIDs(this)
         use terminalControler_m
+        !$ use omp_lib
         implicit none
         class(scf_grid_t), intent(inout) :: this
         integer ii, jj
@@ -1069,6 +1074,8 @@ module SCF_file_reader_m
         ! 計算コスト大,要改善
         print*, "Now solve adjacent cells ..."
         call set_formatTC('("Completed ... [ #cellID : ",i8," / ",i8," ]")')
+
+        !$omp parallel do
         do ii = 1, this%NELEM
             call print_progress([ii, this%NELEM])
 
@@ -1083,6 +1090,7 @@ module SCF_file_reader_m
             end do
             
         end do
+        !$omp end parallel do
 
     end subroutine
 
