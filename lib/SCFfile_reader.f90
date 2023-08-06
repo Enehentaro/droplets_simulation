@@ -913,7 +913,6 @@ module SCF_file_reader_m
         implicit none
         class(scf_grid_t), intent(inout) :: this
         integer cellID, faceID, contentID
-        logical first_flag
 
         allocate(this%cell2faces(this%NFACE))
 
@@ -921,12 +920,11 @@ module SCF_file_reader_m
         call set_formatTC('("completed ... [ #cellID : ",i8," / ",i8," ]")')
         do cellID = 1, this%NELEM
             call print_progress([cellID, this%NELEM])
-            first_flag = .true.
             do faceID = 1, this%NFACE
                 do contentID = 1, 2
                     if(this%face2cells(contentID,faceID) == cellID) &
                         this%cell2faces(cellID)%faceIDs &
-                        = append2list_int(this%cell2faces(cellID)%faceIDs,faceID,first_flag)
+                        = append2list_int(this%cell2faces(cellID)%faceIDs,faceID)
                 end do
             end do
         end do
@@ -938,14 +936,13 @@ module SCF_file_reader_m
         class(scf_grid_t), intent(inout) :: this
         integer, intent(out) :: num_boundFaces
         integer jj
-        logical first_flag
-
-        first_flag = .true.
 
         ! セル番号0を有する面は境界面(外部表面)
         do jj = 1,this%NFACE
-            if(this%face2cells(1,jj) == 0) this%boundFaceIDs = append2list_int(this%boundFaceIDs,jj,first_flag)
-            if(this%face2cells(2,jj) == 0) this%boundFaceIDs = append2list_int(this%boundFaceIDs,jj,first_flag)
+            if(this%face2cells(1,jj) == 0) &
+            this%boundFaceIDs = append2list_int(this%boundFaceIDs,jj)
+            if(this%face2cells(2,jj) == 0) &
+            this%boundFaceIDs = append2list_int(this%boundFaceIDs,jj)
         end do
 
         this%num_boundFace = size(this%boundFaceIDs)
@@ -1029,31 +1026,26 @@ module SCF_file_reader_m
         implicit none
         class(scf_grid_t), intent(inout) :: this
         integer JB, boundFace2cellID, ii
-        logical first_flag
 
         if(.not.allocated(this%mainCell)) allocate(this%mainCell(this%NELEM))
 
         ! 境界セルに境界面番号を割り当てる
         do JB = 1, this%num_boundFace
-            first_flag = .true.
+
             if(this%face2cells(1,this%boundFaceIDs(JB)) == 0) then
 
                 boundFace2cellID = this%face2cells(2,this%boundFaceIDs(JB))
 
-                if(allocated(this%mainCell(boundFace2cellID)%boundFaceID)) first_flag = .false.
-
                 this%mainCell(boundFace2cellID)%boundFaceID &
-                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,JB,first_flag)
+                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,JB)
 
             end if
             if(this%face2cells(2,this%boundFaceIDs(JB)) == 0) then
                 
                 boundFace2cellID = this%face2cells(1,this%boundFaceIDs(JB))
 
-                if(allocated(this%mainCell(boundFace2cellID)%boundFaceID)) first_flag = .false.
-
                 this%mainCell(boundFace2cellID)%boundFaceID &
-                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,JB,first_flag)
+                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,JB)
             
             end if
         end do
@@ -1073,9 +1065,6 @@ module SCF_file_reader_m
         implicit none
         class(scf_grid_t), intent(inout) :: this
         integer ii, jj
-        logical first_flag
-
-        first_flag = .true.
 
         ! 計算コスト大,要改善
         print*, "Now solve adjacent cells ..."
@@ -1087,13 +1076,12 @@ module SCF_file_reader_m
                 if(this%face2cells(1,jj) == 0 .or. this%face2cells(2,jj) == 0) cycle
                 if(this%face2cells(1,jj) == ii) &
                     this%mainCell(ii)%adjacentCellIDs &
-                    = append2list_int(this%mainCell(ii)%adjacentCellIDs,this%face2cells(2,jj),first_flag)
+                    = append2list_int(this%mainCell(ii)%adjacentCellIDs,this%face2cells(2,jj))
                 if(this%face2cells(2,jj) == ii) &
                     this%mainCell(ii)%adjacentCellIDs &
-                    = append2list_int(this%mainCell(ii)%adjacentCellIDs,this%face2cells(1,jj),first_flag)
+                    = append2list_int(this%mainCell(ii)%adjacentCellIDs,this%face2cells(1,jj))
             end do
             
-            first_flag = .true.
         end do
 
     end subroutine
@@ -1217,14 +1205,13 @@ module SCF_file_reader_m
         array(3,:) = z(:)
     end subroutine
 
-    function append2list_int(list, element, first_flag) result(after_list)
-        integer, intent(in) :: list(:)
+    function append2list_int(list, element) result(after_list)
+        integer, allocatable, intent(in) :: list(:)
         integer, intent(in) :: element
-        logical, intent(inout) :: first_flag
         integer, allocatable :: after_list(:)
         integer n
 
-        if(first_flag) then
+        if(.not.allocated(list)) then
             allocate(after_list(1))
             after_list(1) = element
         else
@@ -1233,8 +1220,6 @@ module SCF_file_reader_m
             after_list(:n) = list(:n)
             after_list(n+1) = element
         end if
-
-        first_flag = .false.
 
     end function
 
