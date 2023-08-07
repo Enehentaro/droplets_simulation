@@ -1,6 +1,6 @@
 md build
 cd build
-cmake .. -D CMAKE_BUILD_TYPE=Debug
+cmake .. -G "MinGW Makefiles" -D CMAKE_BUILD_TYPE=Debug -D use_OpenMP=OFF
 make
 @REM ctest
 cd ..
