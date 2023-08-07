@@ -819,9 +819,9 @@ module SCF_file_reader_m
         allocate(this%node(this%NODES))
 
         do kk = 1, this%NODES
-            this%node(:)%coordinate(1) = this%CAN_X(:)
-            this%node(:)%coordinate(2) = this%CAN_Y(:)
-            this%node(:)%coordinate(3) = this%CAN_Z(:)
+            this%node(kk)%coordinate(1) = this%CAN_X(kk)
+            this%node(kk)%coordinate(2) = this%CAN_Y(kk)
+            this%node(kk)%coordinate(3) = this%CAN_Z(kk)
         end do
 
         call packing_vector_into_2Darray_(points, this%CAN_X, this%CAN_Y, this%CAN_Z)
