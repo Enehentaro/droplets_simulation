@@ -36,7 +36,7 @@ https://enehentaro.github.io/droplets_simulation/
   1. `$ cmake ..`で依存関係解決.
       - `-D CMAKE_Fortran_COMPILER=[ifort/gfortran]`でコンパイラ指定.
       - `-D CMAKE_BUILD_TYPE=Debug`でデバッグ用コンパイルオプション付与.
-      - `-D use_OpenMP=ON`でOpenMP用コンパイルオプション付与.
+      - `-D use_OpenMP=ON`でOpenMP用コンパイルオプション付与.(FPH解析時のみ有効)
         - `find_package`でエラーが起こる場合はコンパイラにOpenMPが付属していないので, 要インストール. (tdm-gccはデフォルトでついてない)
   1. `$ make`でコンパイル.
 

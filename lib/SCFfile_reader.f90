@@ -814,12 +814,15 @@ module SCF_file_reader_m
         implicit none
         class(scf_grid_t),intent(inout) :: this
         real(4), allocatable, intent(inout) :: points(:,:)
+        integer kk
 
         allocate(this%node(this%NODES))
-        
-        this%node(:)%coordinate(1) = this%CAN_X(:)
-        this%node(:)%coordinate(2) = this%CAN_Y(:)
-        this%node(:)%coordinate(3) = this%CAN_Z(:)
+
+        do kk = 1, this%NODES
+            this%node(:)%coordinate(1) = this%CAN_X(:)
+            this%node(:)%coordinate(2) = this%CAN_Y(:)
+            this%node(:)%coordinate(3) = this%CAN_Z(:)
+        end do
 
         call packing_vector_into_2Darray_(points, this%CAN_X, this%CAN_Y, this%CAN_Z)
 
