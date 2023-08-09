@@ -609,9 +609,10 @@ module unstructuredGrid_m
             iimx = grid%get_fph_element_count()
             kkmx = grid%get_fph_vertex_count()
             jjmx = grid%get_fph_face_count()
-
+        
             call grid%get_fph_2d_array_of_point_coords(points)
             call grid%get_fph_2d_array_of_cell_coords(cells)
+            call grid%set_node_coords()
             call grid%get_face2vertices()
             call grid%get_face2cells()
 

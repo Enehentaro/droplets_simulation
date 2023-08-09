@@ -120,6 +120,7 @@ module SCF_file_reader_m
         procedure, public :: get_fph_element_count
         procedure, public :: get_fph_vertex_count
         procedure, public :: get_fph_face_count
+        procedure, public :: set_node_coords
         procedure, public :: get_fph_2d_array_of_point_coords
         procedure, public :: get_fph_2d_array_of_cell_coords
         procedure, public :: get_face2vertices
@@ -809,11 +810,8 @@ module SCF_file_reader_m
 
     end function
 
-    subroutine get_fph_2d_array_of_point_coords(this, points)
-        !! 節点座標を2次元配列で出力する. 
-        implicit none
+    subroutine set_node_coords(this)
         class(scf_grid_t),intent(inout) :: this
-        real(4), allocatable, intent(inout) :: points(:,:)
         integer kk
 
         allocate(this%node(this%NODES))
@@ -823,6 +821,14 @@ module SCF_file_reader_m
             this%node(kk)%coordinate(2) = this%CAN_Y(kk)
             this%node(kk)%coordinate(3) = this%CAN_Z(kk)
         end do
+
+    end subroutine
+
+    subroutine get_fph_2d_array_of_point_coords(this, points)
+        !! 節点座標を2次元配列で出力する. 
+        implicit none
+        class(scf_grid_t),intent(inout) :: this
+        real(4), allocatable, intent(inout) :: points(:,:)
 
         call packing_vector_into_2Darray_(points, this%CAN_X, this%CAN_Y, this%CAN_Z)
 
@@ -916,25 +922,51 @@ module SCF_file_reader_m
         !$ use omp_lib
         implicit none
         class(scf_grid_t), intent(inout) :: this
-        integer cellID, faceID, contentID
+        integer cellID, faceID, contentID, cnt, alloc_max, index_end
+        integer, allocatable :: tmp_array(:)
+        real(8) t1, t2
 
         allocate(this%cell2faces(this%NFACE))
+        ! 配列のサイズが未確定なのでダミー配列を用意
+        alloc_max = 100
+        allocate(tmp_array(alloc_max), source = -99)
 
         print*, "Now get cell2face ..."
         call set_formatTC('("completed ... [ #cellID : ",i8," / ",i8," ]")')
 
         !$omp parallel do
+        call cpu_time(t1)
         do cellID = 1, this%NELEM
             call print_progress([cellID, this%NELEM])
-            do faceID = 1, this%NFACE
-                do contentID = 1, 2
-                    if(this%face2cells(contentID,faceID) == cellID) &
-                        this%cell2faces(cellID)%faceIDs &
-                        = append2list_int(this%cell2faces(cellID)%faceIDs,faceID)
-                end do
+            
+            cnt = 1
+            do faceID = 1, this%NFACE          
+                if(this%face2cells(1,faceID) == cellID) then
+                    tmp_array(cnt) = faceID
+                    cnt = cnt + 1
+                end if
+                if(this%face2cells(2,faceID) == cellID) then
+                    tmp_array(cnt) = faceID
+                    cnt = cnt + 1
+                end if
+                if(cnt > alloc_max) then
+                    print*, "allocate beyond upper bound of face2cells"
+                    stop
+                end if
             end do
+
+            ! -99が初めて見つかった時の番地をindex_endに格納
+            index_end = findloc(tmp_array, -99, dim = 1)
+            allocate(this%cell2faces(cellID)%faceIDs(index_end-1))
+            this%cell2faces(cellID)%faceIDs(1:index_end-1) = tmp_array(1:index_end-1)
+            tmp_array = -99
+
         end do
+        call cpu_time(t2)
         !$omp end parallel do
+
+        print*, "elapsed_time_build_cell2face = ", t2-t1, "sec"
+        stop
 
     end subroutine
 
