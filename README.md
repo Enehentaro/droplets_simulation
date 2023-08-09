@@ -28,12 +28,16 @@ https://enehentaro.github.io/droplets_simulation/
   - `> .\build\bin\main.exe`で実行. (プログラム名は自分で変える)
   ※おそらくVSCodeでコンパイラ指定のポップアップウィンドウが出るので, そこでgfortranのパスを通す.
   
-### シェルスクリプトを使わない場合
+### シェルスクリプトの説明
+  - シェルスクリプトを使用しない場合は, 下記順序に従ってコマンドを入力
+
   1. `$ mkdir build`でビルドディレクトリ作成する. 
   1. `$ cd build`で移動する. 
   1. `$ cmake ..`で依存関係解決.
       - `-D CMAKE_Fortran_COMPILER=[ifort/gfortran]`でコンパイラ指定.
       - `-D CMAKE_BUILD_TYPE=Debug`でデバッグ用コンパイルオプション付与.
+      - `-D use_OpenMP=ON`でOpenMP用コンパイルオプション付与.(FPH解析時のみ有効)
+        - `find_package`でエラーが起こる場合はコンパイラにOpenMPが付属していないので, 要インストール. (tdm-gccはデフォルトでついてない)
   1. `$ make`でコンパイル.
 
 ## 条件ファイル(condition.nml, initial_position.csv)解説
@@ -53,6 +57,7 @@ https://enehentaro.github.io/droplets_simulation/
       - VTK
       - INP
       - FLD
+      - FPH
     - CUBE格子(PLOT3D)は、予め非構造格子に変換してから計算してください.
     - .arrayファイルを指定する場合、別途メッシュファイルが必要なので,`meshFile = ***`と指定する.
   - **ステップ数オフセット OFFSET**

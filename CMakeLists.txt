@@ -2,7 +2,7 @@
 # $ cd build
 # $ cmake .. -G "MinGW Makefiles" -D CMAKE_Fortran_COMPILER=ifort -D CMAKE_BUILD_TYPE=debug
 
-cmake_minimum_required(VERSION 3.0)
+cmake_minimum_required(VERSION 3.5)
 
 enable_language(Fortran)
 
@@ -21,6 +21,13 @@ project(droplet Fortran)
 #     set(CMAKE_Fortran_FLAGS_RELEASE "-O3 -march=native")
 # endif()
 
+option(use_OpenMP "enable OpenMP directives" OFF)
+
+# パッケージの探索(コンパイラにOpenMPが付属していなければインストール)
+if(use_OpenMP)
+    find_package(OpenMP REQUIRED)
+endif()
+
 #コンパイルオプション指定用関数
 function(SETCOMPILEOPTIONS name)
 
@@ -33,6 +40,15 @@ function(SETCOMPILEOPTIONS name)
         target_compile_options(${name} PRIVATE
             $<$<CONFIG:Debug>: -O0 -g -fcheck=all> # -Wall
             $<$<CONFIG:Release>: -O2>
+        )
+    endif()
+
+    if(OpenMP_Fortran_FOUND)
+        target_compile_options(${name} PRIVATE 
+            "${OpenMP_Fortran_FLAGS}"
+        )
+        target_link_libraries(${name}
+            OpenMP::OpenMP_Fortran 
         )
     endif()
 
