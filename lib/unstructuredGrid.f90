@@ -101,7 +101,6 @@ module unstructuredGrid_m
         procedure AdjacencySolvingProcess
         procedure read_adjacency, read_boundaries, solve_adjacencyOnFlowFieldUnstructuredGrid
         procedure output_boundaries, output_adjacency, boundary_setting, output_STL
-        procedure read_cell2face
         
         ! procedure setup_kdTree
 
@@ -585,8 +584,9 @@ module unstructuredGrid_m
         character(:),allocatable :: dir
         real(4),allocatable :: points(:,:), velocity(:,:), bound_center(:,:)
         real(4),allocatable :: cells(:,:), face_center(:,:)
+        integer, allocatable :: cell2face(:,:)
         logical is_adjacencyFile, is_cell2faceFile
-        integer iimx, kkmx, jjmx, ii, jj, kk, JB, num_boundFaces, n_unit
+        integer iimx, kkmx, jjmx, ii, jj, kk, JB, num_boundFaces, n_unit, dummyID
 
         character(*), intent(in) :: FNAME
             !! ファイル名
@@ -609,15 +609,16 @@ module unstructuredGrid_m
             iimx = grid%get_fph_element_count()
             kkmx = grid%get_fph_vertex_count()
             jjmx = grid%get_fph_face_count()
-
+        
             call grid%get_fph_2d_array_of_point_coords(points)
             call grid%get_fph_2d_array_of_cell_coords(cells)
+            call grid%set_node_coords()
             call grid%get_face2vertices()
             call grid%get_face2cells()
 
-            call grid%get_fph_faceCenter(face_center)
-            call grid%get_fph_boundFaceIDs(num_boundFaces)
-            call grid%get_fph_boundFaceCenter(bound_center)
+            call grid%get_fph_face_center(face_center)
+            call grid%get_fph_bound_faceIDs(num_boundFaces)
+            call grid%get_fph_bound_face_center(bound_center)
             
             allocate(self%CELLs(iimx))
             allocate(self%NODEs(kkmx))
@@ -644,21 +645,27 @@ module unstructuredGrid_m
             end do
 
             if(.not. is_cell2faceFile) then
-
-                call grid%get_cell2faces()                
+                call grid%set_cell2faces()                
                 call grid%output_fph_cell2face(dir)
-
+            else
+                call grid%read_cell2face(dir)
             end if
 
-            call self%read_cell2face(dir)
+            cell2face = grid%get_cell2faces()
+
+            do ii = 1, iimx
+                dummyID = findloc(cell2face(II,:), -99, dim = 1)
+                allocate(self%CELLs(II)%faceID(dummyID-1))
+                self%CELLs(II)%faceID(1:dummyID-1) = cell2face(II, 1:dummyID-1)
+            end do
 
             if(.not. is_adjacencyFile) then
 
                 call grid%get_cell_offsets()
-                call grid%get_cell2boundFace()
+                call grid%get_cell2bound_face()
                 call grid%get_fph_adjacentCellIDs()
 
-                call grid%output_fph_boundFace(dir)
+                call grid%output_fph_bound_face(dir)
                 call grid%output_fph_adjacentCell(dir)
                 call grid%output_fph_vtk(dir)
 
@@ -677,25 +684,6 @@ module unstructuredGrid_m
 
         end if
         
-    end subroutine
-
-    subroutine read_cell2face(self,dir)
-        class(FlowFieldUnstructuredGrid) self
-        character(*), intent(in) :: dir
-        integer n_unit, num_cell2face, NF, ii, iimx
-        character(255) str
-
-        iimx = size(self%CELLs)
-
-        open(newunit = n_unit, file = dir//'cell2face.txt', status = 'old')
-            do ii = 1, iimx
-                read(n_unit,'(A)') str
-                read(str, *) num_cell2face
-                allocate(self%CELLs(II)%faceID(num_cell2face))
-                read(str, *) NF, self%CELLs(II)%faceID(:)
-            end do
-        close(n_unit)
-
     end subroutine
 
     subroutine read_adjacency(self, path, success)
