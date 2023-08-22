@@ -11,6 +11,7 @@ https://enehentaro.github.io/droplets_simulation/
   **Linuxの場合**
 
   - `$ pip install ford`
+  - `$ sudo apt install graphviz`
   - `$ source build.sh`で先にコンパイルして下さい.
   - `$ ford api-doc-ford-settings.md`
 
