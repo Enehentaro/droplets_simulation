@@ -166,7 +166,7 @@ MODULE adjacencySolver_m
           
         num_BoundFaces = 0
         call set_formatTC('("CHECK halfFace [ #group : ",i6," / ",i6," ]")')
-        !$omp parallel do private(faceID1,faceID2, match, k,l, num_face,numNode) reduction(+:num_BoundFaces)
+        !!$omp parallel do private(faceID1,faceID2, match, k,l, num_face,numNode) reduction(+:num_BoundFaces)
         do groupID = 1, num_group
             call print_progress([groupID, num_group])
             num_face = size(faceGroup(groupID)%faceID)
@@ -209,7 +209,7 @@ MODULE adjacencySolver_m
             end do face1
     
         end do
-        !$omp end parallel do
+        !!$omp end parallel do
         
         print*,'# Boundary Face =', num_BoundFaces
 

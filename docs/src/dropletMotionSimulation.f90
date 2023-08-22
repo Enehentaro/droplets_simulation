@@ -338,7 +338,7 @@ module dropletMotionSimulation
         double precision velAir(3)
         real position(3)
 
-        !$omp parallel do
+        !!$omp parallel do
         do vn = 1, size(droplets)
 
             if(droplets(vn)%isFloating())then
@@ -362,7 +362,7 @@ module dropletMotionSimulation
             end if
 
         end do
-        !$omp end parallel do
+        !!$omp end parallel do
 
     end subroutine
 
