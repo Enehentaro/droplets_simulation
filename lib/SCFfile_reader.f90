@@ -61,8 +61,11 @@ module SCF_file_reader_m
     type :: content_t
         integer, allocatable :: vertexIDs(:)
         integer, allocatable :: faceIDs(:)
-        integer, allocatable :: adjacentCellIDs(:)
+            !! dummy (-99) を含む配列
         integer, allocatable :: boundFaceID(:)
+            !! dummy (-99) を含む配列
+        integer, allocatable :: adjacentCellIDs(:)
+            !! dummy (-99) を含む配列
         real(4) center(3)
         real(4) coordinate(3)
     end type
@@ -111,6 +114,7 @@ module SCF_file_reader_m
 
         integer, private :: num_boundFace
         integer, allocatable, private :: boundFaceIDs(:)
+            !! dummy (-99) を含む配列
         integer, allocatable, private :: num_face2vertex(:)
         integer, allocatable, private :: offsets(:)
 
@@ -120,19 +124,22 @@ module SCF_file_reader_m
         procedure, public :: get_fph_element_count
         procedure, public :: get_fph_vertex_count
         procedure, public :: get_fph_face_count
+        procedure, public :: set_node_coords
         procedure, public :: get_fph_2d_array_of_point_coords
         procedure, public :: get_fph_2d_array_of_cell_coords
         procedure, public :: get_face2vertices
         procedure, public :: get_face2cells
+        procedure, public :: set_cell2faces
         procedure, public :: get_cell2faces
         procedure, public :: get_cell_offsets
-        procedure, public :: get_fph_boundFaceIDs
-        procedure, public :: get_fph_faceCenter
-        procedure, public :: get_fph_boundFaceCenter
+        procedure, public :: get_fph_bound_faceIDs
+        procedure, public :: get_fph_face_center
+        procedure, public :: get_fph_bound_face_center
         procedure, public :: output_fph_cell2face
-        procedure, public :: output_fph_boundFace
+        procedure, public :: read_cell2face
+        procedure, public :: output_fph_bound_face
         procedure, public :: output_fph_vtk
-        procedure, public :: get_cell2boundFace
+        procedure, public :: get_cell2bound_face
         procedure, public :: get_fph_adjacentCellIDs
         procedure, public :: output_fph_adjacentCell
         procedure, public :: search_fph_vector_data
@@ -815,12 +822,6 @@ module SCF_file_reader_m
         class(scf_grid_t),intent(inout) :: this
         real(4), allocatable, intent(inout) :: points(:,:)
 
-        allocate(this%node(this%NODES))
-        
-        this%node(:)%coordinate(1) = this%CAN_X(:)
-        this%node(:)%coordinate(2) = this%CAN_Y(:)
-        this%node(:)%coordinate(3) = this%CAN_Z(:)
-
         call packing_vector_into_2Darray_(points, this%CAN_X, this%CAN_Y, this%CAN_Z)
 
     end subroutine
@@ -833,6 +834,20 @@ module SCF_file_reader_m
 
         call packing_vector_into_2Darray_(cells, this%CCE_X, this%CCE_Y, this%CCE_Z)
         
+    end subroutine
+
+    subroutine set_node_coords(this)
+        class(scf_grid_t),intent(inout) :: this
+        integer kk
+
+        allocate(this%node(this%NODES))
+
+        do kk = 1, this%NODES
+            this%node(kk)%coordinate(1) = this%CAN_X(kk)
+            this%node(kk)%coordinate(2) = this%CAN_Y(kk)
+            this%node(kk)%coordinate(3) = this%CAN_Z(kk)
+        end do
+
     end subroutine
 
     subroutine get_face2vertices(this)
@@ -859,40 +874,6 @@ module SCF_file_reader_m
             
     end subroutine
 
-    subroutine get_cell_offsets(this)
-        implicit none
-        class(scf_grid_t), intent(inout) :: this
-        integer cell_id, sum_content, sum_vertex, element_id
-        integer, allocatable :: offset(:)
-
-        allocate(offset(this%NELEM))
-
-        ! offset(n)は第nセルの面数,面を構成する頂点数,各面を構成する頂点番号の合計情報数となる
-        ! 例えば第nセルがテトラの場合,面数は4(情報1個),第1面を構成する頂点数は3(情報1個),第1面を構成する各頂点番号(情報3個)
-        ! 第2~4面も同様にして合計情報数17をoffset(n)に格納する
-        do cell_id = 1, this%NELEM
-            sum_vertex = 1
-            do element_id = 1, size(this%cell2faces(cell_id)%faceIDs)
-                sum_vertex = sum_vertex + 1 + this%num_face2vertex(this%cell2faces(cell_id)%faceIDs(element_id))
-            end do
-            offset(cell_id) = sum_vertex
-        end do
-
-        allocate(this%offsets(this%NELEM+1))
-
-        ! self%offsets(n)は第nセル情報のスタート位置を格納する
-        ! 例えば第1~2セルがテトラ格子の場合
-        ! self%offsets(1)(=第1セル情報スタート位置)は0
-        ! self%offsets(2)(=第2セル情報スタート位置)は17
-        ! self%offsets(3)(=第3セル情報スタート位置)は34
-        sum_content = 0
-        this%offsets(1) = 0
-        do cell_id = 2, this%NELEM+1
-            this%offsets(cell_id) = this%offsets(cell_id-1) + offset(cell_id-1)
-        end do
-
-    end subroutine
-
     subroutine get_face2cells(this)
         implicit none
         class(scf_grid_t), intent(inout) :: this 
@@ -908,52 +889,7 @@ module SCF_file_reader_m
 
     end subroutine
 
-    subroutine get_cell2faces(this)
-        use terminalControler_m
-        implicit none
-        class(scf_grid_t), intent(inout) :: this
-        integer cellID, faceID, contentID
-        logical first_flag
-
-        allocate(this%cell2faces(this%NFACE))
-
-        print*, "Now get cell2face ..."
-        call set_formatTC('("completed ... [ #cellID : ",i8," / ",i8," ]")')
-        do cellID = 1, this%NELEM
-            call print_progress([cellID, this%NELEM])
-            first_flag = .true.
-            do faceID = 1, this%NFACE
-                do contentID = 1, 2
-                    if(this%face2cells(contentID,faceID) == cellID) &
-                        this%cell2faces(cellID)%faceIDs &
-                        = append2list_int(this%cell2faces(cellID)%faceIDs,faceID,first_flag)
-                end do
-            end do
-        end do
-
-    end subroutine
-
-    subroutine get_fph_boundFaceIDs(this, num_boundFaces)
-        implicit none
-        class(scf_grid_t), intent(inout) :: this
-        integer, intent(out) :: num_boundFaces
-        integer jj
-        logical first_flag
-
-        first_flag = .true.
-
-        ! セル番号0を有する面は境界面(外部表面)
-        do jj = 1,this%NFACE
-            if(this%face2cells(1,jj) == 0) this%boundFaceIDs = append2list_int(this%boundFaceIDs,jj,first_flag)
-            if(this%face2cells(2,jj) == 0) this%boundFaceIDs = append2list_int(this%boundFaceIDs,jj,first_flag)
-        end do
-
-        this%num_boundFace = size(this%boundFaceIDs)
-        num_boundFaces = this%num_boundFace
-
-    end subroutine
-
-    subroutine get_fph_faceCenter(this,face_center)
+    subroutine get_fph_face_center(this,face_center)
         implicit none
         class(scf_grid_t), intent(inout) :: this
         real(4), allocatable, intent(out) :: face_center(:,:)
@@ -978,7 +914,34 @@ module SCF_file_reader_m
         
     end subroutine
 
-    subroutine get_fph_boundFaceCenter(this, bound_center)
+    subroutine get_fph_bound_faceIDs(this, num_boundFaces)
+        implicit none
+        class(scf_grid_t), intent(inout) :: this
+        integer, intent(out) :: num_boundFaces
+        integer jj, cnt, alloc_max, dummyID
+
+        ! 配列のサイズが未確定なのでダミー配列を用意
+        alloc_max = this%NFACE
+        allocate(this%boundFaceIDs(alloc_max), source = -99)
+
+        ! セル番号0を有する面は境界面(外部表面)
+        do jj = 1,this%NFACE
+            if(any(this%face2cells(:,jj) == 0)) then
+                dummyID = findloc(this%boundFaceIDs, -99, dim = 1)
+                call check_range_of_array(dummyID, alloc_max, "boundFaceIDs")
+                this%boundFaceIDs(dummyID) = jj
+            end if
+        end do
+
+        ! -99が初めて見つかった時の番地をdummyIDに格納
+        dummyID = findloc(this%boundFaceIDs, -99, dim = 1)
+
+        this%num_boundFace = dummyID-1
+        num_boundFaces = this%num_boundFace
+
+    end subroutine
+
+    subroutine get_fph_bound_face_center(this, bound_center)
         implicit none
         class(scf_grid_t), intent(in) :: this
         real(4), allocatable, intent(inout) :: bound_center(:,:)
@@ -992,6 +955,45 @@ module SCF_file_reader_m
 
     end subroutine
 
+    subroutine set_cell2faces(this)
+        use terminalControler_m
+        !$ use omp_lib
+        implicit none
+        class(scf_grid_t), intent(inout) :: this
+        integer cellID, faceID, contentID, alloc_max, dummyID
+
+        allocate(this%cell2faces(this%NELEM))
+        ! 配列のサイズが未確定なのでダミー配列を用意
+        alloc_max = 100
+        do cellID = 1, this%NELEM
+            allocate(this%cell2faces(cellID)%faceIDs(alloc_max), source = -99)
+        end do
+        
+        print*, "Now get cell2face ..."
+        call set_formatTC('("completed ... [ #faceID : ",i8," / ",i8," ]")')
+
+        !$omp parallel do
+        do faceID = 1, this%NFACE
+            call print_progress([faceID, this%NFACE])
+            do contentID = 1,2
+                cellID = this%face2cells(contentID,faceID)
+
+                ! cellIDが0のときはスルー
+                if(cellID == 0) cycle
+
+                ! 左から数えて何番目に-99があるか探索
+                dummyID = findloc(this%cell2faces(cellID)%faceIDs, -99, dim = 1)
+
+                call check_range_of_array(dummyID, alloc_max, "cell2faces")
+
+                ! -99をfaceIDに置き換え
+                this%cell2faces(cellID)%faceIDs(dummyID) = faceID
+            end do
+        end do
+        !$omp end parallel do
+
+    end subroutine
+
     subroutine output_fph_cell2face(this, dir)
         implicit none
         class(scf_grid_t), intent(in) :: this
@@ -1000,15 +1002,163 @@ module SCF_file_reader_m
 
         print*, 'OUTPUT:', dir//"cell2face.txt"
         open(newunit = n_unit, file = dir//"cell2face.txt", status = 'replace')
+            write(n_unit, '(*(g0:," "))') size(this%cell2faces(1)%faceIDs)
             do cellID = 1, this%NELEM
-                write(n_unit, '(*(g0:," "))') size(this%cell2faces(cellID)%faceIDs), &
-                this%cell2faces(cellID)%faceIDs
+                write(n_unit, '(*(g0:," "))') this%cell2faces(cellID)%faceIDs
             end do
         close(n_unit)        
 
     end subroutine
 
-    subroutine output_fph_boundFace(this, dir)
+    subroutine read_cell2face(this, dir)
+        implicit none
+        class(scf_grid_t), intent(inout) :: this
+        character(*), intent(in) :: dir
+        integer n_unit, num_cell2face, cellID
+
+        allocate(this%cell2faces(this%NELEM))
+        
+        open(newunit = n_unit, file = dir//'cell2face.txt', status = 'old')
+            read(n_unit,*) num_cell2face
+            do cellID = 1, this%NELEM
+                allocate(this%cell2faces(cellID)%faceIDs(num_cell2face))
+                read(n_unit, *) this%cell2faces(cellID)%faceIDs(:)
+            end do
+        close(n_unit)
+
+    end subroutine
+
+    function get_cell2faces(this) result(cell2face)
+        implicit none
+        class(scf_grid_t), intent(in) :: this
+        integer, allocatable :: cell2face(:,:)
+        integer cellID
+
+        allocate(cell2face(this%NELEM,size(this%cell2faces(1)%faceIDs)))
+        do cellID = 1, this%NELEM
+            cell2face(cellID,:) = this%cell2faces(cellID)%faceIDs(:)
+        end do
+
+    end function
+
+    subroutine get_cell_offsets(this)
+        implicit none
+        class(scf_grid_t), intent(inout) :: this
+        integer cellID, sum_content, sum_vertex, elementID, dummyID
+        integer, allocatable :: offset(:)
+
+        allocate(offset(this%NELEM))
+
+        ! offset(n)は第nセルの面数,面を構成する頂点数,各面を構成する頂点番号の合計情報数となる
+        ! 例えば第nセルがテトラの場合,面数は4(情報1個),第1面を構成する頂点数は3(情報1個),第1面を構成する各頂点番号(情報3個)
+        ! 第2~4面も同様にして合計情報数17をoffset(n)に格納する
+        do cellID = 1, this%NELEM
+            sum_vertex = 1
+            dummyID = findloc(this%cell2faces(cellID)%faceIDs, -99 , dim = 1)
+            do elementID = 1, dummyID-1
+                sum_vertex = sum_vertex + 1 + this%num_face2vertex(this%cell2faces(cellID)%faceIDs(elementID))
+            end do
+            offset(cellID) = sum_vertex
+        end do
+
+        allocate(this%offsets(this%NELEM+1))
+
+        ! self%offsets(n)は第nセル情報のスタート位置を格納する
+        ! 例えば第1~2セルがテトラ格子の場合
+        ! self%offsets(1)(=第1セル情報スタート位置)は0
+        ! self%offsets(2)(=第2セル情報スタート位置)は17
+        ! self%offsets(3)(=第3セル情報スタート位置)は34
+        sum_content = 0
+        this%offsets(1) = 0
+        do cellID = 2, this%NELEM+1
+            this%offsets(cellID) = this%offsets(cellID-1) + offset(cellID-1)
+        end do
+
+    end subroutine
+
+    subroutine get_cell2bound_face(this)
+        implicit none
+        class(scf_grid_t), intent(inout) :: this
+        integer JB, boundFace2cellID, alloc_max, cellID, dummyID
+
+        if(.not.allocated(this%mainCell)) allocate(this%mainCell(this%NELEM))
+        ! 配列のサイズが未確定なのでダミー配列を用意
+        alloc_max = 10
+        do cellID = 1, this%NELEM
+            allocate(this%mainCell(cellID)%boundFaceID(alloc_max), source = -99)
+        end do
+
+        ! 境界セルに境界面番号を割り当てる
+        do JB = 1, this%num_boundFace
+
+            if(this%face2cells(1,this%boundFaceIDs(JB)) == 0) then
+
+                boundFace2cellID = this%face2cells(2,this%boundFaceIDs(JB))
+                dummyID = findloc(this%mainCell(boundFace2cellID)%boundFaceID, -99, dim = 1)
+                call check_range_of_array(dummyID, alloc_max, "mainCell%boundFace")
+                this%mainCell(boundFace2cellID)%boundFaceID(dummyID) = JB
+
+            end if
+            if(this%face2cells(2,this%boundFaceIDs(JB)) == 0) then
+                
+                boundFace2cellID = this%face2cells(1,this%boundFaceIDs(JB))
+                dummyID = findloc(this%mainCell(boundFace2cellID)%boundFaceID, -99, dim = 1)
+                call check_range_of_array(dummyID, alloc_max, "mainCell%boundFace")
+                this%mainCell(boundFace2cellID)%boundFaceID(dummyID) = JB
+
+            end if
+        end do
+
+        ! 未割り当ての配列は内部セル
+        do cellID = 1, this%NELEM
+            if(all(this%mainCell(cellID)%boundFaceID == -99)) then
+                this%mainCell(cellID)%boundFaceID(1) = 0
+            end if
+        end do     
+
+    end subroutine
+
+    subroutine get_fph_adjacentCellIDs(this)
+        use terminalControler_m
+        !$ use omp_lib
+        implicit none
+        class(scf_grid_t), intent(inout) :: this
+        integer faceID, cellID, alloc_max, dummyID, mainCellID, adjacentCellID
+
+        ! 配列のサイズが未確定なのでダミー配列を用意
+        alloc_max = 100
+        do cellID = 1, this%NELEM
+            allocate(this%mainCell(cellID)%adjacentCellIDs(alloc_max), source = -99)
+        end do
+
+        ! 計算コスト大,要改善
+        print*, "Now solve adjacent cells ..."
+        call set_formatTC('("Completed ... [ #faceID : ",i8," / ",i8," ]")')
+
+        !$omp parallel do
+        do faceID = 1, this%NFACE
+            call print_progress([faceID, this%NFACE])
+
+            if(all(this%face2cells(:,faceID) /= 0)) then
+                mainCellID = this%face2cells(1,faceID)
+                adjacentCellID = this%face2cells(2,faceID)
+                dummyID = findloc(this%mainCell(mainCellID)%adjacentCellIDs, -99, dim = 1)
+                call check_range_of_array(dummyID, alloc_max, "mainCell%adjacentCellIDs")
+                this%mainCell(mainCellID)%adjacentCellIDs(dummyID) = adjacentCellID
+
+                mainCellID = this%face2cells(2,faceID)
+                adjacentCellID = this%face2cells(1,faceID)
+                dummyID = findloc(this%mainCell(mainCellID)%adjacentCellIDs, -99, dim = 1)
+                call check_range_of_array(dummyID, alloc_max, "mainCell%adjacentCellIDs")
+                this%mainCell(mainCellID)%adjacentCellIDs(dummyID) = adjacentCellID
+            end if
+
+        end do
+        !$omp end parallel do
+
+    end subroutine
+
+    subroutine output_fph_bound_face(this, dir)
         implicit none
         class(scf_grid_t), intent(inout) :: this
         character(*), intent(in) :: dir
@@ -1025,97 +1175,26 @@ module SCF_file_reader_m
 
     end subroutine
 
-    subroutine get_cell2boundFace(this)
-        implicit none
-        class(scf_grid_t), intent(inout) :: this
-        integer JB, boundFace2cellID, ii
-        logical first_flag
-
-        if(.not.allocated(this%mainCell)) allocate(this%mainCell(this%NELEM))
-
-        ! 境界セルに境界面番号を割り当てる
-        do JB = 1, this%num_boundFace
-            first_flag = .true.
-            if(this%face2cells(1,this%boundFaceIDs(JB)) == 0) then
-
-                boundFace2cellID = this%face2cells(2,this%boundFaceIDs(JB))
-
-                if(allocated(this%mainCell(boundFace2cellID)%boundFaceID)) first_flag = .false.
-
-                this%mainCell(boundFace2cellID)%boundFaceID &
-                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,JB,first_flag)
-
-            end if
-            if(this%face2cells(2,this%boundFaceIDs(JB)) == 0) then
-                
-                boundFace2cellID = this%face2cells(1,this%boundFaceIDs(JB))
-
-                if(allocated(this%mainCell(boundFace2cellID)%boundFaceID)) first_flag = .false.
-
-                this%mainCell(boundFace2cellID)%boundFaceID &
-                = append2list_int(this%mainCell(boundFace2cellID)%boundFaceID,JB,first_flag)
-            
-            end if
-        end do
-
-        ! 未割り当ての配列は内部セル
-        do ii = 1, this%NELEM
-            if(.not. allocated(this%mainCell(ii)%boundFaceID)) then
-                allocate(this%mainCell(ii)%boundFaceID(1))
-                this%mainCell(ii)%boundFaceID(1) = 0
-            end if
-        end do     
-
-    end subroutine
-
-    subroutine get_fph_adjacentCellIDs(this)
-        use terminalControler_m
-        implicit none
-        class(scf_grid_t), intent(inout) :: this
-        integer ii, jj
-        logical first_flag
-
-        first_flag = .true.
-
-        ! 計算コスト大,要改善
-        print*, "Now solve adjacent cells ..."
-        call set_formatTC('("Completed ... [ #cellID : ",i8," / ",i8," ]")')
-        do ii = 1, this%NELEM
-            call print_progress([ii, this%NELEM])
-
-            do jj = 1,this%NFACE
-                if(this%face2cells(1,jj) == 0 .or. this%face2cells(2,jj) == 0) cycle
-                if(this%face2cells(1,jj) == ii) &
-                    this%mainCell(ii)%adjacentCellIDs &
-                    = append2list_int(this%mainCell(ii)%adjacentCellIDs,this%face2cells(2,jj),first_flag)
-                if(this%face2cells(2,jj) == ii) &
-                    this%mainCell(ii)%adjacentCellIDs &
-                    = append2list_int(this%mainCell(ii)%adjacentCellIDs,this%face2cells(1,jj),first_flag)
-            end do
-            
-            first_flag = .true.
-        end do
-
-    end subroutine
-
     subroutine output_fph_adjacentCell(this,dir)
         implicit none
         class(scf_grid_t), intent(inout) :: this
         character(*), intent(in) :: dir
-        integer n_unit, ii
+        integer n_unit, cellID, dummyID
 
         print*, 'OUTPUT:', dir//"adjacency.txt" 
         open(newunit = n_unit, file = dir//"adjacency.txt", status='replace')
             write(n_unit,'(*(g0:," "))') this%NELEM
             write(n_unit,'(*(g0:," "))') 100 !任意の数で大丈夫そう
-            do ii = 1, this%NELEM
-                write(n_unit, '(*(g0:," "))') size(this%mainCell(ii)%adjacentCellIDs), this%mainCell(ii)%adjacentCellIDs     
+            do cellID = 1, this%NELEM
+                dummyID = findloc(this%mainCell(cellID)%adjacentCellIDs, -99, dim = 1)
+                write(n_unit, '(*(g0:," "))') dummyID-1, this%mainCell(cellID)%adjacentCellIDs(1:dummyID-1)
             end do
-            do ii = 1, this%NELEM
-                if(this%mainCell(ii)%boundFaceID(1) == 0) then
+            do cellID = 1, this%NELEM
+                if(this%mainCell(cellID)%boundFaceID(1) == 0) then
                     write(n_unit, '(*(g0:," "))') 0
                 else
-                    write(n_unit, '(*(g0:," "))') size(this%mainCell(ii)%boundFaceID), this%mainCell(ii)%boundFaceID                
+                    dummyID = findloc(this%mainCell(cellID)%boundFaceID, -99, dim = 1)
+                    write(n_unit, '(*(g0:," "))') dummyID-1, this%mainCell(cellID)%boundFaceID(1:dummyID-1)                
                 end if
             end do
         close(n_unit)
@@ -1126,7 +1205,7 @@ module SCF_file_reader_m
         implicit none
         class(scf_grid_t), intent(in) :: this
         character(*), intent(in) :: dir
-        integer n_unit, node_id, cell_id, element_id
+        integer n_unit, nodeID, cellID, elementID, dummyID
 
         print*, 'OUTPUT:', dir//"shape.vtk"
         open(newunit = n_unit, file = dir//"shape.vtk", status = "replace")
@@ -1137,8 +1216,8 @@ module SCF_file_reader_m
 
             write(n_unit, '(a,1x,i0,1x,a)') 'POINTS', this%NODES, 'float'
 
-            do node_id = 1, this%NODES
-                write(n_unit,'(3(e12.5,2x))') this%node(node_id)%coordinate(:)
+            do nodeID = 1, this%NODES
+                write(n_unit,'(3(e12.5,2x))') this%node(nodeID)%coordinate(:)
             end do
 
             write(n_unit,'()')
@@ -1156,19 +1235,20 @@ module SCF_file_reader_m
             ! 3 0 2 3   (第nセル第3面を構成する頂点数),(第3面を構成する第1~3頂点の番号)
             ! 3 1 2 3   (第nセル第4面を構成する頂点数),(第4面を構成する第1~3頂点の番号)
             write(n_unit,'(a)') "CONNECTIVITY vtktypeint64"
-            do cell_id = 1, this%NELEM
-                write(n_unit, '(i0)') size(this%cell2faces(cell_id)%faceIDs)
-                do element_id = 1, size(this%cell2faces(cell_id)%faceIDs)
+            do cellID = 1, this%NELEM
+                dummyID = findloc(this%cell2faces(cellID)%faceIDs, -99, dim = 1)
+                write(n_unit, '(i0)') dummyID-1
+                do elementID = 1, dummyID-1
                     write(n_unit, '(*(g0:," "))') &
-                    this%num_face2vertex(this%cell2faces(cell_id)%faceIDs(element_id)), &
-                    this%face2vertices(this%cell2faces(cell_id)%faceIDs(element_id))%vertexIDs - 1
+                    this%num_face2vertex(this%cell2faces(cellID)%faceIDs(elementID)), &
+                    this%face2vertices(this%cell2faces(cellID)%faceIDs(elementID))%vertexIDs - 1
                 end do
             end do
             
             write(n_unit,'()')
 
             write(n_unit,'(a,i0)') "CELL_TYPES ", this%NELEM
-            do cell_id = 1, this%NELEM
+            do cellID = 1, this%NELEM
                 write(n_unit,'(i0)') 42
             end do
             
@@ -1217,25 +1297,15 @@ module SCF_file_reader_m
         array(3,:) = z(:)
     end subroutine
 
-    function append2list_int(list, element, first_flag) result(after_list)
-        integer, intent(in) :: list(:)
-        integer, intent(in) :: element
-        logical, intent(inout) :: first_flag
-        integer, allocatable :: after_list(:)
-        integer n
+    subroutine check_range_of_array(allocID, alloc_max, array_name)
+        integer, intent(in) :: allocID, alloc_max
+        character(*), intent(in) :: array_name
 
-        if(first_flag) then
-            allocate(after_list(1))
-            after_list(1) = element
-        else
-            n = size(list)
-            allocate(after_list(n+1))
-            after_list(:n) = list(:n)
-            after_list(n+1) = element
+        if(allocID > alloc_max) then
+            print*, "allocate beyond upper bound of "//array_name
+            stop
         end if
 
-        first_flag = .false.
-
-    end function
+    end subroutine
 
 end module
