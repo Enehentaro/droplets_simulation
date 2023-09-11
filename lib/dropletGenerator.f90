@@ -71,26 +71,35 @@ module dropletGenerator_m
 
     function generateDroplet(self, num_droplet, nowTime) result(droplets)
         class(DropletGenerator) self
-        type(virusDroplet_t), allocatable :: droplets(:)
+        type(virusDroplet_t), allocatable :: droplets(:),transplant_droplets(:)
         integer, intent(in) :: num_droplet
         double precision, intent(in) :: nowTime
         double precision, allocatable :: initialRadius(:), deadline(:)
 
-        integer :: k, unit
+        integer :: k, kk, unit, num_droplet_transplant, cnt 
+
+        num_droplet_transplant = 3248
 
         if(num_droplet <= 0) return 
 
         allocate(droplets(num_droplet))
+        allocate(transplant_droplets(num_droplet_transplant))
 
         !call self%calc_initialPosition(droplets)
         !!!==連続計算での排出飛沫の初期位置を全部格納（0step to 3000000step）（2023/04/14〜）===!!!
         print*, '!!!!!!!!!!!!!!!!!!!!!calc_initialPosition!!!!!!!!!!!!!!!!!!!!!!!'
 
         open(newunit=unit,file='data/droplet_position.txt',status='old')
-            do k = 1, num_droplet
-                read(unit,'(3(f10.5))') droplets(k)%position(:)
+            do k = 1, num_droplet_transplant
+                read(unit,'(3(f10.5))') transplant_droplets(k)%position(:)
             end do
         close(unit)
+
+        cnt = 0
+        do k = 1, num_droplet
+            droplets(k)%position(:) = transplant_droplets(k - cnt*num_droplet_transplant)%position(:)
+            if(mod(k,num_droplet_transplant) == 0) cnt = cnt + 1
+        end do
         !!!=====================================================================================!!!
 
         initialRadius = self%initialRadiusArray%get_valueArray(num_droplet) * 1.d-6 !マイクロメートル換算
@@ -100,13 +109,20 @@ module dropletGenerator_m
         print*, '!!!!!!!!!!!!!!!!!!!!!set_initialRadius!!!!!!!!!!!!!!!!!!!!!!!'
 
         open(newunit=unit,file='data/droplet_diameter.txt',status='old')
-            do k = 1, num_droplet
-                read(unit,*) droplets(k)%initialRadius  !一度直径を読み込む
+            do k = 1, num_droplet_transplant
+                read(unit,*) transplant_droplets(k)%initialRadius  !一度直径を読み込む
             end do
         close(unit)
-        droplets(:)%initialRadius = droplets(:)%initialRadius *0.5d0      !直径を半径に変換
-        
-        droplets(:)%radius = droplets(:)%initialRadius
+        transplant_droplets(:)%initialRadius = transplant_droplets(:)%initialRadius *0.5d0      !直径を半径に変換
+        transplant_droplets(:)%radius = transplant_droplets(:)%initialRadius
+
+        cnt = 0
+        do k = 1, num_droplet
+            droplets(k)%initialRadius = transplant_droplets(k - cnt*num_droplet_transplant)%initialRadius
+            droplets(k)%radius = transplant_droplets(k - cnt*num_droplet_transplant)%radius
+
+            if(mod(k,num_droplet_transplant) == 0) cnt = cnt + 1
+        end do
 
         !!!=====================================================================================!!!
 
@@ -120,20 +136,32 @@ module dropletGenerator_m
         print*, '!!!!!!!!!!!!!!!!!!!!!set_initialVelocity!!!!!!!!!!!!!!!!!!!!!!!'
 
         open(newunit=unit,file='data/droplet_velocity.txt',status='old')
-            do k = 1, num_droplet
-                read(unit,'(3(f10.5))') droplets(k)%velocity(:)
+            do k = 1, num_droplet_transplant
+                read(unit,'(3(f10.5))') transplant_droplets(k)%velocity(:)
             end do
         close(unit)
+
+        cnt = 0
+        do k = 1, num_droplet
+            droplets(k)%velocity(:) = transplant_droplets(k - cnt*num_droplet_transplant)%velocity(:)
+            if(mod(k,num_droplet_transplant) == 0) cnt = cnt + 1
+        end do
         !!!=====================================================================================!!!
 
         !!!==連続計算での排出飛沫の排出ステップを全部格納（0step to 3000000step）（2023/04/14〜）===!!!
         print*, '!!!!!!!!!!!!!!!!!!!!!set_discharged_step!!!!!!!!!!!!!!!!!!!!!!!'
 
         open(newunit=unit,file='data/discharged_step.txt',status='old')
-            do k = 1, num_droplet
-                read(unit,'(I7)') droplets(k)%discharged_step
+            do k = 1, num_droplet_transplant
+                read(unit,'(I7)') transplant_droplets(k)%discharged_step
             end do
         close(unit)
+
+        cnt = 0
+        do k = 1, num_droplet
+            droplets(k)%discharged_step = transplant_droplets(k - cnt*num_droplet_transplant)%discharged_step + cnt*600 !移植の関係上100の倍数にしておく。1/10stepになるので注意!
+            if(mod(k,num_droplet_transplant) == 0) cnt = cnt + 1
+        end do
         !!!=====================================================================================!!!
 
         !if(self%generateRate > 0) 

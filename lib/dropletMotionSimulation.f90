@@ -166,7 +166,7 @@ module dropletMotionSimulation
             timeInSimulation = dropletSolver%TimeStep2RealTime(n, .false.)
             
             !call dropGenerator%periodicGeneration(mainDroplets, timeInSimulation, generationFlag)
-            if(mod(n,outputINTERVAL) == 0) call dropGenerator%discharged_flag(mainDroplets, n*10, generationFlag)
+            call dropGenerator%discharged_flag(mainDroplets, n*10, generationFlag)
 
             if(adhesionSwitch) call adhesion_check(mainDroplets, flow_field)
 
