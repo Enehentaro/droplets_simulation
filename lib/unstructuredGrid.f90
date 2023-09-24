@@ -1078,7 +1078,7 @@ module unstructuredGrid_m
         !! 全セルの重心座標を２次元配列で返す
         class(FlowFieldUnstructuredGrid), intent(in) :: self
         real, allocatable :: centers(:,:)
-        integer i, num_cell
+        integer i, num_cell!!セルの隣接関係解決モジュール
 
         num_cell = size(self%CELLs)
         allocate(centers(3,num_cell))
@@ -1094,7 +1094,6 @@ module unstructuredGrid_m
         integer, intent(in) :: ID
         real, allocatable :: vertices(:,:)
         integer i, num_node, nodeID
-
         num_node = size(self%CELLs(ID)%nodeID)
         allocate(vertices(3, num_node))
         do i = 1, num_node
@@ -1110,7 +1109,6 @@ module unstructuredGrid_m
         character(*), intent(in) :: name
             !! 'node' or 'cell'
         integer info
-
         select case(name)
         case('node')
             info = size(self%NODEs)

@@ -6,5 +6,6 @@ coalescenceLimit = 10000    !ゼロで合体判定オフ
 num_divide = 4
 
 radiusDistributionFNAME = "initialRadius_coughing.txt"
+!元はinitialRadius_coughing.txt。薬のシミュレーションをするときはdrugRadius.txtを用いる。
 
 /
