@@ -697,7 +697,7 @@ module unstructuredGrid_m
 
         integer II,NA, n_unit, num_cells, num_adj, num_BF, NCMAX
         character(:), allocatable :: FNAME
-        character(255) str
+        character(400) str
         character(13), parameter :: adjacencyFileName = 'adjacency.txt'
                 
         FNAME = trim(path)//adjacencyFileName
@@ -722,6 +722,10 @@ module unstructuredGrid_m
 
             DO II = 1, num_cells
                 read(n_unit,'(A)') str
+                if (len_trim(str) >= 399) then
+                    print*, "too long adjacent information input..."
+                    stop
+                end if
                 read(str, *) num_adj
                 allocate(self%CELLs(II)%adjacentCellID(num_adj))
                 read(str, *) NA, self%CELLs(II)%adjacentCellID(:)
