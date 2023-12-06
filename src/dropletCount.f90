@@ -36,24 +36,32 @@ program dropletCount
     
         num_box = size(box_array)
     
-        do n = 0, condVal%stepEnd, condVal%outputInterval
-            if(n==0) then
-                fname = caseName//'/backup/InitialDistribution.bu'
-            else
-                block
-                    character(255) str
-                    write(str,'("'//caseName//'/backup/backup_", i0 , ".bu")') n
-                    fname = trim(str)
-                end block
-            end if
+        ! do n = 0, condVal%stepEnd, condVal%outputInterval
+        !     if(n==0) then
+        !         fname = caseName//'/backup/InitialDistribution.bu'
+        !     else
+        !         block
+        !             character(255) str
+        !             write(str,'("'//caseName//'/backup/backup_", i0 , ".bu")') n
+        !             fname = trim(str)
+        !         end block
+        !     end if
     
-            mainDroplets = read_backup(fname)
+        !     mainDroplets = read_backup(fname)
     
-            do i_box = 1, num_box
-                id_array = dropletIDinBox(mainDroplets, dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
-                call box_array(i_box)%add_Flag(id_array)
-            end do
+        !     do i_box = 1, num_box
+        !         id_array = dropletIDinBox(mainDroplets, dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
+        !         call box_array(i_box)%add_Flag(id_array)
+        !     end do
     
+        ! end do
+
+        fname = caseName//'/backup/backup_10000.bu'
+        mainDroplets = read_backup(fname)
+    
+        do i_box = 1, num_box
+            id_array = dropletIDinBox(mainDroplets, dble(box_array(i_box)%min_cdn), dble(box_array(i_box)%max_cdn))
+            call box_array(i_box)%add_Flag(id_array)
         end do
     
         allocate(bResult(num_box))

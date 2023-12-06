@@ -5,6 +5,6 @@ adhesionSwitch = .true.
 coalescenceLimit = 10000    !ゼロで合体判定オフ
 num_divide = 4
 
-radiusDistributionFNAME = "initialRadius_coughing.txt"
+radiusDistributionFNAME = "initialRadius_conversation.txt"
 
 /
