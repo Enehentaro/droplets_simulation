@@ -661,13 +661,14 @@ module unstructuredGrid_m
 
             if(.not. is_adjacencyFile) then
 
-                call grid%get_cell_offsets()
+                ! call grid%get_cell_offsets()
                 call grid%get_cell2bound_face()
                 call grid%get_fph_adjacentCellIDs()
+                call grid%drop_vertex_for_obj()
 
                 call grid%output_fph_bound_face(dir)
                 call grid%output_fph_adjacentCell(dir)
-                call grid%output_fph_vtk(dir)
+                call grid%output_OBJ(dir)
 
             end if
 
