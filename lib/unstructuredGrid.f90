@@ -698,7 +698,7 @@ module unstructuredGrid_m
 
         integer II,NA, n_unit, num_cells, num_adj, num_BF, NCMAX
         character(:), allocatable :: FNAME
-        character(400) str
+        character(700) str
         character(13), parameter :: adjacencyFileName = 'adjacency.txt'
                 
         FNAME = trim(path)//adjacencyFileName
@@ -723,7 +723,7 @@ module unstructuredGrid_m
 
             DO II = 1, num_cells
                 read(n_unit,'(A)') str
-                if (len_trim(str) >= 399) then
+                if (len_trim(str) >= 600) then
                     print*, "too long adjacent information input..."
                     stop
                 end if
@@ -963,7 +963,8 @@ module unstructuredGrid_m
         !遠くのセルを参照していないかどうかのチェック
         !参照セルとの距離がセル閾値未満であればOK（この条件は経験則でしかない）
         !fph読み込みの場合,計算速度が遅いので閾値を2倍にする
-        isNear = (distance < 2*self%CELLs(NCN)%threshold)
+        !2023/12/27 閾値10倍に変更
+        isNear = (distance < 10*self%CELLs(NCN)%threshold)
 
     end function
 
