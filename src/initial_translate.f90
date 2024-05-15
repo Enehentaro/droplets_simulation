@@ -7,9 +7,6 @@ program translate
     implicit none
     type(virusDroplet_t), allocatable :: droplets(:)
 
-    namelist /initial_translate_setting/ fnameDecoration, before_dGroupCenter, after_dGroupCenter, &
-    rotation_axis, rotation_angle_deg
-
     character(50), allocatable :: caseName_array(:)
     character(:), allocatable :: caseName
     character(15) fnameDecoration
@@ -21,6 +18,9 @@ program translate
     double precision, parameter :: PI = acos(-1.d0)
     double precision vec(3), center_displacement(3)
     double precision phi
+
+    namelist /initial_translate_setting/ fnameDecoration, before_dGroupCenter, after_dGroupCenter, &
+    rotation_axis, rotation_angle_deg
 
     ! これから移動を行いたいInitialDistribution.buのあるケース名の取得
     call case_check(caseName_array)
