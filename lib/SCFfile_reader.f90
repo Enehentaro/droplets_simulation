@@ -920,7 +920,7 @@ module SCF_file_reader_m
         implicit none
         class(scf_grid_t), intent(inout) :: this
         integer, intent(out) :: num_boundFaces
-        integer jj, alloc_max, dummyID
+        integer jj, kk, ll, alloc_max, dummyID
 
         ! 配列のサイズが未確定なのでダミー配列を用意
         alloc_max = this%NFACE
@@ -929,14 +929,26 @@ module SCF_file_reader_m
         ! セル番号0を有する面は境界面(外部表面)
         do jj = 1,this%NFACE
             if(any(this%face2cells(:,jj) == 0)) then
-                dummyID = findloc(this%boundFaceIDs, -99, dim = 1)
+                do kk = 1, this%NFACE
+                    if(this%boundFaceIDs(kk) == -99) then
+                        dummyID = kk
+                        exit
+                    endif
+                end do
+                ! dummyID = findloc(this%boundFaceIDs, -99, dim = 1)
                 call check_range_of_array(dummyID, alloc_max, "boundFaceIDs")
                 this%boundFaceIDs(dummyID) = jj
             end if
         end do
 
         ! -99が初めて見つかった時の番地をdummyIDに格納
-        dummyID = findloc(this%boundFaceIDs, -99, dim = 1)
+        do ll = 1, this%NFACE
+            if(this%boundFaceIDs(ll) == -99) then
+                dummyID = ll
+                exit
+            endif
+        end do
+        ! dummyID = findloc(this%boundFaceIDs, -99, dim = 1)
 
         this%num_boundFace = dummyID-1
         num_boundFaces = this%num_boundFace
@@ -962,7 +974,7 @@ module SCF_file_reader_m
         !$ use omp_lib
         implicit none
         class(scf_grid_t), intent(inout) :: this
-        integer cellID, faceID, contentID, alloc_max, dummyID
+        integer jj, cellID, faceID, contentID, alloc_max, dummyID
 
         allocate(this%cell2faces(this%NELEM))
         ! 配列のサイズが未確定なのでダミー配列を用意
@@ -984,7 +996,13 @@ module SCF_file_reader_m
                 if(cellID == 0) cycle
 
                 ! 左から数えて何番目に-99があるか探索
-                dummyID = findloc(this%cell2faces(cellID)%faceIDs, -99, dim = 1)
+                do jj = 1, this%alloc_max
+                    if(this%cell2faces(cellID)%faceIDs(jj) == -99) then
+                        dummyID = jj
+                        exit
+                    endif
+                end do
+                ! dummyID = findloc(this%cell2faces(cellID)%faceIDs, -99, dim = 1)
 
                 call check_range_of_array(dummyID, alloc_max, "cell2faces")
 
@@ -1046,7 +1064,7 @@ module SCF_file_reader_m
     subroutine get_cell2bound_face(this)
         implicit none
         class(scf_grid_t), intent(inout) :: this
-        integer JB, boundFace2cellID, alloc_max, cellID, dummyID
+        integer bFID_1, bFID_2, JB, boundFace2cellID, alloc_max, cellID, dummyID
 
         if(.not.allocated(this%mainCell)) allocate(this%mainCell(this%NELEM))
         ! 配列のサイズが未確定なのでダミー配列を用意
@@ -1061,7 +1079,13 @@ module SCF_file_reader_m
             if(this%face2cells(1,this%boundFaceIDs(JB)) == 0) then
 
                 boundFace2cellID = this%face2cells(2,this%boundFaceIDs(JB))
-                dummyID = findloc(this%mainCell(boundFace2cellID)%boundFaceID, -99, dim = 1)
+                do bFID_1 = 1, alloc_max
+                    if(this%mainCell(boundFace2cellID)%boundFaceID(bFID) == -99) then
+                        dummyID = bFID
+                        exit
+                    endif
+                end do
+                ! dummyID = findloc(this%mainCell(boundFace2cellID)%boundFaceID, -99, dim = 1)
                 call check_range_of_array(dummyID, alloc_max, "mainCell%boundFace")
                 this%mainCell(boundFace2cellID)%boundFaceID(dummyID) = JB
 
@@ -1069,7 +1093,13 @@ module SCF_file_reader_m
             if(this%face2cells(2,this%boundFaceIDs(JB)) == 0) then
                 
                 boundFace2cellID = this%face2cells(1,this%boundFaceIDs(JB))
-                dummyID = findloc(this%mainCell(boundFace2cellID)%boundFaceID, -99, dim = 1)
+                do bFID_2 = 1, alloc_max
+                    if(this%mainCell(boundFace2cellID)%boundFaceID(bFID_2) == -99) then
+                        dummyID = bFID_2
+                        exit
+                    endif
+                end do
+                ! dummyID = findloc(this%mainCell(boundFace2cellID)%boundFaceID, -99, dim = 1)
                 call check_range_of_array(dummyID, alloc_max, "mainCell%boundFace")
                 this%mainCell(boundFace2cellID)%boundFaceID(dummyID) = JB
 
@@ -1090,7 +1120,7 @@ module SCF_file_reader_m
         !$ use omp_lib
         implicit none
         class(scf_grid_t), intent(inout) :: this
-        integer faceID, cellID, alloc_max, dummyID, mainCellID, adjacentCellID
+        integer faceID, cellID, alloc_max, dummyID, mainCellID, adjacentCellID, adID_1, adID_2
 
         ! 配列のサイズが未確定なのでダミー配列を用意
         alloc_max = 100
@@ -1109,13 +1139,25 @@ module SCF_file_reader_m
             if(all(this%face2cells(:,faceID) /= 0)) then
                 mainCellID = this%face2cells(1,faceID)
                 adjacentCellID = this%face2cells(2,faceID)
-                dummyID = findloc(this%mainCell(mainCellID)%adjacentCellIDs, -99, dim = 1)
+                do adID_1 = 1, alloc_max
+                    if(this%mainCell(mainCellID)%adjacentCellIDs(adID) == -99) then
+                        dummyID = adID
+                        exit
+                    end if
+                end do
+                ! dummyID = findloc(this%mainCell(mainCellID)%adjacentCellIDs, -99, dim = 1)
                 call check_range_of_array(dummyID, alloc_max, "mainCell%adjacentCellIDs")
                 this%mainCell(mainCellID)%adjacentCellIDs(dummyID) = adjacentCellID
 
                 mainCellID = this%face2cells(2,faceID)
                 adjacentCellID = this%face2cells(1,faceID)
-                dummyID = findloc(this%mainCell(mainCellID)%adjacentCellIDs, -99, dim = 1)
+                do adID_2 = 1, alloc_max
+                    if(this%mainCell(mainCellID)%adjacentCellIDs(adID) == -99) then
+                        dummyID = adID
+                        exit
+                    end if
+                end do
+                ! dummyID = findloc(this%mainCell(mainCellID)%adjacentCellIDs, -99, dim = 1)
                 call check_range_of_array(dummyID, alloc_max, "mainCell%adjacentCellIDs")
                 this%mainCell(mainCellID)%adjacentCellIDs(dummyID) = adjacentCellID
             end if
@@ -1146,21 +1188,35 @@ module SCF_file_reader_m
         implicit none
         class(scf_grid_t), intent(inout) :: this
         character(*), intent(in) :: dir
-        integer n_unit, cellID, dummyID
+        integer n_unit, cellID, dummyID, adID, alloc_max_ad, alloc_max_bf
 
+        alloc_max_ad = 100
+        alloc_max_bf = 10
         print*, 'OUTPUT:', dir//"adjacency.txt" 
         open(newunit = n_unit, file = dir//"adjacency.txt", status='replace')
             write(n_unit,'(*(g0:," "))') this%NELEM
             write(n_unit,'(*(g0:," "))') 100 !任意の数で大丈夫そう
             do cellID = 1, this%NELEM
-                dummyID = findloc(this%mainCell(cellID)%adjacentCellIDs, -99, dim = 1)
+                do adID = 1, alloc_max_ad
+                    if(this%mainCell(cellID)%adjacentCellIDs(adID) == -99) then
+                        dummyID = adID
+                        exit
+                    end if
+                end do
+                ! dummyID = findloc(this%mainCell(cellID)%adjacentCellIDs, -99, dim = 1)
                 write(n_unit, '(*(g0:," "))') dummyID-1, this%mainCell(cellID)%adjacentCellIDs(1:dummyID-1)
             end do
             do cellID = 1, this%NELEM
                 if(this%mainCell(cellID)%boundFaceID(1) == 0) then
                     write(n_unit, '(*(g0:," "))') 0
                 else
-                    dummyID = findloc(this%mainCell(cellID)%boundFaceID, -99, dim = 1)
+                    do bfID = 1, alloc_max_bf
+                        if(this%mainCell(cellID)%boundFaceID(bfID) = -99) then
+                            dummyID = bfID
+                            exit
+                        end if
+                    end do
+                    ! dummyID = findloc(this%mainCell(cellID)%boundFaceID, -99, dim = 1)
                     write(n_unit, '(*(g0:," "))') dummyID-1, this%mainCell(cellID)%boundFaceID(1:dummyID-1)                
                 end if
             end do
