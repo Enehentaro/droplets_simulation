@@ -1080,8 +1080,8 @@ module SCF_file_reader_m
 
                 boundFace2cellID = this%face2cells(2,this%boundFaceIDs(JB))
                 do bFID_1 = 1, alloc_max
-                    if(this%mainCell(boundFace2cellID)%boundFaceID(bFID) == -99) then
-                        dummyID = bFID
+                    if(this%mainCell(boundFace2cellID)%boundFaceID(bFID_1) == -99) then
+                        dummyID = bFID_1
                         exit
                     endif
                 end do
