@@ -1141,7 +1141,7 @@ module SCF_file_reader_m
                 adjacentCellID = this%face2cells(2,faceID)
                 do adID_1 = 1, alloc_max
                     if(this%mainCell(mainCellID)%adjacentCellIDs(adID_1) == -99) then
-                        dummyID = adID
+                        dummyID = adID_1
                         exit
                     end if
                 end do
@@ -1153,7 +1153,7 @@ module SCF_file_reader_m
                 adjacentCellID = this%face2cells(1,faceID)
                 do adID_2 = 1, alloc_max
                     if(this%mainCell(mainCellID)%adjacentCellIDs(adID_2) == -99) then
-                        dummyID = adID
+                        dummyID = adID_2
                         exit
                     end if
                 end do
