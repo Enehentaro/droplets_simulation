@@ -586,7 +586,7 @@ module unstructuredGrid_m
         real(4),allocatable :: cells(:,:), face_center(:,:)
         integer, allocatable :: cell2face(:,:)
         logical is_adjacencyFile, is_cell2faceFile
-        integer iimx, kkmx, jjmx, ii, jj, kk, ll, JB, num_boundFaces, n_unit, dummyID
+        integer iimx, kkmx, jjmx, ii, jj, kk, iii, JB, num_boundFaces, n_unit, dummyID
 
         character(*), intent(in) :: FNAME
             !! ファイル名
