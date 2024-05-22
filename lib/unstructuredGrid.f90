@@ -580,7 +580,6 @@ module unstructuredGrid_m
         use SCF_file_reader_m
         use path_operator_m
         class(FlowFieldUnstructuredGrid) self
-        CLASS(scf_grid_t) this
         type(scf_grid_t) grid
         character(:),allocatable :: dir
         real(4),allocatable :: points(:,:), velocity(:,:), bound_center(:,:)
