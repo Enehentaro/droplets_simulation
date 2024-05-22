@@ -653,7 +653,7 @@ module unstructuredGrid_m
 
             cell2face = grid%get_cell2faces()
 
-            ! do ii = 1, iimx
+            do ii = 1, iimx
             !     iiiloop: do iii = 1, iimx
             !         do jjj = 1, size(this%cell2faces(1)%faceIDs)
             !             if(cell2face(iii, jjj) == -99) then
