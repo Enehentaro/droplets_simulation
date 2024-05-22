@@ -996,7 +996,7 @@ module SCF_file_reader_m
                 if(cellID == 0) cycle
 
                 ! 左から数えて何番目に-99があるか探索
-                do jj = 1, this%alloc_max
+                do jj = 1, alloc_max
                     if(this%cell2faces(cellID)%faceIDs(jj) == -99) then
                         dummyID = jj
                         exit
@@ -1140,7 +1140,7 @@ module SCF_file_reader_m
                 mainCellID = this%face2cells(1,faceID)
                 adjacentCellID = this%face2cells(2,faceID)
                 do adID_1 = 1, alloc_max
-                    if(this%mainCell(mainCellID)%adjacentCellIDs(adID) == -99) then
+                    if(this%mainCell(mainCellID)%adjacentCellIDs(adID_1) == -99) then
                         dummyID = adID
                         exit
                     end if
@@ -1152,7 +1152,7 @@ module SCF_file_reader_m
                 mainCellID = this%face2cells(2,faceID)
                 adjacentCellID = this%face2cells(1,faceID)
                 do adID_2 = 1, alloc_max
-                    if(this%mainCell(mainCellID)%adjacentCellIDs(adID) == -99) then
+                    if(this%mainCell(mainCellID)%adjacentCellIDs(adID_2) == -99) then
                         dummyID = adID
                         exit
                     end if
@@ -1188,7 +1188,7 @@ module SCF_file_reader_m
         implicit none
         class(scf_grid_t), intent(inout) :: this
         character(*), intent(in) :: dir
-        integer n_unit, cellID, dummyID, adID, alloc_max_ad, alloc_max_bf
+        integer n_unit, cellID, dummyID, adID, alloc_max_ad, alloc_max_bf, bfID
 
         alloc_max_ad = 100
         alloc_max_bf = 10
@@ -1211,7 +1211,7 @@ module SCF_file_reader_m
                     write(n_unit, '(*(g0:," "))') 0
                 else
                     do bfID = 1, alloc_max_bf
-                        if(this%mainCell(cellID)%boundFaceID(bfID) = -99) then
+                        if(this%mainCell(cellID)%boundFaceID(bfID) == -99) then
                             dummyID = bfID
                             exit
                         end if
