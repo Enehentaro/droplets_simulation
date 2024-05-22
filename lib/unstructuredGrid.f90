@@ -653,16 +653,16 @@ module unstructuredGrid_m
 
             cell2face = grid%get_cell2faces()
 
-            do ii = 1, iimx
-                iiiloop: do iii = 1, iimx
-                    do jjj = 1, size(this%cell2faces(1)%faceIDs)
-                        if(cell2face(iii, jjj) == -99) then
-                            dummyID = iii
-                            exit iiiloop
-                        end if
-                    end do 
-                end do
-                ! dummyID = findloc(cell2face(II,:), -99, dim = 1)
+            ! do ii = 1, iimx
+            !     iiiloop: do iii = 1, iimx
+            !         do jjj = 1, size(this%cell2faces(1)%faceIDs)
+            !             if(cell2face(iii, jjj) == -99) then
+            !                 dummyID = iii
+            !                 exit iiiloop
+            !             end if
+            !         end do 
+            !     end do
+                dummyID = findloc(cell2face(II,:), -99, dim = 1)
                 allocate(self%CELLs(II)%faceID(dummyID-1))
                 self%CELLs(II)%faceID(1:dummyID-1) = cell2face(II, 1:dummyID-1)
             end do
