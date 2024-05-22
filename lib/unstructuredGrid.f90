@@ -580,7 +580,6 @@ module unstructuredGrid_m
         use SCF_file_reader_m
         use path_operator_m
         class(FlowFieldUnstructuredGrid) self
-        CLASS(scf_grid_t) this
         type(scf_grid_t) grid
         character(:),allocatable :: dir
         real(4),allocatable :: points(:,:), velocity(:,:), bound_center(:,:)
@@ -655,9 +654,9 @@ module unstructuredGrid_m
             cell2face = grid%get_cell2faces()
 
             do ii = 1, iimx
-                do ll = 1, size(this%cell2faces(1)%faceIDs)
-                    if(cell2face(II, ll) == -99) then
-                        dummyID = II
+                do iii = 1, iimx
+                    if(cell2face(iii, :) == -99) then
+                        dummyID = iii
                         exit
                     end if
                 end do
