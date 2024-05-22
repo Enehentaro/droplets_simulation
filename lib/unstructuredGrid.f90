@@ -580,13 +580,14 @@ module unstructuredGrid_m
         use SCF_file_reader_m
         use path_operator_m
         class(FlowFieldUnstructuredGrid) self
+        CLASS(scf_grid_t) this
         type(scf_grid_t) grid
         character(:),allocatable :: dir
         real(4),allocatable :: points(:,:), velocity(:,:), bound_center(:,:)
         real(4),allocatable :: cells(:,:), face_center(:,:)
         integer, allocatable :: cell2face(:,:)
         logical is_adjacencyFile, is_cell2faceFile
-        integer iimx, kkmx, jjmx, ii, jj, kk, JB, num_boundFaces, n_unit, dummyID
+        integer iimx, kkmx, jjmx, ii, jj, kk, ll, JB, num_boundFaces, n_unit, dummyID
 
         character(*), intent(in) :: FNAME
             !! ファイル名
