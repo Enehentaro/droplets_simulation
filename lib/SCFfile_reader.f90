@@ -929,12 +929,12 @@ module SCF_file_reader_m
         ! セル番号0を有する面は境界面(外部表面)
         do jj = 1,this%NFACE
             if(any(this%face2cells(:,jj) == 0)) then
-                do kk = 1, this%NFACE
+                IDloop1: do kk = 1, this%NFACE
                     if(this%boundFaceIDs(kk) == -99) then
                         dummyID = kk
-                        exit
+                        exit IDloop1
                     endif
-                end do
+                end do IDloop1
                 ! dummyID = findloc(this%boundFaceIDs, -99, dim = 1)
                 call check_range_of_array(dummyID, alloc_max, "boundFaceIDs")
                 this%boundFaceIDs(dummyID) = jj
@@ -942,12 +942,12 @@ module SCF_file_reader_m
         end do
 
         ! -99が初めて見つかった時の番地をdummyIDに格納
-        do ll = 1, this%NFACE
+        IDloop2: do ll = 1, this%NFACE
             if(this%boundFaceIDs(ll) == -99) then
                 dummyID = ll
-                exit
+                exit IDloop2
             endif
-        end do
+        end do IDloop2
         ! dummyID = findloc(this%boundFaceIDs, -99, dim = 1)
 
         this%num_boundFace = dummyID-1
@@ -996,12 +996,12 @@ module SCF_file_reader_m
                 if(cellID == 0) cycle
 
                 ! 左から数えて何番目に-99があるか探索
-                do jj = 1, alloc_max
+                IDloop3: do jj = 1, alloc_max
                     if(this%cell2faces(cellID)%faceIDs(jj) == -99) then
                         dummyID = jj
-                        exit
+                        exit IDloop3
                     endif
-                end do
+                end do IDloop3
                 ! dummyID = findloc(this%cell2faces(cellID)%faceIDs, -99, dim = 1)
 
                 call check_range_of_array(dummyID, alloc_max, "cell2faces")
@@ -1079,12 +1079,12 @@ module SCF_file_reader_m
             if(this%face2cells(1,this%boundFaceIDs(JB)) == 0) then
 
                 boundFace2cellID = this%face2cells(2,this%boundFaceIDs(JB))
-                do bFID_1 = 1, alloc_max
+                IDloop4: do bFID_1 = 1, alloc_max
                     if(this%mainCell(boundFace2cellID)%boundFaceID(bFID_1) == -99) then
                         dummyID = bFID_1
-                        exit
+                        exit IDloop4
                     endif
-                end do
+                end do IDloop4
                 ! dummyID = findloc(this%mainCell(boundFace2cellID)%boundFaceID, -99, dim = 1)
                 call check_range_of_array(dummyID, alloc_max, "mainCell%boundFace")
                 this%mainCell(boundFace2cellID)%boundFaceID(dummyID) = JB
@@ -1093,12 +1093,12 @@ module SCF_file_reader_m
             if(this%face2cells(2,this%boundFaceIDs(JB)) == 0) then
                 
                 boundFace2cellID = this%face2cells(1,this%boundFaceIDs(JB))
-                do bFID_2 = 1, alloc_max
+                IDloop5: do bFID_2 = 1, alloc_max
                     if(this%mainCell(boundFace2cellID)%boundFaceID(bFID_2) == -99) then
                         dummyID = bFID_2
-                        exit
+                        exit IDloop5
                     endif
-                end do
+                end do IDloop5
                 ! dummyID = findloc(this%mainCell(boundFace2cellID)%boundFaceID, -99, dim = 1)
                 call check_range_of_array(dummyID, alloc_max, "mainCell%boundFace")
                 this%mainCell(boundFace2cellID)%boundFaceID(dummyID) = JB
@@ -1139,24 +1139,24 @@ module SCF_file_reader_m
             if(all(this%face2cells(:,faceID) /= 0)) then
                 mainCellID = this%face2cells(1,faceID)
                 adjacentCellID = this%face2cells(2,faceID)
-                do adID_1 = 1, alloc_max
+                IDloop6: do adID_1 = 1, alloc_max
                     if(this%mainCell(mainCellID)%adjacentCellIDs(adID_1) == -99) then
                         dummyID = adID_1
-                        exit
+                        exit IDloop6
                     end if
-                end do
+                end do IDloop6
                 ! dummyID = findloc(this%mainCell(mainCellID)%adjacentCellIDs, -99, dim = 1)
                 call check_range_of_array(dummyID, alloc_max, "mainCell%adjacentCellIDs")
                 this%mainCell(mainCellID)%adjacentCellIDs(dummyID) = adjacentCellID
 
                 mainCellID = this%face2cells(2,faceID)
                 adjacentCellID = this%face2cells(1,faceID)
-                do adID_2 = 1, alloc_max
+                IDloop7: do adID_2 = 1, alloc_max
                     if(this%mainCell(mainCellID)%adjacentCellIDs(adID_2) == -99) then
                         dummyID = adID_2
-                        exit
+                        exit IDloop7
                     end if
-                end do
+                end do IDloop7
                 ! dummyID = findloc(this%mainCell(mainCellID)%adjacentCellIDs, -99, dim = 1)
                 call check_range_of_array(dummyID, alloc_max, "mainCell%adjacentCellIDs")
                 this%mainCell(mainCellID)%adjacentCellIDs(dummyID) = adjacentCellID
@@ -1197,12 +1197,12 @@ module SCF_file_reader_m
             write(n_unit,'(*(g0:," "))') this%NELEM
             write(n_unit,'(*(g0:," "))') 100 !任意の数で大丈夫そう
             do cellID = 1, this%NELEM
-                do adID = 1, alloc_max_ad
+                IDloop8: do adID = 1, alloc_max_ad
                     if(this%mainCell(cellID)%adjacentCellIDs(adID) == -99) then
                         dummyID = adID
-                        exit
+                        exit IDloop8
                     end if
-                end do
+                end do IDloop8
                 ! dummyID = findloc(this%mainCell(cellID)%adjacentCellIDs, -99, dim = 1)
                 write(n_unit, '(*(g0:," "))') dummyID-1, this%mainCell(cellID)%adjacentCellIDs(1:dummyID-1)
             end do
@@ -1210,12 +1210,12 @@ module SCF_file_reader_m
                 if(this%mainCell(cellID)%boundFaceID(1) == 0) then
                     write(n_unit, '(*(g0:," "))') 0
                 else
-                    do bfID = 1, alloc_max_bf
+                    IDloop9: do bfID = 1, alloc_max_bf
                         if(this%mainCell(cellID)%boundFaceID(bfID) == -99) then
                             dummyID = bfID
-                            exit
+                            exit IDloop9
                         end if
-                    end do
+                    end do IDloop9
                     ! dummyID = findloc(this%mainCell(cellID)%boundFaceID, -99, dim = 1)
                     write(n_unit, '(*(g0:," "))') dummyID-1, this%mainCell(cellID)%boundFaceID(1:dummyID-1)                
                 end if
