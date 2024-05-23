@@ -655,7 +655,7 @@ module unstructuredGrid_m
 
             do ii = 1, iimx
                 iiiloop: do iii = 1, iimx
-                    do jjj = 1, size(array = get_cell2faces(),dim = 1)
+                    do jjj = 1, size(array = cell2face,dim = 1)
                         if(cell2face(iii, jjj) == -99) then
                             dummyID = iii
                             exit iiiloop
