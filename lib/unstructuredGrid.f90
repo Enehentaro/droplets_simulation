@@ -660,8 +660,8 @@ module unstructuredGrid_m
                             dummyID = iii
                             exit iiiloop
                         end if
-                    end do 
-                end do
+                    end do
+                end do iiiloop
                 ! dummyID = findloc(cell2face(II,:), -99, dim = 1)
                 allocate(self%CELLs(II)%faceID(dummyID-1))
                 self%CELLs(II)%faceID(1:dummyID-1) = cell2face(II, 1:dummyID-1)
