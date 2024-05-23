@@ -586,7 +586,7 @@ module unstructuredGrid_m
         real(4),allocatable :: cells(:,:), face_center(:,:)
         integer, allocatable :: cell2face(:,:)
         logical is_adjacencyFile, is_cell2faceFile
-        integer iimx, kkmx, jjmx, ii, jj, kk, iii, JB, num_boundFaces, n_unit, dummyID
+        integer iimx, kkmx, jjmx, ii, jj, kk, iii, jjj, JB, num_boundFaces, n_unit, dummyID
 
         character(*), intent(in) :: FNAME
             !! ファイル名
@@ -654,15 +654,15 @@ module unstructuredGrid_m
             cell2face = grid%get_cell2faces()
 
             do ii = 1, iimx
-            !     iiiloop: do iii = 1, iimx
-            !         do jjj = 1, size(this%cell2faces(1)%faceIDs)
-            !             if(cell2face(iii, jjj) == -99) then
-            !                 dummyID = iii
-            !                 exit iiiloop
-            !             end if
-            !         end do 
-            !     end do
-                dummyID = findloc(cell2face(II,:), -99, dim = 1)
+                iiiloop: do iii = 1, iimx
+                    do jjj = 1, size(array = get_cell2faces(),dim = 1)
+                        if(cell2face(iii, jjj) == -99) then
+                            dummyID = iii
+                            exit iiiloop
+                        end if
+                    end do 
+                end do
+                ! dummyID = findloc(cell2face(II,:), -99, dim = 1)
                 allocate(self%CELLs(II)%faceID(dummyID-1))
                 self%CELLs(II)%faceID(1:dummyID-1) = cell2face(II, 1:dummyID-1)
             end do
