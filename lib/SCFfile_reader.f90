@@ -1230,6 +1230,55 @@ module SCF_file_reader_m
 
     end subroutine
 
+    subroutine output_vtu(this, dir)
+        class(scf_grid_t), intent(in) :: this
+        character(*), intent(in) :: dir
+        integer n_unit, nodeID, cellID, dummyID, elementID
+        open(newunit = n_unit, file = dir//"shape.vtu", status = "replace")
+            write(n_unit, "(A)") '<VTKFile type="UnstructuredGrid" version="0.1" byte_order="BigEndian">'
+            write(n_unit, "(A)") '<UnstructuredGrid>'
+            write(n_unit, '(*(g0:," "))') '<Piece NumberOfPoints="', this%NODES,&
+                                            '" NumberOfCells="', this%NELEM,'">'
+            write(n_unit, "(A)") '<PointData Scalars="scalars">'
+            !doループにて流体データを敷き詰める．ScalarDataの場合は以下．subroutineを作る予定
+            write(n_unit, "(A)") '<DataArray type="Float32" Name="pressure" Format="ascii">'
+            !ここにデータがずらり
+            write(n_unit, "(A)") '</DataArray>'
+            !流体データ VectorDataの場合
+            write(n_unit, "(A)") '<DataArray type="Float32" Name="velocity" NumberOfComponents="3" Format="ascii">'
+            !ここにデータ
+            write(n_unit, "(A)") '</DataArray>'
+            write(n_unit, "(A)") '</PointData>' !流体データ終わり
+            
+            write(n_unit, "(A)") '<Points>'
+            write(n_unit, "(A)") '<DataArray type="Float32" NumberOfComponents="3" Format="ascii">'
+            do nodeID = 1, this%NODES
+                write(n_unit, '(3(e12.5,2x))') this%node(nodeID)%coordinate(:)
+            end do
+            write(n_unit, "(A)") '</DataArray>'
+            write(n_unit, "(A)") '</Points>' !座標データ終わり 
+            
+            write(n_unit, "(A)") '<Cells>'
+            write(n_unit, "(A)") '<DataArray type="Int32" Name="connectivity" Format="ascii">'
+            do cellID = 1, this%NELEM
+                dummyID = findloc(this%cell2faces(cellID)%faceIDs, -99, dim = 1)
+                do elementID = 1, dummyID-1
+                    write(n_unit) this%face2vertices(this%cell2faces(cellID)%faceIDs(elementID))%vertexIDs - 1
+                end do
+            end do
+            write(n_unit, "(A)") '</DataArray>'
+            
+            write(n_unit, "(A)") '<DataArray type="Int32" Name="offsets" Format="ascii">'
+            write(n_unit, '(*(g0:," "))') this%offsets(:)
+            !unstructuredGrid.f90のcall grid%get_cell_offsets()を有効にすること
+            write(n_unit, "(A)") '</DataArray>'
+            write(n_unit, "(A)") '</Cells>'
+            write(n_unit, "(A)") '</Piece>'
+            write(n_unit, "(A)") '</UnstructuredGrid>'
+            write(n_unit, "(A)") '</VTKFile>'
+        close(n_unit)
+    end subroutine
+
     subroutine search_fph_vector_data(this, key, vector)
         implicit none
         class(scf_grid_t), intent(in) :: this
