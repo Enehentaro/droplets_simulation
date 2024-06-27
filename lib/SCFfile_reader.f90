@@ -1231,6 +1231,7 @@ module SCF_file_reader_m
     end subroutine
 
     subroutine output_vtu(this, dir)
+        implicit none
         class(scf_grid_t), intent(in) :: this
         character(*), intent(in) :: dir
         integer n_unit, nodeID, cellID, dummyID, elementID
@@ -1240,14 +1241,8 @@ module SCF_file_reader_m
             write(n_unit, '(*(g0:," "))') '<Piece NumberOfPoints="', this%NODES,&
                                             '" NumberOfCells="', this%NELEM,'">'
             write(n_unit, "(A)") '<PointData Scalars="scalars">'
-            !doループにて流体データを敷き詰める．ScalarDataの場合は以下．subroutineを作る予定
-            write(n_unit, "(A)") '<DataArray type="Float32" Name="pressure" Format="ascii">'
-            !ここにデータがずらり
-            write(n_unit, "(A)") '</DataArray>'
-            !流体データ VectorDataの場合
-            write(n_unit, "(A)") '<DataArray type="Float32" Name="velocity" NumberOfComponents="3" Format="ascii">'
-            !ここにデータ
-            write(n_unit, "(A)") '</DataArray>'
+            call output_fph_scalar_data(this, this%EC_Scalars, n_unit)
+            call output_fph_vector_data(this, this%EC_Vectors, n_unit)
             write(n_unit, "(A)") '</PointData>' !流体データ終わり
             
             write(n_unit, "(A)") '<Points>'
@@ -1277,6 +1272,37 @@ module SCF_file_reader_m
             write(n_unit, "(A)") '</UnstructuredGrid>'
             write(n_unit, "(A)") '</VTKFile>'
         close(n_unit)
+    end subroutine
+
+    subroutine output_fph_scalar_data(this, EC_Scalars, n_unit)
+        implicit none
+        class(scf_grid_t), intent(in) :: this
+        type(EC_Scalar_t), allocatable :: EC_Scalars(:)
+        integer ndata, n_unit
+
+        do ndata = 1, this%EC_scalar_data_count + 1
+            write(n_unit, "(A)") '<DataArray type="Float32" Name="', EC_Scalars(ndata)%abbreviated_name,&
+                                '" Format="ascii">'
+            write(n_unit, '(*(g0:," "))') this%EC_Scalars(ndata)%data(:)
+            write(n_unit, "(A)") '</DataArray>'
+
+        end do
+    end subroutine
+
+    subroutine output_fph_vector_data(this, EC_Vectors, n_unit)
+        implicit none
+        class(scf_grid_t), intent(in) :: this
+        type(EC_Vector_t), allocatable :: EC_Vectors(:)
+        integer ndata, n_unit
+
+        do ndata = 1, this%EC_vector_data_count + 1
+            write(n_unit, "(A)") '<DataArray type="Float32" Name="', EC_Vectors(ndata)%abbreviated_name,& !velocityのところをデータ名にする．
+                                '" NumberOfComponents="3" Format="ascii">'
+            write(n_unit, '(*(g0:," "))') this%EC_Vectors(ndata)%x,&
+                                        this%EC_Vectors(ndata)%y,&
+                                        this%EC_Vectors(ndata)%z
+            write(n_unit, "(A)") '</DataArray>'
+        end do
     end subroutine
 
     subroutine search_fph_vector_data(this, key, vector)
