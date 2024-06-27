@@ -1245,7 +1245,7 @@ module SCF_file_reader_m
             call output_fph_vector_data(this, this%EC_Vectors, n_unit)
             write(n_unit, "(A)") '</PointData>' !流体データ終わり
             
-            write(n_unit, "(A)") '<Points>'
+            write(n_unit, "(A)") '<Points>' !ここから格子データ
             write(n_unit, "(A)") '<DataArray type="Float32" NumberOfComponents="3" Format="ascii">'
             do nodeID = 1, this%NODES
                 write(n_unit, '(3(e12.5,2x))') this%node(nodeID)%coordinate(:)
@@ -1265,7 +1265,6 @@ module SCF_file_reader_m
             
             write(n_unit, "(A)") '<DataArray type="Int32" Name="offsets" Format="ascii">'
             write(n_unit, '(*(g0:," "))') this%offsets(:)
-            !unstructuredGrid.f90のcall grid%get_cell_offsets()を有効にすること
             write(n_unit, "(A)") '</DataArray>'
             write(n_unit, "(A)") '</Cells>'
             write(n_unit, "(A)") '</Piece>'
@@ -1296,7 +1295,7 @@ module SCF_file_reader_m
         integer ndata, n_unit
 
         do ndata = 1, this%EC_vector_data_count + 1
-            write(n_unit, "(A)") '<DataArray type="Float32" Name="', EC_Vectors(ndata)%abbreviated_name,& !velocityのところをデータ名にする．
+            write(n_unit, "(A)") '<DataArray type="Float32" Name="', EC_Vectors(ndata)%abbreviated_name,&
                                 '" NumberOfComponents="3" Format="ascii">'
             write(n_unit, '(*(g0:," "))') this%EC_Vectors(ndata)%x,&
                                         this%EC_Vectors(ndata)%y,&
