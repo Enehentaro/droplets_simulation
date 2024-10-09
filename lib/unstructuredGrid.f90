@@ -661,15 +661,14 @@ module unstructuredGrid_m
 
             if(.not. is_adjacencyFile) then
 
-                call grid%get_cell_offsets()
+                ! call grid%get_cell_offsets()
                 call grid%get_cell2bound_face()
                 call grid%get_fph_adjacentCellIDs()
-                ! call grid%drop_vertex_for_obj()
+                call grid%drop_vertex_for_obj()
 
                 call grid%output_fph_bound_face(dir)
                 call grid%output_fph_adjacentCell(dir)
-                ! call grid%output_OBJ(dir)
-                call grid%output_vtu(dir)
+                call grid%output_OBJ(dir)
 
             end if
 
@@ -964,7 +963,7 @@ module unstructuredGrid_m
         !遠くのセルを参照していないかどうかのチェック
         !参照セルとの距離がセル閾値未満であればOK（この条件は経験則でしかない）
         !fph読み込みの場合,計算速度が遅いので閾値を2倍にする
-        isNear = (distance < 10*self%CELLs(NCN)%threshold)
+        isNear = (distance < 2*self%CELLs(NCN)%threshold)
 
     end function
 
