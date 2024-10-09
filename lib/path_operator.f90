@@ -1,22 +1,25 @@
 module path_operator_m
     implicit none
 
-    character(7), parameter, private :: OS = 'Linux'
+    ! character(7), parameter, private :: OS = 'Linux'
 
     contains
 
     subroutine make_directory(path)
         character(*), intent(in) :: path
         character(:), allocatable :: directory
+        character(len=7) OS
+
+        call get_os(OS)
     
         select case(trim(OS))
             case ('Linux')  !for_Linux
-                directory =  replace_str(path, from='\', to='/' )
-                call system('mkdir -p -v '//directory)
+                directory = replace_str(path, from='\', to='/')
+                call system('mkdir -p "' // directory // '"')
 
             case ('Windows')  !for_Windows
-                directory =  replace_str(path, from='/', to='\' )
-                call system('md '//directory)
+                directory = replace_str(path, from='/', to='\')
+                call system('md "' // directory // '"')
 
             case default
                 print*, 'OS ERROR : ', OS
@@ -25,6 +28,22 @@ module path_operator_m
         end select
 
     end subroutine make_directory
+
+    
+    subroutine get_os(OS)
+        character(len=7), intent(out) :: OS
+        character(len=128) env_os
+
+        call getenv('OS', env_os)
+        env_os = adjustl(trim(env_os))
+
+        if(index(env_os, 'Windows') > 0) then
+            OS = 'Windows'
+        else
+            OS = 'Linux'
+        end if
+
+    end subroutine get_os
     
     subroutine get_DirFromPath(path, directory, filename)
         character(*), intent(in) :: path
