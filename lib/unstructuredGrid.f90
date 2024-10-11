@@ -963,7 +963,6 @@ module unstructuredGrid_m
         !遠くのセルを参照していないかどうかのチェック
         !参照セルとの距離がセル閾値未満であればOK（この条件は経験則でしかない）
         !fph読み込みの場合,計算速度が遅いので閾値を2倍にする
-        !2023/12/27 閾値10倍に変更
         isNear = (distance < 10*self%CELLs(NCN)%threshold)
 
     end function

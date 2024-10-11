@@ -56,7 +56,7 @@ program dropletCount
     
         ! end do
 
-        fname = caseName//'/backup/backup_10000.bu'
+        fname = caseName//'/backup/backup_3000000.bu'
         mainDroplets = read_backup(fname)
     
         do i_box = 1, num_box
