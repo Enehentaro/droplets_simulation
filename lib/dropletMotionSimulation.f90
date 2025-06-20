@@ -573,7 +573,7 @@ module dropletMotionSimulation
         integer, intent(in) :: n_start, n_end, outputInterval
         integer n_unit, cnt
         real erapsed_time
-        character(50) fname
+        character(90) fname
         logical existance
         double precision TimeStart, TimeEnd
         character(:), allocatable :: startDAT, endDAT

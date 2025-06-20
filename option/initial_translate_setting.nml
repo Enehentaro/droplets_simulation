@@ -1,9 +1,9 @@
 &initial_translate_setting
 
 fnameDecoration = "z" ! 出力ファイル名がInitialDistribution_(fnameDecoration).nmlとなる
-before_dGroupCenter = 0.0,0.3,0.5 ! 初期の飛沫グループの中心座標
+before_dGroupCenter = 0.0,-0.24,1.52 ! 初期の飛沫グループの中心座標
 rotation_axis = "z" ! 回転軸(x,y,z)
-rotation_angle_deg = 60 ! before_dGroupCenterを回転中心として飛沫グループを回転させる(単位は°,反時計回りを正)
-after_dGroupCenter = 0.0,0.3,0.5 ! 回転及び平行移動後の飛沫グループの中心座標
+rotation_angle_deg = 0 ! before_dGroupCenterを回転中心として飛沫グループを回転させる(単位は°,反時計回りを正)
+after_dGroupCenter = 0.0,-0.365,1.52 ! 回転及び平行移動後の飛沫グループの中心座標
 
 /
