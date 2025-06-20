@@ -8,7 +8,7 @@ program dropletCount
     use boxCounter_m
     use caseName_m
     implicit none
-    integer n, i_box, num_box, caseID
+    integer n, i_box, num_box, caseID, id
     character(50), allocatable :: caseName_array(:)
     character(:), allocatable :: caseName, fname
     integer, allocatable :: id_array(:)
@@ -20,6 +20,7 @@ program dropletCount
     type boxResult_t
         integer num_droplet
         real volume, RoI
+        real, allocatable :: diameter(:)
     end type
     type(boxResult_t), allocatable :: bResult(:)
 
@@ -63,18 +64,41 @@ program dropletCount
             droplets = mainDroplets(id_array)
             bResult(i_box)%num_droplet = size(droplets)
             bResult(i_box)%volume = real(dropletTotalVolume(droplets) *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
+            allocate(bResult(i_box)%diameter(size(droplets)))
+            do id = 1, size(droplets)
+                bResult(i_box)%diameter(id) = dropletDiameter(mainDroplets, id)
+            end do
         end do
 
         bResult(:)%RoI = RateOfInfection(bResult(:)%volume) !1分間あたりの感染確率を計算
     
         call output_countCSV
         call output_boxVTK
+        call output_diameterCSV
 
         deallocate(bResult)
 
     end do
 
     contains
+
+    subroutine output_diameterCSV
+        integer n_unit, boxid, id
+        character(:), allocatable :: csvfname
+
+        csvfname = caseName//'/BoxDiameter.csv'
+        print*, 'output: ', csvfname
+
+        open(newunit = n_unit, file = csvfname, status = 'replace')
+            write(n_unit, '("boxid, diameter[μm]")')
+            do boxid = 1, size(box_array)
+                do id = 1, bResult(boxid)%num_droplet
+                    write(n_unit, '(*(g0:,","))') boxid, bResult(boxid)%diameter(id)*condVal%L*1.d6 ![μm]に換算
+                end do
+            end do
+        close(n_unit)
+
+    end subroutine
 
     subroutine output_countCSV
         integer n_unit, i

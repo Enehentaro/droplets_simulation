@@ -27,6 +27,7 @@ module virusDroplet_m
     public output_backup, output_droplet_CSV, output_droplet_VTK
     public get_dropletsArea, dropletTotalVolume
     public coalescence_check
+    public dropletDiameter
 
     contains
 
@@ -233,6 +234,17 @@ module virusDroplet_m
         end do
 
         dropletTotalVolume = dropletTotalVolume * 4.d0/3.d0*PI
+
+    end function
+
+    function dropletDiameter(droplets, id) result(diameter)
+        !! 任意のidの飛沫半径を返す
+
+        type(virusDroplet_t) droplets(:)
+        integer id
+        real diameter
+
+        diameter = droplets(id)%initialRadius * 2.0d0
 
     end function
 
