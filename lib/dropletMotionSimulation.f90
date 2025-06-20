@@ -169,9 +169,9 @@ module dropletMotionSimulation
 
             if(adhesionSwitch) call adhesion_check(mainDroplets, flow_field)
 
-            call survival_check(mainDroplets, timeInSimulation)           !生存率に関する処理
+            ! call survival_check(mainDroplets, timeInSimulation)           !生存率に関する処理
 
-            call coalescence_process(mainDroplets, n, last_coalescenceStep, generationFlag)        !飛沫間の合体判定
+            ! call coalescence_process(mainDroplets, n, last_coalescenceStep, generationFlag)        !飛沫間の合体判定
 
             call Calculation_Droplets(mainDroplets, dropletSolver, flow_field)     !飛沫の運動計算
 
@@ -343,7 +343,7 @@ module dropletMotionSimulation
 
             if(droplets(vn)%isFloating())then
 
-                call evaporationProcess(droplets(vn), dropletSolver)    !蒸発方程式関連の処理
+                ! call evaporationProcess(droplets(vn), dropletSolver)    !蒸発方程式関連の処理
                
                 velAir(:) = flow_field%get_flowVelocityInCELL(droplets(vn)%refCellID)
                 call dropletSolver%solve_motionEquation(&

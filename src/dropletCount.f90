@@ -73,8 +73,8 @@ program dropletCount
             bResult(i_box)%num_droplet = size(droplets)
             bResult(i_box)%volume = real(dropletTotalVolume(droplets) *condVal%L**3 * 1.d6 )    !有次元化[m^3]したのち、[ml]に換算
             allocate(bResult(i_box)%diameter(size(droplets)))
-            do id = 1, size(droplets)
-                bResult(i_box)%diameter(id) = dropletDiameter(mainDroplets, id)
+            do id = 1, size(id_array)
+                bResult(i_box)%diameter(id) = dropletDiameter(mainDroplets, id_array(id))
             end do
         end do
 
